@@ -14,6 +14,19 @@ NestJS + PostgreSQL + Prisma backend for the internship-management platform.
 3. Create the database schema: `npm exec prisma migrate dev -- --name init`.
 4. Start the API: `npm run start:dev`.
 
+### Development seed accounts
+
+Run `npm exec prisma db seed` to create or update one active account for each role. The command is idempotent and uses `SEED_PASSWORD` when provided, otherwise `Seed@123456`.
+
+| Role | Email |
+| --- | --- |
+| ADMIN | admin@internhub.local |
+| STUDENT | student@internhub.local |
+| LECTURER | lecturer@internhub.local |
+| COMPANY | company@internhub.local |
+
+These credentials are for local/development testing only. Do not use them in production.
+
 `npm install` and `npm run build` both generate Prisma Client into `src/generated/prisma`. This directory is intentionally not committed. Migrations under `prisma/migrations` are source code and must be committed.
 
 ## Domain model

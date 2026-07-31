@@ -1,15 +1,14 @@
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT ?? 5173);
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    process.argv[1]?.replaceAll('\\', '/').includes('/dist/') === true;
 
   app.use(express.json({ limit: '10mb' }));
 
@@ -172,7 +171,7 @@ Trả về định dạng JSON:
   });
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
+  if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',

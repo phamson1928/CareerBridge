@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   UserRole,
   User,
@@ -34,8 +35,8 @@ import {
   MOCK_DASHBOARD_STATS,
 } from './data/mockData';
 
-import { RoleBanner } from './components/RoleBanner';
 import { Navbar } from './components/Navbar';
+import { SessionBanner } from './components/SessionBanner';
 import { NotificationCenter } from './components/Notifications/NotificationCenter';
 import { ChatDrawer } from './components/Chat/ChatDrawer';
 
@@ -58,10 +59,17 @@ import { AdminDashboard } from './components/AdminView/AdminDashboard';
 import { UserManagement } from './components/AdminView/UserManagement';
 import { CompanyModeration } from './components/AdminView/CompanyModeration';
 import { TeacherAssignment } from './components/AdminView/TeacherAssignment';
+import { useAuth } from './auth/AuthContext';
 
 export default function App() {
-  const [currentRole, setCurrentRole] = useState<UserRole>('STUDENT');
-  const [activeTab, setActiveTab] = useState<string>('internships');
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const currentRole: UserRole = user?.role === 'LECTURER' ? 'TEACHER' : user?.role ?? 'STUDENT';
+  const [activeTab, setActiveTab] = useState<string>(() => getDefaultTab(currentRole));
+
+  useEffect(() => {
+    setActiveTab(getDefaultTab(currentRole));
+  }, [currentRole]);
 
   // Core App State
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
@@ -87,19 +95,6 @@ export default function App() {
   const currentCompany = companyProfiles[0];
   const currentTeacher = teacherProfiles[0];
 
-  const getActiveUserName = () => {
-    switch (currentRole) {
-      case 'STUDENT':
-        return `${currentStudent.fullname} (Sinh viên)`;
-      case 'COMPANY':
-        return `${currentCompany.companyName} (Tuyển dụng)`;
-      case 'TEACHER':
-        return `${currentTeacher.fullname} (Giảng viên)`;
-      case 'ADMIN':
-        return 'System Admin (Quản trị viên)';
-    }
-  };
-
   const currentUserId =
     currentRole === 'STUDENT'
       ? currentStudent.userId
@@ -109,23 +104,9 @@ export default function App() {
       ? currentTeacher.userId
       : 'usr-adm-1';
 
-  // Handle Role Switching
-  const handleSelectRole = (role: UserRole) => {
-    setCurrentRole(role);
-    switch (role) {
-      case 'STUDENT':
-        setActiveTab('internships');
-        break;
-      case 'COMPANY':
-        setActiveTab('dashboard');
-        break;
-      case 'TEACHER':
-        setActiveTab('students-list');
-        break;
-      case 'ADMIN':
-        setActiveTab('stats-dashboard');
-        break;
-    }
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   // Student Actions
@@ -354,12 +335,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased">
-      {/* Sticky Quick Role Switcher Toolbar */}
-      <RoleBanner
-        currentRole={currentRole}
-        onSelectRole={handleSelectRole}
-        activeUserName={getActiveUserName()}
-      />
+      {user && <SessionBanner user={user} onLogout={() => void handleLogout()} />}
 
       {/* Main Navbar */}
       <Navbar
@@ -586,4 +562,17 @@ export default function App() {
       />
     </div>
   );
+}
+
+function getDefaultTab(role: UserRole): string {
+  switch (role) {
+    case 'STUDENT':
+      return 'internships';
+    case 'COMPANY':
+      return 'dashboard';
+    case 'TEACHER':
+      return 'students-list';
+    case 'ADMIN':
+      return 'stats-dashboard';
+  }
 }
