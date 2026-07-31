@@ -19,6 +19,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
+    let code = 'INTERNAL_SERVER_ERROR';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -26,20 +27,45 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (typeof res === 'string') {
         message = res;
       } else if (typeof res === 'object') {
-        message = (res as any).message || message;
+        const exceptionBody = res as {
+          message?: string | string[];
+          code?: string;
+          error?: string;
+        };
+        message = exceptionBody.message ?? message;
+        code = exceptionBody.code ?? this.defaultCodeForStatus(status);
       }
     }
 
-    this.logger.error(
-      `${request.method} ${request.url} ${status} - ${message}`,
-      exception instanceof Error ? exception.stack : undefined,
-    );
+    const logMessage = `${request.method} ${request.url} ${status} - ${Array.isArray(message) ? message.join(', ') : message}`;
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(
+        logMessage,
+        exception instanceof Error ? exception.stack : undefined,
+      );
+    } else {
+      this.logger.warn(logMessage);
+    }
 
     response.status(status).json({
+      success: false,
       statusCode: status,
+      code,
       message: Array.isArray(message) ? message : [message],
       timestamp: new Date().toISOString(),
       path: request.url,
     });
+  }
+
+  private defaultCodeForStatus(status: number): string {
+    const codes: Record<number, string> = {
+      [HttpStatus.BAD_REQUEST]: 'VALIDATION_ERROR',
+      [HttpStatus.UNAUTHORIZED]: 'UNAUTHORIZED',
+      [HttpStatus.FORBIDDEN]: 'FORBIDDEN',
+      [HttpStatus.NOT_FOUND]: 'NOT_FOUND',
+      [HttpStatus.CONFLICT]: 'CONFLICT',
+      [HttpStatus.TOO_MANY_REQUESTS]: 'TOO_MANY_REQUESTS',
+    };
+    return codes[status] ?? `HTTP_${status}`;
   }
 }

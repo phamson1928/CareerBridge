@@ -1,18 +1,35 @@
-import { IsEmail, IsString, MinLength, IsEnum, IsOptional } from 'class-validator';
+import { Transform, TransformFnParams } from 'class-transformer';
+import {
+  IsEmail,
+  IsIn,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { Role } from '../../generated/prisma/client';
 
 export class RegisterDto {
+  @Transform((params: TransformFnParams): unknown =>
+    normalizeEmailValue(params.value as unknown),
+  )
   @IsEmail()
-  email: string;
+  @MaxLength(254)
+  email!: string;
 
   @IsString()
-  @MinLength(6)
-  password: string;
+  @MinLength(8)
+  @MaxLength(72)
+  @Matches(/[A-Za-z]/, { message: 'password must contain at least one letter' })
+  @Matches(/[0-9]/, { message: 'password must contain at least one number' })
+  password!: string;
 
-  @IsEnum(Role)
-  role: Role;
+  @IsIn([Role.STUDENT, Role.COMPANY], {
+    message: 'role must be either STUDENT or COMPANY',
+  })
+  role!: Role;
+}
 
-  @IsOptional()
-  @IsString()
-  fullName?: string;
+function normalizeEmailValue(value: unknown): unknown {
+  return typeof value === 'string' ? value.trim().toLowerCase() : value;
 }
