@@ -4,6 +4,7 @@ const integerSettings = {
   JWT_REFRESH_EXPIRES_IN_SECONDS: 604800,
   BCRYPT_ROUNDS: 12,
   THROTTLE_LIMIT: 60,
+  SIGNED_URL_EXPIRES_IN_SECONDS: 300,
 } as const;
 
 const allowedNodeEnvironments = new Set(['development', 'test', 'production']);
@@ -31,6 +32,23 @@ export function validateEnvironment(
     config.FRONTEND_URL,
     'http://localhost:5173',
   );
+
+  config.FILES_BUCKET = readOptionalString(
+    config.FILES_BUCKET,
+    'internhub-files',
+  );
+  const supabaseUrl = readOptionalString(config.SUPABASE_URL, '');
+  const supabaseServiceKey = readOptionalString(
+    config.SUPABASE_SERVICE_KEY,
+    '',
+  );
+  if (Boolean(supabaseUrl) !== Boolean(supabaseServiceKey)) {
+    throw new Error(
+      'SUPABASE_URL and SUPABASE_SERVICE_KEY must be configured together',
+    );
+  }
+  config.SUPABASE_URL = supabaseUrl;
+  config.SUPABASE_SERVICE_KEY = supabaseServiceKey;
 
   const sameSite = readOptionalString(
     config.COOKIE_SAME_SITE,
