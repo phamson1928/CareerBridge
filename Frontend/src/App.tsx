@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   UserRole,
-  User,
   StudentProfile,
   CompanyProfile,
   TeacherProfile,
@@ -19,10 +18,9 @@ import {
   AppNotification,
   DashboardStats,
   ApplicationStatus,
-} from './types';
+} from "./types";
 
 import {
-  INITIAL_USERS,
   INITIAL_STUDENT_PROFILES,
   INITIAL_COMPANY_PROFILES,
   INITIAL_TEACHER_PROFILES,
@@ -33,56 +31,71 @@ import {
   INITIAL_MESSAGES,
   INITIAL_NOTIFICATIONS,
   MOCK_DASHBOARD_STATS,
-} from './data/mockData';
+} from "./data/mockData";
 
-import { Navbar } from './components/Navbar';
-import { SessionBanner } from './components/SessionBanner';
-import { NotificationCenter } from './components/Notifications/NotificationCenter';
-import { ChatDrawer } from './components/Chat/ChatDrawer';
+import { Navbar } from "./components/Navbar";
+import { SessionBanner } from "./components/SessionBanner";
+import { NotificationCenter } from "./components/Notifications/NotificationCenter";
+import { ChatDrawer } from "./components/Chat/ChatDrawer";
 
-import { InternshipList } from './components/StudentView/InternshipList';
-import { StudentApplications } from './components/StudentView/StudentApplications';
-import { StudentReports } from './components/StudentView/StudentReports';
-import { StudentProfileView } from './components/StudentView/StudentProfile';
-import { AICVCoachModal } from './components/StudentView/AICVCoachModal';
+import { InternshipList } from "./components/StudentView/InternshipList";
+import { StudentApplications } from "./components/StudentView/StudentApplications";
+import { StudentReports } from "./components/StudentView/StudentReports";
+import { StudentProfileView } from "./components/StudentView/StudentProfile";
+import { AICVCoachModal } from "./components/StudentView/AICVCoachModal";
 
-import { CompanyDashboard } from './components/CompanyView/CompanyDashboard';
-import { PostInternshipModal } from './components/CompanyView/PostInternshipModal';
-import { ManageApplicants } from './components/CompanyView/ManageApplicants';
-import { EvaluateInternsModal } from './components/CompanyView/EvaluateInternsModal';
+import { CompanyDashboard } from "./components/CompanyView/CompanyDashboard";
+import { PostInternshipModal } from "./components/CompanyView/PostInternshipModal";
+import { ManageApplicants } from "./components/CompanyView/ManageApplicants";
+import { EvaluateInternsModal } from "./components/CompanyView/EvaluateInternsModal";
 
-import { TeacherDashboard } from './components/TeacherView/TeacherDashboard';
-import { ReviewReports } from './components/TeacherView/ReviewReports';
-import { TeacherEvaluations } from './components/TeacherView/TeacherEvaluations';
+import { TeacherDashboard } from "./components/TeacherView/TeacherDashboard";
+import { ReviewReports } from "./components/TeacherView/ReviewReports";
+import { TeacherEvaluations } from "./components/TeacherView/TeacherEvaluations";
 
-import { AdminDashboard } from './components/AdminView/AdminDashboard';
-import { UserManagement } from './components/AdminView/UserManagement';
-import { CompanyModeration } from './components/AdminView/CompanyModeration';
-import { TeacherAssignment } from './components/AdminView/TeacherAssignment';
-import { useAuth } from './auth/AuthContext';
+import { AdminDashboard } from "./components/AdminView/AdminDashboard";
+import { UserManagement } from "./components/AdminView/UserManagement";
+import { CompanyModeration } from "./components/AdminView/CompanyModeration";
+import { TeacherAssignment } from "./components/AdminView/TeacherAssignment";
+import { useAuth } from "./auth/AuthContext";
 
 export default function App() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const currentRole: UserRole = user?.role === 'LECTURER' ? 'TEACHER' : user?.role ?? 'STUDENT';
-  const [activeTab, setActiveTab] = useState<string>(() => getDefaultTab(currentRole));
+  const currentRole: UserRole =
+    user?.role === "LECTURER" ? "TEACHER" : (user?.role ?? "STUDENT");
+  const [activeTab, setActiveTab] = useState<string>(() =>
+    getDefaultTab(currentRole),
+  );
 
   useEffect(() => {
     setActiveTab(getDefaultTab(currentRole));
   }, [currentRole]);
 
   // Core App State
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
-  const [studentProfiles, setStudentProfiles] = useState<StudentProfile[]>(INITIAL_STUDENT_PROFILES);
-  const [companyProfiles, setCompanyProfiles] = useState<CompanyProfile[]>(INITIAL_COMPANY_PROFILES);
-  const [teacherProfiles, setTeacherProfiles] = useState<TeacherProfile[]>(INITIAL_TEACHER_PROFILES);
+  const [studentProfiles, setStudentProfiles] = useState<StudentProfile[]>(
+    INITIAL_STUDENT_PROFILES,
+  );
+  const [companyProfiles, setCompanyProfiles] = useState<CompanyProfile[]>(
+    INITIAL_COMPANY_PROFILES,
+  );
+  const [teacherProfiles, setTeacherProfiles] = useState<TeacherProfile[]>(
+    INITIAL_TEACHER_PROFILES,
+  );
 
-  const [internships, setInternships] = useState<Internship[]>(INITIAL_INTERNSHIPS);
-  const [applications, setApplications] = useState<Application[]>(INITIAL_APPLICATIONS);
-  const [reports, setReports] = useState<WeeklyReport[]>(INITIAL_WEEKLY_REPORTS);
-  const [evaluations, setEvaluations] = useState<Evaluation[]>(INITIAL_EVALUATIONS);
+  const [internships, setInternships] =
+    useState<Internship[]>(INITIAL_INTERNSHIPS);
+  const [applications, setApplications] =
+    useState<Application[]>(INITIAL_APPLICATIONS);
+  const [reports, setReports] = useState<WeeklyReport[]>(
+    INITIAL_WEEKLY_REPORTS,
+  );
+  const [evaluations, setEvaluations] =
+    useState<Evaluation[]>(INITIAL_EVALUATIONS);
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
-  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<AppNotification[]>(
+    INITIAL_NOTIFICATIONS,
+  );
 
   // Modals state
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
@@ -96,21 +109,25 @@ export default function App() {
   const currentTeacher = teacherProfiles[0];
 
   const currentUserId =
-    currentRole === 'STUDENT'
+    currentRole === "STUDENT"
       ? currentStudent.userId
-      : currentRole === 'COMPANY'
-      ? currentCompany.userId
-      : currentRole === 'TEACHER'
-      ? currentTeacher.userId
-      : 'usr-adm-1';
+      : currentRole === "COMPANY"
+        ? currentCompany.userId
+        : currentRole === "TEACHER"
+          ? currentTeacher.userId
+          : "usr-adm-1";
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login', { replace: true });
+    navigate("/login", { replace: true });
   };
 
   // Student Actions
-  const handleApplyInternship = (internshipId: string, coverLetter: string, cvUrl: string) => {
+  const handleApplyInternship = (
+    internshipId: string,
+    coverLetter: string,
+    cvUrl: string,
+  ) => {
     const job = internships.find((i) => i.id === internshipId);
     if (!job) return;
 
@@ -127,9 +144,9 @@ export default function App() {
       cvUrl,
       coverLetter,
       matchScore: 92,
-      status: 'PENDING',
-      appliedAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
+      status: "PENDING",
+      appliedAt: new Date().toISOString().split("T")[0],
+      updatedAt: new Date().toISOString().split("T")[0],
     };
 
     setApplications([newApp, ...applications]);
@@ -138,15 +155,17 @@ export default function App() {
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       userId: job.companyId,
-      title: 'Đơn ứng tuyển mới 📄',
+      title: "Đơn ứng tuyển mới 📄",
       message: `Sinh viên ${currentStudent.fullname} đã nộp đơn ứng tuyển vị trí ${job.title}.`,
-      type: 'APPLICATION',
+      type: "APPLICATION",
       read: false,
-      createdAt: 'Vừa xong',
+      createdAt: "Vừa xong",
     };
     setNotifications([newNotif, ...notifications]);
 
-    alert(`Ứng tuyển vị trí "${job.title}" thành công! Doanh nghiệp sẽ xem xét hồ sơ của bạn.`);
+    alert(
+      `Ứng tuyển vị trí "${job.title}" thành công! Doanh nghiệp sẽ xem xét hồ sơ của bạn.`,
+    );
   };
 
   const handleSubmitReport = (reportData: Partial<WeeklyReport>) => {
@@ -154,18 +173,19 @@ export default function App() {
       id: `rep-${Date.now()}`,
       studentId: currentStudent.id,
       studentName: currentStudent.fullname,
-      internshipId: currentStudent.activeInternshipId || 'int-1',
-      companyName: 'FPT Software',
+      internshipId: currentStudent.activeInternshipId || "int-1",
+      companyName: "FPT Software",
       weekNumber: reportData.weekNumber || reports.length + 1,
-      startDate: reportData.startDate || new Date().toISOString().split('T')[0],
-      endDate: reportData.endDate || new Date().toISOString().split('T')[0],
-      tasksCompleted: reportData.tasksCompleted || '',
-      plansNextWeek: reportData.plansNextWeek || '',
-      learningsAndChallenges: reportData.learningsAndChallenges || '',
-      attachmentName: reportData.attachmentName || 'BaoCao.pdf',
-      attachmentUrl: reportData.attachmentUrl || 'https://pdfobject.com/pdf/sample.pdf',
-      status: 'SUBMITTED',
-      submittedAt: new Date().toISOString().split('T')[0],
+      startDate: reportData.startDate || new Date().toISOString().split("T")[0],
+      endDate: reportData.endDate || new Date().toISOString().split("T")[0],
+      tasksCompleted: reportData.tasksCompleted || "",
+      plansNextWeek: reportData.plansNextWeek || "",
+      learningsAndChallenges: reportData.learningsAndChallenges || "",
+      attachmentName: reportData.attachmentName || "BaoCao.pdf",
+      attachmentUrl:
+        reportData.attachmentUrl || "https://pdfobject.com/pdf/sample.pdf",
+      status: "SUBMITTED",
+      submittedAt: new Date().toISOString().split("T")[0],
     };
 
     setReports([newReport, ...reports]);
@@ -173,7 +193,7 @@ export default function App() {
 
   const handleUpdateStudentProfile = (updated: Partial<StudentProfile>) => {
     setStudentProfiles((prev) =>
-      prev.map((s) => (s.id === currentStudent.id ? { ...s, ...updated } : s))
+      prev.map((s) => (s.id === currentStudent.id ? { ...s, ...updated } : s)),
     );
   };
 
@@ -184,19 +204,19 @@ export default function App() {
       companyId: currentCompany.id,
       companyName: currentCompany.companyName,
       companyLogo: currentCompany.logo,
-      title: posting.title || 'Mới',
-      department: posting.department || 'Phần mềm',
-      location: posting.location || 'TP. HCM',
-      type: 'Full-time',
-      stipend: posting.stipend || '6,000,000 VNĐ',
-      description: posting.description || '',
+      title: posting.title || "Mới",
+      department: posting.department || "Phần mềm",
+      location: posting.location || "TP. HCM",
+      type: "Full-time",
+      stipend: posting.stipend || "6,000,000 VNĐ",
+      description: posting.description || "",
       requirements: posting.requirements || [],
       requiredSkills: posting.requiredSkills || [],
       slots: posting.slots || 5,
       filledSlots: 0,
-      deadline: posting.deadline || '2026-09-01',
-      createdAt: new Date().toISOString().split('T')[0],
-      status: 'ACTIVE',
+      deadline: posting.deadline || "2026-09-01",
+      createdAt: new Date().toISOString().split("T")[0],
+      status: "ACTIVE",
     };
 
     setInternships([newJob, ...internships]);
@@ -205,7 +225,7 @@ export default function App() {
   const handleUpdateApplicationStatus = (
     appId: string,
     status: ApplicationStatus,
-    feedback?: string
+    feedback?: string,
   ) => {
     setApplications((prev) =>
       prev.map((a) =>
@@ -214,49 +234,65 @@ export default function App() {
               ...a,
               status,
               companyFeedback: feedback || a.companyFeedback,
-              updatedAt: new Date().toISOString().split('T')[0],
+              updatedAt: new Date().toISOString().split("T")[0],
             }
-          : a
-      )
+          : a,
+      ),
     );
   };
 
   const handleSubmitEvaluation = (evalData: Partial<Evaluation>) => {
     const newEval: Evaluation = {
       id: `eval-${Date.now()}`,
-      studentId: evalData.studentId || 'std-1',
-      studentName: evalData.studentName || 'Phạm Hoàng Sơn',
-      internshipId: evalData.internshipId || 'int-1',
+      studentId: evalData.studentId || "std-1",
+      studentName: evalData.studentName || "Phạm Hoàng Sơn",
+      internshipId: evalData.internshipId || "int-1",
       companyId: currentCompany.id,
       companyName: currentCompany.companyName,
       technicalScore: evalData.technicalScore || 9,
       softSkillScore: evalData.softSkillScore || 8.5,
       disciplineScore: evalData.disciplineScore || 9.5,
       overallScore: evalData.overallScore || 9,
-      companyFeedback: evalData.companyFeedback || '',
-      evaluatedAt: new Date().toISOString().split('T')[0],
+      companyFeedback: evalData.companyFeedback || "",
+      evaluatedAt: new Date().toISOString().split("T")[0],
     };
 
-    setEvaluations([newEval, ...evaluations.filter((e) => e.studentId !== newEval.studentId)]);
+    setEvaluations([
+      newEval,
+      ...evaluations.filter((e) => e.studentId !== newEval.studentId),
+    ]);
   };
 
   // Teacher Actions
-  const handleReviewReport = (reportId: string, status: WeeklyReport['status'], comment: string) => {
+  const handleReviewReport = (
+    reportId: string,
+    status: WeeklyReport["status"],
+    comment: string,
+  ) => {
     setReports((prev) =>
-      prev.map((r) => (r.id === reportId ? { ...r, status, teacherComment: comment } : r))
+      prev.map((r) =>
+        r.id === reportId ? { ...r, status, teacherComment: comment } : r,
+      ),
     );
   };
 
-  const handleSaveTeacherFeedback = (evalId: string, teacherFeedback: string) => {
+  const handleSaveTeacherFeedback = (
+    evalId: string,
+    teacherFeedback: string,
+  ) => {
     setEvaluations((prev) =>
-      prev.map((e) => (e.id === evalId ? { ...e, teacherFeedback } : e))
+      prev.map((e) => (e.id === evalId ? { ...e, teacherFeedback } : e)),
     );
   };
 
   // Admin Actions
   const handleAssignTeacher = (studentId: string, teacherId: string | null) => {
     setStudentProfiles((prev) =>
-      prev.map((s) => (s.id === studentId ? { ...s, assignedTeacherId: teacherId || undefined } : s))
+      prev.map((s) =>
+        s.id === studentId
+          ? { ...s, assignedTeacherId: teacherId || undefined }
+          : s,
+      ),
     );
 
     // Update assignedStudentIds on teacher profiles
@@ -267,7 +303,7 @@ export default function App() {
           updatedIds.push(studentId);
         }
         return { ...t, assignedStudentIds: updatedIds };
-      })
+      }),
     );
   };
 
@@ -295,7 +331,7 @@ export default function App() {
           .filter((s) => s.assignedTeacherId === t.id)
           .map((s) => s.id);
         return { ...t, assignedStudentIds: stdIds };
-      })
+      }),
     );
   };
 
@@ -304,11 +340,17 @@ export default function App() {
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       senderId: currentUserId,
-      senderName: currentRole === 'STUDENT' ? currentStudent.fullname : currentCompany.companyName,
+      senderName:
+        currentRole === "STUDENT"
+          ? currentStudent.fullname
+          : currentCompany.companyName,
       senderRole: currentRole,
       receiverId,
       content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
 
     setMessages((prev) => [...prev, newMsg]);
@@ -318,14 +360,18 @@ export default function App() {
       const autoReply: ChatMessage = {
         id: `msg-reply-${Date.now()}`,
         senderId: receiverId,
-        senderName: currentRole === 'STUDENT' ? 'FPT Software HR' : 'Phạm Hoàng Sơn',
-        senderRole: currentRole === 'STUDENT' ? 'COMPANY' : 'STUDENT',
+        senderName:
+          currentRole === "STUDENT" ? "FPT Software HR" : "Phạm Hoàng Sơn",
+        senderRole: currentRole === "STUDENT" ? "COMPANY" : "STUDENT",
         receiverId: currentUserId,
         content:
-          currentRole === 'STUDENT'
-            ? 'Dạ bên anh đã nhận được tin nhắn! Bộ phận Tuyển dụng FPT Software sẽ phản hồi trong ít phút.'
-            : 'Em đã nhận được thông tin từ quý công ty. Em cảm ơn anh/chị!',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          currentRole === "STUDENT"
+            ? "Dạ bên anh đã nhận được tin nhắn! Bộ phận Tuyển dụng FPT Software sẽ phản hồi trong ít phút."
+            : "Em đã nhận được thông tin từ quý công ty. Em cảm ơn anh/chị!",
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
       setMessages((prev) => [...prev, autoReply]);
     }, 1200);
@@ -335,7 +381,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased">
-      {user && <SessionBanner user={user} onLogout={() => void handleLogout()} />}
+      {user && (
+        <SessionBanner user={user} onLogout={() => void handleLogout()} />
+      )}
 
       {/* Main Navbar */}
       <Navbar
@@ -352,9 +400,9 @@ export default function App() {
       {/* Main Page Body Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* STUDENT VIEWS */}
-        {currentRole === 'STUDENT' && (
+        {currentRole === "STUDENT" && (
           <>
-            {activeTab === 'internships' && (
+            {activeTab === "internships" && (
               <InternshipList
                 internships={internships}
                 studentProfile={currentStudent}
@@ -362,20 +410,24 @@ export default function App() {
                 onApply={handleApplyInternship}
               />
             )}
-            {activeTab === 'applications' && (
+            {activeTab === "applications" && (
               <StudentApplications
-                applications={applications.filter((a) => a.studentId === currentStudent.id)}
+                applications={applications.filter(
+                  (a) => a.studentId === currentStudent.id,
+                )}
                 onOpenChat={() => setIsChatOpen(true)}
               />
             )}
-            {activeTab === 'reports' && (
+            {activeTab === "reports" && (
               <StudentReports
-                reports={reports.filter((r) => r.studentId === currentStudent.id)}
+                reports={reports.filter(
+                  (r) => r.studentId === currentStudent.id,
+                )}
                 studentProfile={currentStudent}
                 onSubmitReport={handleSubmitReport}
               />
             )}
-            {activeTab === 'profile' && (
+            {activeTab === "profile" && (
               <StudentProfileView
                 profile={currentStudent}
                 teacherProfiles={teacherProfiles}
@@ -387,9 +439,9 @@ export default function App() {
         )}
 
         {/* COMPANY VIEWS */}
-        {currentRole === 'COMPANY' && (
+        {currentRole === "COMPANY" && (
           <>
-            {activeTab === 'dashboard' && (
+            {activeTab === "dashboard" && (
               <CompanyDashboard
                 companyProfile={currentCompany}
                 internships={internships}
@@ -398,12 +450,16 @@ export default function App() {
                 onOpenCreatePosting={() => setIsCreateJobOpen(true)}
               />
             )}
-            {activeTab === 'postings' && (
+            {activeTab === "postings" && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900">Danh Sách Tin Tuyển Dụng Thực Tập</h2>
-                    <p className="text-xs text-slate-500">Quản lý các vị trí đang tuyển và tạo bài đăng mới.</p>
+                    <h2 className="text-xl font-bold text-slate-900">
+                      Danh Sách Tin Tuyển Dụng Thực Tập
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Quản lý các vị trí đang tuyển và tạo bài đăng mới.
+                    </p>
                   </div>
                   <button
                     onClick={() => setIsCreateJobOpen(true)}
@@ -417,13 +473,25 @@ export default function App() {
                   {internships
                     .filter((i) => i.companyId === currentCompany.id)
                     .map((job) => (
-                      <div key={job.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-                        <h3 className="font-bold text-slate-900 text-base">{job.title}</h3>
-                        <p className="text-xs text-slate-500 mt-1">{job.department} • Hạn: {job.deadline}</p>
-                        <p className="text-xs text-emerald-700 font-bold mt-2">Mức hỗ trợ: {job.stipend}</p>
+                      <div
+                        key={job.id}
+                        className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs"
+                      >
+                        <h3 className="font-bold text-slate-900 text-base">
+                          {job.title}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {job.department} • Hạn: {job.deadline}
+                        </p>
+                        <p className="text-xs text-emerald-700 font-bold mt-2">
+                          Mức hỗ trợ: {job.stipend}
+                        </p>
                         <div className="flex flex-wrap gap-1 mt-3">
                           {job.requiredSkills.map((sk) => (
-                            <span key={sk} className="bg-slate-100 text-slate-700 text-[11px] px-2 py-0.5 rounded font-medium border">
+                            <span
+                              key={sk}
+                              className="bg-slate-100 text-slate-700 text-[11px] px-2 py-0.5 rounded font-medium border"
+                            >
                               {sk}
                             </span>
                           ))}
@@ -433,7 +501,7 @@ export default function App() {
                 </div>
               </div>
             )}
-            {activeTab === 'applicants' && (
+            {activeTab === "applicants" && (
               <ManageApplicants
                 companyProfile={currentCompany}
                 applications={applications}
@@ -441,7 +509,7 @@ export default function App() {
                 onOpenChat={() => setIsChatOpen(true)}
               />
             )}
-            {activeTab === 'interns-evaluation' && (
+            {activeTab === "interns-evaluation" && (
               <EvaluateInternsModal
                 companyProfile={currentCompany}
                 evaluations={evaluations}
@@ -454,9 +522,9 @@ export default function App() {
         )}
 
         {/* TEACHER VIEWS */}
-        {currentRole === 'TEACHER' && (
+        {currentRole === "TEACHER" && (
           <>
-            {activeTab === 'students-list' && (
+            {activeTab === "students-list" && (
               <TeacherDashboard
                 teacherProfile={currentTeacher}
                 assignedStudents={studentProfiles}
@@ -465,10 +533,13 @@ export default function App() {
                 onNavigateTab={setActiveTab}
               />
             )}
-            {activeTab === 'review-reports' && (
-              <ReviewReports reports={reports} onReviewReport={handleReviewReport} />
+            {activeTab === "review-reports" && (
+              <ReviewReports
+                reports={reports}
+                onReviewReport={handleReviewReport}
+              />
             )}
-            {activeTab === 'evaluation-list' && (
+            {activeTab === "evaluation-list" && (
               <TeacherEvaluations
                 evaluations={evaluations}
                 assignedStudents={studentProfiles}
@@ -479,10 +550,12 @@ export default function App() {
         )}
 
         {/* ADMIN VIEWS */}
-        {currentRole === 'ADMIN' && (
+        {currentRole === "ADMIN" && (
           <>
-            {activeTab === 'stats-dashboard' && <AdminDashboard stats={MOCK_DASHBOARD_STATS} />}
-            {activeTab === 'teacher-assignment' && (
+            {activeTab === "stats-dashboard" && (
+              <AdminDashboard stats={MOCK_DASHBOARD_STATS} />
+            )}
+            {activeTab === "teacher-assignment" && (
               <TeacherAssignment
                 students={studentProfiles}
                 teachers={teacherProfiles}
@@ -490,19 +563,16 @@ export default function App() {
                 onBatchAutoAssign={handleBatchAutoAssign}
               />
             )}
-            {activeTab === 'user-management' && (
-              <UserManagement
-                users={users}
-                onToggleUserLock={(id) => alert(`Đã cập nhật trạng thái tài khoản ${id}`)}
-              />
-            )}
-            {activeTab === 'company-approval' && (
+            {activeTab === "user-management" && <UserManagement />}
+            {activeTab === "company-approval" && (
               <CompanyModeration
                 companies={companyProfiles}
                 internships={internships}
                 onToggleVerifyCompany={(cmpId) =>
                   setCompanyProfiles((prev) =>
-                    prev.map((c) => (c.id === cmpId ? { ...c, verified: !c.verified } : c))
+                    prev.map((c) =>
+                      c.id === cmpId ? { ...c, verified: !c.verified } : c,
+                    ),
                   )
                 }
               />
@@ -515,12 +585,15 @@ export default function App() {
       <footer className="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="font-semibold text-slate-700">
-            Hệ Thống Hỗ Trợ Tìm Kiếm & Quản Lý Thực Tập Cho Sinh Viên (InternConnect) © 2026
+            Hệ Thống Hỗ Trợ Tìm Kiếm & Quản Lý Thực Tập Cho Sinh Viên
+            (InternConnect) © 2026
           </p>
           <div className="flex items-center gap-4 text-slate-500">
             <span>Báo cáo đề tài thực tập tốt nghiệp</span>
             <span>•</span>
-            <span className="font-mono text-blue-600 font-bold">PostgreSQL + NestJS + React</span>
+            <span className="font-mono text-blue-600 font-bold">
+              PostgreSQL + NestJS + React
+            </span>
           </div>
         </div>
       </footer>
@@ -531,7 +604,9 @@ export default function App() {
         onClose={() => setIsNotifsOpen(false)}
         notifications={notifications}
         onMarkAsRead={(id) =>
-          setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+          )
         }
         onMarkAllAsRead={() =>
           setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
@@ -566,13 +641,13 @@ export default function App() {
 
 function getDefaultTab(role: UserRole): string {
   switch (role) {
-    case 'STUDENT':
-      return 'internships';
-    case 'COMPANY':
-      return 'dashboard';
-    case 'TEACHER':
-      return 'students-list';
-    case 'ADMIN':
-      return 'stats-dashboard';
+    case "STUDENT":
+      return "internships";
+    case "COMPANY":
+      return "dashboard";
+    case "TEACHER":
+      return "students-list";
+    case "ADMIN":
+      return "stats-dashboard";
   }
 }

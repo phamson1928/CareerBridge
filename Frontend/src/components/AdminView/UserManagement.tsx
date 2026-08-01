@@ -1,116 +1,347 @@
-import React, { useState } from 'react';
-import { User, UserRole } from '../../types';
-import { Users, Search, ShieldCheck, Lock, Unlock, Mail, Filter } from 'lucide-react';
+import React, { FormEvent, useCallback, useEffect, useState } from "react";
+import { Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { getApiErrorMessage } from "../../auth/api";
+import type { AuthRole } from "../../auth/auth.types";
+import { ManagedUser, UserStatus, usersApi } from "../../users/api";
 
-interface UserManagementProps {
-  users: User[];
-  onToggleUserLock: (userId: string) => void;
-}
+const roles: AuthRole[] = ["STUDENT", "COMPANY", "LECTURER", "ADMIN"];
+const statuses: UserStatus[] = ["ACTIVE", "INACTIVE", "BANNED"];
 
-export const UserManagement: React.FC<UserManagementProps> = ({ users, onToggleUserLock }) => {
-  const [filterRole, setFilterRole] = useState<string>('ALL');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredUsers = users.filter((u) => {
-    const matchesRole = filterRole === 'ALL' || u.role === filterRole;
-    const matchesSearch =
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesRole && matchesSearch;
+export const UserManagement: React.FC = () => {
+  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState<AuthRole | "">("");
+  const [status, setStatus] = useState<UserStatus | "">("");
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: "",
+    password: "",
+    role: "STUDENT" as AuthRole,
   });
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await usersApi.list({
+        page,
+        limit: 20,
+        search: search || undefined,
+        role: role || undefined,
+        status: status || undefined,
+      });
+      setUsers(result.items);
+      setTotal(result.pagination.total);
+      setTotalPages(Math.max(result.pagination.totalPages, 1));
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }, [page, role, search, status]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadUsers(), 250);
+    return () => window.clearTimeout(timer);
+  }, [loadUsers]);
+
+  const updateUser = async (
+    id: string,
+    input: { role?: AuthRole; status?: UserStatus },
+  ) => {
+    setSavingId(id);
+    setError(null);
+    try {
+      const updated = await usersApi.update(id, input);
+      setUsers((current) =>
+        current.map((item) => (item.id === id ? updated : item)),
+      );
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const createUser = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingId("create");
+    setError(null);
+    try {
+      await usersApi.create(newUser);
+      setNewUser({ email: "", password: "", role: "STUDENT" });
+      setIsCreateOpen(false);
+      setPage(1);
+      await loadUsers();
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const deleteUser = async (user: ManagedUser) => {
+    if (
+      !window.confirm(
+        `Xóa tài khoản ${user.email}? Thao tác này không thể hoàn tác.`,
+      )
+    )
+      return;
+    setSavingId(user.id);
+    setError(null);
+    try {
+      await usersApi.remove(user.id);
+      await loadUsers();
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Quản Lý Người Dùng & Phân Quyền RBAC</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Quản lý danh sách tài khoản Sinh viên, Doanh nghiệp, Giảng viên và Admin.
-          </p>
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">
+              Quản lý người dùng
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Dữ liệu được lấy trực tiếp từ hệ thống. Chỉ Admin có quyền thao
+              tác.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs"
+          >
+            <Plus className="w-4 h-4" /> Tạo tài khoản
+          </button>
         </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3 py-1.5 text-xs text-slate-700">
-            <Search className="w-3.5 h-3.5 text-slate-400" />
+        <div className="flex flex-col md:flex-row gap-2">
+          <div className="flex flex-1 items-center gap-2 bg-slate-100 rounded-xl px-3 py-2 text-xs text-slate-700">
+            <Search className="w-4 h-4 text-slate-400" />
             <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm tên hoặc email..."
-              className="bg-transparent focus:outline-none w-36"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Tìm email..."
+              className="bg-transparent focus:outline-none w-full"
             />
           </div>
-
           <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
+            value={role}
+            onChange={(event) => {
+              setRole(event.target.value as AuthRole | "");
+              setPage(1);
+            }}
             className="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-semibold"
           >
-            <option value="ALL">Tất cả vai trò</option>
-            <option value="STUDENT">Sinh viên</option>
-            <option value="COMPANY">Doanh nghiệp</option>
-            <option value="TEACHER">Giảng viên</option>
-            <option value="ADMIN">Quản trị viên</option>
+            <option value="">Tất cả vai trò</option>
+            {roles.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
           </select>
+          <select
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value as UserStatus | "");
+              setPage(1);
+            }}
+            className="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-semibold"
+          >
+            <option value="">Tất cả trạng thái</option>
+            {statuses.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => void loadUsers()}
+            className="p-2 border border-slate-200 rounded-xl text-slate-600"
+            aria-label="Tải lại danh sách"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
+        {error && <p className="text-xs text-rose-600">{error}</p>}
       </div>
+
+      {isCreateOpen && (
+        <form
+          onSubmit={(event) => void createUser(event)}
+          className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs grid grid-cols-1 md:grid-cols-4 gap-3"
+        >
+          <input
+            required
+            type="email"
+            value={newUser.email}
+            onChange={(event) =>
+              setNewUser({ ...newUser, email: event.target.value })
+            }
+            placeholder="Email"
+            className="border border-slate-200 rounded-xl px-3 py-2 text-sm"
+          />
+          <input
+            required
+            minLength={8}
+            type="password"
+            value={newUser.password}
+            onChange={(event) =>
+              setNewUser({ ...newUser, password: event.target.value })
+            }
+            placeholder="Mật khẩu (ít nhất 8 ký tự)"
+            className="border border-slate-200 rounded-xl px-3 py-2 text-sm"
+          />
+          <select
+            value={newUser.role}
+            onChange={(event) =>
+              setNewUser({ ...newUser, role: event.target.value as AuthRole })
+            }
+            className="border border-slate-200 rounded-xl px-3 py-2 text-sm"
+          >
+            {roles.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+          <div className="flex gap-2">
+            <button
+              disabled={savingId === "create"}
+              className="px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold disabled:opacity-50"
+            >
+              Tạo
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(false)}
+              className="px-3 py-2 bg-slate-100 rounded-xl text-xs font-bold"
+            >
+              Hủy
+            </button>
+          </div>
+        </form>
+      )}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
               <tr>
-                <th className="p-4">Người dùng</th>
-                <th className="p-4">Email / Tài khoản</th>
-                <th className="p-4">Vai trò (Role)</th>
-                <th className="p-4">Ngày tham gia</th>
+                <th className="p-4">Email</th>
+                <th className="p-4">Vai trò</th>
+                <th className="p-4">Trạng thái</th>
+                <th className="p-4">Ngày tạo</th>
                 <th className="p-4 text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredUsers.map((usr) => (
-                <tr key={usr.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 flex items-center gap-3">
-                    <img
-                      src={usr.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                      alt={usr.name}
-                      className="w-8 h-8 rounded-full object-cover border border-slate-200"
-                    />
-                    <span className="font-bold text-slate-900">{usr.name}</span>
-                  </td>
-
-                  <td className="p-4 text-slate-600 font-mono text-[11px]">{usr.email}</td>
-
-                  <td className="p-4">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
-                        usr.role === 'STUDENT'
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : usr.role === 'COMPANY'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : usr.role === 'TEACHER'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200'
-                          : 'bg-rose-50 text-rose-700 border-rose-200'
-                      }`}
-                    >
-                      {usr.role}
-                    </span>
-                  </td>
-
-                  <td className="p-4 text-slate-500">{usr.createdAt}</td>
-
-                  <td className="p-4 text-right">
-                    <button
-                      onClick={() => onToggleUserLock(usr.id)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] transition-colors"
-                    >
-                      Đang hoạt động (Khóa)
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center">
+                    Đang tải...
                   </td>
                 </tr>
-              ))}
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center">
+                    Không có tài khoản phù hợp.
+                  </td>
+                </tr>
+              ) : (
+                users.map((user) => (
+                  <tr key={user.id} className="hover:bg-slate-50">
+                    <td className="p-4 font-mono text-[11px]">{user.email}</td>
+                    <td className="p-4">
+                      <select
+                        disabled={savingId === user.id}
+                        value={user.role}
+                        onChange={(event) =>
+                          void updateUser(user.id, {
+                            role: event.target.value as AuthRole,
+                          })
+                        }
+                        className="border border-slate-200 rounded-lg px-2 py-1 bg-white"
+                      >
+                        {roles.map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-4">
+                      <select
+                        disabled={savingId === user.id}
+                        value={user.status}
+                        onChange={(event) =>
+                          void updateUser(user.id, {
+                            status: event.target.value as UserStatus,
+                          })
+                        }
+                        className="border border-slate-200 rounded-lg px-2 py-1 bg-white"
+                      >
+                        {statuses.map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-4">
+                      {new Intl.DateTimeFormat("vi-VN").format(
+                        new Date(user.createdAt),
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      <button
+                        disabled={savingId === user.id}
+                        onClick={() => void deleteUser(user)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg font-bold disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Xóa
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
+        </div>
+        <div className="flex items-center justify-between p-4 border-t text-xs">
+          <span>{total} tài khoản</span>
+          <div className="flex gap-2">
+            <button
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((value) => value - 1)}
+              className="px-3 py-1.5 rounded-lg border disabled:opacity-50"
+            >
+              Trước
+            </button>
+            <span className="py-1.5">
+              Trang {page}/{totalPages}
+            </span>
+            <button
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage((value) => value + 1)}
+              className="px-3 py-1.5 rounded-lg border disabled:opacity-50"
+            >
+              Sau
+            </button>
+          </div>
         </div>
       </div>
     </div>
