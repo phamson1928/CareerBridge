@@ -1,8 +1,10 @@
-export type UserRole = 'STUDENT' | 'COMPANY' | 'TEACHER' | 'ADMIN';
+export type UserRole = "STUDENT" | "COMPANY" | "TEACHER" | "ADMIN";
 
-export type ApplicationStatus = 'PENDING' | 'REVIEWING' | 'ACCEPTED' | 'REJECTED';
+export type ApplicationStatus =
+  "PENDING" | "REVIEWING" | "ACCEPTED" | "REJECTED";
 
-export type ReportStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'NEEDS_REVISION';
+export type ReportStatus =
+  "DRAFT" | "SUBMITTED" | "APPROVED" | "NEEDS_REVISION";
 
 export interface User {
   id: string;
@@ -24,6 +26,7 @@ export interface StudentProfile {
   skills: string[];
   cvUrl?: string;
   cvName?: string;
+  cvFileId?: string;
   summary?: string;
   phone?: string;
   assignedTeacherId?: string;
@@ -68,7 +71,7 @@ export interface Internship {
   title: string;
   department: string;
   location: string;
-  type: 'Full-time' | 'Part-time' | 'Hybrid' | 'Remote';
+  type: "Full-time" | "Part-time" | "Hybrid" | "Remote";
   stipend: string;
   description: string;
   requirements: string[];
@@ -77,7 +80,7 @@ export interface Internship {
   filledSlots: number;
   deadline: string;
   createdAt: string;
-  status: 'ACTIVE' | 'CLOSED';
+  status: "ACTIVE" | "CLOSED";
 }
 
 export interface Application {
@@ -127,13 +130,13 @@ export interface Evaluation {
   companyId: string;
   companyName: string;
   teacherId?: string;
-  
+
   // Scores (1-10)
   technicalScore: number;
   softSkillScore: number;
   disciplineScore: number;
   overallScore: number;
-  
+
   companyFeedback: string;
   teacherFeedback?: string;
   evaluatedAt: string;
@@ -154,7 +157,7 @@ export interface AppNotification {
   userId: string;
   title: string;
   message: string;
-  type: 'APPLICATION' | 'REPORT' | 'EVALUATION' | 'SYSTEM' | 'CHAT';
+  type: "APPLICATION" | "REPORT" | "EVALUATION" | "SYSTEM" | "CHAT";
   read: boolean;
   createdAt: string;
 }

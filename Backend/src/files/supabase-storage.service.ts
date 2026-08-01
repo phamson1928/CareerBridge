@@ -30,9 +30,12 @@ export class SupabaseStorageService {
       `/storage/v1/object/upload/sign/${this.bucket}/${encodedKey}`,
       {},
     );
-    const separator = payload.url.includes('?') ? '&' : '?';
+    const uploadUrl = this.toAbsoluteUrl(payload.url);
+    const separator = uploadUrl.includes('?') ? '&' : '?';
     return {
-      uploadUrl: `${this.toAbsoluteUrl(payload.url)}${separator}token=${encodeURIComponent(payload.token)}`,
+      uploadUrl: uploadUrl.includes('token=')
+        ? uploadUrl
+        : `${uploadUrl}${separator}token=${encodeURIComponent(payload.token)}`,
     };
   }
 
@@ -83,7 +86,11 @@ export class SupabaseStorageService {
   }
 
   private toAbsoluteUrl(path: string): string {
-    return path.startsWith('http') ? path : `${this.url}${path}`;
+    if (path.startsWith('http')) return path;
+    const storageBaseUrl = `${this.url}/storage/v1`;
+    return path.startsWith('/storage/v1/')
+      ? `${this.url}${path}`
+      : `${storageBaseUrl}${path.startsWith('/') ? path : `/${path}`}`;
   }
 
   private encodeStorageKey(storageKey: string): string {

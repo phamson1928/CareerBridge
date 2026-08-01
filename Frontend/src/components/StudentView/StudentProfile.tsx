@@ -1,6 +1,20 @@
-import React, { useState } from 'react';
-import { StudentProfile, TeacherProfile } from '../../types';
-import { User, GraduationCap, Award, FileText, Plus, Trash2, Edit3, Save, Sparkles, Code, Check, UserCheck } from 'lucide-react';
+import React, { useState } from "react";
+import { StudentProfile, TeacherProfile } from "../../types";
+import {
+  User,
+  GraduationCap,
+  Award,
+  FileText,
+  Plus,
+  Trash2,
+  Edit3,
+  Save,
+  Sparkles,
+  Code,
+  Check,
+  UserCheck,
+} from "lucide-react";
+import { CvUpload } from "./CvUpload";
 
 interface StudentProfileViewProps {
   profile: StudentProfile;
@@ -19,8 +33,8 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
   const [fullname, setFullname] = useState(profile.fullname);
   const [major, setMajor] = useState(profile.major);
   const [gpa, setGpa] = useState(profile.gpa);
-  const [summary, setSummary] = useState(profile.summary || '');
-  const [newSkill, setNewSkill] = useState('');
+  const [summary, setSummary] = useState(profile.summary || "");
+  const [newSkill, setNewSkill] = useState("");
   const [skills, setSkills] = useState<string[]>(profile.skills);
 
   const handleAddSkill = () => {
@@ -28,7 +42,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
     if (!skills.includes(newSkill.trim())) {
       setSkills([...skills, newSkill.trim()]);
     }
-    setNewSkill('');
+    setNewSkill("");
   };
 
   const handleRemoveSkill = (skillToRemove: string) => {
@@ -56,18 +70,24 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
               {profile.fullname.charAt(0)}
             </div>
             <div>
-              <h2 className="text-xl font-extrabold text-slate-900">{profile.fullname}</h2>
+              <h2 className="text-xl font-extrabold text-slate-900">
+                {profile.fullname}
+              </h2>
               <p className="text-xs font-semibold text-blue-600 flex items-center gap-1 mt-0.5">
-                <GraduationCap className="w-4 h-4" /> MSSV: {profile.studentCode} • {profile.major}
+                <GraduationCap className="w-4 h-4" /> MSSV:{" "}
+                {profile.studentCode} • {profile.major}
               </p>
-              <p className="text-xs text-slate-500 mt-1">{profile.university}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {profile.university}
+              </p>
               {profile.assignedTeacherId && (
                 <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg text-xs font-semibold">
                   <UserCheck className="w-3.5 h-3.5 text-indigo-600" />
                   <span>
-                    GVHD:{' '}
-                    {teacherProfiles?.find((t) => t.id === profile.assignedTeacherId)?.fullname ||
-                      'TS. Nguyễn Văn Anh'}
+                    GVHD:{" "}
+                    {teacherProfiles?.find(
+                      (t) => t.id === profile.assignedTeacherId,
+                    )?.fullname || "TS. Nguyễn Văn Anh"}
                   </span>
                 </div>
               )}
@@ -104,7 +124,9 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
           {isEditing ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-800 mb-1">Họ và tên:</label>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Họ và tên:
+                </label>
                 <input
                   type="text"
                   value={fullname}
@@ -114,7 +136,9 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">Ngành học:</label>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Ngành học:
+                </label>
                 <input
                   type="text"
                   value={major}
@@ -124,7 +148,9 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">Điểm GPA tích lũy:</label>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Điểm GPA tích lũy:
+                </label>
                 <input
                   type="number"
                   step="0.01"
@@ -135,7 +161,9 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
               </div>
 
               <div className="md:col-span-2">
-                <label className="block font-bold text-slate-800 mb-1">Tóm tắt mục tiêu & bản thân:</label>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Tóm tắt mục tiêu & bản thân:
+                </label>
                 <textarea
                   rows={3}
                   value={summary}
@@ -146,9 +174,11 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
             </div>
           ) : (
             <div>
-              <h3 className="font-bold text-slate-900 text-sm mb-1">Tóm tắt mục tiêu & định hướng:</h3>
+              <h3 className="font-bold text-slate-900 text-sm mb-1">
+                Tóm tắt mục tiêu & định hướng:
+              </h3>
               <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                {profile.summary || 'Chưa cập nhật tóm tắt bản thân.'}
+                {profile.summary || "Chưa cập nhật tóm tắt bản thân."}
               </p>
             </div>
           )}
@@ -157,7 +187,8 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                <Code className="w-4 h-4 text-blue-600" /> Kỹ Năng Chuyên Môn ({skills.length})
+                <Code className="w-4 h-4 text-blue-600" /> Kỹ Năng Chuyên Môn (
+                {skills.length})
               </h3>
             </div>
 
@@ -201,15 +232,27 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
 
           {/* Projects */}
           <div>
-            <h3 className="font-bold text-slate-900 text-sm mb-3">Dự Án Cá Nhân Tiêu Biểu:</h3>
+            <h3 className="font-bold text-slate-900 text-sm mb-3">
+              Dự Án Cá Nhân Tiêu Biểu:
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {profile.projects?.map((proj, idx) => (
-                <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                  <h4 className="font-bold text-slate-900 text-sm">{proj.name}</h4>
-                  <p className="text-slate-600 mt-1 leading-relaxed">{proj.description}</p>
+                <div
+                  key={idx}
+                  className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs"
+                >
+                  <h4 className="font-bold text-slate-900 text-sm">
+                    {proj.name}
+                  </h4>
+                  <p className="text-slate-600 mt-1 leading-relaxed">
+                    {proj.description}
+                  </p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {proj.techStack.map((tech) => (
-                      <span key={tech} className="bg-white text-slate-700 px-2 py-0.5 rounded text-[10px] border border-slate-200 font-medium">
+                      <span
+                        key={tech}
+                        className="bg-white text-slate-700 px-2 py-0.5 rounded text-[10px] border border-slate-200 font-medium"
+                      >
                         {tech}
                       </span>
                     ))}
@@ -220,25 +263,32 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
           </div>
 
           {/* CV Attachment Box */}
-          <div className="p-4 bg-indigo-50/60 border border-indigo-200 rounded-2xl flex items-center justify-between">
+          <div className="p-4 bg-indigo-50/60 border border-indigo-200 rounded-2xl">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-indigo-600 text-white rounded-xl">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-slate-900 text-xs">Hồ Sơ CV Hiện Tại:</h4>
-                <p className="text-xs text-indigo-900 font-semibold">{profile.cvName || 'Pham_Hoang_Son_CV.pdf'}</p>
+                <h4 className="font-bold text-slate-900 text-xs">
+                  Hồ Sơ CV Hiện Tại:
+                </h4>
+                <p className="text-xs text-indigo-900 font-semibold">
+                  Lưu trữ riêng tư bằng signed URL
+                </p>
               </div>
             </div>
-
-            <a
-              href={profile.cvUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="px-4 py-2 bg-white text-indigo-700 font-bold rounded-xl text-xs shadow-2xs border border-indigo-200 hover:bg-indigo-100 transition-colors"
-            >
-              Xem / Tải CV (.pdf)
-            </a>
+            <div className="mt-4">
+              <CvUpload
+                fileId={profile.cvFileId}
+                fileName={profile.cvName}
+                onUploaded={(file) =>
+                  onUpdateProfile({
+                    cvFileId: file.id,
+                    cvName: file.originalName,
+                  })
+                }
+              />
+            </div>
           </div>
         </div>
       </div>
