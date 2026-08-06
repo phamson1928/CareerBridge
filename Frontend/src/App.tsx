@@ -427,14 +427,7 @@ export default function App() {
                 onSubmitReport={handleSubmitReport}
               />
             )}
-            {activeTab === "profile" && (
-              <StudentProfileView
-                profile={currentStudent}
-                teacherProfiles={teacherProfiles}
-                onUpdateProfile={handleUpdateStudentProfile}
-                onOpenAICoach={() => setIsAICoachOpen(true)}
-              />
-            )}
+            {activeTab === "profile" && <StudentProfileView />}
           </>
         )}
 

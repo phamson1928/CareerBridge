@@ -1,297 +1,355 @@
-import React, { useState } from "react";
-import { StudentProfile, TeacherProfile } from "../../types";
+import React, { FormEvent, useEffect, useState } from "react";
+import axios from "axios";
 import {
-  User,
-  GraduationCap,
-  Award,
-  FileText,
-  Plus,
-  Trash2,
   Edit3,
+  FileText,
+  GraduationCap,
+  LoaderCircle,
   Save,
-  Sparkles,
-  Code,
-  Check,
-  UserCheck,
+  Trash2,
 } from "lucide-react";
+import { getApiErrorMessage } from "../../auth/api";
+import {
+  studentsApi,
+  StudentProfileInput,
+  StudentProfileRecord,
+} from "../../students/api";
 import { CvUpload } from "./CvUpload";
 
-interface StudentProfileViewProps {
-  profile: StudentProfile;
-  teacherProfiles?: TeacherProfile[];
-  onUpdateProfile: (updated: Partial<StudentProfile>) => void;
-  onOpenAICoach: () => void;
-}
+const emptyForm: StudentProfileInput = {
+  studentCode: "",
+  fullName: "",
+  major: "",
+  phone: "",
+  summary: "",
+  gpa: null,
+};
 
-export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
-  profile,
-  teacherProfiles,
-  onUpdateProfile,
-  onOpenAICoach,
-}) => {
+export const StudentProfileView: React.FC = () => {
+  const [profile, setProfile] = useState<StudentProfileRecord | null>(null);
+  const [form, setForm] = useState<StudentProfileInput>(emptyForm);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [fullname, setFullname] = useState(profile.fullname);
-  const [major, setMajor] = useState(profile.major);
-  const [gpa, setGpa] = useState(profile.gpa);
-  const [summary, setSummary] = useState(profile.summary || "");
-  const [newSkill, setNewSkill] = useState("");
-  const [skills, setSkills] = useState<string[]>(profile.skills);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddSkill = () => {
-    if (!newSkill.trim()) return;
-    if (!skills.includes(newSkill.trim())) {
-      setSkills([...skills, newSkill.trim()]);
-    }
-    setNewSkill("");
-  };
-
-  const handleRemoveSkill = (skillToRemove: string) => {
-    setSkills(skills.filter((s) => s !== skillToRemove));
-  };
-
-  const handleSave = () => {
-    onUpdateProfile({
-      fullname,
-      major,
-      gpa: Number(gpa),
-      summary,
-      skills,
+  const applyProfile = (nextProfile: StudentProfileRecord) => {
+    setProfile(nextProfile);
+    setForm({
+      studentCode: nextProfile.studentCode,
+      fullName: nextProfile.fullName,
+      major: nextProfile.major,
+      phone: nextProfile.phone ?? "",
+      summary: nextProfile.summary ?? "",
+      gpa: nextProfile.gpa,
+      cvFileId: nextProfile.cvFileId,
     });
-    setIsEditing(false);
   };
+
+  useEffect(() => {
+    let active = true;
+    const loadProfile = async () => {
+      try {
+        const result = await studentsApi.getMine();
+        if (active) applyProfile(result);
+      } catch (requestError) {
+        if (
+          axios.isAxiosError(requestError) &&
+          requestError.response?.status === 404
+        ) {
+          if (active) setIsEditing(true);
+        } else if (active) {
+          setError(getApiErrorMessage(requestError));
+        }
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+    void loadProfile();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setError(null);
+    try {
+      const payload: StudentProfileInput = {
+        ...form,
+        phone: form.phone?.trim() || null,
+        summary: form.summary?.trim() || null,
+        gpa:
+          form.gpa === null || Number.isNaN(form.gpa) ? null : Number(form.gpa),
+      };
+      const result = profile
+        ? await studentsApi.updateMine(payload)
+        : await studentsApi.createMine(payload);
+      applyProfile(result);
+      setIsEditing(false);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteProfile = async () => {
+    if (
+      !window.confirm("Xóa hồ sơ sinh viên? Thao tác này không thể hoàn tác.")
+    )
+      return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await studentsApi.removeMine();
+      setProfile(null);
+      setForm(emptyForm);
+      setIsEditing(true);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const updateCv = async (file: { id: string; originalName: string }) => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const result = await studentsApi.updateMine({ cvFileId: file.id });
+      applyProfile(result);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl bg-white p-10 text-center text-sm text-slate-500">
+        <LoaderCircle className="mx-auto mb-3 h-5 w-5 animate-spin" />
+        Đang tải hồ sơ...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Top Banner Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs relative">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-2xl font-black shadow-md">
-              {profile.fullname.charAt(0)}
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-xl font-black text-white">
+              {profile?.fullName.charAt(0) || "S"}
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-slate-900">
-                {profile.fullname}
+                {profile?.fullName || "Hoàn thiện hồ sơ sinh viên"}
               </h2>
-              <p className="text-xs font-semibold text-blue-600 flex items-center gap-1 mt-0.5">
-                <GraduationCap className="w-4 h-4" /> MSSV:{" "}
-                {profile.studentCode} • {profile.major}
+              <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-blue-600">
+                <GraduationCap className="h-4 w-4" />
+                Thông tin hồ sơ được lưu trực tiếp trên hệ thống.
               </p>
-              <p className="text-xs text-slate-500 mt-1">
-                {profile.university}
-              </p>
-              {profile.assignedTeacherId && (
-                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg text-xs font-semibold">
-                  <UserCheck className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>
-                    GVHD:{" "}
-                    {teacherProfiles?.find(
-                      (t) => t.id === profile.assignedTeacherId,
-                    )?.fullname || "TS. Nguyễn Văn Anh"}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
+          {profile && !isEditing && (
             <button
-              onClick={onOpenAICoach}
-              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
+              onClick={() => setIsEditing(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-800 hover:bg-slate-200"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" /> AI CV Coach
+              <Edit3 className="h-4 w-4" />
+              Chỉnh sửa
             </button>
-            {isEditing ? (
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
-              >
-                <Save className="w-4 h-4" /> Lưu thay đổi
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
-              >
-                <Edit3 className="w-4 h-4" /> Chỉnh sửa
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Edit / View Info */}
-        <div className="mt-6 space-y-6">
-          {isEditing ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">
-                  Họ và tên:
-                </label>
-                <input
-                  type="text"
-                  value={fullname}
-                  onChange={(e) => setFullname(e.target.value)}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl"
-                />
-              </div>
+        {error && <p className="mt-4 text-xs text-rose-600">{error}</p>}
 
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">
-                  Ngành học:
-                </label>
-                <input
-                  type="text"
-                  value={major}
-                  onChange={(e) => setMajor(e.target.value)}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">
-                  Điểm GPA tích lũy:
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={gpa}
-                  onChange={(e) => setGpa(Number(e.target.value))}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block font-bold text-slate-800 mb-1">
-                  Tóm tắt mục tiêu & bản thân:
-                </label>
-                <textarea
-                  rows={3}
-                  value={summary}
-                  onChange={(e) => setSummary(e.target.value)}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl"
-                />
-              </div>
-            </div>
-          ) : (
+        {isEditing ? (
+          <form
+            onSubmit={(event) => void saveProfile(event)}
+            className="mt-6 grid grid-cols-1 gap-4 text-sm md:grid-cols-2"
+          >
+            <Field
+              label="Mã số sinh viên"
+              required
+              value={form.studentCode}
+              onChange={(value) => setForm({ ...form, studentCode: value })}
+            />
+            <Field
+              label="Họ và tên"
+              required
+              value={form.fullName}
+              onChange={(value) => setForm({ ...form, fullName: value })}
+            />
+            <Field
+              label="Ngành học"
+              required
+              value={form.major}
+              onChange={(value) => setForm({ ...form, major: value })}
+            />
+            <Field
+              label="Số điện thoại"
+              value={form.phone ?? ""}
+              onChange={(value) => setForm({ ...form, phone: value })}
+            />
             <div>
-              <h3 className="font-bold text-slate-900 text-sm mb-1">
-                Tóm tắt mục tiêu & định hướng:
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                {profile.summary || "Chưa cập nhật tóm tắt bản thân."}
-              </p>
+              <label className="mb-1 block text-xs font-bold text-slate-800">
+                GPA (thang 4)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="4"
+                step="0.01"
+                value={form.gpa ?? ""}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    gpa:
+                      event.target.value === ""
+                        ? null
+                        : Number(event.target.value),
+                  })
+                }
+                className="w-full rounded-xl border border-slate-300 p-2.5"
+              />
             </div>
-          )}
-
-          {/* Skill Tag Management */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                <Code className="w-4 h-4 text-blue-600" /> Kỹ Năng Chuyên Môn (
-                {skills.length})
-              </h3>
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-xs font-bold text-slate-800">
+                Tóm tắt
+              </label>
+              <textarea
+                rows={4}
+                value={form.summary ?? ""}
+                onChange={(event) =>
+                  setForm({ ...form, summary: event.target.value })
+                }
+                className="w-full rounded-xl border border-slate-300 p-2.5"
+              />
             </div>
-
-            <div className="flex flex-wrap gap-2 mb-3">
-              {skills.map((sk) => (
-                <span
-                  key={sk}
-                  className="bg-blue-50 text-blue-800 text-xs font-semibold px-3 py-1 rounded-xl border border-blue-200 flex items-center gap-1.5"
-                >
-                  {sk}
-                  {isEditing && (
-                    <button
-                      onClick={() => handleRemoveSkill(sk)}
-                      className="text-blue-400 hover:text-rose-600"
-                    >
-                      ×
-                    </button>
-                  )}
-                </span>
-              ))}
-            </div>
-
-            {isEditing && (
-              <div className="flex items-center gap-2 max-w-md">
-                <input
-                  type="text"
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  placeholder="Thêm kỹ năng mới (ví dụ: Docker, Redis)..."
-                  className="flex-1 p-2 border border-slate-300 rounded-xl text-xs"
-                />
+            <div className="flex gap-2 md:col-span-2">
+              <button
+                disabled={isSaving}
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" />
+                {profile ? "Lưu thay đổi" : "Tạo hồ sơ"}
+              </button>
+              {profile && (
                 <button
-                  onClick={handleAddSkill}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+                  type="button"
+                  onClick={() => {
+                    applyProfile(profile);
+                    setIsEditing(false);
+                  }}
+                  className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold"
                 >
-                  Thêm
+                  Hủy
                 </button>
-              </div>
-            )}
-          </div>
-
-          {/* Projects */}
-          <div>
-            <h3 className="font-bold text-slate-900 text-sm mb-3">
-              Dự Án Cá Nhân Tiêu Biểu:
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {profile.projects?.map((proj, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs"
-                >
-                  <h4 className="font-bold text-slate-900 text-sm">
-                    {proj.name}
-                  </h4>
-                  <p className="text-slate-600 mt-1 leading-relaxed">
-                    {proj.description}
-                  </p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {proj.techStack.map((tech) => (
-                      <span
-                        key={tech}
-                        className="bg-white text-slate-700 px-2 py-0.5 rounded text-[10px] border border-slate-200 font-medium"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              )}
             </div>
-          </div>
-
-          {/* CV Attachment Box */}
-          <div className="p-4 bg-indigo-50/60 border border-indigo-200 rounded-2xl">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-indigo-600 text-white rounded-xl">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-xs">
-                  Hồ Sơ CV Hiện Tại:
-                </h4>
-                <p className="text-xs text-indigo-900 font-semibold">
-                  Lưu trữ riêng tư bằng signed URL
+          </form>
+        ) : (
+          profile && (
+            <div className="mt-6 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+              <Info label="Mã số sinh viên" value={profile.studentCode} />
+              <Info label="Ngành học" value={profile.major} />
+              <Info
+                label="Số điện thoại"
+                value={profile.phone || "Chưa cập nhật"}
+              />
+              <Info
+                label="GPA"
+                value={
+                  profile.gpa === null ? "Chưa cập nhật" : `${profile.gpa}/4`
+                }
+              />
+              <div className="md:col-span-2">
+                <p className="text-xs font-bold text-slate-800">Tóm tắt</p>
+                <p className="mt-1 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+                  {profile.summary || "Chưa cập nhật"}
                 </p>
               </div>
             </div>
-            <div className="mt-4">
-              <CvUpload
-                fileId={profile.cvFileId}
-                fileName={profile.cvName}
-                onUploaded={(file) =>
-                  onUpdateProfile({
-                    cvFileId: file.id,
-                    cvName: file.originalName,
-                  })
-                }
-              />
+          )
+        )}
+      </section>
+
+      {profile && (
+        <section className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-xl bg-indigo-600 p-2.5 text-white">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">CV của bạn</h3>
+              <p className="text-xs text-indigo-900">
+                File được lưu riêng tư và truy cập bằng signed URL.
+              </p>
             </div>
           </div>
-        </div>
-      </div>
+          <CvUpload
+            fileId={profile.cvFileId ?? undefined}
+            fileName={profile.cvFile?.originalName}
+            onUploaded={(file) => void updateCv(file)}
+          />
+          {isSaving && (
+            <p className="mt-2 text-xs text-slate-500">
+              Đang lưu liên kết CV...
+            </p>
+          )}
+        </section>
+      )}
+
+      {profile && (
+        <button
+          onClick={() => void deleteProfile()}
+          disabled={isSaving}
+          className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+        >
+          <Trash2 className="h-4 w-4" />
+          Xóa hồ sơ
+        </button>
+      )}
     </div>
   );
 };
+
+function Field({
+  label,
+  value,
+  onChange,
+  required = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-bold text-slate-800">
+        {label}
+        {required ? " *" : ""}
+      </label>
+      <input
+        required={required}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-slate-300 p-2.5"
+      />
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-bold text-slate-800">{label}</p>
+      <p className="mt-1 text-slate-600">{value}</p>
+    </div>
+  );
+}
