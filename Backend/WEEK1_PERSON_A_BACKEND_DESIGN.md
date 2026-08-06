@@ -36,7 +36,7 @@ Tài liệu không triển khai code và không mở rộng sang feature của c
    - exception filter;
    - validation pipe.
 6. Đăng ký skeleton của toàn bộ module vào `AppModule` để hai người phát triển độc lập từ tuần 2.
-7. Viết script PowerShell dùng `curl.exe` để kiểm tra tự động toàn bộ endpoint Auth quan trọng.
+7. Viết unit test và e2e test cho luồng Auth quan trọng.
 8. Viết hướng dẫn môi trường, migration và hợp đồng tích hợp cho người B/frontend.
 
 ### 1.2. Ngoài phạm vi
@@ -69,7 +69,7 @@ Repository đã có những phần có thể dùng làm baseline:
 - Skeleton của tất cả module nghiệp vụ đã được đăng ký trong `AppModule`.
 - DTO đăng ký/đăng nhập, JWT strategy, guard, decorator, interceptor và filter ở mức khung.
 
-Các file hiện tại mới là nền, chưa được xem là Auth hoàn chỉnh vì chưa có `AuthController`, `AuthService`, refresh-token flow, cookie flow và script kiểm tra endpoint tương ứng.
+Các file hiện tại mới là nền, chưa được xem là Auth hoàn chỉnh vì chưa có `AuthController`, `AuthService`, refresh-token flow, cookie flow và bộ test tương ứng.
 
 Thiết kế tuần 1 ưu tiên hoàn thiện trên baseline này, không tạo lại project từ đầu và không sửa schema domain nếu không có lỗi blocking.
 
@@ -149,27 +149,27 @@ Không tạo repository abstraction riêng trong tuần 1. `AuthService` có th�
 
 ### 5.1. Bảng `User`
 
-| Field | Ý nghĩa | Quy tắc |
-|---|---|---|
-| `id` | Identity nội bộ | CUID, không lộ logic tuần tự |
-| `email` | Tên đăng nhập | unique, trim và lowercase trước khi lưu/tìm |
-| `passwordHash` | Mật khẩu đã hash | bcrypt, tuyệt đối không trả về API |
-| `role` | Role hệ thống | `ADMIN`, `STUDENT`, `LECTURER`, `COMPANY` |
-| `status` | Trạng thái truy cập | chỉ `ACTIVE` được login/gọi protected API |
-| `createdAt`, `updatedAt` | Audit thời gian cơ bản | do Prisma quản lý |
+| Field                    | Ý nghĩa                | Quy tắc                                     |
+| ------------------------ | ---------------------- | ------------------------------------------- |
+| `id`                     | Identity nội bộ        | CUID, không lộ logic tuần tự                |
+| `email`                  | Tên đăng nhập          | unique, trim và lowercase trước khi lưu/tìm |
+| `passwordHash`           | Mật khẩu đã hash       | bcrypt, tuyệt đối không trả về API          |
+| `role`                   | Role hệ thống          | `ADMIN`, `STUDENT`, `LECTURER`, `COMPANY`   |
+| `status`                 | Trạng thái truy cập    | chỉ `ACTIVE` được login/gọi protected API   |
+| `createdAt`, `updatedAt` | Audit thời gian cơ bản | do Prisma quản lý                           |
 
 ### 5.2. Bảng `RefreshToken`
 
-| Field | Ý nghĩa | Quy tắc |
-|---|---|---|
-| `id` | Session id nội bộ | CUID |
-| `userId` | Chủ phiên | xóa cascade khi xóa user |
-| `tokenHash` | SHA-256 của token gốc | unique; token gốc không lưu DB |
-| `expiresAt` | Hạn phiên | mặc định 7 ngày |
-| `revokedAt` | Thời điểm thu hồi | null khi còn hiệu lực |
-| `userAgent` | Thông tin thiết bị | optional, cắt độ dài trước khi lưu |
-| `ipAddress` | IP tạo phiên | optional; xử lý proxy đúng khi deploy |
-| `createdAt` | Thời điểm tạo | dùng cho quản lý session về sau |
+| Field       | Ý nghĩa               | Quy tắc                               |
+| ----------- | --------------------- | ------------------------------------- |
+| `id`        | Session id nội bộ     | CUID                                  |
+| `userId`    | Chủ phiên             | xóa cascade khi xóa user              |
+| `tokenHash` | SHA-256 của token gốc | unique; token gốc không lưu DB        |
+| `expiresAt` | Hạn phiên             | mặc định 7 ngày                       |
+| `revokedAt` | Thời điểm thu hồi     | null khi còn hiệu lực                 |
+| `userAgent` | Thông tin thiết bị    | optional, cắt độ dài trước khi lưu    |
+| `ipAddress` | IP tạo phiên          | optional; xử lý proxy đúng khi deploy |
+| `createdAt` | Thời điểm tạo         | dùng cho quản lý session về sau       |
 
 Schema hiện tại đã đủ cho phạm vi tuần 1. Không cần migration mới nếu migration nền đã khớp Railway.
 
@@ -635,129 +635,65 @@ Seed không phải migration và phải an toàn khi chạy lại bằng upsert 
 
 ## 13. Bảo mật và rủi ro
 
-| Rủi ro | Biện pháp tuần 1 |
-|---|---|
-| Client tự đăng ký ADMIN | whitelist role public chỉ STUDENT/COMPANY |
-| Lộ mật khẩu | bcrypt; không log request body Auth |
-| Lộ refresh token trong DB | chỉ lưu SHA-256 hash |
-| XSS lấy refresh token | cookie HttpOnly |
-| Refresh token bị replay | rotation và revoke atomically |
-| JWT cũ vẫn dùng sau khi khóa user | strategy đọc lại status từ DB mỗi request |
-| Brute force login | generic error + throttling |
-| Mass assignment | DTO + whitelist + forbidNonWhitelisted |
-| CORS quá rộng | allowlist theo `FRONTEND_URL`, bật credentials có kiểm soát |
-| Secret bị commit | `.env` ignored, `.env.example` chỉ placeholder |
-| Response làm lộ password hash | dùng explicit select/public mapper |
-| Race khi register cùng email | bắt Prisma unique violation và trả 409 |
-| Race khi refresh | conditional revoke/update trong transaction |
+| Rủi ro                            | Biện pháp tuần 1                                            |
+| --------------------------------- | ----------------------------------------------------------- |
+| Client tự đăng ký ADMIN           | whitelist role public chỉ STUDENT/COMPANY                   |
+| Lộ mật khẩu                       | bcrypt; không log request body Auth                         |
+| Lộ refresh token trong DB         | chỉ lưu SHA-256 hash                                        |
+| XSS lấy refresh token             | cookie HttpOnly                                             |
+| Refresh token bị replay           | rotation và revoke atomically                               |
+| JWT cũ vẫn dùng sau khi khóa user | strategy đọc lại status từ DB mỗi request                   |
+| Brute force login                 | generic error + throttling                                  |
+| Mass assignment                   | DTO + whitelist + forbidNonWhitelisted                      |
+| CORS quá rộng                     | allowlist theo `FRONTEND_URL`, bật credentials có kiểm soát |
+| Secret bị commit                  | `.env` ignored, `.env.example` chỉ placeholder              |
+| Response làm lộ password hash     | dùng explicit select/public mapper                          |
+| Race khi register cùng email      | bắt Prisma unique violation và trả 409                      |
+| Race khi refresh                  | conditional revoke/update trong transaction                 |
 
 CSRF ở refresh/logout được giảm bằng `SameSite=Lax` trong môi trường hiện tại. Khi chuyển sang frontend/API cross-site và dùng `SameSite=None`, phải bổ sung CSRF token hoặc kiểm tra Origin nghiêm ngặt trước khi production.
 
 ---
 
-## 14. Kế hoạch kiểm tra bằng endpoint và `curl`
+## 14. Kế hoạch kiểm thử
 
-Tuần 1 không bắt buộc viết unit test hoặc Jest E2E test. Cách kiểm tra chính là chạy ứng dụng thật, gọi endpoint bằng `curl.exe` và xác nhận đồng thời controller, validation, guard, JWT, cookie, Prisma và PostgreSQL.
+### 14.1. Unit test `AuthService`
 
-Không nên chỉ copy từng lệnh thủ công. Cần tạo một script có thể chạy lại, dự kiến:
+- Register normalize email.
+- Register hash password.
+- Register từ chối role ADMIN/LECTURER.
+- Register map unique constraint thành `409`.
+- Login đúng password tạo session và token.
+- Login sai email/password trả cùng một loại lỗi.
+- Login từ chối user không active.
+- Refresh từ chối token thiếu, sai, hết hạn, revoked.
+- Refresh revoke token cũ và tạo token mới.
+- Logout revoke session và idempotent.
+- Public user mapper không trả `passwordHash`.
 
-```text
-Backend/scripts/test-auth.ps1
-```
+### 14.2. Unit test guard
 
-Script phải tự dừng và báo lỗi khi HTTP status hoặc response body không đúng dự kiến. Kết quả cuối cùng phải trả exit code `0` khi tất cả trường hợp pass và khác `0` khi có trường hợp thất bại.
+- `RolesGuard` cho qua khi route không khai báo role.
+- Cho qua khi role đúng.
+- Trả 403 khi role sai.
+- `JwtStrategy` từ chối user không tồn tại hoặc không active.
 
-### 14.1. Nguyên tắc chạy
+### 14.3. E2E test
 
-1. Chạy backend ở `http://localhost:3000`.
-2. Script dùng base URL `http://localhost:3000/api/v1` hoặc nhận base URL qua parameter.
-3. Dùng `curl.exe`, không dùng alias `curl` của PowerShell để tránh khác hành vi giữa các máy.
-4. Dùng file cookie tạm với `-c` và `-b` để lưu/gửi refresh cookie.
-5. Lấy access token từ JSON response và gắn vào Bearer header khi gọi `/auth/me`.
-6. Dùng `-o` và `-w "%{http_code}"` để tách body và HTTP status cho assertion.
-7. Xóa file cookie/body tạm sau khi script kết thúc.
-8. Không in access token, refresh cookie hoặc password ra log CI/terminal nếu không cần thiết.
+Luồng bắt buộc:
 
-Ví dụ register:
+1. Register STUDENT thành công.
+2. Response có access token và refresh cookie.
+3. Gọi `/auth/me` bằng access token thành công.
+4. Refresh lấy access token mới và cookie mới.
+5. Refresh lại bằng token cũ thất bại.
+6. Logout thành công.
+7. Refresh sau logout thất bại.
+8. Register trùng email khác casing trả 409.
+9. Register ADMIN public thất bại.
+10. Login user bị `BANNED` thất bại.
 
-```powershell
-$baseUrl = "http://localhost:3000/api/v1"
-$cookieFile = Join-Path $env:TEMP "internhub-auth-cookies.txt"
-
-curl.exe -sS `
-  -c $cookieFile `
-  -H "Content-Type: application/json" `
-  -d '{"email":"student@example.com","password":"StrongPass123!","role":"STUDENT"}' `
-  "$baseUrl/auth/register"
-```
-
-Ví dụ refresh bằng cookie đã lưu:
-
-```powershell
-curl.exe -sS `
-  -b $cookieFile `
-  -c $cookieFile `
-  -X POST `
-  "$baseUrl/auth/refresh"
-```
-
-### 14.2. Các trường hợp bắt buộc trong script
-
-1. `POST /auth/register` với `STUDENT` trả `201`.
-2. Response register có user public, access token và header refresh cookie.
-3. Register trùng email khác chữ hoa/thường trả `409`.
-4. Register public với `ADMIN` hoặc `LECTURER` trả `400`.
-5. `POST /auth/login` đúng password trả `200` và session mới.
-6. Login sai password trả `401` và không tiết lộ email hay password sai.
-7. `GET /auth/me` không có Bearer token trả `401`.
-8. `/auth/me` với access token hợp lệ trả đúng `id`, `email`, `role`, `status`.
-9. Response không chứa `passwordHash`, `tokenHash` hoặc raw refresh token.
-10. `POST /auth/refresh` với cookie hợp lệ trả `200`, access token mới và cookie mới.
-11. Refresh lại bằng cookie/token cũ trả `401` để chứng minh rotation hoạt động.
-12. `POST /auth/logout` trả `200`, clear cookie và revoke session.
-13. Refresh sau logout trả `401`.
-14. User `BANNED` không login được.
-15. Access token đã cấp cho user vừa bị `BANNED` không gọi `/auth/me` được.
-16. Gửi field không thuộc DTO trả `400` do `forbidNonWhitelisted`.
-17. Gọi login/register quá rate limit trả `429`.
-
-### 14.3. Kiểm tra role guard bằng endpoint mẫu
-
-Để xác nhận `RolesGuard`, có thể tạo một endpoint kiểm tra tạm trong môi trường development hoặc dùng endpoint Admin đầu tiên của người B khi đã có:
-
-```text
-GET /api/v1/users
-```
-
-Kỳ vọng:
-
-- Không có access token: `401`.
-- Token STUDENT: `403`.
-- Token ADMIN: `200`.
-
-Không giữ endpoint debug không cần thiết trong production.
-
-### 14.4. Database dùng để kiểm tra
-
-Script curl phải chạy trên database local/test riêng hoặc một Railway database dành riêng cho development. Không thực hiện cleanup destructive trên Railway database dùng chung của nhóm.
-
-Email kiểm tra nên được tạo duy nhất theo timestamp để script chạy lại không xung đột, ví dụ:
-
-```text
-student.20260731230000@example.com
-```
-
-Các trường hợp cần đổi trạng thái user sang `BANNED` có thể dùng Prisma Studio hoặc câu lệnh hỗ trợ development có target rõ ràng. Không thêm public endpoint chỉ để sửa trạng thái test.
-
-### 14.5. Điều kiện pass
-
-Backend tuần 1 được xem là đạt về kiểm tra khi:
-
-- `npm run build` pass;
-- script `scripts/test-auth.ps1` chạy hết và trả exit code `0`;
-- toàn bộ HTTP status quan trọng được assert;
-- register → me → refresh → logout chạy trên API và database thật;
-- không cần đạt Jest coverage trong tuần 1.
+Test Auth phải chạy trên database test riêng, không chạy destructive cleanup trên Railway database dùng chung.
 
 ---
 
@@ -807,7 +743,6 @@ Ranh giới với audit log:
 - Normalize email, password policy, bcrypt.
 - Public role policy.
 - Access token và refresh-session creation.
-- Dùng `curl.exe` kiểm tra register, duplicate email, role không hợp lệ, login đúng và login sai.
 
 Đầu ra: register/login chạy được bằng API client.
 
@@ -817,7 +752,7 @@ Ranh giới với audit log:
 - Rotation transaction.
 - Logout idempotent.
 - `/auth/me`.
-- Dùng cookie jar của `curl.exe` kiểm tra refresh rotation, logout và refresh sau logout.
+- Unit test các trạng thái token.
 
 Đầu ra: vòng đời phiên hoàn chỉnh.
 
@@ -827,15 +762,15 @@ Ranh giới với audit log:
 - Global interceptor/filter/validation.
 - Rate limit Auth.
 - Chuẩn hóa error code.
-- Viết `scripts/test-auth.ps1` để tự động chạy toàn bộ Auth flow qua endpoint.
+- E2E Auth flow.
 
 Đầu ra: các module khác có thể bảo vệ endpoint theo role.
 
 ### Ngày 5 — Integration và bàn giao
 
-- Kiểm tra cùng frontend Axios interceptor.
-- Kiểm tra role-based redirect bằng dữ liệu seed.
-- Chạy `npm run build` và script curl `scripts/test-auth.ps1`.
+- Test cùng frontend Axios interceptor.
+- Test role-based redirect bằng dữ liệu seed.
+- Chạy build, unit test, e2e test.
 - Cập nhật README/env example.
 - Bàn giao contract cho người B.
 
@@ -854,9 +789,9 @@ Ranh giới với audit log:
 7. Hoàn thiện JWT strategy.
 8. Hoàn thiện guards/decorators.
 9. Đăng ký global filter/interceptor và validation.
-10. Viết script PowerShell gọi endpoint bằng `curl.exe` và assert HTTP status/body.
-11. Chạy toàn bộ trường hợp register, login, me, refresh rotation, logout, RBAC và rate limit.
-12. Kiểm tra frontend integration.
+10. Viết unit tests.
+11. Viết e2e test.
+12. Test frontend integration.
 13. Chỉ sau khi tất cả pass mới bắt đầu feature tuần 2.
 
 ---
@@ -875,9 +810,8 @@ Ranh giới với audit log:
 - [ ] User bị khóa không dùng access/refresh token được.
 - [ ] Response success/error có format thống nhất.
 - [ ] Auth endpoints có rate limit.
-- [ ] `scripts/test-auth.ps1` dùng `curl.exe` và tự assert HTTP status/body.
-- [ ] Script curl register → me → refresh → logout pass và trả exit code `0`.
-- [ ] Script curl xác nhận role sai trả `403` và token thiếu/sai trả `401`.
+- [ ] Unit tests cho Auth/guard pass.
+- [ ] E2E register → me → refresh → logout pass.
 - [ ] Không trả/log password hash hoặc raw refresh token.
 - [ ] README và `.env.example` đủ để người B chạy project.
 - [ ] Frontend đăng nhập/logout và interceptor gọi protected API được.
@@ -895,7 +829,7 @@ Không coi tuần 1 hoàn thành nếu còn một trong các tình trạng sau:
 - Controller trả trực tiếp Prisma user có `passwordHash`.
 - Dùng `prisma db push` trên Railway DB chung thay cho migration.
 - Guard/decorator chưa có contract ổn định khiến người B phải tự viết bản khác.
-- Script curl chỉ kiểm tra happy path, chưa kiểm tra duplicate email, banned user và refresh token cũ.
+- Chỉ test happy path, chưa test duplicate email, banned user và refresh token cũ.
 
 ---
 
