@@ -1,5 +1,5 @@
-import React from 'react';
-import { UserRole } from '../types';
+import React from "react";
+import { UserRole } from "../types";
 import {
   Briefcase,
   GraduationCap,
@@ -13,7 +13,7 @@ import {
   Users,
   Search,
   Sparkles,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface NavbarProps {
   currentRole: UserRole;
@@ -38,32 +38,97 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const getNavItems = () => {
     switch (currentRole) {
-      case 'STUDENT':
+      case "STUDENT":
         return [
-          { id: 'internships', label: 'Cơ hội thực tập', icon: <Search className="w-4 h-4" /> },
-          { id: 'applications', label: 'Đơn ứng tuyển', icon: <FileText className="w-4 h-4" /> },
-          { id: 'reports', label: 'Báo cáo tuần', icon: <CheckSquare className="w-4 h-4" /> },
-          { id: 'profile', label: 'Hồ sơ cá nhân', icon: <User className="w-4 h-4" /> },
+          {
+            id: "internships",
+            label: "Cơ hội thực tập",
+            icon: <Search className="w-4 h-4" />,
+          },
+          {
+            id: "applications",
+            label: "Đơn ứng tuyển",
+            icon: <FileText className="w-4 h-4" />,
+          },
+          {
+            id: "reports",
+            label: "Báo cáo tuần",
+            icon: <CheckSquare className="w-4 h-4" />,
+          },
+          {
+            id: "profile",
+            label: "Hồ sơ cá nhân",
+            icon: <User className="w-4 h-4" />,
+          },
         ];
-      case 'COMPANY':
+      case "COMPANY":
         return [
-          { id: 'dashboard', label: 'Tổng quan', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'postings', label: 'Đăng & Quản lý tin', icon: <Briefcase className="w-4 h-4" /> },
-          { id: 'applicants', label: 'Ứng viên & Duyệt CV', icon: <Users className="w-4 h-4" /> },
-          { id: 'interns-evaluation', label: 'Thực tập sinh & Đánh giá', icon: <CheckSquare className="w-4 h-4" /> },
+          {
+            id: "dashboard",
+            label: "Tổng quan",
+            icon: <LayoutDashboard className="w-4 h-4" />,
+          },
+          {
+            id: "postings",
+            label: "Đăng & Quản lý tin",
+            icon: <Briefcase className="w-4 h-4" />,
+          },
+          {
+            id: "applicants",
+            label: "Ứng viên & Duyệt CV",
+            icon: <Users className="w-4 h-4" />,
+          },
+          {
+            id: "interns-evaluation",
+            label: "Thực tập sinh & Đánh giá",
+            icon: <CheckSquare className="w-4 h-4" />,
+          },
         ];
-      case 'TEACHER':
+      case "TEACHER":
         return [
-          { id: 'students-list', label: 'Sinh viên phụ trách', icon: <Users className="w-4 h-4" /> },
-          { id: 'review-reports', label: 'Duyệt báo cáo tuần', icon: <CheckSquare className="w-4 h-4" /> },
-          { id: 'evaluation-list', label: 'Đánh giá & Chấm điểm', icon: <GraduationCap className="w-4 h-4" /> },
+          {
+            id: "students-list",
+            label: "Sinh viên phụ trách",
+            icon: <Users className="w-4 h-4" />,
+          },
+          {
+            id: "review-reports",
+            label: "Duyệt báo cáo tuần",
+            icon: <CheckSquare className="w-4 h-4" />,
+          },
+          {
+            id: "evaluation-list",
+            label: "Đánh giá & Chấm điểm",
+            icon: <GraduationCap className="w-4 h-4" />,
+          },
+          {
+            id: "lecturer-profile",
+            label: "Hồ sơ giảng viên",
+            icon: <User className="w-4 h-4" />,
+          },
         ];
-      case 'ADMIN':
+      case "ADMIN":
         return [
-          { id: 'stats-dashboard', label: 'Thống kê hệ thống', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'teacher-assignment', label: 'Phân công Giảng viên', icon: <GraduationCap className="w-4 h-4" /> },
-          { id: 'user-management', label: 'Quản lý người dùng', icon: <Users className="w-4 h-4" /> },
-          { id: 'company-approval', label: 'Duyệt Doanh nghiệp', icon: <Building className="w-4 h-4" /> },
+          {
+            id: "stats-dashboard",
+            label: "Thống kê hệ thống",
+            icon: <LayoutDashboard className="w-4 h-4" />,
+          },
+          {
+            id: "teacher-assignment",
+            label: "Phân công Giảng viên",
+            icon: <GraduationCap className="w-4 h-4" />,
+          },
+          {
+            id: "user-management",
+            label: "Quản lý người dùng",
+            icon: <Users className="w-4 h-4" />,
+          },
+          {
+            id: "company-approval",
+            label: "Duyệt Doanh nghiệp",
+            icon: <Building className="w-4 h-4" />,
+          },
         ];
       default:
         return [];
@@ -77,13 +142,19 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab(navItems[0]?.id || '')}>
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => setActiveTab(navItems[0]?.id || "")}
+          >
             <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-xs">
               C
             </div>
             <div>
               <span className="text-xl font-bold tracking-tight text-indigo-950 uppercase flex items-center gap-1">
-                Intern<span className="text-indigo-600">Connect</span> <span className="font-light text-slate-400 text-sm lowercase">| portal</span>
+                Intern<span className="text-indigo-600">Connect</span>{" "}
+                <span className="font-light text-slate-400 text-sm lowercase">
+                  | portal
+                </span>
               </span>
               <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">
                 Career Opportunities & Management
@@ -102,8 +173,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => setActiveTab(item.id)}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
                     isActive
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-100/60 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? "bg-indigo-50 text-indigo-700 border border-indigo-100/60 shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                   }`}
                 >
                   {item.icon}
@@ -115,7 +186,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action Icons */}
           <div className="flex items-center gap-2">
-            {currentRole === 'STUDENT' && onOpenAICoach && (
+            {currentRole === "STUDENT" && onOpenAICoach && (
               <button
                 id="btn-ai-coach"
                 onClick={onOpenAICoach}
@@ -167,7 +238,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap ${
-                  isActive ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-600 bg-slate-100'
+                  isActive
+                    ? "bg-indigo-600 text-white font-semibold"
+                    : "text-slate-600 bg-slate-100"
                 }`}
               >
                 {item.icon}

@@ -52,6 +52,7 @@ import { EvaluateInternsModal } from "./components/CompanyView/EvaluateInternsMo
 import { TeacherDashboard } from "./components/TeacherView/TeacherDashboard";
 import { ReviewReports } from "./components/TeacherView/ReviewReports";
 import { TeacherEvaluations } from "./components/TeacherView/TeacherEvaluations";
+import { LecturerProfileView } from "./components/TeacherView/LecturerProfile";
 
 import { AdminDashboard } from "./components/AdminView/AdminDashboard";
 import { UserManagement } from "./components/AdminView/UserManagement";
@@ -539,6 +540,7 @@ export default function App() {
                 onSaveTeacherFeedback={handleSaveTeacherFeedback}
               />
             )}
+            {activeTab === "lecturer-profile" && <LecturerProfileView />}
           </>
         )}
 
