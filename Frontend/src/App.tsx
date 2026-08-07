@@ -59,6 +59,7 @@ import { AdminDashboard } from "./components/AdminView/AdminDashboard";
 import { UserManagement } from "./components/AdminView/UserManagement";
 import { CompanyModeration } from "./components/AdminView/CompanyModeration";
 import { TeacherAssignment } from "./components/AdminView/TeacherAssignment";
+import { SkillManagement } from "./components/AdminView/SkillManagement";
 import { useAuth } from "./auth/AuthContext";
 
 export default function App() {
@@ -562,6 +563,7 @@ export default function App() {
             )}
             {activeTab === "user-management" && <UserManagement />}
             {activeTab === "company-approval" && <CompanyModeration />}
+            {activeTab === "skill-management" && <SkillManagement />}
           </>
         )}
       </main>

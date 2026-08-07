@@ -1,4 +1,4 @@
-# InternHub — Kế hoạch triển khai 7 tuần
+# CareerBridge — Kế hoạch triển khai 7 tuần
 
 **Nhóm:** 2 người (A + B)
 **Mô hình:** Full-stack per feature — mỗi người tự lo backend + frontend cho feature được giao

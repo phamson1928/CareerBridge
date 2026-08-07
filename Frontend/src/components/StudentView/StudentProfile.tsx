@@ -15,6 +15,8 @@ import {
   StudentProfileRecord,
 } from "../../students/api";
 import { CvUpload } from "./CvUpload";
+import { skillsApi } from "../../skills/api";
+import type { SkillLevel, SkillRecord, StudentSkillRecord } from "../../skills/types";
 
 const emptyForm: StudentProfileInput = {
   studentCode: "",
@@ -32,6 +34,9 @@ export const StudentProfileView: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [catalogue, setCatalogue] = useState<SkillRecord[]>([]);
+  const [studentSkills, setStudentSkills] = useState<StudentSkillRecord[]>([]);
+  const [savingSkills, setSavingSkills] = useState(false);
 
   const applyProfile = (nextProfile: StudentProfileRecord) => {
     setProfile(nextProfile);
@@ -70,6 +75,18 @@ export const StudentProfileView: React.FC = () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    void Promise.all([skillsApi.list({ limit: 100 }), skillsApi.getStudentMine()])
+      .then(([catalogueResult, mine]) => { setCatalogue(catalogueResult.items); setStudentSkills(mine); })
+      .catch(() => undefined);
+  }, []);
+
+  const saveSkills = async () => {
+    setSavingSkills(true); setError(null);
+    try { setStudentSkills(await skillsApi.syncStudentMine(studentSkills.map(({ skillId, level }) => ({ skillId, level })))); }
+    catch (e) { setError(getApiErrorMessage(e)); } finally { setSavingSkills(false); }
+  };
 
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -277,6 +294,15 @@ export const StudentProfileView: React.FC = () => {
           )
         )}
       </section>
+
+      {profile && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="mb-4"><h3 className="text-lg font-extrabold text-slate-900">Kỹ năng</h3><p className="text-xs text-slate-500">Chọn kỹ năng và cấp độ thực tế của bạn.</p></div>
+          <div className="flex flex-wrap gap-2">{catalogue.map(skill => { const selected = studentSkills.find(item => item.skillId === skill.id); return <button key={skill.id} type="button" onClick={() => setStudentSkills(prev => selected ? prev.filter(item => item.skillId !== skill.id) : [...prev, { skillId: skill.id, name: skill.name, level: 'BEGINNER' }])} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${selected ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600'}`}>{skill.name}</button>; })}</div>
+          <div className="mt-4 space-y-2">{studentSkills.map(item => <div key={item.skillId} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2"><span className="text-sm font-semibold">{item.name}</span><select value={item.level} onChange={e => setStudentSkills(prev => prev.map(current => current.skillId === item.skillId ? { ...current, level: e.target.value as SkillLevel } : current))} className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs"><option value="BEGINNER">Beginner</option><option value="INTERMEDIATE">Intermediate</option><option value="ADVANCED">Advanced</option><option value="EXPERT">Expert</option></select></div>)}</div>
+          <button onClick={() => void saveSkills()} disabled={savingSkills} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{savingSkills ? 'Đang lưu...' : 'Lưu kỹ năng'}</button>
+        </section>
+      )}
 
       {profile && (
         <section className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5">

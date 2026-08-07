@@ -134,6 +134,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             label: "Duyệt Doanh nghiệp",
             icon: <Building className="w-4 h-4" />,
           },
+          {
+            id: "skill-management",
+            label: "Danh mục kỹ năng",
+            icon: <CheckSquare className="w-4 h-4" />,
+          },
         ];
       default:
         return [];

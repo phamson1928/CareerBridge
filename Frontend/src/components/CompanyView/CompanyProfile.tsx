@@ -78,8 +78,11 @@ export const CompanyProfileView: React.FC = () => {
     setSaving(true);
     setError(null);
     const payload = Object.fromEntries(
-      Object.entries(form).map(([key, value]) => [key, value?.trim() || null]),
-    ) as CompanyProfileInput;
+      Object.entries(form).map(([key, value]) => [
+        key,
+        typeof value === "string" ? value.trim() || null : value,
+      ]),
+    ) as unknown as CompanyProfileInput;
     payload.companyName = form.companyName.trim();
     try {
       const result = profile
