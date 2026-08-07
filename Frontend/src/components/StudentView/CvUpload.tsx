@@ -1,5 +1,5 @@
-import React, { ChangeEvent, useState } from "react";
-import { Download, FileUp, LoaderCircle } from "lucide-react";
+import React, { ChangeEvent, useEffect, useState } from "react";
+import { Download, Eye, FileUp, LoaderCircle, X } from "lucide-react";
 import {
   getApiErrorMessage,
   getPrivateFileDownloadUrl,
@@ -9,23 +9,37 @@ import {
 interface CvUploadProps {
   fileId?: string;
   fileName?: string;
+  mimeType?: string;
   onUploaded: (file: { id: string; originalName: string }) => void;
 }
 
 export const CvUpload: React.FC<CvUploadProps> = ({
   fileId,
   fileName,
+  mimeType,
   onUploaded,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const selectFile = (event: ChangeEvent<HTMLInputElement>) => {
-    setSelectedFile(event.target.files?.[0] ?? null);
+    const file = event.target.files?.[0] ?? null;
+    if (file && file.size > 10 * 1024 * 1024) {
+      setSelectedFile(null);
+      setError("CV không được vượt quá 10 MB.");
+      return;
+    }
+    setSelectedFile(file);
     setError(null);
   };
+
+  useEffect(() => {
+    setPreviewUrl(null);
+  }, [fileId]);
 
   const uploadCv = async () => {
     if (!selectedFile) return;
@@ -56,6 +70,22 @@ export const CvUpload: React.FC<CvUploadProps> = ({
     }
   };
 
+  const previewCv = async () => {
+    if (!fileId) return;
+    setIsPreviewing(true);
+    setError(null);
+    try {
+      const result = await getPrivateFileDownloadUrl(fileId);
+      setPreviewUrl(result.downloadUrl);
+    } catch (previewError) {
+      setError(getApiErrorMessage(previewError));
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
+  const canPreviewPdf = mimeType === "application/pdf";
+
   return (
     <div className="space-y-3">
       <p className="text-xs text-indigo-900 font-semibold">
@@ -81,24 +111,62 @@ export const CvUpload: React.FC<CvUploadProps> = ({
           Cập nhật CV
         </button>
         {fileId && (
-          <button
-            onClick={() => void downloadCv()}
-            disabled={isDownloading}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 disabled:opacity-50"
-          >
-            {isDownloading ? (
-              <LoaderCircle className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}{" "}
-            Xem / tải CV
-          </button>
+          <>
+            {canPreviewPdf && (
+              <button
+                onClick={() => void previewCv()}
+                disabled={isPreviewing}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 disabled:opacity-50"
+              >
+                {isPreviewing ? (
+                  <LoaderCircle className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}{" "}
+                Xem trước
+              </button>
+            )}
+            <button
+              onClick={() => void downloadCv()}
+              disabled={isDownloading}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 disabled:opacity-50"
+            >
+              {isDownloading ? (
+                <LoaderCircle className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}{" "}
+              Xem / tải CV
+            </button>
+          </>
         )}
       </div>
       <p className="text-[11px] text-slate-500">
         Chấp nhận PDF, DOC, DOCX; tối đa 10 MB.
       </p>
       {error && <p className="text-xs text-rose-600">{error}</p>}
+      {previewUrl && canPreviewPdf && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+          <div className="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-2">
+            <p className="text-xs font-bold text-slate-700">
+              Xem trước PDF: {fileName}
+            </p>
+            <button
+              type="button"
+              onClick={() => setPreviewUrl(null)}
+              className="rounded-md p-1 text-slate-500 hover:bg-slate-100"
+              title="Đóng xem trước"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <iframe
+            title={`CV ${fileName ?? "PDF"}`}
+            src={previewUrl}
+            className="h-[560px] w-full bg-white"
+          />
+        </div>
+      )}
     </div>
   );
 };

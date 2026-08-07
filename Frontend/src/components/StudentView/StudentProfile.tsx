@@ -294,6 +294,7 @@ export const StudentProfileView: React.FC = () => {
           <CvUpload
             fileId={profile.cvFileId ?? undefined}
             fileName={profile.cvFile?.originalName}
+            mimeType={profile.cvFile?.mimeType}
             onUploaded={(file) => void updateCv(file)}
           />
           {isSaving && (
