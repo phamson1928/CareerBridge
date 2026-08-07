@@ -31,7 +31,19 @@ const profileSelect = {
       createdAt: true,
     },
   },
+  skills: {
+    select: {
+      skillId: true,
+      level: true,
+      skill: { select: { id: true, name: true } },
+    },
+    orderBy: { skill: { name: 'asc' } },
+  },
 } satisfies Prisma.StudentProfileSelect;
+
+type StudentProfileRecord = Prisma.StudentProfileGetPayload<{
+  select: typeof profileSelect;
+}>;
 
 @Injectable()
 export class StudentsService {
@@ -43,14 +55,14 @@ export class StudentsService {
       select: profileSelect,
     });
     if (!profile) throw this.notFound();
-    return profile;
+    return this.toProfileResponse(profile);
   }
 
   async create(userId: string, dto: CreateStudentProfileDto) {
     await this.ensureStudentUser(userId);
     await this.ensureCvFileIsOwnedByStudent(dto.cvFileId, userId);
     try {
-      return await this.prisma.studentProfile.create({
+      const profile = await this.prisma.studentProfile.create({
         data: {
           userId,
           studentCode: dto.studentCode,
@@ -63,6 +75,7 @@ export class StudentsService {
         },
         select: profileSelect,
       });
+      return this.toProfileResponse(profile);
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
@@ -72,11 +85,12 @@ export class StudentsService {
     const profile = await this.findByUserId(userId);
     await this.ensureCvFileIsOwnedByStudent(dto.cvFileId, profile.userId);
     try {
-      return await this.prisma.studentProfile.update({
+      const updatedProfile = await this.prisma.studentProfile.update({
         where: { id: profile.id },
         data: this.toUpdateData(dto),
         select: profileSelect,
       });
+      return this.toProfileResponse(updatedProfile);
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
@@ -105,6 +119,17 @@ export class StudentsService {
       ...(dto.summary !== undefined ? { summary: dto.summary } : {}),
       ...(dto.gpa !== undefined ? { gpa: dto.gpa } : {}),
       ...(dto.cvFileId !== undefined ? { cvFileId: dto.cvFileId } : {}),
+    };
+  }
+
+  private toProfileResponse(profile: StudentProfileRecord) {
+    return {
+      ...profile,
+      skills: profile.skills.map((item) => ({
+        skillId: item.skillId,
+        name: item.skill.name,
+        level: item.level,
+      })),
     };
   }
 

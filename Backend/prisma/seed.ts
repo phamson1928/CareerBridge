@@ -14,6 +14,19 @@ const prisma = new PrismaClient({
 
 const seedPassword = process.env.SEED_PASSWORD || 'Seed@123456';
 
+const seedSkillNames = [
+  'TypeScript',
+  'JavaScript',
+  'React',
+  'Node.js',
+  'NestJS',
+  'PostgreSQL',
+  'Prisma',
+  'Docker',
+  'Git',
+  'REST API',
+];
+
 const accounts = {
   admin: { email: 'admin@internhub.local', role: 'ADMIN' as const },
   student: { email: 'student@internhub.local', role: 'STUDENT' as const },
@@ -110,6 +123,97 @@ async function main() {
       reviewedById: admin.id,
       reviewedAt: new Date(),
     },
+  });
+
+  const seededSkills = await Promise.all(
+    seedSkillNames.map((name) =>
+      prisma.skill.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+        select: { id: true, name: true },
+      }),
+    ),
+  );
+  const studentProfile = await prisma.studentProfile.findUniqueOrThrow({
+    where: { userId: student.id },
+    select: { id: true },
+  });
+  const skillByName = new Map(seededSkills.map((skill) => [skill.name, skill.id]));
+  await prisma.studentSkill.deleteMany({ where: { studentId: studentProfile.id } });
+  await prisma.studentSkill.createMany({
+    data: [
+      { studentId: studentProfile.id, skillId: skillByName.get('TypeScript')!, level: 'ADVANCED' },
+      { studentId: studentProfile.id, skillId: skillByName.get('NestJS')!, level: 'INTERMEDIATE' },
+      { studentId: studentProfile.id, skillId: skillByName.get('PostgreSQL')!, level: 'INTERMEDIATE' },
+      { studentId: studentProfile.id, skillId: skillByName.get('Git')!, level: 'ADVANCED' },
+    ],
+  });
+
+  const semester = await prisma.semester.upsert({
+    where: { name: 'Seed Semester 2026' },
+    update: {
+      startDate: new Date('2026-01-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T23:59:59.000Z'),
+      status: 'ACTIVE',
+    },
+    create: {
+      name: 'Seed Semester 2026',
+      startDate: new Date('2026-01-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T23:59:59.000Z'),
+      status: 'ACTIVE',
+    },
+    select: { id: true },
+  });
+  const companyProfile = await prisma.companyProfile.findUniqueOrThrow({
+    where: { userId: company.id },
+    select: { id: true },
+  });
+  const internship = await prisma.internship.upsert({
+    where: { id: 'seed-internship-backend' },
+    update: {
+      companyId: companyProfile.id,
+      semesterId: semester.id,
+      title: 'Backend Developer Intern (Seed)',
+      department: 'Software Engineering',
+      location: 'Ho Chi Minh City',
+      workType: 'HYBRID',
+      stipend: '8,000,000 VND',
+      description: 'Seed internship for backend API and matching verification.',
+      requirements: 'NestJS, PostgreSQL, Docker and Git',
+      slots: 2,
+      deadline: new Date('2026-12-01T00:00:00.000Z'),
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      status: 'OPEN',
+    },
+    create: {
+      id: 'seed-internship-backend',
+      companyId: companyProfile.id,
+      semesterId: semester.id,
+      title: 'Backend Developer Intern (Seed)',
+      department: 'Software Engineering',
+      location: 'Ho Chi Minh City',
+      workType: 'HYBRID',
+      stipend: '8,000,000 VND',
+      description: 'Seed internship for backend API and matching verification.',
+      requirements: 'NestJS, PostgreSQL, Docker and Git',
+      slots: 2,
+      deadline: new Date('2026-12-01T00:00:00.000Z'),
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      status: 'OPEN',
+    },
+    select: { id: true },
+  });
+  await prisma.internshipSkill.deleteMany({ where: { internshipId: internship.id } });
+  await prisma.internshipSkill.createMany({
+    data: [
+      { internshipId: internship.id, skillId: skillByName.get('NestJS')!, isRequired: true, weight: 4 },
+      { internshipId: internship.id, skillId: skillByName.get('PostgreSQL')!, isRequired: true, weight: 3 },
+      { internshipId: internship.id, skillId: skillByName.get('Docker')!, isRequired: true, weight: 2 },
+      { internshipId: internship.id, skillId: skillByName.get('Git')!, isRequired: false, weight: 1 },
+    ],
   });
 
   console.log('Seed completed successfully.');
