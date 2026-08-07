@@ -64,6 +64,11 @@ export const Navbar: React.FC<NavbarProps> = ({
       case "COMPANY":
         return [
           {
+            id: "company-profile",
+            label: "Đăng ký doanh nghiệp",
+            icon: <Building className="w-4 h-4" />,
+          },
+          {
             id: "dashboard",
             label: "Tổng quan",
             icon: <LayoutDashboard className="w-4 h-4" />,

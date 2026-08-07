@@ -48,6 +48,7 @@ import { CompanyDashboard } from "./components/CompanyView/CompanyDashboard";
 import { PostInternshipModal } from "./components/CompanyView/PostInternshipModal";
 import { ManageApplicants } from "./components/CompanyView/ManageApplicants";
 import { EvaluateInternsModal } from "./components/CompanyView/EvaluateInternsModal";
+import { CompanyProfileView } from "./components/CompanyView/CompanyProfile";
 
 import { TeacherDashboard } from "./components/TeacherView/TeacherDashboard";
 import { ReviewReports } from "./components/TeacherView/ReviewReports";
@@ -435,6 +436,7 @@ export default function App() {
         {/* COMPANY VIEWS */}
         {currentRole === "COMPANY" && (
           <>
+            {activeTab === "company-profile" && <CompanyProfileView />}
             {activeTab === "dashboard" && (
               <CompanyDashboard
                 companyProfile={currentCompany}
@@ -559,19 +561,7 @@ export default function App() {
               />
             )}
             {activeTab === "user-management" && <UserManagement />}
-            {activeTab === "company-approval" && (
-              <CompanyModeration
-                companies={companyProfiles}
-                internships={internships}
-                onToggleVerifyCompany={(cmpId) =>
-                  setCompanyProfiles((prev) =>
-                    prev.map((c) =>
-                      c.id === cmpId ? { ...c, verified: !c.verified } : c,
-                    ),
-                  )
-                }
-              />
-            )}
+            {activeTab === "company-approval" && <CompanyModeration />}
           </>
         )}
       </main>
@@ -639,7 +629,7 @@ function getDefaultTab(role: UserRole): string {
     case "STUDENT":
       return "internships";
     case "COMPANY":
-      return "dashboard";
+      return "company-profile";
     case "TEACHER":
       return "students-list";
     case "ADMIN":
