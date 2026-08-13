@@ -441,9 +441,6 @@ export default function App() {
             {activeTab === "company-profile" && <CompanyProfileView />}
             {activeTab === "dashboard" && (
               <CompanyDashboard
-                companyProfile={currentCompany}
-                internships={internships}
-                applications={applications}
                 onNavigateTab={setActiveTab}
                 onOpenCreatePosting={() => setActiveTab("postings")}
               />
