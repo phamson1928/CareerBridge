@@ -13,6 +13,7 @@ import {
   Users,
   Search,
   Sparkles,
+  CalendarDays,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -138,6 +139,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             id: "skill-management",
             label: "Danh mục kỹ năng",
             icon: <CheckSquare className="w-4 h-4" />,
+          },
+          {
+            id: "semester-management",
+            label: "Kỳ thực tập",
+            icon: <CalendarDays className="w-4 h-4" />,
           },
         ];
       default:

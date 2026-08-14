@@ -165,6 +165,36 @@ async function main() {
     },
     select: { id: true },
   });
+  await prisma.semester.upsert({
+    where: { name: 'Seed Semester 2025' },
+    update: {
+      startDate: new Date('2025-01-01T00:00:00.000Z'),
+      endDate: new Date('2025-06-30T23:59:59.000Z'),
+      status: 'COMPLETED',
+    },
+    create: {
+      name: 'Seed Semester 2025',
+      startDate: new Date('2025-01-01T00:00:00.000Z'),
+      endDate: new Date('2025-06-30T23:59:59.000Z'),
+      status: 'COMPLETED',
+    },
+    select: { id: true },
+  });
+  await prisma.semester.upsert({
+    where: { name: 'Seed Semester 2027' },
+    update: {
+      startDate: new Date('2027-01-01T00:00:00.000Z'),
+      endDate: new Date('2027-06-30T23:59:59.000Z'),
+      status: 'UPCOMING',
+    },
+    create: {
+      name: 'Seed Semester 2027',
+      startDate: new Date('2027-01-01T00:00:00.000Z'),
+      endDate: new Date('2027-06-30T23:59:59.000Z'),
+      status: 'UPCOMING',
+    },
+    select: { id: true },
+  });
   const companyProfile = await prisma.companyProfile.findUniqueOrThrow({
     where: { userId: company.id },
     select: { id: true },
