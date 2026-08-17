@@ -30,7 +30,9 @@ const seedSkillNames = [
 const accounts = {
   admin: { email: 'admin@internhub.local', role: 'ADMIN' as const },
   student: { email: 'student@internhub.local', role: 'STUDENT' as const },
+  student2: { email: 'student2@internhub.local', role: 'STUDENT' as const },
   lecturer: { email: 'lecturer@internhub.local', role: 'LECTURER' as const },
+  lecturer2: { email: 'lecturer2@internhub.local', role: 'LECTURER' as const },
   company: { email: 'company@internhub.local', role: 'COMPANY' as const },
 };
 
@@ -52,12 +54,19 @@ async function main() {
     Number(process.env.BCRYPT_ROUNDS || 12),
   );
 
-  const [admin, student, lecturer, company] = await Promise.all([
-    upsertUser(accounts.admin.email, accounts.admin.role, passwordHash),
-    upsertUser(accounts.student.email, accounts.student.role, passwordHash),
-    upsertUser(accounts.lecturer.email, accounts.lecturer.role, passwordHash),
-    upsertUser(accounts.company.email, accounts.company.role, passwordHash),
-  ]);
+  const [admin, student, student2, lecturer, lecturer2, company] =
+    await Promise.all([
+      upsertUser(accounts.admin.email, accounts.admin.role, passwordHash),
+      upsertUser(accounts.student.email, accounts.student.role, passwordHash),
+      upsertUser(accounts.student2.email, accounts.student2.role, passwordHash),
+      upsertUser(accounts.lecturer.email, accounts.lecturer.role, passwordHash),
+      upsertUser(
+        accounts.lecturer2.email,
+        accounts.lecturer2.role,
+        passwordHash,
+      ),
+      upsertUser(accounts.company.email, accounts.company.role, passwordHash),
+    ]);
 
   await prisma.studentProfile.upsert({
     where: { userId: student.id },
@@ -80,6 +89,29 @@ async function main() {
     },
   });
 
+  await prisma.studentProfile.upsert({
+    where: { userId: student2.id },
+    update: {
+      studentCode: 'SEED-STUDENT-002',
+      fullName: 'Nguyễn Sinh Viên 2',
+      major: 'Kỹ thuật phần mềm',
+      phone: '0900000002',
+      summary:
+        'Tài khoản sinh viên thứ hai cho fixture placement chưa phân công.',
+      gpa: 3.1,
+    },
+    create: {
+      userId: student2.id,
+      studentCode: 'SEED-STUDENT-002',
+      fullName: 'Nguyễn Sinh Viên 2',
+      major: 'Kỹ thuật phần mềm',
+      phone: '0900000002',
+      summary:
+        'Tài khoản sinh viên thứ hai cho fixture placement chưa phân công.',
+      gpa: 3.1,
+    },
+  });
+
   await prisma.lecturerProfile.upsert({
     where: { userId: lecturer.id },
     update: {
@@ -90,6 +122,21 @@ async function main() {
     create: {
       userId: lecturer.id,
       fullName: 'Trần Giảng Viên',
+      department: 'Khoa Công nghệ thông tin',
+      title: 'Giảng viên',
+    },
+  });
+
+  await prisma.lecturerProfile.upsert({
+    where: { userId: lecturer2.id },
+    update: {
+      fullName: 'Lê Giảng Viên 2',
+      department: 'Khoa Công nghệ thông tin',
+      title: 'Giảng viên',
+    },
+    create: {
+      userId: lecturer2.id,
+      fullName: 'Lê Giảng Viên 2',
       department: 'Khoa Công nghệ thông tin',
       title: 'Giảng viên',
     },
@@ -139,14 +186,42 @@ async function main() {
     where: { userId: student.id },
     select: { id: true },
   });
-  const skillByName = new Map(seededSkills.map((skill) => [skill.name, skill.id]));
-  await prisma.studentSkill.deleteMany({ where: { studentId: studentProfile.id } });
+  const student2Profile = await prisma.studentProfile.findUniqueOrThrow({
+    where: { userId: student2.id },
+    select: { id: true },
+  });
+  const lecturerProfile = await prisma.lecturerProfile.findUniqueOrThrow({
+    where: { userId: lecturer.id },
+    select: { id: true },
+  });
+  const skillByName = new Map(
+    seededSkills.map((skill) => [skill.name, skill.id]),
+  );
+  await prisma.studentSkill.deleteMany({
+    where: { studentId: studentProfile.id },
+  });
   await prisma.studentSkill.createMany({
     data: [
-      { studentId: studentProfile.id, skillId: skillByName.get('TypeScript')!, level: 'ADVANCED' },
-      { studentId: studentProfile.id, skillId: skillByName.get('NestJS')!, level: 'INTERMEDIATE' },
-      { studentId: studentProfile.id, skillId: skillByName.get('PostgreSQL')!, level: 'INTERMEDIATE' },
-      { studentId: studentProfile.id, skillId: skillByName.get('Git')!, level: 'ADVANCED' },
+      {
+        studentId: studentProfile.id,
+        skillId: skillByName.get('TypeScript')!,
+        level: 'ADVANCED',
+      },
+      {
+        studentId: studentProfile.id,
+        skillId: skillByName.get('NestJS')!,
+        level: 'INTERMEDIATE',
+      },
+      {
+        studentId: studentProfile.id,
+        skillId: skillByName.get('PostgreSQL')!,
+        level: 'INTERMEDIATE',
+      },
+      {
+        studentId: studentProfile.id,
+        skillId: skillByName.get('Git')!,
+        level: 'ADVANCED',
+      },
     ],
   });
 
@@ -212,6 +287,7 @@ async function main() {
       description: 'Seed internship for backend API and matching verification.',
       requirements: 'NestJS, PostgreSQL, Docker and Git',
       slots: 2,
+      filledSlots: 2,
       deadline: new Date('2026-12-01T00:00:00.000Z'),
       startDate: new Date('2026-09-01T00:00:00.000Z'),
       endDate: new Date('2026-12-31T00:00:00.000Z'),
@@ -229,6 +305,7 @@ async function main() {
       description: 'Seed internship for backend API and matching verification.',
       requirements: 'NestJS, PostgreSQL, Docker and Git',
       slots: 2,
+      filledSlots: 2,
       deadline: new Date('2026-12-01T00:00:00.000Z'),
       startDate: new Date('2026-09-01T00:00:00.000Z'),
       endDate: new Date('2026-12-31T00:00:00.000Z'),
@@ -236,16 +313,182 @@ async function main() {
     },
     select: { id: true },
   });
-  await prisma.internshipSkill.deleteMany({ where: { internshipId: internship.id } });
+  await prisma.internshipSkill.deleteMany({
+    where: { internshipId: internship.id },
+  });
   await prisma.internshipSkill.createMany({
     data: [
-      { internshipId: internship.id, skillId: skillByName.get('NestJS')!, isRequired: true, weight: 4 },
-      { internshipId: internship.id, skillId: skillByName.get('PostgreSQL')!, isRequired: true, weight: 3 },
-      { internshipId: internship.id, skillId: skillByName.get('Docker')!, isRequired: true, weight: 2 },
-      { internshipId: internship.id, skillId: skillByName.get('Git')!, isRequired: false, weight: 1 },
+      {
+        internshipId: internship.id,
+        skillId: skillByName.get('NestJS')!,
+        isRequired: true,
+        weight: 4,
+      },
+      {
+        internshipId: internship.id,
+        skillId: skillByName.get('PostgreSQL')!,
+        isRequired: true,
+        weight: 3,
+      },
+      {
+        internshipId: internship.id,
+        skillId: skillByName.get('Docker')!,
+        isRequired: true,
+        weight: 2,
+      },
+      {
+        internshipId: internship.id,
+        skillId: skillByName.get('Git')!,
+        isRequired: false,
+        weight: 1,
+      },
     ],
   });
 
+  const activeApplication = await prisma.application.upsert({
+    where: { id: 'seed-application-active' },
+    update: {
+      studentId: studentProfile.id,
+      internshipId: internship.id,
+      status: 'ACCEPTED',
+      acceptedAt: new Date('2026-08-01T09:00:00.000Z'),
+      rejectedAt: null,
+      withdrawnAt: null,
+    },
+    create: {
+      id: 'seed-application-active',
+      studentId: studentProfile.id,
+      internshipId: internship.id,
+      coverLetter: 'Seed application with an assigned lecturer.',
+      status: 'ACCEPTED',
+      acceptedAt: new Date('2026-08-01T09:00:00.000Z'),
+    },
+    select: { id: true },
+  });
+  const pendingApplication = await prisma.application.upsert({
+    where: { id: 'seed-application-pending' },
+    update: {
+      studentId: student2Profile.id,
+      internshipId: internship.id,
+      status: 'ACCEPTED',
+      acceptedAt: new Date('2026-08-02T09:00:00.000Z'),
+      rejectedAt: null,
+      withdrawnAt: null,
+    },
+    create: {
+      id: 'seed-application-pending',
+      studentId: student2Profile.id,
+      internshipId: internship.id,
+      coverLetter: 'Seed application awaiting lecturer assignment.',
+      status: 'ACCEPTED',
+      acceptedAt: new Date('2026-08-02T09:00:00.000Z'),
+    },
+    select: { id: true },
+  });
+
+  await prisma.applicationStatusHistory.upsert({
+    where: { id: 'seed-application-history-active' },
+    update: {
+      applicationId: activeApplication.id,
+      fromStatus: null,
+      toStatus: 'ACCEPTED',
+      changedById: admin.id,
+      note: 'Seed accepted application',
+    },
+    create: {
+      id: 'seed-application-history-active',
+      applicationId: activeApplication.id,
+      fromStatus: null,
+      toStatus: 'ACCEPTED',
+      changedById: admin.id,
+      note: 'Seed accepted application',
+    },
+  });
+  await prisma.applicationStatusHistory.upsert({
+    where: { id: 'seed-application-history-pending' },
+    update: {
+      applicationId: pendingApplication.id,
+      fromStatus: null,
+      toStatus: 'ACCEPTED',
+      changedById: admin.id,
+      note: 'Seed accepted application awaiting assignment',
+    },
+    create: {
+      id: 'seed-application-history-pending',
+      applicationId: pendingApplication.id,
+      fromStatus: null,
+      toStatus: 'ACCEPTED',
+      changedById: admin.id,
+      note: 'Seed accepted application awaiting assignment',
+    },
+  });
+
+  const activePlacement = await prisma.internshipPlacement.upsert({
+    where: { id: 'seed-placement-active' },
+    update: {
+      applicationId: activeApplication.id,
+      studentId: studentProfile.id,
+      companyId: companyProfile.id,
+      internshipId: internship.id,
+      semesterId: semester.id,
+      status: 'ACTIVE',
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+    },
+    create: {
+      id: 'seed-placement-active',
+      applicationId: activeApplication.id,
+      studentId: studentProfile.id,
+      companyId: companyProfile.id,
+      internshipId: internship.id,
+      semesterId: semester.id,
+      status: 'ACTIVE',
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+    },
+    select: { id: true },
+  });
+  await prisma.internshipPlacement.upsert({
+    where: { id: 'seed-placement-pending' },
+    update: {
+      applicationId: pendingApplication.id,
+      studentId: student2Profile.id,
+      companyId: companyProfile.id,
+      internshipId: internship.id,
+      semesterId: semester.id,
+      status: 'PENDING',
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+    },
+    create: {
+      id: 'seed-placement-pending',
+      applicationId: pendingApplication.id,
+      studentId: student2Profile.id,
+      companyId: companyProfile.id,
+      internshipId: internship.id,
+      semesterId: semester.id,
+      status: 'PENDING',
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+    },
+    select: { id: true },
+  });
+
+  await prisma.supervision.upsert({
+    where: { placementId: activePlacement.id },
+    update: {
+      lecturerId: lecturerProfile.id,
+      assignedById: admin.id,
+      status: 'ACTIVE',
+      completedAt: null,
+    },
+    create: {
+      placementId: activePlacement.id,
+      lecturerId: lecturerProfile.id,
+      assignedById: admin.id,
+      status: 'ACTIVE',
+    },
+  });
   console.log('Seed completed successfully.');
   console.table(
     Object.values(accounts).map(({ email, role }) => ({
