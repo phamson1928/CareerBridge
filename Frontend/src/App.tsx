@@ -58,9 +58,11 @@ import { LecturerProfileView } from "./components/TeacherView/LecturerProfile";
 import { AdminDashboard } from "./components/AdminView/AdminDashboard";
 import { UserManagement } from "./components/AdminView/UserManagement";
 import { CompanyModeration } from "./components/AdminView/CompanyModeration";
-import { TeacherAssignment } from "./components/AdminView/TeacherAssignment";
+import { SupervisionManagement } from "./components/AdminView/SupervisionManagement";
 import { SkillManagement } from "./components/AdminView/SkillManagement";
 import { SemesterManagement } from "./components/AdminView/SemesterManagement";
+import { PlacementOverview } from "./components/StudentView/PlacementOverview";
+import { SupervisedPlacements } from "./components/TeacherView/SupervisedPlacements";
 import { useAuth } from "./auth/AuthContext";
 
 export default function App() {
@@ -83,7 +85,7 @@ export default function App() {
   const [companyProfiles, setCompanyProfiles] = useState<CompanyProfile[]>(
     INITIAL_COMPANY_PROFILES,
   );
-  const [teacherProfiles, setTeacherProfiles] = useState<TeacherProfile[]>(
+  const [teacherProfiles] = useState<TeacherProfile[]>(
     INITIAL_TEACHER_PROFILES,
   );
 
@@ -289,56 +291,6 @@ export default function App() {
     );
   };
 
-  // Admin Actions
-  const handleAssignTeacher = (studentId: string, teacherId: string | null) => {
-    setStudentProfiles((prev) =>
-      prev.map((s) =>
-        s.id === studentId
-          ? { ...s, assignedTeacherId: teacherId || undefined }
-          : s,
-      ),
-    );
-
-    // Update assignedStudentIds on teacher profiles
-    setTeacherProfiles((prev) =>
-      prev.map((t) => {
-        let updatedIds = t.assignedStudentIds.filter((id) => id !== studentId);
-        if (teacherId && t.id === teacherId) {
-          updatedIds.push(studentId);
-        }
-        return { ...t, assignedStudentIds: updatedIds };
-      }),
-    );
-  };
-
-  const handleBatchAutoAssign = () => {
-    if (teacherProfiles.length === 0) return;
-    const unassigned = studentProfiles.filter((s) => !s.assignedTeacherId);
-    if (unassigned.length === 0) return;
-
-    let teacherIdx = 0;
-    const updatedStudents = studentProfiles.map((s) => {
-      if (!s.assignedTeacherId) {
-        const assignedT = teacherProfiles[teacherIdx % teacherProfiles.length];
-        teacherIdx++;
-        return { ...s, assignedTeacherId: assignedT.id };
-      }
-      return s;
-    });
-
-    setStudentProfiles(updatedStudents);
-
-    // Sync back to teacher profiles
-    setTeacherProfiles((prevTeachers) =>
-      prevTeachers.map((t) => {
-        const stdIds = updatedStudents
-          .filter((s) => s.assignedTeacherId === t.id)
-          .map((s) => s.id);
-        return { ...t, assignedStudentIds: stdIds };
-      }),
-    );
-  };
-
   // Realtime Chat Action
   const handleSendMessage = (receiverId: string, content: string) => {
     const newMsg: ChatMessage = {
@@ -431,6 +383,7 @@ export default function App() {
                 onSubmitReport={handleSubmitReport}
               />
             )}
+            {activeTab === "placement" && <PlacementOverview />}
             {activeTab === "profile" && <StudentProfileView />}
           </>
         )}
@@ -531,6 +484,7 @@ export default function App() {
                 onNavigateTab={setActiveTab}
               />
             )}
+            {activeTab === "supervised-placements" && <SupervisedPlacements />}
             {activeTab === "review-reports" && (
               <ReviewReports
                 reports={reports}
@@ -555,12 +509,7 @@ export default function App() {
               <AdminDashboard stats={MOCK_DASHBOARD_STATS} />
             )}
             {activeTab === "teacher-assignment" && (
-              <TeacherAssignment
-                students={studentProfiles}
-                teachers={teacherProfiles}
-                onAssignTeacher={handleAssignTeacher}
-                onBatchAutoAssign={handleBatchAutoAssign}
-              />
+              <SupervisionManagement />
             )}
             {activeTab === "user-management" && <UserManagement />}
             {activeTab === "company-approval" && <CompanyModeration />}

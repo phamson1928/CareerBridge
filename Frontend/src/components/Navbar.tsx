@@ -52,6 +52,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             icon: <FileText className="w-4 h-4" />,
           },
           {
+            id: "placement",
+            label: "Placement của tôi",
+            icon: <Briefcase className="w-4 h-4" />,
+          },
+          {
             id: "reports",
             label: "Báo cáo tuần",
             icon: <CheckSquare className="w-4 h-4" />,
@@ -96,6 +101,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             id: "students-list",
             label: "Sinh viên phụ trách",
             icon: <Users className="w-4 h-4" />,
+          },
+          {
+            id: "supervised-placements",
+            label: "Placement hướng dẫn",
+            icon: <Briefcase className="w-4 h-4" />,
           },
           {
             id: "review-reports",

@@ -1,0 +1,28 @@
+import React, { useEffect, useState } from 'react';
+import { AlertCircle, BriefcaseBusiness, Building2, CalendarDays, ClipboardCheck, LoaderCircle, MapPin, Search, UsersRound } from 'lucide-react';
+import { getApiErrorMessage } from '../../auth/api';
+import { supervisionsApi } from '../../supervisions/api';
+import type { SupervisionRecord } from '../../supervisions/types';
+
+function formatDate(value: string | null) {
+  return value ? new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value)) : 'Chưa cập nhật';
+}
+
+export const SupervisedPlacements: React.FC = () => {
+  const [items, setItems] = useState<SupervisionRecord[]>([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { void supervisionsApi.listMine().then((result) => setItems(result.items)).catch((requestError) => setError(getApiErrorMessage(requestError))).finally(() => setLoading(false)); }, []);
+  const filtered = items.filter((item) => {
+    const keyword = search.trim().toLowerCase();
+    return !keyword || [item.placement.student.fullName, item.placement.student.studentCode, item.placement.internship.title, item.placement.company.companyName].some((value) => value.toLowerCase().includes(keyword));
+  });
+
+  return <section className="space-y-5"><div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-indigo-950 via-indigo-900 to-slate-900 p-6 text-white shadow-lg sm:p-8 md:flex-row md:items-end md:justify-between"><div><div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-100"><ClipboardCheck className="h-3.5 w-3.5" /> Academic supervision</div><h1 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">Sinh viên đang phụ trách</h1><p className="mt-2 max-w-xl text-sm leading-6 text-indigo-100/80">Danh sách được tải từ các supervision đang gắn với tài khoản giảng viên của bạn.</p></div><div className="flex items-center gap-2 text-sm font-bold text-indigo-100"><UsersRound className="h-5 w-5" /> {items.filter((item) => item.status === 'ACTIVE').length} đang hoạt động</div></div>
+    <div className="relative rounded-2xl border border-slate-200 bg-white p-4 shadow-xs"><Search className="absolute left-7 top-7 h-4 w-4 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm sinh viên, mã số, vị trí hoặc doanh nghiệp..." className="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" /></div>
+    {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"><AlertCircle className="mr-2 inline h-4 w-4" />{error}</div>}
+    {loading ? <div className="flex min-h-64 items-center justify-center text-sm text-slate-500"><LoaderCircle className="mr-2 h-5 w-5 animate-spin" />Đang tải danh sách...</div> : filtered.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"><UsersRound className="mx-auto h-10 w-10 text-slate-300" /><p className="mt-3 text-sm font-black text-slate-700">Chưa có sinh viên phù hợp</p><p className="mt-1 text-xs text-slate-500">Các placement được Admin phân công cho bạn sẽ xuất hiện tại đây.</p></div> : <div className="grid gap-4 xl:grid-cols-2">{filtered.map((item) => <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition hover:-translate-y-0.5 hover:shadow-md"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-100 text-lg font-black text-indigo-700">{item.placement.student.fullName.charAt(0)}</div><div><h2 className="font-black text-slate-900">{item.placement.student.fullName}</h2><p className="mt-1 font-mono text-[10px] text-slate-500">{item.placement.student.studentCode} · {item.placement.student.major}</p></div></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${item.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{item.status === 'ACTIVE' ? 'Đang hướng dẫn' : item.status}</span></div><div className="mt-5 space-y-2.5 border-t border-slate-100 pt-4 text-xs text-slate-600"><p className="flex items-center gap-2"><BriefcaseBusiness className="h-4 w-4 text-indigo-500" />{item.placement.internship.title}</p><p className="flex items-center gap-2"><Building2 className="h-4 w-4 text-indigo-500" />{item.placement.company.companyName}</p><p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-indigo-500" />{item.placement.internship.location ?? 'Chưa cập nhật địa điểm'}</p><p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-indigo-500" />{item.placement.semester.name} · {formatDate(item.placement.semester.startDate)} — {formatDate(item.placement.semester.endDate)}</p></div><div className="mt-4 grid grid-cols-2 gap-3"><div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Báo cáo</p><p className="mt-1 text-lg font-black text-slate-800">{item.placement._count.reports}</p></div><div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Đánh giá</p><p className="mt-1 text-lg font-black text-slate-800">{item.placement._count.evaluations}</p></div></div></article>)}</div>}
+  </section>;
+};
