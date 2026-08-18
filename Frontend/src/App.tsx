@@ -49,6 +49,7 @@ import { PostInternshipModal } from "./components/CompanyView/PostInternshipModa
 import { ManageApplicants } from "./components/CompanyView/ManageApplicants";
 import { EvaluateInternsModal } from "./components/CompanyView/EvaluateInternsModal";
 import { CompanyProfileView } from "./components/CompanyView/CompanyProfile";
+import { CompanyInternships } from "./components/CompanyView/CompanyInternships";
 
 import { TeacherDashboard } from "./components/TeacherView/TeacherDashboard";
 import { ReviewReports } from "./components/TeacherView/ReviewReports";
@@ -394,63 +395,12 @@ export default function App() {
             {activeTab === "company-profile" && <CompanyProfileView />}
             {activeTab === "dashboard" && (
               <CompanyDashboard
-                companyProfile={currentCompany}
-                internships={internships}
-                applications={applications}
                 onNavigateTab={setActiveTab}
-                onOpenCreatePosting={() => setIsCreateJobOpen(true)}
+                onOpenCreatePosting={() => setActiveTab("postings")}
               />
             )}
             {activeTab === "postings" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">
-                      Danh Sách Tin Tuyển Dụng Thực Tập
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Quản lý các vị trí đang tuyển và tạo bài đăng mới.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setIsCreateJobOpen(true)}
-                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs"
-                  >
-                    + Đăng tuyển bài mới
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {internships
-                    .filter((i) => i.companyId === currentCompany.id)
-                    .map((job) => (
-                      <div
-                        key={job.id}
-                        className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs"
-                      >
-                        <h3 className="font-bold text-slate-900 text-base">
-                          {job.title}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {job.department} • Hạn: {job.deadline}
-                        </p>
-                        <p className="text-xs text-emerald-700 font-bold mt-2">
-                          Mức hỗ trợ: {job.stipend}
-                        </p>
-                        <div className="flex flex-wrap gap-1 mt-3">
-                          {job.requiredSkills.map((sk) => (
-                            <span
-                              key={sk}
-                              className="bg-slate-100 text-slate-700 text-[11px] px-2 py-0.5 rounded font-medium border"
-                            >
-                              {sk}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
+              <CompanyInternships />
             )}
             {activeTab === "applicants" && (
               <ManageApplicants
