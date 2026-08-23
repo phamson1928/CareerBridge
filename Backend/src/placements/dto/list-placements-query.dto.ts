@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { PlacementStatus } from '../../generated/prisma/client';
+import { PlacementStatus, ReportStatus } from '../../generated/prisma/client';
 
 export enum PlacementAssignmentStatus {
   ASSIGNED = 'ASSIGNED',
@@ -44,4 +44,8 @@ export class ListPlacementsQueryDto {
   @IsOptional()
   @IsEnum(PlacementAssignmentStatus)
   assignmentStatus?: PlacementAssignmentStatus;
+
+  @IsOptional()
+  @IsEnum(ReportStatus)
+  reportStatus?: ReportStatus;
 }

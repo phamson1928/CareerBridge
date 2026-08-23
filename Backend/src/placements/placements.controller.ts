@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { ListPlacementsQueryDto } from './dto/list-placements-query.dto';
 import { UpdatePlacementStatusDto } from './dto/update-placement-status.dto';
+import { UpdatePlacementDto } from './dto/update-placement.dto';
 import { PlacementsService } from './placements.service';
 
 @Controller('placements')
@@ -38,6 +39,16 @@ export class PlacementsController {
   @Roles(Role.ADMIN, Role.STUDENT, Role.COMPANY, Role.LECTURER)
   findById(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.placementsService.findById(id, user);
+  }
+
+  @Patch(':id')
+  @Roles(Role.ADMIN)
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePlacementDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.placementsService.update(id, dto, user.id);
   }
 
   @Patch(':id/status')

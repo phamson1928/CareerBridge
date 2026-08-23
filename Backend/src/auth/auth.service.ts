@@ -160,7 +160,8 @@ export class AuthService {
       },
     });
 
-    return this.buildAuthResult(user, refreshToken);
+    const { passwordHash: _passwordHash, ...publicUser } = user;
+    return this.buildAuthResult(publicUser, refreshToken);
   }
 
   async refresh(

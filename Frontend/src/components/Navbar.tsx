@@ -136,6 +136,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             icon: <GraduationCap className="w-4 h-4" />,
           },
           {
+            id: "placement-management",
+            label: "Quản lý Placement",
+            icon: <Briefcase className="w-4 h-4" />,
+          },
+          {
             id: "user-management",
             label: "Quản lý người dùng",
             icon: <Users className="w-4 h-4" />,

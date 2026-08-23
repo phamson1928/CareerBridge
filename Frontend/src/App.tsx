@@ -16,7 +16,6 @@ import {
   Evaluation,
   ChatMessage,
   AppNotification,
-  DashboardStats,
   ApplicationStatus,
 } from "./types";
 
@@ -30,7 +29,6 @@ import {
   INITIAL_EVALUATIONS,
   INITIAL_MESSAGES,
   INITIAL_NOTIFICATIONS,
-  MOCK_DASHBOARD_STATS,
 } from "./data/mockData";
 
 import { Navbar } from "./components/Navbar";
@@ -59,6 +57,7 @@ import { AdminDashboard } from "./components/AdminView/AdminDashboard";
 import { UserManagement } from "./components/AdminView/UserManagement";
 import { CompanyModeration } from "./components/AdminView/CompanyModeration";
 import { SupervisionManagement } from "./components/AdminView/SupervisionManagement";
+import { PlacementManagement } from "./components/AdminView/PlacementManagement";
 import { SkillManagement } from "./components/AdminView/SkillManagement";
 import { SemesterManagement } from "./components/AdminView/SemesterManagement";
 import { PlacementOverview } from "./components/StudentView/PlacementOverview";
@@ -506,10 +505,13 @@ export default function App() {
         {currentRole === "ADMIN" && (
           <>
             {activeTab === "stats-dashboard" && (
-              <AdminDashboard stats={MOCK_DASHBOARD_STATS} />
+              <AdminDashboard onNavigate={setActiveTab} />
             )}
-            {activeTab === "teacher-assignment" && (
-              <SupervisionManagement />
+            {activeTab === "teacher-assignment" && <SupervisionManagement />}
+            {activeTab === "placement-management" && (
+              <PlacementManagement
+                onOpenAssignment={() => setActiveTab("teacher-assignment")}
+              />
             )}
             {activeTab === "user-management" && <UserManagement />}
             {activeTab === "company-approval" && <CompanyModeration />}
