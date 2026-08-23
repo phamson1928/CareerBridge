@@ -110,13 +110,19 @@ export class FilesService {
         sizeBytes: file.sizeBytes,
         createdAt: file.createdAt,
       },
-      downloadUrl: await this.storage.createDownloadUrl(file.storageKey),
+      downloadUrl: await this.storage.createDownloadUrl(
+        file.storageKey,
+        file.originalName,
+      ),
       expiresIn: this.storage.getExpiresIn(),
     };
   }
 
   private validateUpload(dto: CreateUploadUrlDto) {
-    if (dto.originalName.trim() === '' || /[\\/]/.test(dto.originalName)) {
+    if (
+      dto.originalName.trim() === '' ||
+      /[\\/\r\n]/.test(dto.originalName)
+    ) {
       throw new BadRequestException({
         code: 'INVALID_FILE_NAME',
         message: 'File name is invalid',

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Application, ApplicationStatus, CompanyProfile } from '../../types';
 import { getStatusBadge } from '../../utils/matching';
 import { getApiErrorMessage } from '../../auth/api';
-import { getPrivateFileDownloadUrl } from '../../files/api';
+import { downloadPrivateFile } from '../../files/api';
 import { Users, Search, CheckCircle2, XCircle, FileText, Sparkles, MessageSquare, Clock, Filter, Send } from 'lucide-react';
 
 interface ManageApplicantsProps {
@@ -56,8 +56,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
     setOpeningCvId(fileId);
     setActionError(null);
     try {
-      const { downloadUrl } = await getPrivateFileDownloadUrl(fileId);
-      window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+      await downloadPrivateFile(fileId);
     } catch (error) {
       setActionError(getApiErrorMessage(error));
     } finally {
