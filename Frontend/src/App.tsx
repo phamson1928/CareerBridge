@@ -515,13 +515,7 @@ export default function App() {
               />
             )}
             {activeTab === "reports" && (
-              <StudentReports
-                reports={reports.filter(
-                  (r) => r.studentId === currentStudent.id,
-                )}
-                studentProfile={currentStudent}
-                onSubmitReport={handleSubmitReport}
-              />
+              <StudentReports />
             )}
             {activeTab === "placement" && <PlacementOverview />}
             {activeTab === "profile" && <StudentProfileView />}
@@ -575,10 +569,7 @@ export default function App() {
             )}
             {activeTab === "supervised-placements" && <SupervisedPlacements />}
             {activeTab === "review-reports" && (
-              <ReviewReports
-                reports={reports}
-                onReviewReport={handleReviewReport}
-              />
+              <ReviewReports />
             )}
             {activeTab === "evaluation-list" && (
               <TeacherEvaluations
