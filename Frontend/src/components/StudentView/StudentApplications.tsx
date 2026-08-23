@@ -1,17 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Application } from '../../types';
 import { getStatusBadge } from '../../utils/matching';
+import { getApiErrorMessage } from '../../auth/api';
 import { FileCheck, Building2, Calendar, MessageSquare, ExternalLink, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 interface StudentApplicationsProps {
   applications: Application[];
   onOpenChat: () => void;
+  onWithdraw: (applicationId: string) => Promise<void>;
 }
 
 export const StudentApplications: React.FC<StudentApplicationsProps> = ({
   applications,
   onOpenChat,
+  onWithdraw,
 }) => {
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const withdraw = async (applicationId: string) => {
+    setWithdrawingId(applicationId);
+    setActionError(null);
+    try {
+      await onWithdraw(applicationId);
+    } catch (error) {
+      setActionError(getApiErrorMessage(error));
+    } finally {
+      setWithdrawingId(null);
+    }
+  };
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex items-center justify-between">
@@ -62,6 +79,15 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                     >
                       <MessageSquare className="w-4 h-4" />
                     </button>
+                    {(app.status === 'PENDING' || app.status === 'REVIEWING') && (
+                      <button
+                        onClick={() => void withdraw(app.id)}
+                        disabled={withdrawingId === app.id}
+                        className="px-2.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-xl disabled:opacity-50"
+                      >
+                        {withdrawingId === app.id ? 'Đang rút...' : 'Rút đơn'}
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -110,15 +136,20 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                   <span className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" /> Ngày ứng tuyển: {app.appliedAt}
                   </span>
-                  <a
-                    href={app.cvUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
-                  >
-                    Xem CV đã gửi <ExternalLink className="w-3 h-3" />
-                  </a>
+                  {app.cvUrl ? (
+                    <a
+                      href={app.cvUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
+                    >
+                      Xem CV đã gửi <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <span>CV được lưu riêng tư trong hệ thống</span>
+                  )}
                 </div>
+                {actionError && <p className="text-xs text-rose-600">{actionError}</p>}
               </div>
             );
           })}

@@ -84,5 +84,9 @@ export function getApiErrorMessage(error: unknown): string {
     }
   }
 
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
   return 'Không thể kết nối tới hệ thống. Vui lòng thử lại.';
 }

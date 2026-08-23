@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Application, ApplicationStatus, CompanyProfile } from '../../types';
 import { getStatusBadge } from '../../utils/matching';
+import { getApiErrorMessage } from '../../auth/api';
 import { Users, Search, CheckCircle2, XCircle, FileText, Sparkles, MessageSquare, Clock, Filter, Send } from 'lucide-react';
 
 interface ManageApplicantsProps {
   companyProfile: CompanyProfile;
   applications: Application[];
-  onUpdateStatus: (applicationId: string, status: ApplicationStatus, feedback?: string) => void;
+  onUpdateStatus: (applicationId: string, status: ApplicationStatus, feedback?: string) => Promise<void>;
   onOpenChat: () => void;
 }
 
@@ -20,6 +21,8 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const companyApps = applications.filter((a) => a.companyId === companyProfile.id);
 
@@ -32,11 +35,19 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
     return matchesStatus && matchesSearch;
   });
 
-  const handleApplyAction = (status: ApplicationStatus) => {
+  const handleApplyAction = async (status: ApplicationStatus) => {
     if (!selectedApp) return;
-    onUpdateStatus(selectedApp.id, status, feedbackText || (status === 'ACCEPTED' ? 'Hồ sơ đã được phê duyệt.' : 'Cảm ơn em đã quan tâm.'));
-    setSelectedApp(null);
-    setFeedbackText('');
+    setIsSubmitting(true);
+    setActionError(null);
+    try {
+      await onUpdateStatus(selectedApp.id, status, feedbackText || (status === 'ACCEPTED' ? 'Hồ sơ đã được phê duyệt.' : 'Cảm ơn em đã quan tâm.'));
+      setSelectedApp(null);
+      setFeedbackText('');
+    } catch (error) {
+      setActionError(getApiErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -72,6 +83,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
             <option value="REVIEWING">Đang xem xét</option>
             <option value="ACCEPTED">Đã nhận</option>
             <option value="REJECTED">Từ chối</option>
+            <option value="WITHDRAWN">Sinh viên rút đơn</option>
           </select>
         </div>
       </div>
@@ -86,6 +98,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
         ) : (
           filteredApps.map((app) => {
             const badge = getStatusBadge(app.status);
+            const canReview = app.status === 'PENDING' || app.status === 'REVIEWING';
 
             return (
               <div
@@ -139,14 +152,18 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                 {/* Action Row */}
                 <div className="flex items-center justify-between pt-2">
                   <div className="flex items-center gap-3 text-xs">
-                    <a
-                      href={app.cvUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 font-bold hover:underline flex items-center gap-1"
-                    >
-                      <FileText className="w-3.5 h-3.5" /> Xem CV đầy đủ
-                    </a>
+                    {app.cvUrl ? (
+                      <a
+                        href={app.cvUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 font-bold hover:underline flex items-center gap-1"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> Xem CV đầy đủ
+                      </a>
+                    ) : (
+                      <span className="text-slate-500">CV được lưu riêng tư</span>
+                    )}
                     <button
                       onClick={onOpenChat}
                       className="text-slate-600 font-semibold hover:text-blue-600 flex items-center gap-1"
@@ -160,9 +177,10 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                       setSelectedApp(app);
                       setFeedbackText(app.companyFeedback || '');
                     }}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs"
+                    disabled={!canReview}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Xử lý hồ sơ →
+                    {canReview ? 'Xử lý hồ sơ →' : 'Đã xử lý'}
                   </button>
                 </div>
               </div>
@@ -193,21 +211,24 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
               <div className="pt-2 grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => handleApplyAction('REVIEWING')}
+                  onClick={() => void handleApplyAction('REVIEWING')}
+                  disabled={isSubmitting}
                   className="py-2.5 bg-blue-50 text-blue-800 font-bold border border-blue-200 rounded-xl hover:bg-blue-100"
                 >
                   Đang xem xét
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleApplyAction('ACCEPTED')}
+                  onClick={() => void handleApplyAction('ACCEPTED')}
+                  disabled={isSubmitting}
                   className="py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-xs"
                 >
                   Chấp nhận ✓
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleApplyAction('REJECTED')}
+                  onClick={() => void handleApplyAction('REJECTED')}
+                  disabled={isSubmitting}
                   className="py-2.5 bg-rose-50 text-rose-800 font-bold border border-rose-200 rounded-xl hover:bg-rose-100"
                 >
                   Từ chối ✕
@@ -222,6 +243,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                   Hủy bỏ
                 </button>
               </div>
+              {actionError && <p className="text-xs text-rose-600">{actionError}</p>}
             </div>
           </div>
         </div>
