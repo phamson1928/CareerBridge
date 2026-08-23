@@ -39,11 +39,16 @@ export class SupabaseStorageService {
     };
   }
 
-  async createDownloadUrl(storageKey: string): Promise<string> {
+  async createDownloadUrl(
+    storageKey: string,
+    downloadName: string,
+  ): Promise<string> {
     const encodedKey = this.encodeStorageKey(storageKey);
     const payload = await this.request<DownloadUrlResponse>(
       `/storage/v1/object/sign/${this.bucket}/${encodedKey}`,
-      { expiresIn: this.expiresIn },
+      // Supabase turns this into Content-Disposition: attachment so browsers
+      // download the database filename rather than the UUID-based storage key.
+      { expiresIn: this.expiresIn, download: downloadName },
     );
     return this.toAbsoluteUrl(payload.signedURL);
   }

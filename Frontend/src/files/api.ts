@@ -54,4 +54,19 @@ export async function getPrivateFileDownloadUrl(fileId: string) {
   return response.data.data;
 }
 
+export async function downloadPrivateFile(fileId: string): Promise<void> {
+  const { file, downloadUrl } = await getPrivateFileDownloadUrl(fileId);
+  const response = await fetch(downloadUrl);
+  if (!response.ok) throw new Error("Không thể tải tệp từ Object Storage.");
+  const objectUrl = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = file.originalName;
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export { getApiErrorMessage };

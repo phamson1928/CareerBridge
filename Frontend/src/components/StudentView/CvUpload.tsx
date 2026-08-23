@@ -2,6 +2,7 @@ import React, { ChangeEvent, useEffect, useState } from "react";
 import { Download, Eye, FileUp, LoaderCircle, X } from "lucide-react";
 import {
   getApiErrorMessage,
+  downloadPrivateFile,
   getPrivateFileDownloadUrl,
   uploadPrivateFile,
 } from "../../files/api";
@@ -61,8 +62,7 @@ export const CvUpload: React.FC<CvUploadProps> = ({
     setIsDownloading(true);
     setError(null);
     try {
-      const result = await getPrivateFileDownloadUrl(fileId);
-      window.open(result.downloadUrl, "_blank", "noopener,noreferrer");
+      await downloadPrivateFile(fileId);
     } catch (downloadError) {
       setError(getApiErrorMessage(downloadError));
     } finally {
