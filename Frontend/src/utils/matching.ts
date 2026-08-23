@@ -45,6 +45,12 @@ export function getStatusBadge(status: ApplicationStatus) {
         bg: 'bg-rose-100 text-rose-800 border-rose-200',
         dot: 'bg-rose-500',
       };
+    case 'WITHDRAWN':
+      return {
+        label: 'Đã rút đơn',
+        bg: 'bg-slate-100 text-slate-700 border-slate-200',
+        dot: 'bg-slate-500',
+      };
     default:
       return {
         label: status,

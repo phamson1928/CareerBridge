@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Internship, StudentProfile, Application } from '../../types';
 import { calculateSkillMatch } from '../../utils/matching';
+import { getApiErrorMessage } from '../../auth/api';
 import {
   Search,
   Filter,
@@ -20,7 +21,7 @@ interface InternshipListProps {
   internships: Internship[];
   studentProfile: StudentProfile;
   applications: Application[];
-  onApply: (internshipId: string, coverLetter: string, cvUrl: string) => void;
+  onApply: (internshipId: string, coverLetter: string) => Promise<void>;
 }
 
 export const InternshipList: React.FC<InternshipListProps> = ({
@@ -36,6 +37,12 @@ export const InternshipList: React.FC<InternshipListProps> = ({
   const [applyModalInternship, setApplyModalInternship] = useState<Internship | null>(null);
   const [coverLetter, setCoverLetter] = useState('');
   const [selectedCvName, setSelectedCvName] = useState(studentProfile.cvName || 'Pham_Hoang_Son_CV.pdf');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedCvName(studentProfile.cvName || 'Chưa tải CV lên hồ sơ');
+  }, [studentProfile.cvName]);
 
   // Available skills filter list
   const allSkills = Array.from(
@@ -62,16 +69,20 @@ export const InternshipList: React.FC<InternshipListProps> = ({
     return app ? app.status : null;
   };
 
-  const handleApplySubmit = (e: React.FormEvent) => {
+  const handleApplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!applyModalInternship) return;
-    onApply(
-      applyModalInternship.id,
-      coverLetter,
-      studentProfile.cvUrl || 'https://pdfobject.com/pdf/sample.pdf'
-    );
-    setApplyModalInternship(null);
-    setCoverLetter('');
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await onApply(applyModalInternship.id, coverLetter);
+      setApplyModalInternship(null);
+      setCoverLetter('');
+    } catch (error) {
+      setSubmitError(getApiErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -354,11 +365,13 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs"
                 >
-                  Xác nhận nộp đơn
+                  {isSubmitting ? 'Đang nộp...' : 'Xác nhận nộp đơn'}
                 </button>
               </div>
+              {submitError && <p className="text-xs text-rose-600">{submitError}</p>}
             </form>
           </div>
         </div>

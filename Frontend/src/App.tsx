@@ -24,7 +24,6 @@ import {
   INITIAL_COMPANY_PROFILES,
   INITIAL_TEACHER_PROFILES,
   INITIAL_INTERNSHIPS,
-  INITIAL_APPLICATIONS,
   INITIAL_WEEKLY_REPORTS,
   INITIAL_EVALUATIONS,
   INITIAL_MESSAGES,
@@ -47,6 +46,7 @@ import { PostInternshipModal } from "./components/CompanyView/PostInternshipModa
 import { ManageApplicants } from "./components/CompanyView/ManageApplicants";
 import { EvaluateInternsModal } from "./components/CompanyView/EvaluateInternsModal";
 import { CompanyProfileView } from "./components/CompanyView/CompanyProfile";
+import { CompanyInternships } from "./components/CompanyView/CompanyInternships";
 
 import { TeacherDashboard } from "./components/TeacherView/TeacherDashboard";
 import { ReviewReports } from "./components/TeacherView/ReviewReports";
@@ -63,6 +63,62 @@ import { SemesterManagement } from "./components/AdminView/SemesterManagement";
 import { PlacementOverview } from "./components/StudentView/PlacementOverview";
 import { SupervisedPlacements } from "./components/TeacherView/SupervisedPlacements";
 import { useAuth } from "./auth/AuthContext";
+import { applicationsApi, type ApplicationRecord } from "./applications/api";
+import { companiesApi } from "./companies/api";
+import { internshipsApi, type InternshipRecord } from "./internships/api";
+import { studentsApi } from "./students/api";
+
+function toLegacyInternship(record: InternshipRecord): Internship {
+  const type = ["Full-time", "Part-time", "Hybrid", "Remote"].includes(
+    record.workType ?? "",
+  )
+    ? (record.workType as Internship["type"])
+    : "Full-time";
+
+  return {
+    id: record.id,
+    companyId: record.companyId,
+    companyName: record.company.companyName,
+    companyLogo: record.company.logo ?? "",
+    title: record.title,
+    department: record.department ?? "Chưa cập nhật",
+    location: record.location ?? "Chưa cập nhật",
+    type,
+    stipend: record.stipend ?? "Thỏa thuận",
+    description: record.description,
+    requirements: record.requirements
+      ? record.requirements.split("\n").filter(Boolean)
+      : [],
+    requiredSkills: record.skills.map((item) => item.name),
+    slots: record.slots,
+    filledSlots: record.filledSlots,
+    deadline: record.deadline ?? "Chưa cập nhật",
+    createdAt: record.createdAt,
+    status: record.status === "OPEN" ? "ACTIVE" : "CLOSED",
+  };
+}
+
+function toLegacyApplication(record: ApplicationRecord): Application {
+  return {
+    id: record.id,
+    studentId: record.studentId,
+    studentName: record.student.fullName,
+    studentMajor: record.student.major,
+    studentSkills: [],
+    internshipId: record.internshipId,
+    internshipTitle: record.internship.title,
+    companyId: record.internship.company.id,
+    companyName: record.internship.company.companyName,
+    cvUrl: "",
+    cvFileId: record.cvFileId ?? undefined,
+    coverLetter: record.coverLetter ?? undefined,
+    matchScore: record.matchScore ?? 0,
+    status: record.status,
+    companyFeedback: record.companyFeedback ?? undefined,
+    appliedAt: record.appliedAt,
+    updatedAt: record.updatedAt,
+  };
+}
 
 export default function App() {
   const { user, logout } = useAuth();
@@ -90,8 +146,7 @@ export default function App() {
 
   const [internships, setInternships] =
     useState<Internship[]>(INITIAL_INTERNSHIPS);
-  const [applications, setApplications] =
-    useState<Application[]>(INITIAL_APPLICATIONS);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [reports, setReports] = useState<WeeklyReport[]>(
     INITIAL_WEEKLY_REPORTS,
   );
@@ -107,6 +162,81 @@ export default function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAICoachOpen, setIsAICoachOpen] = useState(false);
   const [isCreateJobOpen, setIsCreateJobOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let active = true;
+    const applyApplications = (records: ApplicationRecord[]) => {
+      if (active) setApplications(records.map(toLegacyApplication));
+    };
+
+    const loadWorkflowData = async () => {
+      try {
+        if (user.role === "STUDENT") {
+          const [internshipsPage, applicationsPage] = await Promise.all([
+            internshipsApi.list({ page: 1, limit: 100 }),
+            applicationsApi.listMine({ page: 1, limit: 100 }),
+          ]);
+          if (!active) return;
+          setInternships(internshipsPage.items.map(toLegacyInternship));
+          applyApplications(applicationsPage.items);
+
+          try {
+            const profile = await studentsApi.getMine();
+            if (!active) return;
+            setStudentProfiles((previous) => [
+              {
+                ...previous[0],
+                id: profile.id,
+                userId: profile.userId,
+                fullname: profile.fullName,
+                studentCode: profile.studentCode,
+                major: profile.major,
+                gpa: profile.gpa ?? 0,
+                cvFileId: profile.cvFileId ?? undefined,
+                cvName: profile.cvFile?.originalName,
+              },
+            ]);
+          } catch (profileError) {
+            console.warn("Student profile is not available yet", profileError);
+          }
+        }
+
+        if (user.role === "COMPANY") {
+          const [profile, applicationsPage] = await Promise.all([
+            companiesApi.getMine(),
+            applicationsApi.listMine({ page: 1, limit: 100 }),
+          ]);
+          if (!active) return;
+          setCompanyProfiles((previous) => [
+            {
+              ...previous[0],
+              id: profile.id,
+              userId: profile.userId,
+              companyName: profile.companyName,
+              tagline: profile.tagline ?? "",
+              description: profile.description ?? "",
+              industry: profile.industry ?? "",
+              website: profile.website ?? "",
+              address: profile.address ?? "",
+              logo: profile.logo ?? "",
+              verified: profile.status === "APPROVED",
+              contactEmail: profile.contactEmail ?? "",
+            },
+          ]);
+          applyApplications(applicationsPage.items);
+        }
+      } catch (error) {
+        console.error("Unable to load application workflow data", error);
+      }
+    };
+
+    void loadWorkflowData();
+    return () => {
+      active = false;
+    };
+  }, [user?.id, user?.role]);
 
   // Active Users per Role
   const currentStudent = studentProfiles[0];
@@ -128,33 +258,34 @@ export default function App() {
   };
 
   // Student Actions
-  const handleApplyInternship = (
+  const handleApplyInternship = async (
     internshipId: string,
     coverLetter: string,
-    cvUrl: string,
   ) => {
     const job = internships.find((i) => i.id === internshipId);
-    if (!job) return;
+    if (!job) throw new Error("Không tìm thấy vị trí thực tập.");
+    let cvFileId = currentStudent.cvFileId;
+    if (!cvFileId) {
+      const profile = await studentsApi.getMine();
+      cvFileId = profile.cvFileId ?? undefined;
+      setStudentProfiles((previous) => [
+        {
+          ...previous[0],
+          cvFileId,
+          cvName: profile.cvFile?.originalName,
+        },
+      ]);
+    }
+    if (!cvFileId) {
+      throw new Error("Bạn cần tải CV lên hồ sơ trước khi ứng tuyển.");
+    }
 
-    const newApp: Application = {
-      id: `app-${Date.now()}`,
-      studentId: currentStudent.id,
-      studentName: currentStudent.fullname,
-      studentMajor: currentStudent.major,
-      studentSkills: currentStudent.skills,
+    const created = await applicationsApi.create({
       internshipId,
-      internshipTitle: job.title,
-      companyId: job.companyId,
-      companyName: job.companyName,
-      cvUrl,
       coverLetter,
-      matchScore: 92,
-      status: "PENDING",
-      appliedAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0],
-    };
-
-    setApplications([newApp, ...applications]);
+      cvFileId,
+    });
+    setApplications((previous) => [toLegacyApplication(created), ...previous]);
 
     // Add Notification for Company
     const newNotif: AppNotification = {
@@ -166,7 +297,7 @@ export default function App() {
       read: false,
       createdAt: "Vừa xong",
     };
-    setNotifications([newNotif, ...notifications]);
+    setNotifications((previous) => [newNotif, ...previous]);
 
     alert(
       `Ứng tuyển vị trí "${job.title}" thành công! Doanh nghiệp sẽ xem xét hồ sơ của bạn.`,
@@ -227,21 +358,29 @@ export default function App() {
     setInternships([newJob, ...internships]);
   };
 
-  const handleUpdateApplicationStatus = (
+  const handleUpdateApplicationStatus = async (
     appId: string,
     status: ApplicationStatus,
     feedback?: string,
   ) => {
-    setApplications((prev) =>
-      prev.map((a) =>
-        a.id === appId
-          ? {
-              ...a,
-              status,
-              companyFeedback: feedback || a.companyFeedback,
-              updatedAt: new Date().toISOString().split("T")[0],
-            }
-          : a,
+    const updated = await applicationsApi.updateStatus(appId, {
+      status,
+      companyFeedback: feedback,
+    });
+    setApplications((previous) =>
+      previous.map((application) =>
+        application.id === appId ? toLegacyApplication(updated) : application,
+      ),
+    );
+  };
+
+  const handleWithdrawApplication = async (appId: string) => {
+    const updated = await applicationsApi.updateStatus(appId, {
+      status: "WITHDRAWN",
+    });
+    setApplications((previous) =>
+      previous.map((application) =>
+        application.id === appId ? toLegacyApplication(updated) : application,
       ),
     );
   };
@@ -371,6 +510,7 @@ export default function App() {
                   (a) => a.studentId === currentStudent.id,
                 )}
                 onOpenChat={() => setIsChatOpen(true)}
+                onWithdraw={handleWithdrawApplication}
               />
             )}
             {activeTab === "reports" && (
@@ -393,63 +533,12 @@ export default function App() {
             {activeTab === "company-profile" && <CompanyProfileView />}
             {activeTab === "dashboard" && (
               <CompanyDashboard
-                companyProfile={currentCompany}
-                internships={internships}
-                applications={applications}
                 onNavigateTab={setActiveTab}
-                onOpenCreatePosting={() => setIsCreateJobOpen(true)}
+                onOpenCreatePosting={() => setActiveTab("postings")}
               />
             )}
             {activeTab === "postings" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">
-                      Danh Sách Tin Tuyển Dụng Thực Tập
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Quản lý các vị trí đang tuyển và tạo bài đăng mới.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setIsCreateJobOpen(true)}
-                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs"
-                  >
-                    + Đăng tuyển bài mới
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {internships
-                    .filter((i) => i.companyId === currentCompany.id)
-                    .map((job) => (
-                      <div
-                        key={job.id}
-                        className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs"
-                      >
-                        <h3 className="font-bold text-slate-900 text-base">
-                          {job.title}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {job.department} • Hạn: {job.deadline}
-                        </p>
-                        <p className="text-xs text-emerald-700 font-bold mt-2">
-                          Mức hỗ trợ: {job.stipend}
-                        </p>
-                        <div className="flex flex-wrap gap-1 mt-3">
-                          {job.requiredSkills.map((sk) => (
-                            <span
-                              key={sk}
-                              className="bg-slate-100 text-slate-700 text-[11px] px-2 py-0.5 rounded font-medium border"
-                            >
-                              {sk}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
+              <CompanyInternships />
             )}
             {activeTab === "applicants" && (
               <ManageApplicants

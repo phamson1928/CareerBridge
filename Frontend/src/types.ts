@@ -1,7 +1,7 @@
 export type UserRole = "STUDENT" | "COMPANY" | "TEACHER" | "ADMIN";
 
 export type ApplicationStatus =
-  "PENDING" | "REVIEWING" | "ACCEPTED" | "REJECTED";
+  "PENDING" | "REVIEWING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
 
 export type ReportStatus =
   "DRAFT" | "SUBMITTED" | "APPROVED" | "NEEDS_REVISION";
@@ -94,6 +94,7 @@ export interface Application {
   companyId: string;
   companyName: string;
   cvUrl: string;
+  cvFileId?: string;
   coverLetter?: string;
   matchScore: number;
   status: ApplicationStatus;
