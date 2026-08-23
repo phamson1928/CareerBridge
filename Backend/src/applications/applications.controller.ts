@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApplicationsService } from './applications.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -23,13 +32,19 @@ export class ApplicationsController {
 
   @Get()
   @Roles(Role.ADMIN)
-  list(@Query() query: ListApplicationsQueryDto, @CurrentUser() user: AuthUser) {
+  list(
+    @Query() query: ListApplicationsQueryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.applicationsService.list(query, user);
   }
 
   @Get('me')
   @Roles(Role.STUDENT, Role.COMPANY, Role.ADMIN)
-  findMine(@Query() query: ListApplicationsQueryDto, @CurrentUser() user: AuthUser) {
+  findMine(
+    @Query() query: ListApplicationsQueryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.applicationsService.findMine(query, user);
   }
 

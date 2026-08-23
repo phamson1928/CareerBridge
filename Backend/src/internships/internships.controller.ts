@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -22,7 +34,10 @@ export class InternshipsController {
 
   @Get('me')
   @Roles(Role.COMPANY)
-  listMine(@Query() query: ListInternshipsQueryDto, @CurrentUser() user: AuthUser) {
+  listMine(
+    @Query() query: ListInternshipsQueryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.internshipsService.listMine(query, user.id);
   }
 
@@ -39,7 +54,11 @@ export class InternshipsController {
 
   @Patch(':id')
   @Roles(Role.COMPANY)
-  update(@Param('id') id: string, @Body() dto: UpdateInternshipDto, @CurrentUser() user: AuthUser) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateInternshipDto,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.internshipsService.update(id, dto, user.id);
   }
 

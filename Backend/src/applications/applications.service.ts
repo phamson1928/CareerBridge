@@ -5,7 +5,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ApplicationStatus, CompanyStatus, FileType, InternshipStatus, PlacementStatus, Role, SemesterStatus } from '../generated/prisma/client';
+import {
+  Prisma,
+  ApplicationStatus,
+  CompanyStatus,
+  FileType,
+  InternshipStatus,
+  PlacementStatus,
+  Role,
+  SemesterStatus,
+} from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { CreateApplicationDto } from './dto/create-application.dto';
@@ -47,7 +56,15 @@ const applicationSelect = {
       slots: true,
       filledSlots: true,
       company: { select: { id: true, companyName: true, userId: true } },
-      semester: { select: { id: true, name: true, status: true, startDate: true, endDate: true } },
+      semester: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+        },
+      },
     },
   },
   placement: {
@@ -70,7 +87,9 @@ const applicationHistorySelect = {
   createdAt: true,
 } satisfies Prisma.ApplicationStatusHistorySelect;
 
-type ApplicationRecord = Prisma.ApplicationGetPayload<{ select: typeof applicationSelect }>;
+type ApplicationRecord = Prisma.ApplicationGetPayload<{
+  select: typeof applicationSelect;
+}>;
 type PrismaClientLike = PrismaService | Prisma.TransactionClient;
 
 @Injectable()
@@ -133,8 +152,10 @@ export class ApplicationsService {
   }
 
   async list(query: ListApplicationsQueryDto, user: AuthUser) {
-    if (user.role === Role.STUDENT) return this.paginateByStudent(query, user.id);
-    if (user.role === Role.COMPANY) return this.paginateByCompany(query, user.id);
+    if (user.role === Role.STUDENT)
+      return this.paginateByStudent(query, user.id);
+    if (user.role === Role.COMPANY)
+      return this.paginateByCompany(query, user.id);
     if (user.role === Role.ADMIN) return this.paginate(query, {});
     throw new ForbiddenException({
       code: 'FORBIDDEN_ROLE',
@@ -173,7 +194,11 @@ export class ApplicationsService {
     return history;
   }
 
-  async updateStatus(id: string, dto: UpdateApplicationStatusDto, user: AuthUser) {
+  async updateStatus(
+    id: string,
+    dto: UpdateApplicationStatusDto,
+    user: AuthUser,
+  ) {
     const application = await this.prisma.application.findUnique({
       where: { id },
       select: {
@@ -216,18 +241,35 @@ export class ApplicationsService {
       });
     }
 
-    await this.ensureCompanyCanReview(application.internship.company.userId, user);
+    await this.ensureCompanyCanReview(
+      application.internship.company.userId,
+      user,
+    );
 
     if (dto.status === ApplicationStatus.REVIEWING) {
-      return this.transition(application.id, user, ApplicationStatus.REVIEWING, dto.companyFeedback ?? null);
+      return this.transition(
+        application.id,
+        user,
+        ApplicationStatus.REVIEWING,
+        dto.companyFeedback ?? null,
+      );
     }
 
     if (dto.status === ApplicationStatus.REJECTED) {
-      return this.transition(application.id, user, ApplicationStatus.REJECTED, dto.companyFeedback?.trim() ?? null);
+      return this.transition(
+        application.id,
+        user,
+        ApplicationStatus.REJECTED,
+        dto.companyFeedback?.trim() ?? null,
+      );
     }
 
     if (dto.status === ApplicationStatus.ACCEPTED) {
-      return this.accept(application.id, user, dto.companyFeedback?.trim() ?? null);
+      return this.accept(
+        application.id,
+        user,
+        dto.companyFeedback?.trim() ?? null,
+      );
     }
 
     throw new BadRequestException({
@@ -236,7 +278,11 @@ export class ApplicationsService {
     });
   }
 
-  async withdraw(id: string, user: AuthUser, dto?: { companyFeedback?: string | null }) {
+  async withdraw(
+    id: string,
+    user: AuthUser,
+    dto?: { companyFeedback?: string | null },
+  ) {
     const application = await this.prisma.application.findUnique({
       where: { id },
       select: {
@@ -260,133 +306,158 @@ export class ApplicationsService {
       });
     }
 
-    return this.transition(application.id, user, ApplicationStatus.WITHDRAWN, dto?.companyFeedback ?? null);
+    return this.transition(
+      application.id,
+      user,
+      ApplicationStatus.WITHDRAWN,
+      dto?.companyFeedback ?? null,
+    );
   }
 
   private async accept(id: string, user: AuthUser, feedback: string | null) {
-    return this.prisma.$transaction(async (tx) => {
-      const current = await tx.application.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          status: true,
-          studentId: true,
-          internshipId: true,
-          student: { select: { userId: true } },
-          internship: {
-            select: {
-              id: true,
-              companyId: true,
-              semesterId: true,
-              startDate: true,
-              endDate: true,
-              company: { select: { userId: true, status: true } },
-              semester: { select: { status: true } },
+    return this.prisma.$transaction(
+      async (tx) => {
+        const current = await tx.application.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            status: true,
+            studentId: true,
+            internshipId: true,
+            student: { select: { userId: true } },
+            internship: {
+              select: {
+                id: true,
+                companyId: true,
+                semesterId: true,
+                startDate: true,
+                endDate: true,
+                company: { select: { userId: true, status: true } },
+                semester: { select: { status: true } },
+              },
             },
+            placement: { select: { id: true, status: true } },
           },
-          placement: { select: { id: true, status: true } },
-        },
-      });
-      if (!current) throw this.notFound();
-      await this.ensureCompanyCanReview(current.internship.company.userId, user, tx);
-
-      if (current.status === ApplicationStatus.ACCEPTED && current.placement) {
-        return this.toResponse(await tx.application.findUniqueOrThrow({ where: { id }, select: applicationSelect }));
-      }
-
-      if (!this.isOpenApplicationStatus(current.status)) {
-        throw new BadRequestException({
-          code: 'APPLICATION_ALREADY_FINALIZED',
-          message: 'Only pending or reviewing applications can be accepted',
         });
-      }
+        if (!current) throw this.notFound();
+        await this.ensureCompanyCanReview(
+          current.internship.company.userId,
+          user,
+          tx,
+        );
 
-      await this.ensureSemesterActive(current.internship.semesterId, tx);
-      await this.ensureStudentHasNoActivePlacement(
-        current.studentId,
-        current.internship.semesterId,
-        tx,
-      );
-      await this.reserveInternshipSlot(current.internshipId, tx);
+        if (
+          current.status === ApplicationStatus.ACCEPTED &&
+          current.placement
+        ) {
+          return this.toResponse(
+            await tx.application.findUniqueOrThrow({
+              where: { id },
+              select: applicationSelect,
+            }),
+          );
+        }
 
-      const updated = await tx.application.update({
-        where: { id },
-        data: {
-          status: ApplicationStatus.ACCEPTED,
-          acceptedAt: new Date(),
-          rejectedAt: null,
-          withdrawnAt: null,
-          companyFeedback: feedback,
-        },
-        select: applicationSelect,
-      });
+        if (!this.isOpenApplicationStatus(current.status)) {
+          throw new BadRequestException({
+            code: 'APPLICATION_ALREADY_FINALIZED',
+            message: 'Only pending or reviewing applications can be accepted',
+          });
+        }
 
-      await tx.applicationStatusHistory.create({
-        data: {
-          applicationId: id,
-          fromStatus: current.status,
-          toStatus: ApplicationStatus.ACCEPTED,
-          changedById: user.id,
-          note: feedback ?? 'Application accepted',
-        },
-      });
+        await this.ensureSemesterActive(current.internship.semesterId, tx);
+        await this.ensureStudentHasNoActivePlacement(
+          current.studentId,
+          current.internship.semesterId,
+          tx,
+        );
+        await this.reserveInternshipSlot(current.internshipId, tx);
 
-      await tx.internshipPlacement.create({
-        data: {
-          applicationId: id,
-          studentId: current.studentId,
-          companyId: current.internship.companyId,
-          internshipId: current.internshipId,
-          semesterId: current.internship.semesterId,
-          status: PlacementStatus.PENDING,
-          startDate: current.internship.startDate,
-          endDate: current.internship.endDate,
-        },
-      });
+        const updated = await tx.application.update({
+          where: { id },
+          data: {
+            status: ApplicationStatus.ACCEPTED,
+            acceptedAt: new Date(),
+            rejectedAt: null,
+            withdrawnAt: null,
+            companyFeedback: feedback,
+          },
+          select: applicationSelect,
+        });
 
-      await tx.conversation.upsert({
-        where: { applicationId: id },
-        create: {
-          applicationId: id,
-          studentId: current.studentId,
-          companyId: current.internship.companyId,
-        },
-        update: {
-          studentId: current.studentId,
-          companyId: current.internship.companyId,
-        },
-      });
+        await tx.applicationStatusHistory.create({
+          data: {
+            applicationId: id,
+            fromStatus: current.status,
+            toStatus: ApplicationStatus.ACCEPTED,
+            changedById: user.id,
+            note: feedback ?? 'Application accepted',
+          },
+        });
 
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: 'APPLICATION_ACCEPTED',
-          entity: 'Application',
-          entityId: id,
-          metadata: { feedback },
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: 'PLACEMENT_CREATED',
-          entity: 'InternshipPlacement',
-          entityId: id,
-          metadata: {
+        await tx.internshipPlacement.create({
+          data: {
             applicationId: id,
             studentId: current.studentId,
+            companyId: current.internship.companyId,
             internshipId: current.internshipId,
             semesterId: current.internship.semesterId,
+            status: PlacementStatus.PENDING,
+            startDate: current.internship.startDate,
+            endDate: current.internship.endDate,
           },
-        },
-      });
+        });
 
-      return updated;
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        await tx.conversation.upsert({
+          where: { applicationId: id },
+          create: {
+            applicationId: id,
+            studentId: current.studentId,
+            companyId: current.internship.companyId,
+          },
+          update: {
+            studentId: current.studentId,
+            companyId: current.internship.companyId,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            userId: user.id,
+            action: 'APPLICATION_ACCEPTED',
+            entity: 'Application',
+            entityId: id,
+            metadata: { feedback },
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            userId: user.id,
+            action: 'PLACEMENT_CREATED',
+            entity: 'InternshipPlacement',
+            entityId: id,
+            metadata: {
+              applicationId: id,
+              studentId: current.studentId,
+              internshipId: current.internshipId,
+              semesterId: current.internship.semesterId,
+            },
+          },
+        });
+
+        return updated;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
-  private async transition(id: string, user: AuthUser, toStatus: ApplicationStatus, note: string | null) {
+  private async transition(
+    id: string,
+    user: AuthUser,
+    toStatus: ApplicationStatus,
+    note: string | null,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const current = await tx.application.findUnique({
         where: { id },
@@ -406,16 +477,25 @@ export class ApplicationsService {
         },
       });
       if (!current) throw this.notFound();
-      await this.ensureCanTransition(current.status, toStatus, user, current.student.userId, current.internship.company.userId);
+      await this.ensureCanTransition(
+        current.status,
+        toStatus,
+        user,
+        current.student.userId,
+        current.internship.company.userId,
+      );
 
       const updated = await tx.application.update({
         where: { id },
         data: {
           status: toStatus,
           companyFeedback: note ?? undefined,
-          acceptedAt: toStatus === ApplicationStatus.ACCEPTED ? new Date() : undefined,
-          rejectedAt: toStatus === ApplicationStatus.REJECTED ? new Date() : undefined,
-          withdrawnAt: toStatus === ApplicationStatus.WITHDRAWN ? new Date() : undefined,
+          acceptedAt:
+            toStatus === ApplicationStatus.ACCEPTED ? new Date() : undefined,
+          rejectedAt:
+            toStatus === ApplicationStatus.REJECTED ? new Date() : undefined,
+          withdrawnAt:
+            toStatus === ApplicationStatus.WITHDRAWN ? new Date() : undefined,
         },
         select: applicationSelect,
       });
@@ -444,7 +524,10 @@ export class ApplicationsService {
     });
   }
 
-  private async paginate(query: ListApplicationsQueryDto, where: Prisma.ApplicationWhereInput) {
+  private async paginate(
+    query: ListApplicationsQueryDto,
+    where: Prisma.ApplicationWhereInput,
+  ) {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.application.findMany({
         where: query.status ? { ...where, status: query.status } : where,
@@ -478,12 +561,21 @@ export class ApplicationsService {
   }
 
   private async ensureCanAccess(
-    application: { id: string; student: { userId: string }; internship: { company: { userId: string } } },
+    application: {
+      id: string;
+      student: { userId: string };
+      internship: { company: { userId: string } };
+    },
     user: AuthUser,
   ) {
     if (user.role === Role.ADMIN) return;
-    if (user.role === Role.STUDENT && application.student.userId === user.id) return;
-    if (user.role === Role.COMPANY && application.internship.company.userId === user.id) return;
+    if (user.role === Role.STUDENT && application.student.userId === user.id)
+      return;
+    if (
+      user.role === Role.COMPANY &&
+      application.internship.company.userId === user.id
+    )
+      return;
     throw new ForbiddenException({
       code: 'APPLICATION_NOT_ACCESSIBLE',
       message: 'You cannot access this application',
@@ -600,7 +692,8 @@ export class ApplicationsService {
     if (existing) {
       throw new ConflictException({
         code: 'STUDENT_ALREADY_PLACED_IN_SEMESTER',
-        message: 'Student already has a pending or active placement in this semester',
+        message:
+          'Student already has a pending or active placement in this semester',
       });
     }
   }
@@ -612,7 +705,10 @@ export class ApplicationsService {
     );
   }
 
-  private async reserveInternshipSlot(internshipId: string, tx: Prisma.TransactionClient) {
+  private async reserveInternshipSlot(
+    internshipId: string,
+    tx: Prisma.TransactionClient,
+  ) {
     const updated = await tx.$executeRaw`
       UPDATE "Internship"
       SET "filledSlots" = "filledSlots" + 1

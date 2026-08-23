@@ -22,9 +22,10 @@ export class CreateInternshipDto {
   @MaxLength(200)
   title!: string;
 
-  @Transform(trim)
+  @IsOptional()
+  @Transform(trimOptional)
   @IsString()
-  semesterId!: string;
+  semesterId?: string | null;
 
   @IsOptional()
   @Transform(trimOptional)

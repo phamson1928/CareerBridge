@@ -35,7 +35,7 @@ export interface InternshipRecord {
 }
 
 export interface InternshipInput {
-  semesterId: string;
+  semesterId?: string;
   title: string;
   description: string;
   slots: number;
