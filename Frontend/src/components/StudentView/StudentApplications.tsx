@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Application } from '../../types';
 import { getStatusBadge } from '../../utils/matching';
 import { getApiErrorMessage } from '../../auth/api';
-import { FileCheck, Building2, Calendar, MessageSquare, ExternalLink, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { FileCheck, Building2, MessageSquare, ExternalLink, Clock } from 'lucide-react';
 
 interface StudentApplicationsProps {
   applications: Application[];
@@ -29,6 +29,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
       setWithdrawingId(null);
     }
   };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex items-center justify-between">

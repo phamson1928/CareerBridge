@@ -94,6 +94,7 @@ export interface Application {
   companyId: string;
   companyName: string;
   cvUrl: string;
+  cvFileId?: string;
   coverLetter?: string;
   matchScore: number;
   status: ApplicationStatus;

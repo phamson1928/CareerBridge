@@ -111,6 +111,7 @@ function toLegacyApplication(record: ApplicationRecord): Application {
     companyId: record.internship.company.id,
     companyName: record.internship.company.companyName,
     cvUrl: "",
+    cvFileId: record.cvFileId ?? undefined,
     coverLetter: record.coverLetter ?? undefined,
     matchScore: record.matchScore ?? 0,
     status: record.status,
@@ -174,27 +175,33 @@ export default function App() {
     const loadWorkflowData = async () => {
       try {
         if (user.role === "STUDENT") {
-          const [internshipsPage, profile, applicationsPage] = await Promise.all([
+          const [internshipsPage, applicationsPage] = await Promise.all([
             internshipsApi.list({ page: 1, limit: 100 }),
-            studentsApi.getMine(),
             applicationsApi.listMine({ page: 1, limit: 100 }),
           ]);
           if (!active) return;
           setInternships(internshipsPage.items.map(toLegacyInternship));
-          setStudentProfiles((previous) => [
-            {
-              ...previous[0],
-              id: profile.id,
-              userId: profile.userId,
-              fullname: profile.fullName,
-              studentCode: profile.studentCode,
-              major: profile.major,
-              gpa: profile.gpa ?? 0,
-              cvFileId: profile.cvFileId ?? undefined,
-              cvName: profile.cvFile?.originalName,
-            },
-          ]);
           applyApplications(applicationsPage.items);
+
+          try {
+            const profile = await studentsApi.getMine();
+            if (!active) return;
+            setStudentProfiles((previous) => [
+              {
+                ...previous[0],
+                id: profile.id,
+                userId: profile.userId,
+                fullname: profile.fullName,
+                studentCode: profile.studentCode,
+                major: profile.major,
+                gpa: profile.gpa ?? 0,
+                cvFileId: profile.cvFileId ?? undefined,
+                cvName: profile.cvFile?.originalName,
+              },
+            ]);
+          } catch (profileError) {
+            console.warn("Student profile is not available yet", profileError);
+          }
         }
 
         if (user.role === "COMPANY") {

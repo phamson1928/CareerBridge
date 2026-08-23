@@ -11,10 +11,10 @@ import {
   CompanyStatus,
   FileType,
   InternshipStatus,
-  PlacementStatus,
   Role,
   SemesterStatus,
 } from '../generated/prisma/client';
+import { PlacementsService } from '../placements/placements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { CreateApplicationDto } from './dto/create-application.dto';
@@ -94,7 +94,10 @@ type PrismaClientLike = PrismaService | Prisma.TransactionClient;
 
 @Injectable()
 export class ApplicationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly placementsService: PlacementsService,
+  ) {}
 
   async create(dto: CreateApplicationDto, user: AuthUser) {
     if (user.role !== Role.STUDENT) {
@@ -315,6 +318,35 @@ export class ApplicationsService {
   }
 
   private async accept(id: string, user: AuthUser, feedback: string | null) {
+    const maxAttempts = 3;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      try {
+        return await this.acceptOnce(id, user, feedback);
+      } catch (error: unknown) {
+        if (!this.isPrismaError(error, 'P2034')) throw error;
+
+        if (attempt === maxAttempts - 1) {
+          throw new ConflictException({
+            code: 'APPLICATION_ACCEPT_CONFLICT',
+            message:
+              'The application changed while it was being accepted. Please retry.',
+          });
+        }
+      }
+    }
+
+    throw new ConflictException({
+      code: 'APPLICATION_ACCEPT_CONFLICT',
+      message: 'Unable to accept the application at this time',
+    });
+  }
+
+  private async acceptOnce(
+    id: string,
+    user: AuthUser,
+    feedback: string | null,
+  ) {
     return this.prisma.$transaction(
       async (tx) => {
         const current = await tx.application.findUnique({
@@ -366,14 +398,9 @@ export class ApplicationsService {
         }
 
         await this.ensureSemesterActive(current.internship.semesterId, tx);
-        await this.ensureStudentHasNoActivePlacement(
-          current.studentId,
-          current.internship.semesterId,
-          tx,
-        );
         await this.reserveInternshipSlot(current.internshipId, tx);
 
-        const updated = await tx.application.update({
+        await tx.application.update({
           where: { id },
           data: {
             status: ApplicationStatus.ACCEPTED,
@@ -395,18 +422,19 @@ export class ApplicationsService {
           },
         });
 
-        await tx.internshipPlacement.create({
-          data: {
+        await this.placementsService.createPendingFromAcceptedApplication(
+          tx,
+          {
             applicationId: id,
             studentId: current.studentId,
             companyId: current.internship.companyId,
             internshipId: current.internshipId,
             semesterId: current.internship.semesterId,
-            status: PlacementStatus.PENDING,
             startDate: current.internship.startDate,
             endDate: current.internship.endDate,
           },
-        });
+          user.id,
+        );
 
         await tx.conversation.upsert({
           where: { applicationId: id },
@@ -431,22 +459,10 @@ export class ApplicationsService {
           },
         });
 
-        await tx.auditLog.create({
-          data: {
-            userId: user.id,
-            action: 'PLACEMENT_CREATED',
-            entity: 'InternshipPlacement',
-            entityId: id,
-            metadata: {
-              applicationId: id,
-              studentId: current.studentId,
-              internshipId: current.internshipId,
-              semesterId: current.internship.semesterId,
-            },
-          },
+        return tx.application.findUniqueOrThrow({
+          where: { id },
+          select: applicationSelect,
         });
-
-        return updated;
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
@@ -672,28 +688,6 @@ export class ApplicationsService {
       throw new BadRequestException({
         code: 'SEMESTER_NOT_ACTIVE',
         message: 'Semester must be active before accepting applications',
-      });
-    }
-  }
-
-  private async ensureStudentHasNoActivePlacement(
-    studentId: string,
-    semesterId: string,
-    tx: PrismaClientLike = this.prisma,
-  ) {
-    const existing = await tx.internshipPlacement.findFirst({
-      where: {
-        studentId,
-        semesterId,
-        status: { in: [PlacementStatus.PENDING, PlacementStatus.ACTIVE] },
-      },
-      select: { id: true },
-    });
-    if (existing) {
-      throw new ConflictException({
-        code: 'STUDENT_ALREADY_PLACED_IN_SEMESTER',
-        message:
-          'Student already has a pending or active placement in this semester',
       });
     }
   }

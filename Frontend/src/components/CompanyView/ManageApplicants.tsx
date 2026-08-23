@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Application, ApplicationStatus, CompanyProfile } from '../../types';
 import { getStatusBadge } from '../../utils/matching';
 import { getApiErrorMessage } from '../../auth/api';
+import { getPrivateFileDownloadUrl } from '../../files/api';
 import { Users, Search, CheckCircle2, XCircle, FileText, Sparkles, MessageSquare, Clock, Filter, Send } from 'lucide-react';
 
 interface ManageApplicantsProps {
@@ -23,6 +24,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
   const [feedbackText, setFeedbackText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [openingCvId, setOpeningCvId] = useState<string | null>(null);
 
   const companyApps = applications.filter((a) => a.companyId === companyProfile.id);
 
@@ -47,6 +49,19 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
       setActionError(getApiErrorMessage(error));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const openCv = async (fileId: string) => {
+    setOpeningCvId(fileId);
+    setActionError(null);
+    try {
+      const { downloadUrl } = await getPrivateFileDownloadUrl(fileId);
+      window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      setActionError(getApiErrorMessage(error));
+    } finally {
+      setOpeningCvId(null);
     }
   };
 
@@ -152,7 +167,17 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                 {/* Action Row */}
                 <div className="flex items-center justify-between pt-2">
                   <div className="flex items-center gap-3 text-xs">
-                    {app.cvUrl ? (
+                    {app.cvFileId ? (
+                      <button
+                        type="button"
+                        onClick={() => void openCv(app.cvFileId!)}
+                        disabled={openingCvId === app.cvFileId}
+                        className="text-blue-600 font-bold hover:underline flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        {openingCvId === app.cvFileId ? 'Đang mở CV...' : 'Xem CV đầy đủ'}
+                      </button>
+                    ) : app.cvUrl ? (
                       <a
                         href={app.cvUrl}
                         target="_blank"
