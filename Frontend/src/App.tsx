@@ -15,7 +15,6 @@ import {
   WeeklyReport,
   Evaluation,
   ChatMessage,
-  AppNotification,
   ApplicationStatus,
 } from "./types";
 
@@ -27,7 +26,6 @@ import {
   INITIAL_WEEKLY_REPORTS,
   INITIAL_EVALUATIONS,
   INITIAL_MESSAGES,
-  INITIAL_NOTIFICATIONS,
 } from "./data/mockData";
 
 import { Navbar } from "./components/Navbar";
@@ -63,6 +61,8 @@ import { SemesterManagement } from "./components/AdminView/SemesterManagement";
 import { PlacementOverview } from "./components/StudentView/PlacementOverview";
 import { SupervisedPlacements } from "./components/TeacherView/SupervisedPlacements";
 import { useAuth } from "./auth/AuthContext";
+import { useNotifications } from "./notifications/use-notifications";
+import type { NotificationAction } from "./notifications/types";
 import { applicationsApi, type ApplicationRecord } from "./applications/api";
 import { companiesApi } from "./companies/api";
 import { internshipsApi, type InternshipRecord } from "./internships/api";
@@ -123,6 +123,7 @@ function toLegacyApplication(record: ApplicationRecord): Application {
 export default function App() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const notificationState = useNotifications();
   const currentRole: UserRole =
     user?.role === "LECTURER" ? "TEACHER" : (user?.role ?? "STUDENT");
   const [activeTab, setActiveTab] = useState<string>(() =>
@@ -153,9 +154,6 @@ export default function App() {
   const [evaluations, setEvaluations] =
     useState<Evaluation[]>(INITIAL_EVALUATIONS);
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
-  const [notifications, setNotifications] = useState<AppNotification[]>(
-    INITIAL_NOTIFICATIONS,
-  );
 
   // Modals state
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
@@ -286,18 +284,6 @@ export default function App() {
       cvFileId,
     });
     setApplications((previous) => [toLegacyApplication(created), ...previous]);
-
-    // Add Notification for Company
-    const newNotif: AppNotification = {
-      id: `notif-${Date.now()}`,
-      userId: job.companyId,
-      title: "Đơn ứng tuyển mới 📄",
-      message: `Sinh viên ${currentStudent.fullname} đã nộp đơn ứng tuyển vị trí ${job.title}.`,
-      type: "APPLICATION",
-      read: false,
-      createdAt: "Vừa xong",
-    };
-    setNotifications((previous) => [newNotif, ...previous]);
 
     alert(
       `Ứng tuyển vị trí "${job.title}" thành công! Doanh nghiệp sẽ xem xét hồ sơ của bạn.`,
@@ -471,7 +457,18 @@ export default function App() {
     }, 1200);
   };
 
-  const unreadNotifs = notifications.filter((n) => !n.read).length;
+  const handleNotificationNavigate = (action: NotificationAction) => {
+    const tabByAction: Partial<Record<NotificationAction, string>> = {
+      OPEN_APPLICATION: currentRole === "COMPANY" ? "applicants" : currentRole === "ADMIN" ? "application-management" : "applications",
+      OPEN_REPORT: currentRole === "TEACHER" ? "review-reports" : "reports",
+      OPEN_SUPERVISION: currentRole === "TEACHER" ? "supervised-placements" : currentRole === "ADMIN" ? "teacher-assignment" : "placement",
+      OPEN_PLACEMENT: currentRole === "COMPANY" ? "placement-management" : currentRole === "TEACHER" ? "supervised-placements" : currentRole === "ADMIN" ? "placement-management" : "placement",
+      OPEN_COMPANY_PROFILE: currentRole === "ADMIN" ? "company-approval" : "company-profile",
+      OPEN_EVALUATION: currentRole === "COMPANY" ? "interns-evaluation" : currentRole === "TEACHER" ? "evaluation-list" : "reports",
+    };
+    const tab = tabByAction[action];
+    if (tab) setActiveTab(tab);
+  };
 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased">
@@ -484,7 +481,7 @@ export default function App() {
         currentRole={currentRole}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        unreadNotifsCount={unreadNotifs}
+        unreadNotifsCount={notificationState.unreadCount}
         unreadMessagesCount={1}
         onOpenNotifs={() => setIsNotifsOpen(true)}
         onOpenChat={() => setIsChatOpen(true)}
@@ -622,15 +619,21 @@ export default function App() {
       <NotificationCenter
         isOpen={isNotifsOpen}
         onClose={() => setIsNotifsOpen(false)}
-        notifications={notifications}
-        onMarkAsRead={(id) =>
-          setNotifications((prev) =>
-            prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-          )
-        }
-        onMarkAllAsRead={() =>
-          setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-        }
+        notifications={notificationState.notifications}
+        unreadCount={notificationState.unreadCount}
+        filter={notificationState.filter}
+        onFilterChange={notificationState.setFilter}
+        isLoading={notificationState.isLoading}
+        isLoadingMore={notificationState.isLoadingMore}
+        isMarkingAll={notificationState.isMarkingAll}
+        hasMore={notificationState.hasMore}
+        error={notificationState.error}
+        socketStatus={notificationState.socketStatus}
+        onRefresh={() => void notificationState.refresh()}
+        onLoadMore={() => void notificationState.loadMore()}
+        onMarkAsRead={(id) => void notificationState.markAsRead(id)}
+        onMarkAllAsRead={() => void notificationState.markAllAsRead()}
+        onNavigate={(action) => { handleNotificationNavigate(action); setIsNotifsOpen(false); }}
       />
 
       <ChatDrawer

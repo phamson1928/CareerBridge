@@ -9,6 +9,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCompanyProfileDto } from './dto/create-company-profile.dto';
 import { ListCompanyProfilesQueryDto } from './dto/list-company-profiles-query.dto';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
+import { NotificationAction, NotificationType } from '../generated/prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const profileSelect = {
   id: true,
@@ -33,7 +35,10 @@ const profileSelect = {
 
 @Injectable()
 export class CompaniesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async findByUserId(userId: string) {
     const profile = await this.prisma.companyProfile.findUnique({
@@ -124,7 +129,7 @@ export class CompaniesService {
         message: 'Only a pending company profile can be reviewed',
       });
     }
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const profile = await tx.companyProfile.update({
         where: { id },
         data: {
@@ -144,8 +149,22 @@ export class CompaniesService {
           metadata: { status, rejectionReason },
         },
       });
-      return profile;
+      const notification = await this.notifications.createInTransaction(tx, {
+        userId: profile.userId,
+        eventKey: `company:${profile.id}:reviewed:${status}`,
+        type: NotificationType.COMPANY,
+        action: NotificationAction.OPEN_COMPANY_PROFILE,
+        title: status === CompanyStatus.APPROVED ? 'Hồ sơ công ty đã được duyệt' : 'Hồ sơ công ty bị từ chối',
+        content: status === CompanyStatus.APPROVED
+          ? 'Hồ sơ công ty của bạn đã được duyệt và có thể tiếp tục sử dụng hệ thống.'
+          : 'Hồ sơ công ty của bạn cần được cập nhật theo phản hồi của quản trị viên.',
+        resourceId: profile.id,
+        metadata: { status },
+      });
+      return { profile, notifications: [notification] };
     });
+    this.notifications.publishMany(result.notifications);
+    return result.profile;
   }
 
   private async findById(id: string) {

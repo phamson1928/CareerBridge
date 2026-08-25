@@ -23,6 +23,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ChatModule } from './chat/chat.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
     DashboardModule,
     ChatModule,
     AuditLogsModule,
+    RealtimeModule,
   ],
   providers: [
     {

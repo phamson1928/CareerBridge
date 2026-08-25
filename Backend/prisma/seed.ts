@@ -489,6 +489,56 @@ async function main() {
       status: 'ACTIVE',
     },
   });
+
+  await prisma.notification.upsert({
+    where: { eventKey: 'seed:notification:student2:welcome' },
+    update: {
+      userId: student2.id,
+      type: 'SYSTEM',
+      action: 'NONE',
+      title: 'Chào mừng bạn đến InternHub',
+      content: 'Đây là thông báo mẫu chưa đọc để kiểm tra Notification Center.',
+      resourceId: null,
+      metadata: { seed: true },
+      isRead: false,
+      readAt: null,
+    },
+    create: {
+      userId: student2.id,
+      eventKey: 'seed:notification:student2:welcome',
+      type: 'SYSTEM',
+      action: 'NONE',
+      title: 'Chào mừng bạn đến InternHub',
+      content: 'Đây là thông báo mẫu chưa đọc để kiểm tra Notification Center.',
+      metadata: { seed: true },
+      isRead: false,
+    },
+  });
+  await prisma.notification.upsert({
+    where: { eventKey: 'seed:notification:company:welcome' },
+    update: {
+      userId: company.id,
+      type: 'SYSTEM',
+      action: 'NONE',
+      title: 'Tài khoản công ty đã sẵn sàng',
+      content: 'Đây là thông báo mẫu đã đọc để kiểm tra bộ lọc notification.',
+      resourceId: null,
+      metadata: { seed: true },
+      isRead: true,
+      readAt: new Date('2026-08-23T00:00:00.000Z'),
+    },
+    create: {
+      userId: company.id,
+      eventKey: 'seed:notification:company:welcome',
+      type: 'SYSTEM',
+      action: 'NONE',
+      title: 'Tài khoản công ty đã sẵn sàng',
+      content: 'Đây là thông báo mẫu đã đọc để kiểm tra bộ lọc notification.',
+      metadata: { seed: true },
+      isRead: true,
+      readAt: new Date('2026-08-23T00:00:00.000Z'),
+    },
+  });
   console.log('Seed completed successfully.');
   console.table(
     Object.values(accounts).map(({ email, role }) => ({

@@ -1,0 +1,236 @@
+
+> backend@0.0.1 start
+> nest start
+
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [NestFactory] Starting Nest application...
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] PrismaModule dependencies initialized +28ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] PassportModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] EvaluationsModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] ChatModule dependencies initialized +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] AuditLogsModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] ConfigHostModule dependencies initialized +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] ConfigModule dependencies initialized +2ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] ConfigModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] ThrottlerModule dependencies initialized +2ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] JwtModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] JwtModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] AppModule dependencies initialized +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] RealtimeModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] StudentsModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] LecturersModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] InternshipsModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] SemestersModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] SkillsModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] DashboardModule dependencies initialized +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] UsersModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] FilesModule dependencies initialized +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] NotificationsModule dependencies initialized +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] AuthModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] CompaniesModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] PlacementsModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] SupervisionsModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] ReportsModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [InstanceLoader] ApplicationsModule dependencies initialized +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] AuthController {/api/auth} (version: 1): +14ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/auth/register, POST} (version: 1) route +2ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/auth/login, POST} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/auth/refresh, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/auth/logout, POST} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/auth/me, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] UsersController {/api/users} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/users, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/users, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/users/:id, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/users/:id, PATCH} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/users/:id, DELETE} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] StudentsController {/api/students} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/students/me, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/students/me, POST} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/students/me, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/students/me, DELETE} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] LecturersController {/api/lecturers} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/lecturers/me, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/lecturers/me, POST} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/lecturers/me, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/lecturers/me, DELETE} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] CompaniesController {/api/companies} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/companies/me, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/companies/me, POST} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/companies/me, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/companies/me, DELETE} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/companies, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/companies/:id/approve, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/companies/:id/reject, POST} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] NotificationsController {/api/notifications} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/notifications, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/notifications/unread-count, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/notifications/read-all, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/notifications/:id/read, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] InternshipsController {/api/internships} (version: 1): +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/internships, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/internships/me, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/internships/:id, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/internships, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/internships/:id, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/internships/:id, DELETE} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] ApplicationsController {/api/applications} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/applications, POST} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/applications, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/applications/me, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/applications/:id/history, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/applications/:id, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/applications/:id/status, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] PlacementsController {/api/placements} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/placements, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/placements/me, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/placements/:id, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/placements/:id, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/placements/:id/status, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] SemestersController {/api/semesters} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/semesters, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/semesters/:id, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/semesters, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/semesters/:id, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/semesters/:id/status, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/semesters/:id, DELETE} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] SkillsController {/api/skills} (version: 1): +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/skills, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/skills/:id, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/skills, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/skills/:id, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/skills/:id, DELETE} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] StudentSkillsController {/api/students/me/skills} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/students/me/skills, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/students/me/skills, PUT} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] InternshipSkillsController {/api/internships/:internshipId/skills} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/internships/:internshipId/skills, GET} (version: 1) route +4ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/internships/:internshipId/skills, PUT} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] InternshipMatchController {/api/internships/:internshipId/match} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/internships/:internshipId/match/me, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] SupervisionsController {/api/supervisions} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/supervisions, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/supervisions/me, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/supervisions/lecturer-options, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/supervisions/:id, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/supervisions, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/supervisions/:id, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/supervisions/:id/status, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] ReportsController {/api/reports} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/reports, POST} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/reports/me, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/reports/supervised, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/reports/:id, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/reports/:id, PATCH} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/reports/:id/submit, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/reports/:id/review, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] FilesController {/api/files} (version: 1): +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/files/upload-url, POST} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/files/:id/download-url, GET} (version: 1) route +1ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RoutesResolver] DashboardController {/api/dashboard} (version: 1): +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [RouterExplorer] Mapped {/api/dashboard/admin, GET} (version: 1) route +0ms
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [PrismaService] Database connected successfully
+[Nest] 25320  - 08/24/2026, 2:04:07 PM     LOG [NestApplication] Nest application successfully started +2ms
+Server running on http://localhost:3000/api/v1
+[Nest] 25320  - 08/24/2026, 2:04:07 PM    WARN [AllExceptionsFilter] GET /api/v1/auth/me 401 - Access token is invalid or expired
+[Nest] 25320  - 08/24/2026, 2:04:07 PM    WARN [AllExceptionsFilter] GET /api/v1/auth/me 401 - Access token is invalid or expired
+[Nest] 25320  - 08/24/2026, 2:05:27 PM    WARN [AllExceptionsFilter] POST /api/v1/auth/login 400 - Expected property name or '}' in JSON at position 1 (line 1 column 2)
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text, "public"."User"."passwordHash" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."RefreshToken" ("id","userId","tokenHash","expiresAt","userAgent","ipAddress","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."RefreshToken"."id", "public"."RefreshToken"."userId", "public"."RefreshToken"."tokenHash", "public"."RefreshToken"."expiresAt", "public"."RefreshToken"."revokedAt", "public"."RefreshToken"."userAgent", "public"."RefreshToken"."ipAddress", "public"."RefreshToken"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text, "public"."User"."passwordHash" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."RefreshToken" ("id","userId","tokenHash","expiresAt","userAgent","ipAddress","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."RefreshToken"."id", "public"."RefreshToken"."userId", "public"."RefreshToken"."tokenHash", "public"."RefreshToken"."expiresAt", "public"."RefreshToken"."revokedAt", "public"."RefreshToken"."userAgent", "public"."RefreshToken"."ipAddress", "public"."RefreshToken"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE "public"."Notification"."userId" = $1 ORDER BY "public"."Notification"."createdAt" DESC, "public"."Notification"."id" DESC LIMIT $2 OFFSET $3
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE "public"."Notification"."userId" = $1 OFFSET $2) AS "sub"
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query COMMIT
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[Nest] 25320  - 08/24/2026, 2:06:25 PM    WARN [AllExceptionsFilter] GET /api/v1/notifications?limit=51 400 - limit must not be greater than 50
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[Nest] 25320  - 08/24/2026, 2:06:25 PM    WARN [AllExceptionsFilter] GET /api/v1/notifications?isRead=not-bool 400 - isRead must be a boolean value
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[Nest] 25320  - 08/24/2026, 2:06:25 PM    WARN [AllExceptionsFilter] GET /api/v1/notifications?type=INVALID 400 - type must be one of the following values: APPLICATION, REPORT, SUPERVISION, PLACEMENT, COMPANY, EVALUATION, SYSTEM
+[Nest] 25320  - 08/24/2026, 2:06:25 PM    WARN [AllExceptionsFilter] GET /api/v1/notifications 401 - Access token is invalid or expired
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE ("public"."Notification"."id" = $1 AND "public"."Notification"."userId" = $2) LIMIT $3 OFFSET $4
+[Nest] 25320  - 08/24/2026, 2:06:26 PM    WARN [AllExceptionsFilter] PATCH /api/v1/notifications/nonexistent-id/read 404 - Notification not found
+[Nest] 25320  - 08/24/2026, 2:06:26 PM    WARN [AllExceptionsFilter] POST /api/v1/notifications 404 - Cannot POST /api/v1/notifications
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text, "public"."User"."passwordHash" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."RefreshToken" ("id","userId","tokenHash","expiresAt","userAgent","ipAddress","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."RefreshToken"."id", "public"."RefreshToken"."userId", "public"."RefreshToken"."tokenHash", "public"."RefreshToken"."expiresAt", "public"."RefreshToken"."revokedAt", "public"."RefreshToken"."userAgent", "public"."RefreshToken"."ipAddress", "public"."RefreshToken"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Application"."id", "public"."Application"."status"::text, "public"."Application"."studentId", "public"."Application"."internshipId", "public"."Application"."companyFeedback" FROM "public"."Application" WHERE ("public"."Application"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."StudentProfile"."id", "public"."StudentProfile"."userId" FROM "public"."StudentProfile" WHERE "public"."StudentProfile"."id" = $1 OFFSET $2
+prisma:query SELECT "public"."Internship"."id", "public"."Internship"."title", "public"."Internship"."status"::text, "public"."Internship"."deadline", "public"."Internship"."startDate", "public"."Internship"."endDate", "public"."Internship"."slots", "public"."Internship"."filledSlots", "public"."Internship"."companyId", "public"."Internship"."semesterId" FROM "public"."Internship" WHERE "public"."Internship"."id" = $1 OFFSET $2
+prisma:query SELECT "public"."InternshipPlacement"."id", "public"."InternshipPlacement"."status"::text, "public"."InternshipPlacement"."applicationId" FROM "public"."InternshipPlacement" WHERE "public"."InternshipPlacement"."applicationId" = $1 OFFSET $2
+prisma:query SELECT "public"."CompanyProfile"."id", "public"."CompanyProfile"."userId", "public"."CompanyProfile"."status"::text FROM "public"."CompanyProfile" WHERE "public"."CompanyProfile"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Semester"."id", "public"."Semester"."status"::text FROM "public"."Semester" WHERE "public"."Semester"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."CompanyProfile"."id", "public"."CompanyProfile"."status"::text, "public"."CompanyProfile"."userId" FROM "public"."CompanyProfile" WHERE ("public"."CompanyProfile"."userId" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Application"."id", "public"."Application"."status"::text, "public"."Application"."studentId", "public"."Application"."internshipId" FROM "public"."Application" WHERE ("public"."Application"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."StudentProfile"."id", "public"."StudentProfile"."userId" FROM "public"."StudentProfile" WHERE "public"."StudentProfile"."id" = $1 OFFSET $2
+prisma:query SELECT "public"."Internship"."id", "public"."Internship"."companyId", "public"."Internship"."semesterId" FROM "public"."Internship" WHERE "public"."Internship"."id" = $1 OFFSET $2
+prisma:query SELECT "public"."CompanyProfile"."id", "public"."CompanyProfile"."userId" FROM "public"."CompanyProfile" WHERE "public"."CompanyProfile"."id" IN ($1) OFFSET $2
+prisma:query ROLLBACK
+[Nest] 25320  - 08/24/2026, 2:07:19 PM    WARN [AllExceptionsFilter] PATCH /api/v1/applications/seed-application-pending/status 400 - This application is already finalized
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text, "public"."User"."passwordHash" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."RefreshToken" ("id","userId","tokenHash","expiresAt","userAgent","ipAddress","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."RefreshToken"."id", "public"."RefreshToken"."userId", "public"."RefreshToken"."tokenHash", "public"."RefreshToken"."expiresAt", "public"."RefreshToken"."revokedAt", "public"."RefreshToken"."userAgent", "public"."RefreshToken"."ipAddress", "public"."RefreshToken"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Application"."id", "public"."Application"."studentId", "public"."Application"."internshipId", "public"."Application"."coverLetter", "public"."Application"."cvFileId", "public"."Application"."matchScore", "public"."Application"."status"::text, "public"."Application"."companyFeedback", "public"."Application"."appliedAt", "public"."Application"."acceptedAt", "public"."Application"."rejectedAt", "public"."Application"."withdrawnAt", "public"."Application"."updatedAt" FROM "public"."Application" LEFT JOIN "public"."StudentProfile" AS "j0" ON ("j0"."id") = ("public"."Application"."studentId") WHERE ("j0"."userId" = $1 AND ("j0"."id" IS NOT NULL)) ORDER BY "public"."Application"."appliedAt" DESC LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."StudentProfile"."id", "public"."StudentProfile"."userId", "public"."StudentProfile"."studentCode", "public"."StudentProfile"."fullName", "public"."StudentProfile"."major" FROM "public"."StudentProfile" WHERE "public"."StudentProfile"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Internship"."id", "public"."Internship"."title", "public"."Internship"."status"::text, "public"."Internship"."deadline", "public"."Internship"."startDate", "public"."Internship"."endDate", "public"."Internship"."slots", "public"."Internship"."filledSlots", "public"."Internship"."companyId", "public"."Internship"."semesterId" FROM "public"."Internship" WHERE "public"."Internship"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."InternshipPlacement"."id", "public"."InternshipPlacement"."status"::text, "public"."InternshipPlacement"."createdAt", "public"."InternshipPlacement"."updatedAt", "public"."InternshipPlacement"."applicationId" FROM "public"."InternshipPlacement" WHERE "public"."InternshipPlacement"."applicationId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."status"::text FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."CompanyProfile"."id", "public"."CompanyProfile"."companyName", "public"."CompanyProfile"."userId" FROM "public"."CompanyProfile" WHERE "public"."CompanyProfile"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Semester"."id", "public"."Semester"."name", "public"."Semester"."status"::text, "public"."Semester"."startDate", "public"."Semester"."endDate" FROM "public"."Semester" WHERE "public"."Semester"."id" IN ($1) OFFSET $2
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Application"."id" FROM "public"."Application" LEFT JOIN "public"."StudentProfile" AS "j0" ON ("j0"."id") = ("public"."Application"."studentId") WHERE ("j0"."userId" = $1 AND ("j0"."id" IS NOT NULL)) OFFSET $2) AS "sub"
+prisma:query COMMIT
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text, "public"."User"."passwordHash" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."RefreshToken" ("id","userId","tokenHash","expiresAt","userAgent","ipAddress","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."RefreshToken"."id", "public"."RefreshToken"."userId", "public"."RefreshToken"."tokenHash", "public"."RefreshToken"."expiresAt", "public"."RefreshToken"."revokedAt", "public"."RefreshToken"."userAgent", "public"."RefreshToken"."ipAddress", "public"."RefreshToken"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE "public"."Notification"."userId" = $1 ORDER BY "public"."Notification"."createdAt" DESC, "public"."Notification"."id" DESC LIMIT $2 OFFSET $3
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE "public"."Notification"."userId" = $1 OFFSET $2) AS "sub"
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query COMMIT
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text, "public"."User"."passwordHash" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."RefreshToken" ("id","userId","tokenHash","expiresAt","userAgent","ipAddress","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."RefreshToken"."id", "public"."RefreshToken"."userId", "public"."RefreshToken"."tokenHash", "public"."RefreshToken"."expiresAt", "public"."RefreshToken"."revokedAt", "public"."RefreshToken"."userAgent", "public"."RefreshToken"."ipAddress", "public"."RefreshToken"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) ORDER BY "public"."Notification"."createdAt" DESC, "public"."Notification"."id" DESC LIMIT $3 OFFSET $4
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query COMMIT
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE ("public"."Notification"."id" = $1 AND "public"."Notification"."userId" = $2) LIMIT $3 OFFSET $4
+prisma:query UPDATE "public"."Notification" SET "isRead" = $1, "readAt" = $2 WHERE ("public"."Notification"."id" = $3 AND 1=1) RETURNING "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE ("public"."Notification"."id" = $1 AND "public"."Notification"."userId" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query UPDATE "public"."Notification" SET "isRead" = $1, "readAt" = $2 WHERE ("public"."Notification"."userId" = $3 AND "public"."Notification"."isRead" = $4)
+prisma:query COMMIT
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text, "public"."User"."passwordHash" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."RefreshToken" ("id","userId","tokenHash","expiresAt","userAgent","ipAddress","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."RefreshToken"."id", "public"."RefreshToken"."userId", "public"."RefreshToken"."tokenHash", "public"."RefreshToken"."expiresAt", "public"."RefreshToken"."revokedAt", "public"."RefreshToken"."userAgent", "public"."RefreshToken"."ipAddress", "public"."RefreshToken"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text, "public"."User"."passwordHash" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."RefreshToken" ("id","userId","tokenHash","expiresAt","userAgent","ipAddress","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."RefreshToken"."id", "public"."RefreshToken"."userId", "public"."RefreshToken"."tokenHash", "public"."RefreshToken"."expiresAt", "public"."RefreshToken"."revokedAt", "public"."RefreshToken"."userAgent", "public"."RefreshToken"."ipAddress", "public"."RefreshToken"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE "public"."Notification"."userId" = $1 ORDER BY "public"."Notification"."createdAt" DESC, "public"."Notification"."id" DESC LIMIT $2 OFFSET $3
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE "public"."Notification"."userId" = $1 OFFSET $2) AS "sub"
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query COMMIT
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE ("public"."Notification"."id" = $1 AND "public"."Notification"."userId" = $2) LIMIT $3 OFFSET $4
+[Nest] 25320  - 08/24/2026, 2:10:17 PM    WARN [AllExceptionsFilter] PATCH /api/v1/notifications/cmt6waq1m000fboi1l8bijgqf/read 404 - Notification not found
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text, "public"."User"."passwordHash" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."RefreshToken" ("id","userId","tokenHash","expiresAt","userAgent","ipAddress","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."RefreshToken"."id", "public"."RefreshToken"."userId", "public"."RefreshToken"."tokenHash", "public"."RefreshToken"."expiresAt", "public"."RefreshToken"."revokedAt", "public"."RefreshToken"."userAgent", "public"."RefreshToken"."ipAddress", "public"."RefreshToken"."createdAt"
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) ORDER BY "public"."Notification"."createdAt" DESC, "public"."Notification"."id" DESC LIMIT $3 OFFSET $4
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query COMMIT
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."role"::text, "public"."User"."status"::text FROM "public"."User" WHERE ("public"."User"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Notification"."id", "public"."Notification"."userId", "public"."Notification"."type"::text, "public"."Notification"."action"::text, "public"."Notification"."title", "public"."Notification"."content", "public"."Notification"."resourceId", "public"."Notification"."metadata", "public"."Notification"."eventKey", "public"."Notification"."isRead", "public"."Notification"."readAt", "public"."Notification"."createdAt" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) ORDER BY "public"."Notification"."createdAt" DESC, "public"."Notification"."id" DESC LIMIT $3 OFFSET $4
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."Notification"."id" FROM "public"."Notification" WHERE ("public"."Notification"."userId" = $1 AND "public"."Notification"."isRead" = $2) OFFSET $3) AS "sub"
+prisma:query COMMIT

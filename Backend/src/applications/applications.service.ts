@@ -13,13 +13,17 @@ import {
   InternshipStatus,
   Role,
   SemesterStatus,
+  NotificationAction,
+  NotificationType,
 } from '../generated/prisma/client';
+import { randomUUID } from 'node:crypto';
 import { PlacementsService } from '../placements/placements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ListApplicationsQueryDto } from './dto/list-applications-query.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const applicationSelect = {
   id: true,
@@ -97,6 +101,7 @@ export class ApplicationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly placementsService: PlacementsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(dto: CreateApplicationDto, user: AuthUser) {
@@ -113,7 +118,7 @@ export class ApplicationsService {
     await this.ensureCvFileIsOwnedByStudent(dto.cvFileId, user.id);
 
     try {
-      const application = await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         const created = await tx.application.create({
           data: {
             studentId: student.id,
@@ -145,10 +150,21 @@ export class ApplicationsService {
           },
         });
 
-        return created;
+        const notification = await this.notifications.createInTransaction(tx, {
+          userId: internship.company.userId,
+          eventKey: `application:${created.id}:submitted:${internship.company.userId}`,
+          type: NotificationType.APPLICATION,
+          action: NotificationAction.OPEN_APPLICATION,
+          title: 'Có đơn ứng tuyển mới',
+          content: `Bạn nhận được một đơn ứng tuyển mới cho vị trí ${internship.title}.`,
+          resourceId: created.id,
+          metadata: { internshipId: internship.id },
+        });
+        return { application: created, notifications: [notification] };
       });
 
-      return this.toResponse(application);
+      this.notifications.publishMany(result.notifications);
+      return this.toResponse(result.application);
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
@@ -347,7 +363,7 @@ export class ApplicationsService {
     user: AuthUser,
     feedback: string | null,
   ) {
-    return this.prisma.$transaction(
+    const result = await this.prisma.$transaction(
       async (tx) => {
         const current = await tx.application.findUnique({
           where: { id },
@@ -382,12 +398,15 @@ export class ApplicationsService {
           current.status === ApplicationStatus.ACCEPTED &&
           current.placement
         ) {
-          return this.toResponse(
-            await tx.application.findUniqueOrThrow({
-              where: { id },
-              select: applicationSelect,
-            }),
-          );
+          return {
+            application: this.toResponse(
+              await tx.application.findUniqueOrThrow({
+                where: { id },
+                select: applicationSelect,
+              }),
+            ),
+            notifications: [],
+          };
         }
 
         if (!this.isOpenApplicationStatus(current.status)) {
@@ -459,13 +478,27 @@ export class ApplicationsService {
           },
         });
 
-        return tx.application.findUniqueOrThrow({
+        const notification = await this.notifications.createInTransaction(tx, {
+          userId: current.student.userId,
+          eventKey: `application:${id}:accepted:${current.student.userId}`,
+          type: NotificationType.APPLICATION,
+          action: NotificationAction.OPEN_APPLICATION,
+          title: 'Đơn ứng tuyển đã được chấp nhận',
+          content: 'Chúc mừng! Đơn ứng tuyển của bạn đã được công ty chấp nhận.',
+          resourceId: id,
+          metadata: { status: ApplicationStatus.ACCEPTED },
+        });
+
+        const accepted = await tx.application.findUniqueOrThrow({
           where: { id },
           select: applicationSelect,
         });
+        return { application: accepted, notifications: [notification] };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+    this.notifications.publishMany(result.notifications);
+    return result.application;
   }
 
   private async transition(
@@ -474,7 +507,7 @@ export class ApplicationsService {
     toStatus: ApplicationStatus,
     note: string | null,
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const current = await tx.application.findUnique({
         where: { id },
         select: {
@@ -536,8 +569,23 @@ export class ApplicationsService {
         },
       });
 
-      return updated;
+      const notification = await this.notifications.createInTransaction(tx, {
+        userId: current.student.userId,
+        eventKey: `application:${id}:status:${toStatus}:${randomUUID()}`,
+        type: NotificationType.APPLICATION,
+        action: NotificationAction.OPEN_APPLICATION,
+        title: toStatus === ApplicationStatus.REJECTED ? 'Đơn ứng tuyển bị từ chối' : 'Đơn ứng tuyển đang được xem xét',
+        content: toStatus === ApplicationStatus.REJECTED
+          ? 'Đơn ứng tuyển của bạn chưa được công ty chấp nhận.'
+          : 'Công ty đã bắt đầu xem xét đơn ứng tuyển của bạn.',
+        resourceId: id,
+        metadata: { fromStatus: current.status, toStatus },
+      });
+
+      return { application: updated, notifications: [notification] };
     });
+    this.notifications.publishMany(result.notifications);
+    return result.application;
   }
 
   private async paginate(
@@ -763,7 +811,7 @@ export class ApplicationsService {
         semesterId: true,
         startDate: true,
         endDate: true,
-        company: { select: { status: true } },
+        company: { select: { status: true, userId: true } },
       },
     });
     if (!internship) {

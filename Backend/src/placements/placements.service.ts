@@ -11,6 +11,8 @@ import {
   ReportStatus,
   Role,
   SupervisionStatus,
+  NotificationAction,
+  NotificationType,
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/types/auth-user.type';
@@ -23,6 +25,7 @@ import {
   UpdatePlacementStatusDto,
 } from './dto/update-placement-status.dto';
 import { UpdatePlacementDto } from './dto/update-placement.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface AcceptedApplicationSnapshot {
   applicationId: string;
@@ -116,7 +119,10 @@ export interface PlacementProgress {
 
 @Injectable()
 export class PlacementsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async list(query: ListPlacementsQueryDto) {
     const search = query.search?.trim();
@@ -423,6 +429,25 @@ export class PlacementsService {
           select: placementSelect,
         });
       });
+      const recipients = [
+        placement.student.userId,
+        placement.company.userId,
+        placement.supervision?.lecturer.userId,
+      ].filter((value): value is string => Boolean(value));
+      for (const userId of [...new Set(recipients)]) {
+        await this.notifications.create({
+          userId,
+          eventKey: `placement:${id}:status:${dto.status}:${userId}`,
+          type: NotificationType.PLACEMENT,
+          action: NotificationAction.OPEN_PLACEMENT,
+          title: dto.status === PublicPlacementStatus.COMPLETED ? 'Placement đã hoàn thành' : 'Placement đã bị hủy',
+          content: dto.status === PublicPlacementStatus.COMPLETED
+            ? 'Placement của bạn đã được đánh dấu hoàn thành.'
+            : 'Placement của bạn đã bị hủy.',
+          resourceId: id,
+          metadata: { status: dto.status },
+        });
+      }
       const progress = await this.progressByPlacementIds([placement.id]);
       return this.toRecord(placement, progress.get(placement.id), true);
     } catch (error: unknown) {

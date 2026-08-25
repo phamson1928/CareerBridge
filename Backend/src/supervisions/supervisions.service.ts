@@ -9,6 +9,8 @@ import {
   PlacementStatus,
   Role,
   SupervisionStatus,
+  NotificationAction,
+  NotificationType,
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/types/auth-user.type';
@@ -16,6 +18,7 @@ import { CreateSupervisionDto } from './dto/create-supervision.dto';
 import { ListLecturerOptionsQueryDto } from './dto/list-lecturer-options-query.dto';
 import { ListSupervisionsQueryDto } from './dto/list-supervisions-query.dto';
 import { UpdateSupervisionDto } from './dto/update-supervision.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const supervisionSelect = {
   id: true,
@@ -30,9 +33,9 @@ const supervisionSelect = {
       id: true,
       status: true,
       student: {
-        select: { id: true, studentCode: true, fullName: true, major: true },
+        select: { id: true, userId: true, studentCode: true, fullName: true, major: true },
       },
-      company: { select: { id: true, companyName: true, logo: true } },
+      company: { select: { id: true, userId: true, companyName: true, logo: true } },
       internship: {
         select: { id: true, title: true, location: true, workType: true },
       },
@@ -59,7 +62,10 @@ type SupervisionRecord = Prisma.SupervisionGetPayload<{
 
 @Injectable()
 export class SupervisionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async list(query: ListSupervisionsQueryDto) {
     const search = query.search?.trim();
@@ -196,7 +202,7 @@ export class SupervisionsService {
   }
 
   async assign(dto: CreateSupervisionDto, actorId: string) {
-    return this.prisma.$transaction(
+    const result = await this.prisma.$transaction(
       async (tx) => {
         const placement = await tx.internshipPlacement.findUnique({
           where: { id: dto.placementId },
@@ -257,6 +263,20 @@ export class SupervisionsService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+    const recipients = [result.lecturer.userId, result.placement.student.userId, result.placement.company.userId];
+    for (const userId of [...new Set(recipients)]) {
+      await this.notifications.create({
+        userId,
+        eventKey: `supervision:${result.id}:assigned:${userId}`,
+        type: NotificationType.SUPERVISION,
+        action: NotificationAction.OPEN_SUPERVISION,
+        title: 'Đã phân công giảng viên hướng dẫn',
+        content: 'Một supervision mới đã được phân công cho placement của bạn.',
+        resourceId: result.id,
+        metadata: { placementId: result.placementId },
+      });
+    }
+    return result;
   }
 
   async update(id: string, dto: UpdateSupervisionDto, actorId: string) {
@@ -340,7 +360,7 @@ export class SupervisionsService {
   }
 
   async updateStatus(id: string, actorId: string) {
-    return this.prisma.$transaction(
+    const result = await this.prisma.$transaction(
       async (tx) => {
         const current = await tx.supervision.findUnique({
           where: { id },
@@ -402,6 +422,20 @@ export class SupervisionsService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+    const recipients = [result.lecturer.userId, result.placement.student.userId, result.placement.company.userId];
+    for (const userId of [...new Set(recipients)]) {
+      await this.notifications.create({
+        userId,
+        eventKey: `supervision:${result.id}:cancelled:${userId}`,
+        type: NotificationType.SUPERVISION,
+        action: NotificationAction.OPEN_SUPERVISION,
+        title: 'Supervision đã bị hủy',
+        content: 'Supervision của placement đã được hủy.',
+        resourceId: result.id,
+        metadata: { placementId: result.placementId },
+      });
+    }
+    return result;
   }
 
   private async getActiveLecturer(tx: Prisma.TransactionClient, id: string) {

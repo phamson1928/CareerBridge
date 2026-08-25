@@ -87,6 +87,26 @@ enum SkillLevel {
   EXPERT
 }
 
+enum NotificationType {
+  APPLICATION
+  REPORT
+  SUPERVISION
+  PLACEMENT
+  COMPANY
+  EVALUATION
+  SYSTEM
+}
+
+enum NotificationAction {
+  NONE
+  OPEN_APPLICATION
+  OPEN_REPORT
+  OPEN_SUPERVISION
+  OPEN_PLACEMENT
+  OPEN_COMPANY_PROFILE
+  OPEN_EVALUATION
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
@@ -456,16 +476,22 @@ model Message {
 }
 
 model Notification {
-  id        String    @id @default(cuid())
-  userId    String
-  title     String
-  content   String?
-  isRead    Boolean   @default(false)
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
+  id         String             @id @default(cuid())
+  userId     String
+  type       NotificationType
+  action     NotificationAction @default(NONE)
+  title      String
+  content    String
+  resourceId String?
+  metadata   Json?
+  eventKey   String             @unique
+  isRead     Boolean            @default(false)
+  readAt     DateTime?
+  createdAt  DateTime           @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, createdAt])
   @@index([userId, isRead, createdAt])
 }
 
