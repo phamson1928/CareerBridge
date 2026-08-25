@@ -70,6 +70,7 @@ import { evaluationsApi, type EvaluationRecord } from "./evaluations/api";
 import { placementsApi } from "./placements/api";
 import type { PlacementRecord } from "./placements/types";
 import { getApiErrorMessage } from "./auth/api";
+import { useChat } from "./chat/use-chat";
 
 function toLegacyInternship(record: InternshipRecord): Internship {
   const type = ["Full-time", "Part-time", "Hybrid", "Remote"].includes(
@@ -127,6 +128,7 @@ export default function App() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const notificationState = useNotifications();
+  const chatState = useChat();
   const currentRole: UserRole =
     user?.role === "LECTURER" ? "TEACHER" : (user?.role ?? "STUDENT");
   const [activeTab, setActiveTab] = useState<string>(() =>
@@ -446,7 +448,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         unreadNotifsCount={notificationState.unreadCount}
-        unreadMessagesCount={0}
+        unreadMessagesCount={chatState.unreadCount}
         onOpenNotifs={() => setIsNotifsOpen(true)}
         onOpenChat={() => setIsChatOpen(true)}
         onOpenAICoach={() => setIsAICoachOpen(true)}
@@ -604,6 +606,8 @@ export default function App() {
       <ChatDrawer
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
+        latestMessage={chatState.latestMessage}
+        onMessagesRead={chatState.refreshUnreadCount}
       />
 
       <AICVCoachModal

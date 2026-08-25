@@ -19,3 +19,17 @@ export type ConversationPage = {
   items: Conversation[];
   pagination: { page: number; limit: number; total: number; totalPages: number };
 };
+
+export type ChatMessage = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type MessagePage = {
+  items: ChatMessage[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};

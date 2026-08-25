@@ -162,7 +162,7 @@
 | Backend                                | Frontend                                     |
 | -------------------------------------- | -------------------------------------------- |
 | `conversations` CRUD                   | Chat drawer: danh sách hội thoại             |
-| `messages` CRUD (realtime qua polling) | Khung chat realtime (polling hoặc Socket.IO) |
+| `messages` CRUD (realtime qua polling) | Khung chat realtime (Socket.IO) |
 | Kiểm tra quyền trong conversation      | Mark read, unread badge                      |
 
 ### Cả 2 — Tổng kết
