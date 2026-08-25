@@ -59,6 +59,7 @@ import { PlacementManagement } from "./components/AdminView/PlacementManagement"
 import { SkillManagement } from "./components/AdminView/SkillManagement";
 import { SemesterManagement } from "./components/AdminView/SemesterManagement";
 import { PlacementOverview } from "./components/StudentView/PlacementOverview";
+import { StudentEvaluations } from "./components/StudentView/StudentEvaluations";
 import { SupervisedPlacements } from "./components/TeacherView/SupervisedPlacements";
 import { useAuth } from "./auth/AuthContext";
 import { useNotifications } from "./notifications/use-notifications";
@@ -67,6 +68,10 @@ import { applicationsApi, type ApplicationRecord } from "./applications/api";
 import { companiesApi } from "./companies/api";
 import { internshipsApi, type InternshipRecord } from "./internships/api";
 import { studentsApi } from "./students/api";
+import { evaluationsApi, type EvaluationRecord } from "./evaluations/api";
+import { placementsApi } from "./placements/api";
+import type { PlacementRecord } from "./placements/types";
+import { getApiErrorMessage } from "./auth/api";
 
 function toLegacyInternship(record: InternshipRecord): Internship {
   const type = ["Full-time", "Part-time", "Hybrid", "Remote"].includes(
@@ -153,6 +158,8 @@ export default function App() {
   );
   const [evaluations, setEvaluations] =
     useState<Evaluation[]>(INITIAL_EVALUATIONS);
+  const [evaluationRecords, setEvaluationRecords] = useState<EvaluationRecord[]>([]);
+  const [myPlacements, setMyPlacements] = useState<PlacementRecord[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
 
   // Modals state
@@ -172,13 +179,15 @@ export default function App() {
     const loadWorkflowData = async () => {
       try {
         if (user.role === "STUDENT") {
-          const [internshipsPage, applicationsPage] = await Promise.all([
+          const [internshipsPage, applicationsPage, evaluationPage] = await Promise.all([
             internshipsApi.list({ page: 1, limit: 100 }),
             applicationsApi.listMine({ page: 1, limit: 100 }),
+            evaluationsApi.listMine({ page: 1, limit: 100 }),
           ]);
           if (!active) return;
           setInternships(internshipsPage.items.map(toLegacyInternship));
           applyApplications(applicationsPage.items);
+          setEvaluationRecords(evaluationPage.items);
 
           try {
             const profile = await studentsApi.getMine();
@@ -202,9 +211,11 @@ export default function App() {
         }
 
         if (user.role === "COMPANY") {
-          const [profile, applicationsPage] = await Promise.all([
+          const [profile, applicationsPage, placements, evaluationPage] = await Promise.all([
             companiesApi.getMine(),
             applicationsApi.listMine({ page: 1, limit: 100 }),
+            placementsApi.listMine(),
+            evaluationsApi.listMine({ page: 1, limit: 100 }),
           ]);
           if (!active) return;
           setCompanyProfiles((previous) => [
@@ -224,6 +235,18 @@ export default function App() {
             },
           ]);
           applyApplications(applicationsPage.items);
+          setMyPlacements(placements.items);
+          setEvaluationRecords(evaluationPage.items);
+        }
+
+        if (user.role === "LECTURER") {
+          const [placements, evaluationPage] = await Promise.all([
+            placementsApi.listMine(),
+            evaluationsApi.listMine({ page: 1, limit: 100 }),
+          ]);
+          if (!active) return;
+          setMyPlacements(placements.items);
+          setEvaluationRecords(evaluationPage.items);
         }
       } catch (error) {
         console.error("Unable to load application workflow data", error);
@@ -371,26 +394,19 @@ export default function App() {
     );
   };
 
-  const handleSubmitEvaluation = (evalData: Partial<Evaluation>) => {
-    const newEval: Evaluation = {
-      id: `eval-${Date.now()}`,
-      studentId: evalData.studentId || "std-1",
-      studentName: evalData.studentName || "Phạm Hoàng Sơn",
-      internshipId: evalData.internshipId || "int-1",
-      companyId: currentCompany.id,
-      companyName: currentCompany.companyName,
-      technicalScore: evalData.technicalScore || 9,
-      softSkillScore: evalData.softSkillScore || 8.5,
-      disciplineScore: evalData.disciplineScore || 9.5,
-      overallScore: evalData.overallScore || 9,
-      companyFeedback: evalData.companyFeedback || "",
-      evaluatedAt: new Date().toISOString().split("T")[0],
-    };
-
-    setEvaluations([
-      newEval,
-      ...evaluations.filter((e) => e.studentId !== newEval.studentId),
-    ]);
+  const handleSubmitEvaluation = async (input: {
+    placementId: string;
+    score: number;
+    comment: string;
+  }) => {
+    try {
+      const created = await evaluationsApi.create(input);
+      setEvaluationRecords((previous) => [created, ...previous]);
+      alert("Đã lưu đánh giá thành công. Sinh viên sẽ nhận được thông báo.");
+    } catch (error) {
+      alert(getApiErrorMessage(error));
+      throw error;
+    }
   };
 
   // Teacher Actions
@@ -403,15 +419,6 @@ export default function App() {
       prev.map((r) =>
         r.id === reportId ? { ...r, status, teacherComment: comment } : r,
       ),
-    );
-  };
-
-  const handleSaveTeacherFeedback = (
-    evalId: string,
-    teacherFeedback: string,
-  ) => {
-    setEvaluations((prev) =>
-      prev.map((e) => (e.id === evalId ? { ...e, teacherFeedback } : e)),
     );
   };
 
@@ -464,7 +471,7 @@ export default function App() {
       OPEN_SUPERVISION: currentRole === "TEACHER" ? "supervised-placements" : currentRole === "ADMIN" ? "teacher-assignment" : "placement",
       OPEN_PLACEMENT: currentRole === "COMPANY" ? "placement-management" : currentRole === "TEACHER" ? "supervised-placements" : currentRole === "ADMIN" ? "placement-management" : "placement",
       OPEN_COMPANY_PROFILE: currentRole === "ADMIN" ? "company-approval" : "company-profile",
-      OPEN_EVALUATION: currentRole === "COMPANY" ? "interns-evaluation" : currentRole === "TEACHER" ? "evaluation-list" : "reports",
+      OPEN_EVALUATION: currentRole === "COMPANY" ? "interns-evaluation" : currentRole === "TEACHER" ? "evaluation-list" : "evaluations",
     };
     const tab = tabByAction[action];
     if (tab) setActiveTab(tab);
@@ -514,6 +521,7 @@ export default function App() {
               <StudentReports />
             )}
             {activeTab === "placement" && <PlacementOverview />}
+            {activeTab === "evaluations" && <StudentEvaluations evaluations={evaluationRecords} />}
             {activeTab === "profile" && <StudentProfileView />}
           </>
         )}
@@ -541,11 +549,9 @@ export default function App() {
             )}
             {activeTab === "interns-evaluation" && (
               <EvaluateInternsModal
-                companyProfile={currentCompany}
-                evaluations={evaluations}
-                internships={internships}
-                studentProfiles={studentProfiles}
-                onSubmitEvaluation={handleSubmitEvaluation}
+                placements={myPlacements}
+                evaluations={evaluationRecords}
+                onSubmit={handleSubmitEvaluation}
               />
             )}
           </>
@@ -569,9 +575,9 @@ export default function App() {
             )}
             {activeTab === "evaluation-list" && (
               <TeacherEvaluations
-                evaluations={evaluations}
-                assignedStudents={studentProfiles}
-                onSaveTeacherFeedback={handleSaveTeacherFeedback}
+                placements={myPlacements}
+                evaluations={evaluationRecords}
+                onSubmit={handleSubmitEvaluation}
               />
             )}
             {activeTab === "lecturer-profile" && <LecturerProfileView />}

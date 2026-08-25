@@ -1,107 +1,14 @@
-import React, { useState } from 'react';
-import { Evaluation, StudentProfile } from '../../types';
-import { Award, GraduationCap, CheckCircle2, Save } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Award, Save } from 'lucide-react';
+import type { EvaluationRecord } from '../../evaluations/api';
+import type { PlacementRecord } from '../../placements/types';
 
-interface TeacherEvaluationsProps {
-  evaluations: Evaluation[];
-  assignedStudents: StudentProfile[];
-  onSaveTeacherFeedback: (evaluationId: string, teacherFeedback: string) => void;
+interface Props { placements: PlacementRecord[]; evaluations: EvaluationRecord[]; onSubmit: (input: { placementId: string; score: number; comment: string }) => Promise<void>; }
+
+export function TeacherEvaluations({ placements, evaluations, onSubmit }: Props) {
+  const evaluable = useMemo(() => placements.filter((p) => p.status === 'ACTIVE' || p.status === 'COMPLETED'), [placements]);
+  const [placementId, setPlacementId] = useState(''); const [score, setScore] = useState(8); const [comment, setComment] = useState(''); const [saving, setSaving] = useState(false);
+  const selectedId = placementId || evaluable[0]?.id || ''; const lecturerEvaluation = evaluations.find((item) => item.placementId === selectedId && item.type === 'LECTURER'); const companyEvaluations = evaluations.filter((item) => item.type === 'COMPANY');
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); if (!selectedId) return; setSaving(true); try { await onSubmit({ placementId: selectedId, score, comment }); setComment(''); } finally { setSaving(false); } };
+  return <div className="space-y-6"><div className="bg-white rounded-2xl p-6 border border-slate-200"><h2 className="text-xl font-bold">Tổng hợp đánh giá thực tập</h2><p className="text-xs text-slate-500 mt-1">Điểm giảng viên là một đánh giá độc lập, không ghi đè đánh giá doanh nghiệp.</p></div>{companyEvaluations.map((ev) => <div key={ev.id} className="bg-white rounded-2xl border p-5"><div className="flex justify-between gap-3"><div><h3 className="font-bold">{ev.placement.student.fullName}</h3><p className="text-xs text-slate-500">{ev.placement.company.companyName} · {ev.placement.internship.title}</p></div><span className="font-bold text-emerald-700"><Award className="inline w-4 h-4" /> {ev.score}/10</span></div><p className="mt-3 text-sm text-slate-600">{ev.comment || 'Không có nhận xét'}</p></div>)}{evaluable.length > 0 && <form onSubmit={submit} className="bg-white rounded-2xl border p-6 space-y-4"><h3 className="font-bold">Thêm đánh giá của giảng viên</h3><select value={selectedId} onChange={(e) => setPlacementId(e.target.value)} className="w-full p-3 border rounded-xl">{evaluable.map((p) => <option key={p.id} value={p.id}>{p.student.fullName} — {p.internship.title}</option>)}</select>{lecturerEvaluation && <p className="text-sm text-amber-700">Bạn đã đánh giá placement này.</p>}<input required type="number" min="0" max="10" step="0.01" value={score} onChange={(e) => setScore(Number(e.target.value))} className="w-full p-3 border rounded-xl" /><textarea required rows={4} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Nhận xét tổng kết" className="w-full p-3 border rounded-xl" /><button disabled={saving || Boolean(lecturerEvaluation)} className="px-5 py-3 bg-purple-600 disabled:bg-slate-400 text-white rounded-xl font-bold flex gap-2"><Save className="w-4 h-4" />{saving ? 'Đang lưu...' : 'Lưu đánh giá'}</button></form>}</div>;
 }
-
-export const TeacherEvaluations: React.FC<TeacherEvaluationsProps> = ({
-  evaluations,
-  assignedStudents,
-  onSaveTeacherFeedback,
-}) => {
-  const [feedbackText, setFeedbackText] = useState('');
-  const [selectedEvalId, setSelectedEvalId] = useState<string>('eval-1');
-
-  const currentEval = evaluations.find((e) => e.id === selectedEvalId) || evaluations[0];
-
-  const handleSave = () => {
-    if (!currentEval) return;
-    onSaveTeacherFeedback(currentEval.id, feedbackText);
-    alert('Đã lưu xác nhận đánh giá tốt nghiệp thành công!');
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
-        <h2 className="text-xl font-bold text-slate-900">Tổng Hợp Đánh Giá & Điểm Thực Tập</h2>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Giảng viên xác nhận điểm từ Doanh nghiệp và nhập nhận xét báo cáo tốt nghiệp cho Khoa.
-        </p>
-      </div>
-
-      {evaluations.length === 0 ? (
-        <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 text-slate-400 text-xs">
-          Chưa có đánh giá thực tập nào từ Doanh nghiệp.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {evaluations.map((ev) => (
-            <div key={ev.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">{ev.studentName}</h3>
-                  <p className="text-xs text-slate-500">Doanh nghiệp thực tập: {ev.companyName}</p>
-                </div>
-
-                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-4 py-2 rounded-xl border border-emerald-200 font-black text-sm">
-                  <Award className="w-5 h-5 text-emerald-600" />
-                  <span>Điểm Doanh nghiệp: {ev.overallScore}/10</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 text-center text-xs">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <span className="text-slate-500 block font-semibold">Chuyên môn (40%)</span>
-                  <strong className="text-blue-600 text-base font-black">{ev.technicalScore}</strong>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <span className="text-slate-500 block font-semibold">Kỹ năng mềm (30%)</span>
-                  <strong className="text-purple-600 text-base font-black">{ev.softSkillScore}</strong>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <span className="text-slate-500 block font-semibold">Kỷ luật (30%)</span>
-                  <strong className="text-emerald-600 text-base font-black">{ev.disciplineScore}</strong>
-                </div>
-              </div>
-
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-800">
-                <strong className="font-bold block mb-1">💬 Nhận xét chi tiết từ Doanh nghiệp:</strong>
-                <p className="text-slate-600 leading-relaxed">{ev.companyFeedback}</p>
-              </div>
-
-              {ev.teacherFeedback ? (
-                <div className="p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-900">
-                  <strong className="font-bold block mb-1">👨‍🏫 Nhận xét của Giảng viên hướng dẫn:</strong>
-                  <p>{ev.teacherFeedback}</p>
-                </div>
-              ) : (
-                <div className="space-y-2 text-xs">
-                  <label className="block font-bold text-slate-800">Nhận xét tổng kết của Giảng viên:</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={feedbackText}
-                      onChange={(e) => setFeedbackText(e.target.value)}
-                      placeholder="Nhập đánh giá hoàn thành đợt thực tập..."
-                      className="flex-1 p-2.5 border border-slate-300 rounded-xl"
-                    />
-                    <button
-                      onClick={handleSave}
-                      className="px-4 py-2 bg-purple-600 text-white font-bold rounded-xl shadow-xs"
-                    >
-                      Lưu nhận xét
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
