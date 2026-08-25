@@ -409,6 +409,17 @@ export default function App() {
     }
   };
 
+  const handleUpdateEvaluation = async (id: string, input: { score: number; comment: string }) => {
+    try {
+      const updated = await evaluationsApi.update(id, input);
+      setEvaluationRecords((previous) => previous.map((item) => item.id === id ? updated : item));
+      alert("Đã cập nhật đánh giá.");
+    } catch (error) {
+      alert(getApiErrorMessage(error));
+      throw error;
+    }
+  };
+
   // Teacher Actions
   const handleReviewReport = (
     reportId: string,
@@ -552,6 +563,7 @@ export default function App() {
                 placements={myPlacements}
                 evaluations={evaluationRecords}
                 onSubmit={handleSubmitEvaluation}
+                onUpdate={handleUpdateEvaluation}
               />
             )}
           </>
@@ -578,6 +590,7 @@ export default function App() {
                 placements={myPlacements}
                 evaluations={evaluationRecords}
                 onSubmit={handleSubmitEvaluation}
+                onUpdate={handleUpdateEvaluation}
               />
             )}
             {activeTab === "lecturer-profile" && <LecturerProfileView />}

@@ -72,6 +72,16 @@ export class EvaluationsService {
     return evaluation;
   }
 
+  async remove(id: string, user: AuthUser) {
+    const current = await this.findOne(id, user);
+    if (current.evaluatorId !== user.id) throw this.denied();
+    await this.prisma.$transaction(async (tx) => {
+      await tx.evaluation.delete({ where: { id } });
+      await tx.auditLog.create({ data: { userId: user.id, action: 'EVALUATION_DELETED', entity: 'Evaluation', entityId: id, metadata: { placementId: current.placementId, type: current.type } } });
+    });
+    return { id, deleted: true };
+  }
+
   private typeFor(user: AuthUser) { if (user.role === Role.COMPANY) return EvaluationType.COMPANY; if (user.role === Role.LECTURER) return EvaluationType.LECTURER; throw this.denied(); }
   private assertCanEvaluate(placement: { status: PlacementStatus; company: { userId: string }; supervision: { status: SupervisionStatus; lecturer: { userId: string } } | null }, user: AuthUser, type: EvaluationType) {
     if (placement.status !== PlacementStatus.ACTIVE && placement.status !== PlacementStatus.COMPLETED) throw this.conflict('PLACEMENT_NOT_EVALUABLE', 'Only active or completed placements can be evaluated');

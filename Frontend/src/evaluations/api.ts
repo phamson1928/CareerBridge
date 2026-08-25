@@ -22,4 +22,5 @@ export const evaluationsApi = {
   listMine: (params: ListParams = {}) => api.get<ApiSuccess<EvaluationsPage>>('/evaluations/me', { params }).then((r) => r.data.data),
   create: (body: { placementId: string; score: number; comment?: string }) => api.post<ApiSuccess<EvaluationRecord>>('/evaluations', body).then((r) => r.data.data),
   update: (id: string, body: { score?: number; comment?: string }) => api.patch<ApiSuccess<EvaluationRecord>>(`/evaluations/${id}`, body).then((r) => r.data.data),
+  remove: (id: string) => api.delete<ApiSuccess<{ id: string; deleted: boolean }>>(`/evaluations/${id}`).then((r) => r.data.data),
 };
