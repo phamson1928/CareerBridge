@@ -167,6 +167,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const navItems = getNavItems();
+  const canUseChat = currentRole === "STUDENT" || currentRole === "COMPANY";
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-10 z-40 shadow-xs">
@@ -228,20 +229,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Chat Button */}
-            <button
-              id="btn-chat-toggle"
-              onClick={onOpenChat}
-              className="relative p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-200"
-              title="Trao đổi Realtime"
-            >
-              <MessageSquare className="w-5 h-5" />
-              {unreadMessagesCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
-                  {unreadMessagesCount}
-                </span>
-              )}
-            </button>
+            {/* A conversation is private to the accepted application's student and company. */}
+            {canUseChat && (
+              <button
+                id="btn-chat-toggle"
+                onClick={onOpenChat}
+                className="relative p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-200"
+                title="Trao đổi Realtime"
+              >
+                <MessageSquare className="w-5 h-5" />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+                    {unreadMessagesCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Notifications Button */}
             <button

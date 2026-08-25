@@ -14,7 +14,6 @@ import {
   Application,
   WeeklyReport,
   Evaluation,
-  ChatMessage,
   ApplicationStatus,
 } from "./types";
 
@@ -25,7 +24,6 @@ import {
   INITIAL_INTERNSHIPS,
   INITIAL_WEEKLY_REPORTS,
   INITIAL_EVALUATIONS,
-  INITIAL_MESSAGES,
 } from "./data/mockData";
 
 import { Navbar } from "./components/Navbar";
@@ -160,7 +158,6 @@ export default function App() {
     useState<Evaluation[]>(INITIAL_EVALUATIONS);
   const [evaluationRecords, setEvaluationRecords] = useState<EvaluationRecord[]>([]);
   const [myPlacements, setMyPlacements] = useState<PlacementRecord[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
 
   // Modals state
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
@@ -263,15 +260,6 @@ export default function App() {
   const currentStudent = studentProfiles[0];
   const currentCompany = companyProfiles[0];
   const currentTeacher = teacherProfiles[0];
-
-  const currentUserId =
-    currentRole === "STUDENT"
-      ? currentStudent.userId
-      : currentRole === "COMPANY"
-        ? currentCompany.userId
-        : currentRole === "TEACHER"
-          ? currentTeacher.userId
-          : "usr-adm-1";
 
   const handleLogout = async () => {
     await logout();
@@ -433,48 +421,6 @@ export default function App() {
     );
   };
 
-  // Realtime Chat Action
-  const handleSendMessage = (receiverId: string, content: string) => {
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      senderId: currentUserId,
-      senderName:
-        currentRole === "STUDENT"
-          ? currentStudent.fullname
-          : currentCompany.companyName,
-      senderRole: currentRole,
-      receiverId,
-      content,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setMessages((prev) => [...prev, newMsg]);
-
-    // Auto simulated reply from company/student
-    setTimeout(() => {
-      const autoReply: ChatMessage = {
-        id: `msg-reply-${Date.now()}`,
-        senderId: receiverId,
-        senderName:
-          currentRole === "STUDENT" ? "FPT Software HR" : "Phạm Hoàng Sơn",
-        senderRole: currentRole === "STUDENT" ? "COMPANY" : "STUDENT",
-        receiverId: currentUserId,
-        content:
-          currentRole === "STUDENT"
-            ? "Dạ bên anh đã nhận được tin nhắn! Bộ phận Tuyển dụng FPT Software sẽ phản hồi trong ít phút."
-            : "Em đã nhận được thông tin từ quý công ty. Em cảm ơn anh/chị!",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-      setMessages((prev) => [...prev, autoReply]);
-    }, 1200);
-  };
-
   const handleNotificationNavigate = (action: NotificationAction) => {
     const tabByAction: Partial<Record<NotificationAction, string>> = {
       OPEN_APPLICATION: currentRole === "COMPANY" ? "applicants" : currentRole === "ADMIN" ? "application-management" : "applications",
@@ -500,7 +446,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         unreadNotifsCount={notificationState.unreadCount}
-        unreadMessagesCount={1}
+        unreadMessagesCount={0}
         onOpenNotifs={() => setIsNotifsOpen(true)}
         onOpenChat={() => setIsChatOpen(true)}
         onOpenAICoach={() => setIsAICoachOpen(true)}
@@ -658,10 +604,6 @@ export default function App() {
       <ChatDrawer
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        messages={messages}
-        currentUserId={currentUserId}
-        currentRole={currentRole}
-        onSendMessage={handleSendMessage}
       />
 
       <AICVCoachModal

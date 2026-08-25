@@ -1,130 +1,71 @@
-import React, { useState } from 'react';
-import { ChatMessage, UserRole } from '../../types';
-import { MessageSquare, Send, X, Bot, User, CheckCheck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { MessageSquare, RefreshCw, X } from 'lucide-react';
+import { getApiErrorMessage } from '../../auth/api';
+import { listConversations } from '../../chat/api';
+import type { Conversation } from '../../chat/types';
 
 interface ChatDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  messages: ChatMessage[];
-  currentUserId: string;
-  currentRole: UserRole;
-  onSendMessage: (receiverId: string, content: string) => void;
 }
 
-export const ChatDrawer: React.FC<ChatDrawerProps> = ({
-  isOpen,
-  onClose,
-  messages,
-  currentUserId,
-  currentRole,
-  onSendMessage,
-}) => {
-  const [inputText, setInputText] = useState('');
+function formatUpdatedAt(value: string) {
+  return new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit',
+  }).format(new Date(value));
+}
+
+export function ChatDrawer({ isOpen, onClose }: ChatDrawerProps) {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadConversations = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const page = await listConversations({ page: 1, limit: 50 });
+      setConversations(page.items);
+    } catch (loadError) {
+      setError(getApiErrorMessage(loadError));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) void loadConversations();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // Partner ID depending on who is logged in
-  const targetReceiverId = currentRole === 'STUDENT' ? 'usr-cmp-1' : 'usr-std-1';
-  const partnerName = currentRole === 'STUDENT' ? 'FPT Software HR' : 'Phạm Hoàng Sơn (Sinh viên)';
-
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
-    onSendMessage(targetReceiverId, inputText.trim());
-    setInputText('');
-  };
-
-  const quickReplies = [
-    'Chào anh/chị, em xin hỏi thêm về thời gian làm việc ạ?',
-    'Dạ em đã cập nhật báo cáo tuần 3 trên hệ thống rồi ạ.',
-    'Cảm ơn anh/chị đã phản hồi đơn ứng tuyển của em!',
-  ];
-
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/30 backdrop-blur-xs">
-      <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 animate-in slide-in-from-right duration-200">
-        {/* Chat Header */}
-        <div className="p-4 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
+      <aside className="flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl animate-in slide-in-from-right duration-200">
+        <header className="flex items-center justify-between border-b border-slate-200 bg-slate-900 p-4 text-white">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                {partnerName.charAt(0)}
-              </div>
-              <span className="w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-900 rounded-full absolute bottom-0 right-0"></span>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold">{partnerName}</h3>
-              <span className="text-[10px] text-emerald-400 font-medium">Trực tuyến (Socket.IO Connected)</span>
-            </div>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600"><MessageSquare className="h-5 w-5" /></span>
+            <div><h3 className="text-sm font-bold">Tin nhắn</h3><p className="text-[11px] text-slate-300">Hội thoại từ đơn đã được chấp nhận</p></div>
           </div>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+          <button onClick={onClose} aria-label="Đóng danh sách tin nhắn" className="rounded-lg p-1 text-slate-400 hover:text-white"><X className="h-5 w-5" /></button>
+        </header>
 
-        {/* Message History */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
-          <div className="text-center my-2">
-            <span className="text-[10px] text-slate-400 bg-slate-200/60 px-2.5 py-1 rounded-full font-medium">
-              Kênh trao đổi bảo mật - Mã hóa thời gian thực
-            </span>
-          </div>
-
-          {messages.map((m) => {
-            const isMe = m.senderId === currentUserId;
-            return (
-              <div
-                key={m.id}
-                className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-xs shadow-xs leading-relaxed ${
-                    isMe
-                      ? 'bg-blue-600 text-white rounded-tr-none'
-                      : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
-                  }`}
-                >
-                  <p>{m.content}</p>
-                </div>
-                <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 px-1">
-                  <span>{m.timestamp}</span>
-                  {isMe && <CheckCheck className="w-3 h-3 text-blue-500" />}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Quick Replies */}
-        <div className="px-3 py-2 bg-slate-100 border-t border-slate-200 flex gap-1.5 overflow-x-auto no-scrollbar">
-          {quickReplies.map((reply, i) => (
-            <button
-              key={i}
-              onClick={() => onSendMessage(targetReceiverId, reply)}
-              className="text-[11px] bg-white border border-slate-200 hover:border-blue-300 text-slate-700 px-2.5 py-1 rounded-full whitespace-nowrap shadow-2xs hover:bg-blue-50 transition-colors"
-            >
-              {reply}
+        <div className="flex-1 overflow-y-auto bg-slate-50 p-3">
+          {isLoading && <p className="py-10 text-center text-sm text-slate-500">Đang tải hội thoại…</p>}
+          {!isLoading && error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center"><p className="text-sm text-red-700">{error}</p><button onClick={() => void loadConversations()} className="mt-3 inline-flex items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-red-700 shadow-sm"><RefreshCw className="h-3.5 w-3.5" /> Thử lại</button></div>
+          )}
+          {!isLoading && !error && conversations.length === 0 && (
+            <div className="py-16 text-center text-slate-500"><MessageSquare className="mx-auto mb-3 h-10 w-10 text-slate-300" /><p className="text-sm font-medium">Chưa có hội thoại</p><p className="mt-1 text-xs">Hội thoại sẽ xuất hiện khi một đơn ứng tuyển được chấp nhận.</p></div>
+          )}
+          {!isLoading && !error && conversations.map((conversation) => (
+            <button key={conversation.id} className="mb-2 flex w-full items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">{conversation.participant.name.charAt(0).toUpperCase()}</span>
+              <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm text-slate-800">{conversation.participant.name}</strong><time className="shrink-0 text-[10px] text-slate-400">{formatUpdatedAt(conversation.updatedAt)}</time></span><span className="mt-0.5 block truncate text-xs text-slate-500">{conversation.internship.title}</span><span className="mt-1 block truncate text-xs text-slate-600">{conversation.latestMessage?.content ?? 'Chưa có tin nhắn'}</span></span>
             </button>
           ))}
         </div>
-
-        {/* Input Form */}
-        <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Nhập tin nhắn..."
-            className="flex-1 px-3.5 py-2 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            className="p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs font-semibold flex items-center justify-center transition-colors"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
-      </div>
+      </aside>
     </div>
   );
-};
+}
