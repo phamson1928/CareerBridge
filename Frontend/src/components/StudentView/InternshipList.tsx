@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Internship, StudentProfile, Application } from '../../types';
 import { calculateSkillMatch } from '../../utils/matching';
 import { getApiErrorMessage } from '../../auth/api';
+import { SkillPicker, type SkillOption } from '../Skills/SkillPicker';
 import {
   Search,
   Filter,
@@ -31,7 +32,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
   onApply,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSkillFilter, setSelectedSkillFilter] = useState<string>('ALL');
+  const [selectedSkillFilter, setSelectedSkillFilter] = useState<SkillOption[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string>('ALL');
   const [activeModalInternship, setActiveModalInternship] = useState<Internship | null>(null);
   const [applyModalInternship, setApplyModalInternship] = useState<Internship | null>(null);
@@ -44,10 +45,6 @@ export const InternshipList: React.FC<InternshipListProps> = ({
     setSelectedCvName(studentProfile.cvName || 'Chưa tải CV lên hồ sơ');
   }, [studentProfile.cvName]);
 
-  // Available skills filter list
-  const allSkills = Array.from(
-    new Set(internships.flatMap((item) => item.requiredSkills))
-  );
 
   const filteredInternships = internships.filter((item) => {
     const matchesSearch =
@@ -56,7 +53,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
       item.description.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesSkill =
-      selectedSkillFilter === 'ALL' || item.requiredSkills.includes(selectedSkillFilter);
+      selectedSkillFilter.length === 0 || item.requiredSkills.includes(selectedSkillFilter[0].name);
 
     const matchesLocation =
       selectedLocation === 'ALL' || item.location.includes(selectedLocation);
@@ -112,19 +109,12 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 className="w-full text-xs sm:text-sm focus:outline-none"
               />
             </div>
-            <div className="flex gap-2">
-              <select
-                value={selectedSkillFilter}
-                onChange={(e) => setSelectedSkillFilter(e.target.value)}
-                className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:outline-none"
-              >
-                <option value="ALL">Tất cả Kỹ năng</option>
-                {allSkills.map((sk) => (
-                  <option key={sk} value={sk}>
-                    {sk}
-                  </option>
-                ))}
-              </select>
+            <div className="w-full sm:w-72">
+              <SkillPicker
+                selected={selectedSkillFilter}
+                onChange={setSelectedSkillFilter}
+                placeholder="Tìm kỹ năng để lọc..."
+              />
             </div>
           </div>
         </div>

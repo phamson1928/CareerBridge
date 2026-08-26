@@ -24,7 +24,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
             <h1 className="mt-6 text-5xl font-black leading-tight tracking-tight">Kết nối sinh viên với cơ hội thực tập phù hợp.</h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-indigo-100/80">Một nền tảng chung để sinh viên, doanh nghiệp, giảng viên và nhà trường theo dõi toàn bộ hành trình thực tập.</p>
           </div>
-          <p className="text-xs text-indigo-200/70">PostgreSQL · NestJS · React · Prisma</p>
+          <p className="text-xs text-indigo-200/70">Nền tảng kết nối sinh viên, doanh nghiệp và giảng viên</p>
         </div>
       </section>
       <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 py-10 sm:px-8">

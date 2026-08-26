@@ -60,6 +60,7 @@ import { placementsApi } from "./placements/api";
 import type { PlacementRecord } from "./placements/types";
 import { getApiErrorMessage } from "./auth/api";
 import { useChat } from "./chat/use-chat";
+import { useAppFeedback } from "./components/Feedback/AppFeedbackProvider";
 
 function toLegacyInternship(record: InternshipRecord): Internship {
   const type = ["Full-time", "Part-time", "Hybrid", "Remote"].includes(
@@ -154,6 +155,7 @@ export default function App() {
   const navigate = useNavigate();
   const notificationState = useNotifications();
   const chatState = useChat();
+  const feedback = useAppFeedback();
   const currentRole: UserRole =
     user?.role === "LECTURER" ? "TEACHER" : (user?.role ?? "STUDENT");
   const [activeTab, setActiveTab] = useState<string>(() =>
@@ -297,9 +299,7 @@ export default function App() {
     });
     setApplications((previous) => [toLegacyApplication(created), ...previous]);
 
-    alert(
-      `Ứng tuyển vị trí "${job.title}" thành công! Doanh nghiệp sẽ xem xét hồ sơ của bạn.`,
-    );
+    feedback.notify({ title: "Ứng tuyển thành công", message: `Đã gửi hồ sơ cho vị trí "${job.title}".`, tone: "success" });
   };
 
   const handleUpdateApplicationStatus = async (
@@ -337,9 +337,9 @@ export default function App() {
     try {
       const created = await evaluationsApi.create(input);
       setEvaluationRecords((previous) => [created, ...previous]);
-      alert("Đã lưu đánh giá thành công. Sinh viên sẽ nhận được thông báo.");
+      feedback.notify({ title: "Đã lưu đánh giá", message: "Sinh viên sẽ nhận được thông báo.", tone: "success" });
     } catch (error) {
-      alert(getApiErrorMessage(error));
+      feedback.notify({ title: "Không thể lưu đánh giá", message: getApiErrorMessage(error), tone: "error" });
       throw error;
     }
   };
@@ -348,9 +348,9 @@ export default function App() {
     try {
       const updated = await evaluationsApi.update(id, input);
       setEvaluationRecords((previous) => previous.map((item) => item.id === id ? updated : item));
-      alert("Đã cập nhật đánh giá.");
+      feedback.notify({ title: "Đã cập nhật đánh giá", tone: "success" });
     } catch (error) {
-      alert(getApiErrorMessage(error));
+      feedback.notify({ title: "Không thể lưu đánh giá", message: getApiErrorMessage(error), tone: "error" });
       throw error;
     }
   };
@@ -513,13 +513,7 @@ export default function App() {
             Hệ Thống Hỗ Trợ Tìm Kiếm & Quản Lý Thực Tập Cho Sinh Viên
             (InternConnect) © 2026
           </p>
-          <div className="flex items-center gap-4 text-slate-500">
-            <span>Báo cáo đề tài thực tập tốt nghiệp</span>
-            <span>•</span>
-            <span className="font-mono text-blue-600 font-bold">
-              PostgreSQL + NestJS + React
-            </span>
-          </div>
+          <span className="text-slate-500">Cổng thông tin thực tập</span>
         </div>
       </footer>
 

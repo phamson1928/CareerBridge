@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { getApiErrorMessage } from '../../auth/api';
+import { useAppFeedback } from '../Feedback/AppFeedbackProvider';
 import { placementsApi } from '../../placements/api';
 import type { PlacementRecord, PlacementStatus } from '../../placements/types';
 import { supervisionsApi } from '../../supervisions/api';
@@ -39,6 +40,7 @@ function formatDate(value: string | null) {
 }
 
 export const SupervisionManagement: React.FC = () => {
+  const { confirm } = useAppFeedback();
   const [items, setItems] = useState<PlacementRecord[]>([]);
   const [lecturers, setLecturers] = useState<LecturerOption[]>([]);
   const [search, setSearch] = useState('');
@@ -120,7 +122,9 @@ export const SupervisionManagement: React.FC = () => {
   };
 
   const cancelSupervision = async (placement: PlacementRecord) => {
-    if (!placement.supervision || !window.confirm(`Bỏ phân công cho ${placement.student.fullName}?`)) return;
+    if (!placement.supervision) return;
+    const accepted = await confirm({ title: 'Bỏ phân công', message: `Bỏ phân công cho ${placement.student.fullName}?`, confirmLabel: 'Bỏ phân công', tone: 'danger' });
+    if (!accepted) return;
     try {
       await supervisionsApi.cancel(placement.supervision.id);
       await load();

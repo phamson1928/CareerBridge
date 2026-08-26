@@ -1,6 +1,7 @@
 import React, { FormEvent, useCallback, useEffect, useState } from "react";
 import { Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
+import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 import type { AuthRole } from "../../auth/auth.types";
 import { ManagedUser, UserStatus, usersApi } from "../../users/api";
 
@@ -8,6 +9,7 @@ const roles: AuthRole[] = ["STUDENT", "COMPANY", "LECTURER", "ADMIN"];
 const statuses: UserStatus[] = ["ACTIVE", "INACTIVE", "BANNED"];
 
 export const UserManagement: React.FC = () => {
+  const { confirm } = useAppFeedback();
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -87,12 +89,8 @@ export const UserManagement: React.FC = () => {
   };
 
   const deleteUser = async (user: ManagedUser) => {
-    if (
-      !window.confirm(
-        `Xóa tài khoản ${user.email}? Thao tác này không thể hoàn tác.`,
-      )
-    )
-      return;
+    const accepted = await confirm({ title: 'Xóa tài khoản', message: `Xóa tài khoản ${user.email}? Thao tác này không thể hoàn tác.`, confirmLabel: 'Xóa tài khoản', tone: 'danger' });
+    if (!accepted) return;
     setSavingId(user.id);
     setError(null);
     try {

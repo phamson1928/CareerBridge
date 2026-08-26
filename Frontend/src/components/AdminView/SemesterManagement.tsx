@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { getApiErrorMessage } from '../../auth/api';
+import { useAppFeedback } from '../Feedback/AppFeedbackProvider';
 import { semestersApi } from '../../semesters/api';
 import type {
   SemesterInput,
@@ -49,6 +50,7 @@ function toEndOfDay(value: string) {
 }
 
 export const SemesterManagement: React.FC = () => {
+  const { confirm, notify } = useAppFeedback();
   const [items, setItems] = useState<SemesterRecord[]>([]);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<SemesterStatus | ''>('');
@@ -156,27 +158,27 @@ export const SemesterManagement: React.FC = () => {
 
   const changeStatus = async (semester: SemesterRecord, next: SemesterStatus) => {
     const label = statusLabels[next].toLowerCase();
-    if (!window.confirm(`Chuyển kỳ “${semester.name}” sang trạng thái ${label}?`)) {
-      return;
-    }
+    const accepted = await confirm({ title: 'Đổi trạng thái kỳ thực tập', message: `Chuyển kỳ “${semester.name}” sang trạng thái ${label}?`, confirmLabel: 'Xác nhận' });
+    if (!accepted) return;
     try {
       await semestersApi.updateStatus(semester.id, next);
       await load();
+      notify({ title: 'Đã cập nhật trạng thái kỳ thực tập', tone: 'success' });
     } catch (requestError) {
-      window.alert(getApiErrorMessage(requestError));
+      notify({ title: 'Không thể cập nhật trạng thái', message: getApiErrorMessage(requestError), tone: 'error' });
     }
   };
 
   const remove = async (semester: SemesterRecord) => {
-    if (!window.confirm(`Xóa kỳ thực tập “${semester.name}”? Thao tác này không thể hoàn tác.`)) {
-      return;
-    }
+    const accepted = await confirm({ title: 'Xóa kỳ thực tập', message: `Xóa kỳ thực tập “${semester.name}”? Thao tác này không thể hoàn tác.`, confirmLabel: 'Xóa kỳ thực tập', tone: 'danger' });
+    if (!accepted) return;
     try {
       await semestersApi.remove(semester.id);
       if (items.length === 1 && page > 1) setPage((current) => current - 1);
       else await load();
+      notify({ title: 'Đã xóa kỳ thực tập', tone: 'success' });
     } catch (requestError) {
-      window.alert(getApiErrorMessage(requestError));
+      notify({ title: 'Không thể xóa kỳ thực tập', message: getApiErrorMessage(requestError), tone: 'error' });
     }
   };
 

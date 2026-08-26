@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
+import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 import {
   lecturersApi,
   LecturerProfileInput,
@@ -22,6 +23,7 @@ const emptyForm: LecturerProfileInput = {
 };
 
 export const LecturerProfileView: React.FC = () => {
+  const { confirm } = useAppFeedback();
   const [profile, setProfile] = useState<LecturerProfileRecord | null>(null);
   const [form, setForm] = useState<LecturerProfileInput>(emptyForm);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,10 +85,8 @@ export const LecturerProfileView: React.FC = () => {
   };
 
   const deleteProfile = async () => {
-    if (
-      !window.confirm("Xóa hồ sơ giảng viên? Thao tác này không thể hoàn tác.")
-    )
-      return;
+    const accepted = await confirm({ title: "Xóa hồ sơ giảng viên", message: "Xóa hồ sơ giảng viên? Thao tác này không thể hoàn tác.", confirmLabel: "Xóa hồ sơ", tone: "danger" });
+    if (!accepted) return;
     setIsSaving(true);
     setError(null);
     try {

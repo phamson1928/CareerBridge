@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
+import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 import {
   studentsApi,
   StudentProfileInput,
@@ -16,7 +17,8 @@ import {
 } from "../../students/api";
 import { CvUpload } from "./CvUpload";
 import { skillsApi } from "../../skills/api";
-import type { SkillLevel, SkillRecord, StudentSkillRecord } from "../../skills/types";
+import type { SkillLevel, StudentSkillRecord } from '../../skills/types';
+import { SkillPicker, type SkillOption } from '../Skills/SkillPicker';
 
 const emptyForm: StudentProfileInput = {
   studentCode: "",
@@ -28,13 +30,14 @@ const emptyForm: StudentProfileInput = {
 };
 
 export const StudentProfileView: React.FC = () => {
+  const { confirm } = useAppFeedback();
   const [profile, setProfile] = useState<StudentProfileRecord | null>(null);
   const [form, setForm] = useState<StudentProfileInput>(emptyForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [catalogue, setCatalogue] = useState<SkillRecord[]>([]);
+
   const [studentSkills, setStudentSkills] = useState<StudentSkillRecord[]>([]);
   const [savingSkills, setSavingSkills] = useState(false);
 
@@ -77,9 +80,7 @@ export const StudentProfileView: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    void Promise.all([skillsApi.list({ limit: 100 }), skillsApi.getStudentMine()])
-      .then(([catalogueResult, mine]) => { setCatalogue(catalogueResult.items); setStudentSkills(mine); })
-      .catch(() => undefined);
+    void skillsApi.getStudentMine().then(setStudentSkills).catch(() => undefined);
   }, []);
 
   const saveSkills = async () => {
@@ -113,10 +114,8 @@ export const StudentProfileView: React.FC = () => {
   };
 
   const deleteProfile = async () => {
-    if (
-      !window.confirm("Xóa hồ sơ sinh viên? Thao tác này không thể hoàn tác.")
-    )
-      return;
+    const accepted = await confirm({ title: "Xóa hồ sơ sinh viên", message: "Xóa hồ sơ sinh viên? Thao tác này không thể hoàn tác.", confirmLabel: "Xóa hồ sơ", tone: "danger" });
+    if (!accepted) return;
     setIsSaving(true);
     setError(null);
     try {
@@ -298,7 +297,12 @@ export const StudentProfileView: React.FC = () => {
       {profile && (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
           <div className="mb-4"><h3 className="text-lg font-extrabold text-slate-900">Kỹ năng</h3><p className="text-xs text-slate-500">Chọn kỹ năng và cấp độ thực tế của bạn.</p></div>
-          <div className="flex flex-wrap gap-2">{catalogue.map(skill => { const selected = studentSkills.find(item => item.skillId === skill.id); return <button key={skill.id} type="button" onClick={() => setStudentSkills(prev => selected ? prev.filter(item => item.skillId !== skill.id) : [...prev, { skillId: skill.id, name: skill.name, level: 'BEGINNER' }])} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${selected ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600'}`}>{skill.name}</button>; })}</div>
+          <SkillPicker
+            multiple
+            selected={studentSkills.map((skill) => ({ id: skill.skillId, name: skill.name }))}
+            onChange={(nextSkills: SkillOption[]) => setStudentSkills((current) => nextSkills.map((skill) => current.find((item) => item.skillId === skill.id) ?? { skillId: skill.id, name: skill.name, level: 'BEGINNER' }))}
+            placeholder="Tìm và thêm kỹ năng..."
+          />
           <div className="mt-4 space-y-2">{studentSkills.map(item => <div key={item.skillId} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2"><span className="text-sm font-semibold">{item.name}</span><select value={item.level} onChange={e => setStudentSkills(prev => prev.map(current => current.skillId === item.skillId ? { ...current, level: e.target.value as SkillLevel } : current))} className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs"><option value="BEGINNER">Beginner</option><option value="INTERMEDIATE">Intermediate</option><option value="ADVANCED">Advanced</option><option value="EXPERT">Expert</option></select></div>)}</div>
           <button onClick={() => void saveSkills()} disabled={savingSkills} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{savingSkills ? 'Đang lưu...' : 'Lưu kỹ năng'}</button>
         </section>

@@ -183,14 +183,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               C
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight text-indigo-950 uppercase flex items-center gap-1">
-                Intern<span className="text-indigo-600">Connect</span>{" "}
-                <span className="font-light text-slate-400 text-sm lowercase">
-                  | portal
-                </span>
+              <span className="text-xl font-bold tracking-tight text-indigo-950">
+                Intern<span className="text-indigo-600">Connect</span>
               </span>
-              <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">
-                Career Opportunities & Management
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Cổng thông tin thực tập
               </span>
             </div>
           </div>
