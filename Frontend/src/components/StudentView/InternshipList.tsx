@@ -36,7 +36,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
   const [activeModalInternship, setActiveModalInternship] = useState<Internship | null>(null);
   const [applyModalInternship, setApplyModalInternship] = useState<Internship | null>(null);
   const [coverLetter, setCoverLetter] = useState('');
-  const [selectedCvName, setSelectedCvName] = useState(studentProfile.cvName || 'Pham_Hoang_Son_CV.pdf');
+  const [selectedCvName, setSelectedCvName] = useState(studentProfile.cvName || 'Chưa tải CV lên hồ sơ');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 

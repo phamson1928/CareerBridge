@@ -6,25 +6,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  UserRole,
-  StudentProfile,
-  CompanyProfile,
-  TeacherProfile,
-  Internship,
   Application,
-  WeeklyReport,
-  Evaluation,
   ApplicationStatus,
+  CompanyProfile,
+  Internship,
+  StudentProfile,
+  UserRole,
 } from "./types";
-
-import {
-  INITIAL_STUDENT_PROFILES,
-  INITIAL_COMPANY_PROFILES,
-  INITIAL_TEACHER_PROFILES,
-  INITIAL_INTERNSHIPS,
-  INITIAL_WEEKLY_REPORTS,
-  INITIAL_EVALUATIONS,
-} from "./data/mockData";
 
 import { Navbar } from "./components/Navbar";
 import { SessionBanner } from "./components/SessionBanner";
@@ -38,7 +26,6 @@ import { StudentProfileView } from "./components/StudentView/StudentProfile";
 import { AICVCoachModal } from "./components/StudentView/AICVCoachModal";
 
 import { CompanyDashboard } from "./components/CompanyView/CompanyDashboard";
-import { PostInternshipModal } from "./components/CompanyView/PostInternshipModal";
 import { ManageApplicants } from "./components/CompanyView/ManageApplicants";
 import { EvaluateInternsModal } from "./components/CompanyView/EvaluateInternsModal";
 import { CompanyProfileView } from "./components/CompanyView/CompanyProfile";
@@ -64,9 +51,10 @@ import { useAuth } from "./auth/AuthContext";
 import { useNotifications } from "./notifications/use-notifications";
 import type { NotificationAction } from "./notifications/types";
 import { applicationsApi, type ApplicationRecord } from "./applications/api";
-import { companiesApi } from "./companies/api";
+import { companiesApi, type CompanyProfileRecord } from "./companies/api";
 import { internshipsApi, type InternshipRecord } from "./internships/api";
-import { studentsApi } from "./students/api";
+import { studentsApi, type StudentProfileRecord } from "./students/api";
+import { skillsApi } from "./skills/api";
 import { evaluationsApi, type EvaluationRecord } from "./evaluations/api";
 import { placementsApi } from "./placements/api";
 import type { PlacementRecord } from "./placements/types";
@@ -125,6 +113,42 @@ function toLegacyApplication(record: ApplicationRecord): Application {
   };
 }
 
+function toLegacyStudentProfile(
+  record: StudentProfileRecord,
+  skills: string[],
+): StudentProfile {
+  return {
+    id: record.id,
+    userId: record.userId,
+    fullname: record.fullName,
+    studentCode: record.studentCode,
+    major: record.major,
+    university: "",
+    gpa: record.gpa ?? 0,
+    skills,
+    cvFileId: record.cvFileId ?? undefined,
+    cvName: record.cvFile?.originalName,
+    summary: record.summary ?? undefined,
+    phone: record.phone ?? undefined,
+  };
+}
+
+function toLegacyCompanyProfile(record: CompanyProfileRecord): CompanyProfile {
+  return {
+    id: record.id,
+    userId: record.userId,
+    companyName: record.companyName,
+    tagline: record.tagline ?? "",
+    description: record.description ?? "",
+    industry: record.industry ?? "",
+    website: record.website ?? "",
+    address: record.address ?? "",
+    logo: record.logo ?? "",
+    verified: record.status === "APPROVED",
+    contactEmail: record.contactEmail ?? "",
+  };
+}
+
 export default function App() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -140,25 +164,12 @@ export default function App() {
     setActiveTab(getDefaultTab(currentRole));
   }, [currentRole]);
 
-  // Core App State
-  const [studentProfiles, setStudentProfiles] = useState<StudentProfile[]>(
-    INITIAL_STUDENT_PROFILES,
-  );
-  const [companyProfiles, setCompanyProfiles] = useState<CompanyProfile[]>(
-    INITIAL_COMPANY_PROFILES,
-  );
-  const [teacherProfiles] = useState<TeacherProfile[]>(
-    INITIAL_TEACHER_PROFILES,
-  );
-
-  const [internships, setInternships] =
-    useState<Internship[]>(INITIAL_INTERNSHIPS);
+  const [studentProfile, setStudentProfile] =
+    useState<StudentProfile | null>(null);
+  const [companyProfile, setCompanyProfile] =
+    useState<CompanyProfile | null>(null);
+  const [internships, setInternships] = useState<Internship[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
-  const [reports, setReports] = useState<WeeklyReport[]>(
-    INITIAL_WEEKLY_REPORTS,
-  );
-  const [evaluations, setEvaluations] =
-    useState<Evaluation[]>(INITIAL_EVALUATIONS);
   const [evaluationRecords, setEvaluationRecords] = useState<EvaluationRecord[]>([]);
   const [myPlacements, setMyPlacements] = useState<PlacementRecord[]>([]);
 
@@ -166,12 +177,18 @@ export default function App() {
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAICoachOpen, setIsAICoachOpen] = useState(false);
-  const [isCreateJobOpen, setIsCreateJobOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
     let active = true;
+    setStudentProfile(null);
+    setCompanyProfile(null);
+    setInternships([]);
+    setApplications([]);
+    setEvaluationRecords([]);
+    setMyPlacements([]);
+
     const applyApplications = (records: ApplicationRecord[]) => {
       if (active) setApplications(records.map(toLegacyApplication));
     };
@@ -179,64 +196,53 @@ export default function App() {
     const loadWorkflowData = async () => {
       try {
         if (user.role === "STUDENT") {
-          const [internshipsPage, applicationsPage, evaluationPage] = await Promise.all([
-            internshipsApi.list({ page: 1, limit: 100 }),
-            applicationsApi.listMine({ page: 1, limit: 100 }),
-            evaluationsApi.listMine({ page: 1, limit: 100 }),
-          ]);
+          const [internshipsPage, applicationsPage, evaluationPage] =
+            await Promise.all([
+              internshipsApi.list({ page: 1, limit: 100 }),
+              applicationsApi.listMine({ page: 1, limit: 100 }),
+              evaluationsApi.listMine({ page: 1, limit: 100 }),
+            ]);
           if (!active) return;
           setInternships(internshipsPage.items.map(toLegacyInternship));
           applyApplications(applicationsPage.items);
           setEvaluationRecords(evaluationPage.items);
 
           try {
-            const profile = await studentsApi.getMine();
-            if (!active) return;
-            setStudentProfiles((previous) => [
-              {
-                ...previous[0],
-                id: profile.id,
-                userId: profile.userId,
-                fullname: profile.fullName,
-                studentCode: profile.studentCode,
-                major: profile.major,
-                gpa: profile.gpa ?? 0,
-                cvFileId: profile.cvFileId ?? undefined,
-                cvName: profile.cvFile?.originalName,
-              },
+            const [profile, studentSkills] = await Promise.all([
+              studentsApi.getMine(),
+              skillsApi.getStudentMine(),
             ]);
+            if (active) {
+              setStudentProfile(
+                toLegacyStudentProfile(
+                  profile,
+                  studentSkills.map((skill) => skill.name),
+                ),
+              );
+            }
           } catch (profileError) {
             console.warn("Student profile is not available yet", profileError);
           }
         }
 
         if (user.role === "COMPANY") {
-          const [profile, applicationsPage, placements, evaluationPage] = await Promise.all([
-            companiesApi.getMine(),
-            applicationsApi.listMine({ page: 1, limit: 100 }),
-            placementsApi.listMine(),
-            evaluationsApi.listMine({ page: 1, limit: 100 }),
-          ]);
+          const [applicationsPage, placements, evaluationPage] =
+            await Promise.all([
+              applicationsApi.listMine({ page: 1, limit: 100 }),
+              placementsApi.listMine(),
+              evaluationsApi.listMine({ page: 1, limit: 100 }),
+            ]);
           if (!active) return;
-          setCompanyProfiles((previous) => [
-            {
-              ...previous[0],
-              id: profile.id,
-              userId: profile.userId,
-              companyName: profile.companyName,
-              tagline: profile.tagline ?? "",
-              description: profile.description ?? "",
-              industry: profile.industry ?? "",
-              website: profile.website ?? "",
-              address: profile.address ?? "",
-              logo: profile.logo ?? "",
-              verified: profile.status === "APPROVED",
-              contactEmail: profile.contactEmail ?? "",
-            },
-          ]);
           applyApplications(applicationsPage.items);
           setMyPlacements(placements.items);
           setEvaluationRecords(evaluationPage.items);
+
+          try {
+            const profile = await companiesApi.getMine();
+            if (active) setCompanyProfile(toLegacyCompanyProfile(profile));
+          } catch (profileError) {
+            console.warn("Company profile is not available yet", profileError);
+          }
         }
 
         if (user.role === "LECTURER") {
@@ -259,11 +265,6 @@ export default function App() {
     };
   }, [user?.id, user?.role]);
 
-  // Active Users per Role
-  const currentStudent = studentProfiles[0];
-  const currentCompany = companyProfiles[0];
-  const currentTeacher = teacherProfiles[0];
-
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
@@ -274,19 +275,16 @@ export default function App() {
     internshipId: string,
     coverLetter: string,
   ) => {
-    const job = internships.find((i) => i.id === internshipId);
+    const job = internships.find((item) => item.id === internshipId);
     if (!job) throw new Error("Không tìm thấy vị trí thực tập.");
-    let cvFileId = currentStudent.cvFileId;
+
+    let cvFileId = studentProfile?.cvFileId;
     if (!cvFileId) {
       const profile = await studentsApi.getMine();
       cvFileId = profile.cvFileId ?? undefined;
-      setStudentProfiles((previous) => [
-        {
-          ...previous[0],
-          cvFileId,
-          cvName: profile.cvFile?.originalName,
-        },
-      ]);
+      setStudentProfile((current) =>
+        toLegacyStudentProfile(profile, current?.skills ?? []),
+      );
     }
     if (!cvFileId) {
       throw new Error("Bạn cần tải CV lên hồ sơ trước khi ứng tuyển.");
@@ -302,60 +300,6 @@ export default function App() {
     alert(
       `Ứng tuyển vị trí "${job.title}" thành công! Doanh nghiệp sẽ xem xét hồ sơ của bạn.`,
     );
-  };
-
-  const handleSubmitReport = (reportData: Partial<WeeklyReport>) => {
-    const newReport: WeeklyReport = {
-      id: `rep-${Date.now()}`,
-      studentId: currentStudent.id,
-      studentName: currentStudent.fullname,
-      internshipId: currentStudent.activeInternshipId || "int-1",
-      companyName: "FPT Software",
-      weekNumber: reportData.weekNumber || reports.length + 1,
-      startDate: reportData.startDate || new Date().toISOString().split("T")[0],
-      endDate: reportData.endDate || new Date().toISOString().split("T")[0],
-      tasksCompleted: reportData.tasksCompleted || "",
-      plansNextWeek: reportData.plansNextWeek || "",
-      learningsAndChallenges: reportData.learningsAndChallenges || "",
-      attachmentName: reportData.attachmentName || "BaoCao.pdf",
-      attachmentUrl:
-        reportData.attachmentUrl || "https://pdfobject.com/pdf/sample.pdf",
-      status: "SUBMITTED",
-      submittedAt: new Date().toISOString().split("T")[0],
-    };
-
-    setReports([newReport, ...reports]);
-  };
-
-  const handleUpdateStudentProfile = (updated: Partial<StudentProfile>) => {
-    setStudentProfiles((prev) =>
-      prev.map((s) => (s.id === currentStudent.id ? { ...s, ...updated } : s)),
-    );
-  };
-
-  // Company Actions
-  const handlePostInternship = (posting: Partial<Internship>) => {
-    const newJob: Internship = {
-      id: `int-${Date.now()}`,
-      companyId: currentCompany.id,
-      companyName: currentCompany.companyName,
-      companyLogo: currentCompany.logo,
-      title: posting.title || "Mới",
-      department: posting.department || "Phần mềm",
-      location: posting.location || "TP. HCM",
-      type: "Full-time",
-      stipend: posting.stipend || "6,000,000 VNĐ",
-      description: posting.description || "",
-      requirements: posting.requirements || [],
-      requiredSkills: posting.requiredSkills || [],
-      slots: posting.slots || 5,
-      filledSlots: 0,
-      deadline: posting.deadline || "2026-09-01",
-      createdAt: new Date().toISOString().split("T")[0],
-      status: "ACTIVE",
-    };
-
-    setInternships([newJob, ...internships]);
   };
 
   const handleUpdateApplicationStatus = async (
@@ -411,19 +355,6 @@ export default function App() {
     }
   };
 
-  // Teacher Actions
-  const handleReviewReport = (
-    reportId: string,
-    status: WeeklyReport["status"],
-    comment: string,
-  ) => {
-    setReports((prev) =>
-      prev.map((r) =>
-        r.id === reportId ? { ...r, status, teacherComment: comment } : r,
-      ),
-    );
-  };
-
   const handleNotificationNavigate = (action: NotificationAction) => {
     const tabByAction: Partial<Record<NotificationAction, string>> = {
       OPEN_APPLICATION: currentRole === "COMPANY" ? "applicants" : currentRole === "ADMIN" ? "application-management" : "applications",
@@ -461,18 +392,24 @@ export default function App() {
         {currentRole === "STUDENT" && (
           <>
             {activeTab === "internships" && (
-              <InternshipList
-                internships={internships}
-                studentProfile={currentStudent}
-                applications={applications}
-                onApply={handleApplyInternship}
-              />
+              studentProfile ? (
+                <InternshipList
+                  internships={internships}
+                  studentProfile={studentProfile}
+                  applications={applications}
+                  onApply={handleApplyInternship}
+                />
+              ) : (
+                <ProfileRequiredNotice
+                  title="Hoàn thiện hồ sơ trước khi ứng tuyển"
+                  description="Hệ thống không dùng dữ liệu mẫu. Hãy tạo hồ sơ sinh viên và tải CV để xem cơ hội phù hợp."
+                  onOpenProfile={() => setActiveTab("profile")}
+                />
+              )
             )}
             {activeTab === "applications" && (
               <StudentApplications
-                applications={applications.filter(
-                  (a) => a.studentId === currentStudent.id,
-                )}
+                applications={applications}
                 onOpenChat={() => setIsChatOpen(true)}
                 onWithdraw={handleWithdrawApplication}
               />
@@ -500,12 +437,20 @@ export default function App() {
               <CompanyInternships />
             )}
             {activeTab === "applicants" && (
-              <ManageApplicants
-                companyProfile={currentCompany}
-                applications={applications}
-                onUpdateStatus={handleUpdateApplicationStatus}
-                onOpenChat={() => setIsChatOpen(true)}
-              />
+              companyProfile ? (
+                <ManageApplicants
+                  companyProfile={companyProfile}
+                  applications={applications}
+                  onUpdateStatus={handleUpdateApplicationStatus}
+                  onOpenChat={() => setIsChatOpen(true)}
+                />
+              ) : (
+                <ProfileRequiredNotice
+                  title="Hoàn thiện hồ sơ doanh nghiệp"
+                  description="Tạo hồ sơ doanh nghiệp trước khi quản lý các hồ sơ ứng tuyển."
+                  onOpenProfile={() => setActiveTab("company-profile")}
+                />
+              )
             )}
             {activeTab === "interns-evaluation" && (
               <EvaluateInternsModal
@@ -522,13 +467,7 @@ export default function App() {
         {currentRole === "TEACHER" && (
           <>
             {activeTab === "students-list" && (
-              <TeacherDashboard
-                teacherProfile={currentTeacher}
-                assignedStudents={studentProfiles}
-                reports={reports}
-                evaluations={evaluations}
-                onNavigateTab={setActiveTab}
-              />
+              <TeacherDashboard onNavigateTab={setActiveTab} />
             )}
             {activeTab === "supervised-placements" && <SupervisedPlacements />}
             {activeTab === "review-reports" && (
@@ -611,20 +550,14 @@ export default function App() {
         latestMessage={chatState.latestMessage}
         onMessagesRead={chatState.refreshUnreadCount}
       />
-
-      <AICVCoachModal
-        isOpen={isAICoachOpen}
-        onClose={() => setIsAICoachOpen(false)}
-        studentProfile={currentStudent}
-        internships={internships}
-      />
-
-      <PostInternshipModal
-        isOpen={isCreateJobOpen}
-        onClose={() => setIsCreateJobOpen(false)}
-        companyProfile={currentCompany}
-        onSubmitPosting={handlePostInternship}
-      />
+      {studentProfile && (
+        <AICVCoachModal
+          isOpen={isAICoachOpen}
+          onClose={() => setIsAICoachOpen(false)}
+          studentProfile={studentProfile}
+          internships={internships}
+        />
+      )}
     </div>
   );
 }
@@ -640,4 +573,27 @@ function getDefaultTab(role: UserRole): string {
     case "ADMIN":
       return "stats-dashboard";
   }
+}
+
+function ProfileRequiredNotice({
+  title,
+  description,
+  onOpenProfile,
+}: {
+  title: string;
+  description: string;
+  onOpenProfile: () => void;
+}) {
+  return (
+    <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-amber-950">
+      <h1 className="text-lg font-black">{title}</h1>
+      <p className="mt-2 max-w-xl text-sm text-amber-800">{description}</p>
+      <button
+        onClick={onOpenProfile}
+        className="mt-4 rounded-xl bg-amber-700 px-4 py-2 text-xs font-bold text-white hover:bg-amber-800"
+      >
+        Mở hồ sơ
+      </button>
+    </section>
+  );
 }

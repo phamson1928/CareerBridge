@@ -1,81 +1,172 @@
-import React from 'react';
-import { StudentProfile, WeeklyReport, Evaluation, TeacherProfile } from '../../types';
-import { Users, CheckSquare, GraduationCap, Award, Building2, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  BarChart3,
+  ClipboardCheck,
+  GraduationCap,
+  LoaderCircle,
+  UsersRound,
+} from "lucide-react";
+import { getApiErrorMessage } from "../../auth/api";
+import { evaluationsApi, type EvaluationRecord } from "../../evaluations/api";
+import { lecturersApi, type LecturerProfileRecord } from "../../lecturers/api";
+import { reportsApi } from "../../reports/api";
+import { supervisionsApi } from "../../supervisions/api";
+import type { SupervisionRecord } from "../../supervisions/types";
 
 interface TeacherDashboardProps {
-  teacherProfile: TeacherProfile;
-  assignedStudents: StudentProfile[];
-  reports: WeeklyReport[];
-  evaluations: Evaluation[];
   onNavigateTab: (tab: string) => void;
 }
 
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
-  teacherProfile,
-  assignedStudents,
-  reports,
-  evaluations,
   onNavigateTab,
 }) => {
-  const pendingReportsCount = reports.filter((r) => r.status === 'SUBMITTED').length;
+  const [profile, setProfile] = useState<LecturerProfileRecord | null>(null);
+  const [supervisions, setSupervisions] = useState<SupervisionRecord[]>([]);
+  const [pendingReports, setPendingReports] = useState(0);
+  const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [lecturer, supervisionPage, reportPage, evaluationPage] =
+          await Promise.all([
+            lecturersApi.getMine(),
+            supervisionsApi.listMine(),
+            reportsApi.supervised({ page: 1, limit: 100, status: "SUBMITTED" }),
+            evaluationsApi.listMine({ page: 1, limit: 100 }),
+          ]);
+        if (!active) return;
+        setProfile(lecturer);
+        setSupervisions(supervisionPage.items);
+        setPendingReports(reportPage.pagination.total);
+        setEvaluations(evaluationPage.items);
+      } catch (requestError) {
+        if (active) setError(getApiErrorMessage(requestError));
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-72 items-center justify-center text-sm text-slate-500">
+        <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
+        Đang tải dữ liệu giảng viên...
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-800">
+        <h1 className="text-lg font-black">Chưa thể tải dashboard giảng viên</h1>
+        <p className="mt-2 text-sm">{error ?? "Hồ sơ giảng viên chưa sẵn sàng."}</p>
+        <button
+          onClick={() => onNavigateTab("lecturer-profile")}
+          className="mt-4 rounded-xl bg-rose-700 px-4 py-2 text-xs font-bold text-white hover:bg-rose-800"
+        >
+          Mở hồ sơ giảng viên
+        </button>
+      </section>
+    );
+  }
+
+  const activeSupervisions = supervisions.filter(
+    (item) => item.status === "ACTIVE",
+  );
+  const recentStudents = activeSupervisions.slice(0, 4);
 
   return (
-    <div className="space-y-6">
-      {/* Hero Welcome */}
-      <div className="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div>
-          <span className="bg-purple-500/20 text-purple-300 text-xs font-semibold px-3 py-1 rounded-full border border-purple-400/30 inline-block mb-2">
-            Phân hệ Giám sát Giảng viên
-          </span>
-          <h1 className="text-2xl font-black">{teacherProfile.fullname}</h1>
-          <p className="text-slate-300 text-xs mt-1">{teacherProfile.department} • {teacherProfile.title}</p>
-        </div>
-
-        <div className="flex items-center gap-3 bg-white/10 p-3 rounded-2xl border border-white/20 backdrop-blur-md text-xs">
+    <section className="space-y-6">
+      <header className="rounded-3xl bg-gradient-to-br from-violet-950 via-indigo-950 to-slate-900 p-6 text-white shadow-lg sm:p-8">
+        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <span className="text-purple-200 block">Sinh viên hướng dẫn:</span>
-            <strong className="text-lg font-bold text-white">{assignedStudents.length} Sinh viên</strong>
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-violet-100">
+              <GraduationCap className="h-3.5 w-3.5" /> Academic supervision
+            </p>
+            <h1 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">
+              {profile.fullName}
+            </h1>
+            <p className="mt-1 text-sm text-violet-100/80">
+              {profile.department} {profile.title ? `· ${profile.title}` : ""}
+            </p>
           </div>
-        </div>
-      </div>
-
-      {/* Assigned Student Cards */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-            <Users className="w-4 h-4 text-purple-600" /> Danh Sách Sinh Viên Đang Thực Tập
-          </h3>
           <button
-            onClick={() => onNavigateTab('review-reports')}
-            className="text-xs text-purple-600 font-bold hover:underline"
+            onClick={() => onNavigateTab("supervised-placements")}
+            className="inline-flex items-center gap-2 self-start rounded-xl bg-white/10 px-4 py-2.5 text-xs font-bold text-white ring-1 ring-white/20 transition hover:bg-white/20 md:self-auto"
           >
-            Duyệt {pendingReportsCount} báo cáo tuần →
+            Xem danh sách phụ trách <ArrowRight className="h-4 w-4" />
           </button>
         </div>
+      </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {assignedStudents.map((std) => (
-            <div key={std.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">{std.fullname}</h4>
-                  <p className="text-slate-500">MSSV: {std.studentCode} • {std.major}</p>
-                </div>
-                <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-lg border border-emerald-200 text-[11px]">
-                  GPA {std.gpa}
-                </span>
-              </div>
-
-              <div className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
-                <span className="text-slate-600 flex items-center gap-1 font-medium">
-                  <Building2 className="w-3.5 h-3.5 text-slate-400" /> FPT Software
-                </span>
-                <span className="text-emerald-600 font-bold">Đã nhận thực tập ✓</span>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Metric label="Sinh viên đang hướng dẫn" value={activeSupervisions.length} icon={<UsersRound className="h-5 w-5" />} tone="bg-indigo-50 text-indigo-700" />
+        <Metric label="Báo cáo chờ duyệt" value={pendingReports} icon={<ClipboardCheck className="h-5 w-5" />} tone="bg-amber-50 text-amber-700" onClick={() => onNavigateTab("review-reports")} />
+        <Metric label="Đánh giá đã gửi" value={evaluations.length} icon={<BarChart3 className="h-5 w-5" />} tone="bg-emerald-50 text-emerald-700" onClick={() => onNavigateTab("evaluation-list")} />
       </div>
-    </div>
+
+      <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div>
+            <h2 className="font-black text-slate-900">Sinh viên đang phụ trách</h2>
+            <p className="mt-0.5 text-xs text-slate-500">Placement được Admin phân công cho tài khoản của bạn.</p>
+          </div>
+          <button onClick={() => onNavigateTab("supervised-placements")} className="text-xs font-bold text-indigo-700 hover:underline">Xem tất cả</button>
+        </div>
+        {recentStudents.length === 0 ? (
+          <div className="px-6 py-14 text-center text-sm text-slate-500">Chưa có placement đang hoạt động được phân công cho bạn.</div>
+        ) : (
+          <div className="grid gap-px bg-slate-100 md:grid-cols-2">
+            {recentStudents.map((item) => (
+              <div key={item.id} className="bg-white p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900">{item.placement.student.fullName}</h3>
+                    <p className="mt-1 font-mono text-[11px] text-slate-500">{item.placement.student.studentCode} · {item.placement.student.major}</p>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Đang hướng dẫn</span>
+                </div>
+                <p className="mt-4 text-sm font-semibold text-slate-700">{item.placement.internship.title}</p>
+                <p className="mt-1 text-xs text-slate-500">{item.placement.company.companyName} · {item.placement._count.reports} báo cáo</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </article>
+    </section>
   );
 };
+
+const Metric: React.FC<{
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  tone: string;
+  onClick?: () => void;
+}> = ({ label, value, icon, tone, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={!onClick}
+    className={`flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-xs transition ${onClick ? "hover:-translate-y-0.5 hover:shadow-md" : "cursor-default"}`}
+  >
+    <div>
+      <p className="text-xs font-bold text-slate-500">{label}</p>
+      <p className="mt-1 text-3xl font-black text-slate-900">{value}</p>
+    </div>
+    <span className={`rounded-xl p-3 ${tone}`}>{icon}</span>
+  </button>
+);
