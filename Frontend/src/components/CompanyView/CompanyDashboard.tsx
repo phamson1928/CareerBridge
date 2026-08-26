@@ -54,7 +54,7 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
     </section>
     {error && <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"><Metric label="Tin tuyển dụng" value={internships.length} icon={<Briefcase className="h-6 w-6" />} tone="emerald" /><Metric label="Đang mở" value={openCount} icon={<CheckCircle className="h-6 w-6" />} tone="blue" /><Metric label="Bài nháp" value={draftCount} icon={<Clock className="h-6 w-6" />} tone="amber" /><Metric label="Đã nhận" value={filledSlots} icon={<Users className="h-6 w-6" />} tone="emerald" /></div>
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2"><Action title="Quản lý bài đăng" body="Xem, lọc và quản lý các vị trí thuộc doanh nghiệp của bạn." onClick={() => onNavigateTab('postings')} /><Action title="Ứng viên & duyệt CV" body="Chức năng sẽ có dữ liệu thật khi module Applications được triển khai ở tuần 4." onClick={() => onNavigateTab('applicants')} /></div>
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2"><Action title="Quản lý bài đăng" body="Xem, lọc và quản lý các vị trí thuộc doanh nghiệp của bạn." onClick={() => onNavigateTab('postings')} /><Action title="Ứng viên & duyệt CV" body="Theo dõi hồ sơ ứng tuyển, cập nhật trạng thái và trao đổi với ứng viên." onClick={() => onNavigateTab('applicants')} /></div>
   </div>;
 }
 

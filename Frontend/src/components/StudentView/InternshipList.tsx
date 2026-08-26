@@ -5,7 +5,6 @@ import { getApiErrorMessage } from '../../auth/api';
 import { SkillPicker, type SkillOption } from '../Skills/SkillPicker';
 import {
   Search,
-  Filter,
   MapPin,
   DollarSign,
   Calendar,
@@ -18,22 +17,41 @@ import {
   Upload,
 } from 'lucide-react';
 
+type InternshipPage = {
+  items: Internship[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
 interface InternshipListProps {
   internships: Internship[];
   studentProfile: StudentProfile;
   applications: Application[];
-  onApply: (internshipId: string, coverLetter: string) => Promise<void>;
+  loadInternships: (params: {
+    page: number;
+    limit: number;
+    search?: string;
+    skillId?: string;
+  }) => Promise<InternshipPage>;
+  onApply: (internshipId: string, coverLetter: string, internshipTitle: string) => Promise<void>;
 }
-
+const CompanyLogo: React.FC<{ src: string; name: string; className: string }> = ({ src, name, className }) =>
+  src ? <img src={src} alt={name} className={className} /> : <div className={`${className} flex items-center justify-center bg-indigo-50 text-sm font-black text-indigo-600`}>{name.charAt(0).toUpperCase()}</div>;
 export const InternshipList: React.FC<InternshipListProps> = ({
   internships,
   studentProfile,
   applications,
+  loadInternships,
   onApply,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSkillFilter, setSelectedSkillFilter] = useState<SkillOption[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<string>('ALL');
+  const [page, setPage] = useState(1);
+  const [internshipPage, setInternshipPage] = useState<InternshipPage>({
+    items: internships,
+    pagination: { page: 1, limit: 12, total: internships.length, totalPages: 1 },
+  });
+  const [isLoadingInternships, setIsLoadingInternships] = useState(false);
+  const [internshipsError, setInternshipsError] = useState<string | null>(null);
   const [activeModalInternship, setActiveModalInternship] = useState<Internship | null>(null);
   const [applyModalInternship, setApplyModalInternship] = useState<Internship | null>(null);
   const [coverLetter, setCoverLetter] = useState('');
@@ -45,22 +63,33 @@ export const InternshipList: React.FC<InternshipListProps> = ({
     setSelectedCvName(studentProfile.cvName || 'Chưa tải CV lên hồ sơ');
   }, [studentProfile.cvName]);
 
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      setIsLoadingInternships(true);
+      setInternshipsError(null);
+      try {
+        const result = await loadInternships({
+          page,
+          limit: 12,
+          search: searchTerm.trim() || undefined,
+          skillId: selectedSkillFilter[0]?.id,
+        });
+        if (active) setInternshipPage(result);
+      } catch (error) {
+        if (active) setInternshipsError(getApiErrorMessage(error));
+      } finally {
+        if (active) setIsLoadingInternships(false);
+      }
+    }, 250);
 
-  const filteredInternships = internships.filter((item) => {
-    const matchesSearch =
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [loadInternships, page, searchTerm, selectedSkillFilter]);
 
-    const matchesSkill =
-      selectedSkillFilter.length === 0 || item.requiredSkills.includes(selectedSkillFilter[0].name);
-
-    const matchesLocation =
-      selectedLocation === 'ALL' || item.location.includes(selectedLocation);
-
-    return matchesSearch && matchesSkill && matchesLocation;
-  });
-
+  const filteredInternships = internshipPage.items;
   const getApplicationStatus = (internshipId: string) => {
     const app = applications.find((a) => a.internshipId === internshipId);
     return app ? app.status : null;
@@ -72,7 +101,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      await onApply(applyModalInternship.id, coverLetter);
+      await onApply(applyModalInternship.id, coverLetter, applyModalInternship.title);
       setApplyModalInternship(null);
       setCoverLetter('');
     } catch (error) {
@@ -104,7 +133,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(event) => { setSearchTerm(event.target.value); setPage(1); }}
                 placeholder="Tìm vị trí (ví dụ: Backend Developer, React, Data...)"
                 className="w-full text-xs sm:text-sm focus:outline-none"
               />
@@ -112,13 +141,17 @@ export const InternshipList: React.FC<InternshipListProps> = ({
             <div className="w-full sm:w-72">
               <SkillPicker
                 selected={selectedSkillFilter}
-                onChange={setSelectedSkillFilter}
+                onChange={(skills) => { setSelectedSkillFilter(skills); setPage(1); }}
                 placeholder="Tìm kỹ năng để lọc..."
               />
             </div>
           </div>
         </div>
       </div>
+
+      {internshipsError && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">Không thể tải vị trí thực tập: {internshipsError}</div>}
+      {isLoadingInternships && <p className="text-sm text-slate-500">Đang tải vị trí thực tập...</p>}
+      {!isLoadingInternships && !internshipsError && filteredInternships.length === 0 && <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">Không có vị trí thực tập phù hợp.</div>}
 
       {/* Internship Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
@@ -135,11 +168,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <img
-                      src={job.companyLogo}
-                      alt={job.companyName}
-                      className="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-2xs"
-                    />
+                    <CompanyLogo src={job.companyLogo} name={job.companyName} className="h-12 w-12 rounded-xl border border-slate-200 object-cover shadow-2xs" />
                     <div>
                       <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                         {job.title}
@@ -233,6 +262,13 @@ export const InternshipList: React.FC<InternshipListProps> = ({
         })}
       </div>
 
+      {internshipPage.pagination.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 text-sm">
+          <button type="button" disabled={isLoadingInternships || page <= 1} onClick={() => setPage((value) => value - 1)} className="rounded-xl border border-slate-300 px-4 py-2 font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Trang trước</button>
+          <span className="text-slate-600">Trang {page} / {internshipPage.pagination.totalPages}</span>
+          <button type="button" disabled={isLoadingInternships || page >= internshipPage.pagination.totalPages} onClick={() => setPage((value) => value + 1)} className="rounded-xl border border-slate-300 px-4 py-2 font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Trang sau</button>
+        </div>
+      )}
       {/* Detail Modal */}
       {activeModalInternship && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
@@ -245,11 +281,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
             </button>
 
             <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
-              <img
-                src={activeModalInternship.companyLogo}
-                alt={activeModalInternship.companyName}
-                className="w-14 h-14 rounded-2xl object-cover border border-slate-200"
-              />
+              <CompanyLogo src={activeModalInternship.companyLogo} name={activeModalInternship.companyName} className="h-14 w-14 rounded-2xl border border-slate-200 object-cover" />
               <div>
                 <h2 className="text-lg font-bold text-slate-900">{activeModalInternship.title}</h2>
                 <p className="text-xs font-semibold text-blue-600">{activeModalInternship.companyName}</p>

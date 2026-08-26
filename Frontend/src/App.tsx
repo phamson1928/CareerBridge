@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from "react";
+import React, { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Application,
@@ -18,35 +18,8 @@ import { Navbar } from "./components/Navbar";
 import { SessionBanner } from "./components/SessionBanner";
 import { NotificationCenter } from "./components/Notifications/NotificationCenter";
 import { ChatDrawer } from "./components/Chat/ChatDrawer";
-
-import { InternshipList } from "./components/StudentView/InternshipList";
-import { StudentApplications } from "./components/StudentView/StudentApplications";
-import { StudentReports } from "./components/StudentView/StudentReports";
-import { StudentProfileView } from "./components/StudentView/StudentProfile";
 import { AICVCoachModal } from "./components/StudentView/AICVCoachModal";
 
-import { CompanyDashboard } from "./components/CompanyView/CompanyDashboard";
-import { ManageApplicants } from "./components/CompanyView/ManageApplicants";
-import { EvaluateInternsModal } from "./components/CompanyView/EvaluateInternsModal";
-import { CompanyProfileView } from "./components/CompanyView/CompanyProfile";
-import { CompanyInternships } from "./components/CompanyView/CompanyInternships";
-
-import { TeacherDashboard } from "./components/TeacherView/TeacherDashboard";
-import { ReviewReports } from "./components/TeacherView/ReviewReports";
-import { TeacherEvaluations } from "./components/TeacherView/TeacherEvaluations";
-import { LecturerProfileView } from "./components/TeacherView/LecturerProfile";
-
-import { AdminDashboard } from "./components/AdminView/AdminDashboard";
-import { UserManagement } from "./components/AdminView/UserManagement";
-import { CompanyModeration } from "./components/AdminView/CompanyModeration";
-import { SupervisionManagement } from "./components/AdminView/SupervisionManagement";
-import { PlacementManagement } from "./components/AdminView/PlacementManagement";
-import { SkillManagement } from "./components/AdminView/SkillManagement";
-import { SemesterManagement } from "./components/AdminView/SemesterManagement";
-import { AuditLogManagement } from "./components/AdminView/AuditLogManagement";
-import { PlacementOverview } from "./components/StudentView/PlacementOverview";
-import { StudentEvaluations } from "./components/StudentView/StudentEvaluations";
-import { SupervisedPlacements } from "./components/TeacherView/SupervisedPlacements";
 import { useAuth } from "./auth/AuthContext";
 import { useNotifications } from "./notifications/use-notifications";
 import type { NotificationAction } from "./notifications/types";
@@ -55,12 +28,37 @@ import { companiesApi, type CompanyProfileRecord } from "./companies/api";
 import { internshipsApi, type InternshipRecord } from "./internships/api";
 import { studentsApi, type StudentProfileRecord } from "./students/api";
 import { skillsApi } from "./skills/api";
+import type { StudentSkillRecord } from "./skills/types";
 import { evaluationsApi, type EvaluationRecord } from "./evaluations/api";
 import { placementsApi } from "./placements/api";
 import type { PlacementRecord } from "./placements/types";
 import { getApiErrorMessage } from "./auth/api";
 import { useChat } from "./chat/use-chat";
 import { useAppFeedback } from "./components/Feedback/AppFeedbackProvider";
+const InternshipList = lazy(() => import("./components/StudentView/InternshipList").then(({ InternshipList }) => ({ default: InternshipList })));
+const StudentApplications = lazy(() => import("./components/StudentView/StudentApplications").then(({ StudentApplications }) => ({ default: StudentApplications })));
+const StudentReports = lazy(() => import("./components/StudentView/StudentReports").then(({ StudentReports }) => ({ default: StudentReports })));
+const StudentProfileView = lazy(() => import("./components/StudentView/StudentProfile").then(({ StudentProfileView }) => ({ default: StudentProfileView })));
+const CompanyDashboard = lazy(() => import("./components/CompanyView/CompanyDashboard").then(({ CompanyDashboard }) => ({ default: CompanyDashboard })));
+const ManageApplicants = lazy(() => import("./components/CompanyView/ManageApplicants").then(({ ManageApplicants }) => ({ default: ManageApplicants })));
+const EvaluateInternsModal = lazy(() => import("./components/CompanyView/EvaluateInternsModal").then(({ EvaluateInternsModal }) => ({ default: EvaluateInternsModal })));
+const CompanyProfileView = lazy(() => import("./components/CompanyView/CompanyProfile").then(({ CompanyProfileView }) => ({ default: CompanyProfileView })));
+const CompanyInternships = lazy(() => import("./components/CompanyView/CompanyInternships").then(({ CompanyInternships }) => ({ default: CompanyInternships })));
+const TeacherDashboard = lazy(() => import("./components/TeacherView/TeacherDashboard").then(({ TeacherDashboard }) => ({ default: TeacherDashboard })));
+const ReviewReports = lazy(() => import("./components/TeacherView/ReviewReports").then(({ ReviewReports }) => ({ default: ReviewReports })));
+const TeacherEvaluations = lazy(() => import("./components/TeacherView/TeacherEvaluations").then(({ TeacherEvaluations }) => ({ default: TeacherEvaluations })));
+const LecturerProfileView = lazy(() => import("./components/TeacherView/LecturerProfile").then(({ LecturerProfileView }) => ({ default: LecturerProfileView })));
+const SupervisedPlacements = lazy(() => import("./components/TeacherView/SupervisedPlacements").then(({ SupervisedPlacements }) => ({ default: SupervisedPlacements })));
+const AdminDashboard = lazy(() => import("./components/AdminView/AdminDashboard").then(({ AdminDashboard }) => ({ default: AdminDashboard })));
+const UserManagement = lazy(() => import("./components/AdminView/UserManagement").then(({ UserManagement }) => ({ default: UserManagement })));
+const CompanyModeration = lazy(() => import("./components/AdminView/CompanyModeration").then(({ CompanyModeration }) => ({ default: CompanyModeration })));
+const SupervisionManagement = lazy(() => import("./components/AdminView/SupervisionManagement").then(({ SupervisionManagement }) => ({ default: SupervisionManagement })));
+const PlacementManagement = lazy(() => import("./components/AdminView/PlacementManagement").then(({ PlacementManagement }) => ({ default: PlacementManagement })));
+const SkillManagement = lazy(() => import("./components/AdminView/SkillManagement").then(({ SkillManagement }) => ({ default: SkillManagement })));
+const SemesterManagement = lazy(() => import("./components/AdminView/SemesterManagement").then(({ SemesterManagement }) => ({ default: SemesterManagement })));
+const AuditLogManagement = lazy(() => import("./components/AdminView/AuditLogManagement").then(({ AuditLogManagement }) => ({ default: AuditLogManagement })));
+const PlacementOverview = lazy(() => import("./components/StudentView/PlacementOverview").then(({ PlacementOverview }) => ({ default: PlacementOverview })));
+const StudentEvaluations = lazy(() => import("./components/StudentView/StudentEvaluations").then(({ StudentEvaluations }) => ({ default: StudentEvaluations })));
 
 function toLegacyInternship(record: InternshipRecord): Internship {
   const type = ["Full-time", "Part-time", "Hybrid", "Remote"].includes(
@@ -174,6 +172,8 @@ export default function App() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [evaluationRecords, setEvaluationRecords] = useState<EvaluationRecord[]>([]);
   const [myPlacements, setMyPlacements] = useState<PlacementRecord[]>([]);
+  const [workflowError, setWorkflowError] = useState<string | null>(null);
+  const [workflowReloadKey, setWorkflowReloadKey] = useState(0);
 
   // Modals state
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
@@ -190,6 +190,7 @@ export default function App() {
     setApplications([]);
     setEvaluationRecords([]);
     setMyPlacements([]);
+    setWorkflowError(null);
 
     const applyApplications = (records: ApplicationRecord[]) => {
       if (active) setApplications(records.map(toLegacyApplication));
@@ -258,6 +259,7 @@ export default function App() {
         }
       } catch (error) {
         console.error("Unable to load application workflow data", error);
+        if (active) setWorkflowError(getApiErrorMessage(error));
       }
     };
 
@@ -265,7 +267,20 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [user?.id, user?.role]);
+  }, [user?.id, user?.role, workflowReloadKey]);
+
+  const handleStudentProfileChange = (
+    profile: StudentProfileRecord | null,
+    skills: StudentSkillRecord[],
+  ) => {
+    setStudentProfile(
+      profile ? toLegacyStudentProfile(profile, skills.map((skill) => skill.name)) : null,
+    );
+  };
+
+  const handleCompanyProfileChange = (profile: CompanyProfileRecord) => {
+    setCompanyProfile(toLegacyCompanyProfile(profile));
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -273,13 +288,24 @@ export default function App() {
   };
 
   // Student Actions
+  const loadInternships = useCallback(async (params: {
+    page: number;
+    limit: number;
+    search?: string;
+    skillId?: string;
+  }) => {
+    const result = await internshipsApi.list(params);
+    return {
+      items: result.items.map(toLegacyInternship),
+      pagination: result.pagination,
+    };
+  }, []);
+
   const handleApplyInternship = async (
     internshipId: string,
     coverLetter: string,
+    internshipTitle: string,
   ) => {
-    const job = internships.find((item) => item.id === internshipId);
-    if (!job) throw new Error("Không tìm thấy vị trí thực tập.");
-
     let cvFileId = studentProfile?.cvFileId;
     if (!cvFileId) {
       const profile = await studentsApi.getMine();
@@ -299,9 +325,8 @@ export default function App() {
     });
     setApplications((previous) => [toLegacyApplication(created), ...previous]);
 
-    feedback.notify({ title: "Ứng tuyển thành công", message: `Đã gửi hồ sơ cho vị trí "${job.title}".`, tone: "success" });
+    feedback.notify({ title: "Ứng tuyển thành công", message: `Đã gửi hồ sơ cho vị trí "${internshipTitle}".`, tone: "success" });
   };
-
   const handleUpdateApplicationStatus = async (
     appId: string,
     status: ApplicationStatus,
@@ -388,6 +413,13 @@ export default function App() {
 
       {/* Main Page Body Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {workflowError && (
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 sm:flex-row sm:items-center sm:justify-between">
+            <span>Không thể tải đầy đủ dữ liệu: {workflowError}</span>
+            <button type="button" onClick={() => setWorkflowReloadKey((value) => value + 1)} className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700">Thử lại</button>
+          </div>
+        )}
+        <Suspense fallback={<PageLoading />}>
         {/* STUDENT VIEWS */}
         {currentRole === "STUDENT" && (
           <>
@@ -397,6 +429,7 @@ export default function App() {
                   internships={internships}
                   studentProfile={studentProfile}
                   applications={applications}
+                  loadInternships={loadInternships}
                   onApply={handleApplyInternship}
                 />
               ) : (
@@ -419,14 +452,14 @@ export default function App() {
             )}
             {activeTab === "placement" && <PlacementOverview />}
             {activeTab === "evaluations" && <StudentEvaluations evaluations={evaluationRecords} />}
-            {activeTab === "profile" && <StudentProfileView />}
+            {activeTab === "profile" && <StudentProfileView onProfileChange={handleStudentProfileChange} />}
           </>
         )}
 
         {/* COMPANY VIEWS */}
         {currentRole === "COMPANY" && (
           <>
-            {activeTab === "company-profile" && <CompanyProfileView />}
+            {activeTab === "company-profile" && <CompanyProfileView onProfileChange={handleCompanyProfileChange} />}
             {activeTab === "dashboard" && (
               <CompanyDashboard
                 onNavigateTab={setActiveTab}
@@ -504,6 +537,7 @@ export default function App() {
             {activeTab === "audit-logs" && <AuditLogManagement />}
           </>
         )}
+        </Suspense>
       </main>
 
       {/* Footer */}
@@ -556,7 +590,10 @@ export default function App() {
   );
 }
 
-function getDefaultTab(role: UserRole): string {
+
+function PageLoading() {
+  return <div className="rounded-2xl bg-white p-10 text-center text-sm text-slate-500">Đang tải nội dung...</div>;
+}function getDefaultTab(role: UserRole): string {
   switch (role) {
     case "STUDENT":
       return "internships";

@@ -29,7 +29,16 @@ const emptyForm: StudentProfileInput = {
   gpa: null,
 };
 
-export const StudentProfileView: React.FC = () => {
+interface StudentProfileViewProps {
+  onProfileChange?: (
+    profile: StudentProfileRecord | null,
+    skills: StudentSkillRecord[],
+  ) => void;
+}
+
+export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
+  onProfileChange,
+}) => {
   const { confirm } = useAppFeedback();
   const [profile, setProfile] = useState<StudentProfileRecord | null>(null);
   const [form, setForm] = useState<StudentProfileInput>(emptyForm);
@@ -52,6 +61,7 @@ export const StudentProfileView: React.FC = () => {
       gpa: nextProfile.gpa,
       cvFileId: nextProfile.cvFileId,
     });
+    onProfileChange?.(nextProfile, studentSkills);
   };
 
   useEffect(() => {
@@ -84,9 +94,19 @@ export const StudentProfileView: React.FC = () => {
   }, []);
 
   const saveSkills = async () => {
-    setSavingSkills(true); setError(null);
-    try { setStudentSkills(await skillsApi.syncStudentMine(studentSkills.map(({ skillId, level }) => ({ skillId, level })))); }
-    catch (e) { setError(getApiErrorMessage(e)); } finally { setSavingSkills(false); }
+    setSavingSkills(true);
+    setError(null);
+    try {
+      const nextSkills = await skillsApi.syncStudentMine(
+        studentSkills.map(({ skillId, level }) => ({ skillId, level })),
+      );
+      setStudentSkills(nextSkills);
+      if (profile) onProfileChange?.(profile, nextSkills);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setSavingSkills(false);
+    }
   };
 
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
@@ -123,6 +143,7 @@ export const StudentProfileView: React.FC = () => {
       setProfile(null);
       setForm(emptyForm);
       setIsEditing(true);
+      onProfileChange?.(null, []);
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {

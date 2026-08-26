@@ -37,7 +37,13 @@ const toForm = (profile: CompanyProfileRecord): CompanyProfileInput => ({
   contactEmail: profile.contactEmail ?? "",
 });
 
-export const CompanyProfileView: React.FC = () => {
+interface CompanyProfileViewProps {
+  onProfileChange?: (profile: CompanyProfileRecord) => void;
+}
+
+export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
+  onProfileChange,
+}) => {
   const [profile, setProfile] = useState<CompanyProfileRecord | null>(null);
   const [form, setForm] = useState<CompanyProfileInput>(emptyForm);
   const [loading, setLoading] = useState(true);
@@ -90,6 +96,7 @@ export const CompanyProfileView: React.FC = () => {
         : await companiesApi.createMine(payload);
       setProfile(result);
       setForm(toForm(result));
+      onProfileChange?.(result);
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {

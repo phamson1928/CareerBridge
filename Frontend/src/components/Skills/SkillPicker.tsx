@@ -26,6 +26,8 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
   const [options, setOptions] = useState<SkillOption[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -33,6 +35,7 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
     let active = true;
     const timer = window.setTimeout(async () => {
       setIsLoading(true);
+      setLoadError(null);
       try {
         const page = await skillsApi.list({
           page: 1,
@@ -42,6 +45,8 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
         if (active) {
           setOptions(page.items.map(({ id, name }) => ({ id, name })));
         }
+      } catch {
+        if (active) setLoadError("Không thể tải danh sách kỹ năng.");
       } finally {
         if (active) setIsLoading(false);
       }
@@ -51,7 +56,7 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
       active = false;
       window.clearTimeout(timer);
     };
-  }, [isOpen, query]);
+  }, [isOpen, query, reloadKey]);
 
   const isSelected = (skill: SkillOption) =>
     selected.some((item) => item.id === skill.id);
@@ -106,6 +111,8 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
         <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
           {isLoading ? (
             <p className="px-3 py-2 text-xs text-slate-500">Đang tìm kỹ năng...</p>
+          ) : loadError ? (
+            <div className="px-3 py-2 text-xs text-rose-700"><p>{loadError}</p><button type="button" onClick={() => setReloadKey((value) => value + 1)} className="mt-2 font-bold text-indigo-700 hover:text-indigo-900">Thử lại</button></div>
           ) : options.length === 0 ? (
             <p className="px-3 py-2 text-xs text-slate-500">Không có kỹ năng phù hợp.</p>
           ) : (
