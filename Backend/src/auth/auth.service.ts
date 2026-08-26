@@ -104,6 +104,17 @@ export class AuthService {
           },
         });
 
+        await tx.auditLog.create({
+          data: {
+            userId: createdUser.id,
+            action: 'USER_REGISTERED',
+            entity: 'User',
+            entityId: createdUser.id,
+            metadata: { role: createdUser.role },
+            ipAddress: metadata.ipAddress,
+          },
+        });
+
         return createdUser;
       });
 

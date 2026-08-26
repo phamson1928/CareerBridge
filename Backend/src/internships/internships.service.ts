@@ -101,8 +101,8 @@ export class InternshipsService {
     const semester = await this.resolvePostingSemester(dto.semesterId);
     this.validateDates(dto);
     this.ensureCanOpen(dto.status ?? InternshipStatus.DRAFT, dto.deadline);
-    return this.prisma.internship
-      .create({
+    const record = await this.prisma.$transaction(async (tx) => {
+      const internship = await tx.internship.create({
         data: {
           ...dto,
           companyId: company.id,
@@ -110,10 +110,24 @@ export class InternshipsService {
           status: dto.status ?? InternshipStatus.DRAFT,
         },
         select: internshipSelect,
-      })
-      .then((record) => this.toResponse(record));
+      });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'INTERNSHIP_CREATED',
+          entity: 'Internship',
+          entityId: internship.id,
+          metadata: {
+            companyId: company.id,
+            semesterId: internship.semesterId,
+            status: internship.status,
+          },
+        },
+      });
+      return internship;
+    });
+    return this.toResponse(record);
   }
-
   async update(id: string, dto: UpdateInternshipDto, userId: string) {
     const company = await this.getApprovedCompanyForUser(userId);
     const current = await this.prisma.internship.findUnique({
@@ -131,13 +145,15 @@ export class InternshipsService {
     });
     if (!current) throw this.notFound();
     if (current.companyId !== company.id) throw this.notOwned();
-    if (current.status === InternshipStatus.CANCELLED)
+    if (current.status === InternshipStatus.CANCELLED) {
       throw new BadRequestException({
         code: 'INTERNSHIP_CANCELLED',
         message: 'A cancelled internship cannot be edited',
       });
-    if (dto.semesterId !== undefined)
+    }
+    if (dto.semesterId !== undefined) {
       await this.ensureSemesterAvailable(dto.semesterId);
+    }
     if (dto.slots !== undefined && dto.slots < current.filledSlots) {
       throw new BadRequestException({
         code: 'SLOTS_BELOW_FILLED',
@@ -151,14 +167,35 @@ export class InternshipsService {
     };
     this.validateDates(merged);
     this.ensureCanOpen(dto.status ?? current.status, merged.deadline);
-    const updated = await this.prisma.internship.update({
-      where: { id },
-      data: dto,
-      select: internshipSelect,
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const internship = await tx.internship.update({
+        where: { id },
+        data: dto,
+        select: internshipSelect,
+      });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action:
+            dto.status !== undefined && dto.status !== current.status
+              ? 'INTERNSHIP_STATUS_CHANGED'
+              : 'INTERNSHIP_UPDATED',
+          entity: 'Internship',
+          entityId: id,
+          metadata: {
+            changedFields: Object.keys(dto),
+            companyId: company.id,
+            ...(dto.status !== undefined
+              ? { fromStatus: current.status, toStatus: dto.status }
+              : {}),
+          },
+        },
+      });
+      return internship;
     });
     return this.toResponse(updated);
   }
-
   async remove(id: string, userId: string) {
     const company = await this.getCompanyForUser(userId);
     const internship = await this.prisma.internship.findUnique({
@@ -166,6 +203,8 @@ export class InternshipsService {
       select: {
         id: true,
         companyId: true,
+        title: true,
+        status: true,
         _count: { select: { applications: true, placements: true } },
       },
     });
@@ -177,10 +216,24 @@ export class InternshipsService {
         message: 'Internship with applications or placements cannot be deleted',
       });
     }
-    await this.prisma.internship.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.internship.delete({ where: { id } });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'INTERNSHIP_DELETED',
+          entity: 'Internship',
+          entityId: id,
+          metadata: {
+            companyId: company.id,
+            title: internship.title,
+            status: internship.status,
+          },
+        },
+      });
+    });
     return { deleted: true, id };
   }
-
   private async paginate(
     where: Prisma.InternshipWhereInput,
     query: ListInternshipsQueryDto,

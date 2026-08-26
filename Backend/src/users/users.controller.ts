@@ -33,8 +33,11 @@ export class UsersController {
   }
 
   @Post()
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  create(
+    @Body() dto: CreateUserDto,
+    @CurrentUser('id') currentUserId: string,
+  ) {
+    return this.usersService.create(dto, currentUserId);
   }
 
   @Get(':id')

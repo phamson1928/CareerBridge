@@ -66,18 +66,30 @@ export class UsersService {
     return user;
   }
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto, actorId: string) {
+    const passwordHash = await bcrypt.hash(dto.password, this.bcryptRounds);
     try {
-      const user = await this.prisma.user.create({
-        data: {
-          email: dto.email,
-          passwordHash: await bcrypt.hash(dto.password, this.bcryptRounds),
-          role: dto.role,
-          status: dto.status ?? UserStatus.ACTIVE,
-        },
-        select: userSelect,
+      return await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: dto.email,
+            passwordHash,
+            role: dto.role,
+            status: dto.status ?? UserStatus.ACTIVE,
+          },
+          select: userSelect,
+        });
+        await tx.auditLog.create({
+          data: {
+            userId: actorId,
+            action: 'USER_CREATED',
+            entity: 'User',
+            entityId: user.id,
+            metadata: { role: user.role, status: user.status },
+          },
+        });
+        return user;
       });
-      return user;
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
@@ -95,31 +107,57 @@ export class UsersService {
       });
     }
 
+    const passwordHash = dto.password
+      ? await bcrypt.hash(dto.password, this.bcryptRounds)
+      : undefined;
+    const changedFields = [
+      ...(dto.email !== undefined ? ['email'] : []),
+      ...(dto.role !== undefined ? ['role'] : []),
+      ...(dto.status !== undefined ? ['status'] : []),
+      ...(dto.password !== undefined ? ['password'] : []),
+    ];
+
     try {
-      const user = await this.prisma.user.update({
-        where: { id: existing.id },
-        data: {
-          ...(dto.email ? { email: dto.email } : {}),
-          ...(dto.role ? { role: dto.role } : {}),
-          ...(dto.status ? { status: dto.status } : {}),
-          ...(dto.password
-            ? {
-                passwordHash: await bcrypt.hash(
-                  dto.password,
-                  this.bcryptRounds,
-                ),
-              }
-            : {}),
-        },
-        select: userSelect,
-      });
-      if (dto.password || (dto.status && dto.status !== UserStatus.ACTIVE)) {
-        await this.prisma.refreshToken.updateMany({
-          where: { userId: id, revokedAt: null },
-          data: { revokedAt: new Date() },
+      return await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: existing.id },
+          data: {
+            ...(dto.email ? { email: dto.email } : {}),
+            ...(dto.role ? { role: dto.role } : {}),
+            ...(dto.status ? { status: dto.status } : {}),
+            ...(passwordHash ? { passwordHash } : {}),
+          },
+          select: userSelect,
         });
-      }
-      return user;
+        if (dto.password || (dto.status && dto.status !== UserStatus.ACTIVE)) {
+          await tx.refreshToken.updateMany({
+            where: { userId: id, revokedAt: null },
+            data: { revokedAt: new Date() },
+          });
+        }
+        await tx.auditLog.create({
+          data: {
+            userId: currentUserId,
+            action:
+              dto.status !== undefined && dto.status !== existing.status
+                ? 'USER_STATUS_CHANGED'
+                : 'USER_UPDATED',
+            entity: 'User',
+            entityId: id,
+            metadata: {
+              changedFields,
+              ...(dto.role !== undefined
+                ? { fromRole: existing.role, toRole: dto.role }
+                : {}),
+              ...(dto.status !== undefined
+                ? { fromStatus: existing.status, toStatus: dto.status }
+                : {}),
+              passwordChanged: dto.password !== undefined,
+            },
+          },
+        });
+        return user;
+      });
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
@@ -132,10 +170,25 @@ export class UsersService {
         message: 'You cannot delete your own account',
       });
     }
-    await this.findOne(id);
+    const existing = await this.findOne(id);
     try {
-      await this.prisma.user.delete({ where: { id } });
-      return { deleted: true, id };
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.user.delete({ where: { id } });
+        await tx.auditLog.create({
+          data: {
+            userId: currentUserId,
+            action: 'USER_DELETED',
+            entity: 'User',
+            entityId: id,
+            metadata: {
+              email: existing.email,
+              role: existing.role,
+              status: existing.status,
+            },
+          },
+        });
+        return { deleted: true, id };
+      });
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }

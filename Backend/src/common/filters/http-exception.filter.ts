@@ -1,39 +1,46 @@
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
-  HttpException,
+  Catch,
+  ExceptionFilter,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+
+type HttpExceptionLike = {
+  getStatus(): number;
+  getResponse(): string | { message?: string | string[]; code?: string };
+};
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const context = host.switchToHttp();
+    const response = context.getResponse<Response>();
+    const request = context.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
     let code = 'INTERNAL_SERVER_ERROR';
 
-    if (exception instanceof HttpException) {
+    if (this.isHttpException(exception)) {
       status = exception.getStatus();
-      const res = exception.getResponse();
-      if (typeof res === 'string') {
-        message = res;
-      } else if (typeof res === 'object') {
-        const exceptionBody = res as {
-          message?: string | string[];
-          code?: string;
-          error?: string;
-        };
-        message = exceptionBody.message ?? message;
-        code = exceptionBody.code ?? this.defaultCodeForStatus(status);
+      const exceptionResponse = exception.getResponse();
+      if (typeof exceptionResponse === 'string') {
+        message = exceptionResponse;
+        code = this.defaultCodeForStatus(status);
+      } else {
+        message = exceptionResponse.message ?? message;
+        const defaultCode = this.defaultCodeForStatus(status);
+        code =
+          status === HttpStatus.TOO_MANY_REQUESTS
+            ? 'TOO_MANY_REQUESTS'
+            : exceptionResponse.code &&
+                exceptionResponse.code !== 'INTERNAL_SERVER_ERROR'
+              ? exceptionResponse.code
+              : defaultCode;
       }
     }
 
@@ -55,6 +62,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
     });
+  }
+
+  private isHttpException(exception: unknown): exception is HttpExceptionLike {
+    return (
+      typeof exception === 'object' &&
+      exception !== null &&
+      'getStatus' in exception &&
+      typeof exception.getStatus === 'function' &&
+      'getResponse' in exception &&
+      typeof exception.getResponse === 'function'
+    );
   }
 
   private defaultCodeForStatus(status: number): string {

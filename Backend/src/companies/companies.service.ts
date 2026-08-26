@@ -4,13 +4,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CompanyStatus, Prisma } from '../generated/prisma/client';
+import {
+  CompanyStatus,
+  NotificationAction,
+  NotificationType,
+  Prisma,
+} from '../generated/prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCompanyProfileDto } from './dto/create-company-profile.dto';
 import { ListCompanyProfilesQueryDto } from './dto/list-company-profiles-query.dto';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
-import { NotificationAction, NotificationType } from '../generated/prisma/client';
-import { NotificationsService } from '../notifications/notifications.service';
 
 const profileSelect = {
   id: true,
@@ -51,9 +55,21 @@ export class CompaniesService {
 
   async create(userId: string, dto: CreateCompanyProfileDto) {
     try {
-      return await this.prisma.companyProfile.create({
-        data: { userId, ...dto, status: CompanyStatus.PENDING },
-        select: profileSelect,
+      return await this.prisma.$transaction(async (tx) => {
+        const profile = await tx.companyProfile.create({
+          data: { userId, ...dto, status: CompanyStatus.PENDING },
+          select: profileSelect,
+        });
+        await tx.auditLog.create({
+          data: {
+            userId,
+            action: 'COMPANY_PROFILE_CREATED',
+            entity: 'CompanyProfile',
+            entityId: profile.id,
+            metadata: { status: profile.status },
+          },
+        });
+        return profile;
       });
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
@@ -61,18 +77,34 @@ export class CompaniesService {
   }
 
   async updateByUserId(userId: string, dto: UpdateCompanyProfileDto) {
-    const profile = await this.findByUserId(userId);
+    const existing = await this.findByUserId(userId);
     try {
-      return await this.prisma.companyProfile.update({
-        where: { id: profile.id },
-        data: {
-          ...dto,
-          status: CompanyStatus.PENDING,
-          reviewedById: null,
-          reviewedAt: null,
-          rejectionReason: null,
-        },
-        select: profileSelect,
+      return await this.prisma.$transaction(async (tx) => {
+        const profile = await tx.companyProfile.update({
+          where: { id: existing.id },
+          data: {
+            ...dto,
+            status: CompanyStatus.PENDING,
+            reviewedById: null,
+            reviewedAt: null,
+            rejectionReason: null,
+          },
+          select: profileSelect,
+        });
+        await tx.auditLog.create({
+          data: {
+            userId,
+            action: 'COMPANY_PROFILE_UPDATED',
+            entity: 'CompanyProfile',
+            entityId: profile.id,
+            metadata: {
+              changedFields: Object.keys(dto),
+              fromStatus: existing.status,
+              toStatus: profile.status,
+            },
+          },
+        });
+        return profile;
       });
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
@@ -82,8 +114,19 @@ export class CompaniesService {
   async removeByUserId(userId: string) {
     const profile = await this.findByUserId(userId);
     try {
-      await this.prisma.companyProfile.delete({ where: { id: profile.id } });
-      return { deleted: true, id: profile.id };
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.companyProfile.delete({ where: { id: profile.id } });
+        await tx.auditLog.create({
+          data: {
+            userId,
+            action: 'COMPANY_PROFILE_DELETED',
+            entity: 'CompanyProfile',
+            entityId: profile.id,
+            metadata: { companyName: profile.companyName },
+          },
+        });
+        return { deleted: true, id: profile.id };
+      });
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
@@ -146,7 +189,11 @@ export class CompaniesService {
           action: `COMPANY_${status}`,
           entity: 'CompanyProfile',
           entityId: id,
-          metadata: { status, rejectionReason },
+          metadata: {
+            fromStatus: existing.status,
+            toStatus: status,
+            rejectionReason,
+          },
         },
       });
       const notification = await this.notifications.createInTransaction(tx, {
@@ -154,10 +201,14 @@ export class CompaniesService {
         eventKey: `company:${profile.id}:reviewed:${status}`,
         type: NotificationType.COMPANY,
         action: NotificationAction.OPEN_COMPANY_PROFILE,
-        title: status === CompanyStatus.APPROVED ? 'Hồ sơ công ty đã được duyệt' : 'Hồ sơ công ty bị từ chối',
-        content: status === CompanyStatus.APPROVED
-          ? 'Hồ sơ công ty của bạn đã được duyệt và có thể tiếp tục sử dụng hệ thống.'
-          : 'Hồ sơ công ty của bạn cần được cập nhật theo phản hồi của quản trị viên.',
+        title:
+          status === CompanyStatus.APPROVED
+            ? 'Hồ sơ công ty đã được duyệt'
+            : 'Hồ sơ công ty bị từ chối',
+        content:
+          status === CompanyStatus.APPROVED
+            ? 'Hồ sơ công ty của bạn đã được duyệt và có thể tiếp tục sử dụng hệ thống.'
+            : 'Hồ sơ công ty của bạn cần được cập nhật theo phản hồi của quản trị viên.',
         resourceId: profile.id,
         metadata: { status },
       });
@@ -184,17 +235,19 @@ export class CompaniesService {
   }
 
   private rethrowKnownDatabaseError(error: unknown): never {
-    if (this.isPrismaError(error, 'P2002'))
+    if (this.isPrismaError(error, 'P2002')) {
       throw new ConflictException({
         code: 'COMPANY_PROFILE_ALREADY_EXISTS',
         message: 'Company profile already exists',
       });
-    if (this.isPrismaError(error, 'P2003'))
+    }
+    if (this.isPrismaError(error, 'P2003')) {
       throw new ConflictException({
         code: 'COMPANY_PROFILE_HAS_RELATED_DATA',
         message:
           'Company profile cannot be deleted because related records must be retained',
       });
+    }
     if (this.isPrismaError(error, 'P2025')) throw this.notFound();
     throw error;
   }

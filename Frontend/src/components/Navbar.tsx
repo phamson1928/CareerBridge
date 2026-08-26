@@ -14,6 +14,7 @@ import {
   Search,
   Sparkles,
   CalendarDays,
+  ShieldCheck,
 } from "lucide-react";
 
 interface NavbarProps {

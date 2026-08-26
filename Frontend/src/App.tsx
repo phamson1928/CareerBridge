@@ -56,6 +56,7 @@ import { SupervisionManagement } from "./components/AdminView/SupervisionManagem
 import { PlacementManagement } from "./components/AdminView/PlacementManagement";
 import { SkillManagement } from "./components/AdminView/SkillManagement";
 import { SemesterManagement } from "./components/AdminView/SemesterManagement";
+import { AuditLogManagement } from "./components/AdminView/AuditLogManagement";
 import { PlacementOverview } from "./components/StudentView/PlacementOverview";
 import { StudentEvaluations } from "./components/StudentView/StudentEvaluations";
 import { SupervisedPlacements } from "./components/TeacherView/SupervisedPlacements";
@@ -561,6 +562,7 @@ export default function App() {
             {activeTab === "company-approval" && <CompanyModeration />}
             {activeTab === "skill-management" && <SkillManagement />}
             {activeTab === "semester-management" && <SemesterManagement />}
+            {activeTab === "audit-logs" && <AuditLogManagement />}
           </>
         )}
       </main>
