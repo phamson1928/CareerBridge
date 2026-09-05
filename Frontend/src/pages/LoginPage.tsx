@@ -37,13 +37,13 @@ export function LoginPage() {
   return (
     <AuthLayout>
       <div className="mb-8 lg:hidden">
-        <p className="text-2xl font-black text-indigo-950">InternConnect</p>
-        <p className="text-xs font-bold uppercase tracking-widest text-indigo-500">Career Bridge Platform</p>
+        <p className="text-2xl font-black text-indigo-950">CareerBridge</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-indigo-500">Cổng thông tin thực tập</p>
       </div>
       <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60 sm:p-9">
         <p className="text-sm font-bold text-indigo-600">Chào mừng trở lại</p>
         <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-950">Đăng nhập</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-500">Sử dụng tài khoản InternConnect để tiếp tục.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">Sử dụng tài khoản CareerBridge để tiếp tục.</p>
         <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
           <label className="block">
             <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Email</span>

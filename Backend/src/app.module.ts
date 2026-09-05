@@ -24,6 +24,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ChatModule } from './chat/chat.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { MailerModule } from './mailer/mailer.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { RealtimeModule } from './realtime/realtime.module';
     ChatModule,
     AuditLogsModule,
     RealtimeModule,
+    MailerModule,
   ],
   providers: [
     {

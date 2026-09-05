@@ -23,6 +23,7 @@ import {
   readCookie,
   REFRESH_COOKIE_NAME,
 } from './utils/cookie-options.util';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -115,6 +116,13 @@ export class AuthController {
       getClearRefreshCookieOptions(this.config),
     );
     return { loggedOut: true };
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    await this.authService.verifyEmail(dto.token);
+    return { success: true, message: 'Email verified successfully' };
   }
 
   @Get('me')

@@ -4,6 +4,7 @@ import { AuthProvider } from './auth/AuthContext';
 import { AuthenticatedHome, ProtectedRoute, RoleRoute } from './auth/routes';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 
 export function AppRouter() {
   return (
@@ -13,6 +14,7 @@ export function AppRouter() {
           <Route path="/" element={<AuthenticatedHome />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/student/*" element={<ProtectedRoute><RoleRoute role="STUDENT"><App /></RoleRoute></ProtectedRoute>} />
           <Route path="/company/*" element={<ProtectedRoute><RoleRoute role="COMPANY"><App /></RoleRoute></ProtectedRoute>} />
           <Route path="/lecturer/*" element={<ProtectedRoute><RoleRoute role="LECTURER"><App /></RoleRoute></ProtectedRoute>} />

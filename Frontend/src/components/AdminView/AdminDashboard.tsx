@@ -33,6 +33,7 @@ import {
   LoaderCircle,
   RefreshCw,
   UsersRound,
+  ChevronDown,
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
 import { dashboardApi } from "../../dashboard/api";
@@ -192,7 +193,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-100">
-              <BarChart3 className="h-3.5 w-3.5" /> Operational intelligence
+              <BarChart3 className="h-3.5 w-3.5" /> Tổng quan vận hành
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
               Trung tâm điều hành thực tập
@@ -202,43 +203,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               hành thực tế.
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="text-xs font-semibold text-indigo-100">
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <label className="text-xs font-semibold text-indigo-200">
               Kỳ thực tập
-              <select
-                value={semesterId}
-                onChange={(event) => setSemesterId(event.target.value)}
-                className="mt-1.5 block w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white outline-none backdrop-blur focus:ring-2 focus:ring-indigo-300"
-              >
-                <option className="text-slate-900" value="ALL">
-                  Toàn hệ thống
-                </option>
-                {semesters.map((semester) => (
-                  <option
-                    className="text-slate-900"
-                    key={semester.id}
-                    value={semester.id}
-                  >
-                    {semester.name}
+              <div className="relative mt-1.5">
+                <select
+                  value={semesterId}
+                  onChange={(event) => setSemesterId(event.target.value)}
+                  className="w-full appearance-none rounded-xl border border-white/25 bg-slate-900/85 px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
+                >
+                  <option className="bg-slate-900 text-white py-1" value="ALL">
+                    Toàn hệ thống
                   </option>
-                ))}
-              </select>
+                  {semesters.map((semester) => (
+                    <option
+                      className="bg-slate-900 text-white py-1"
+                      key={semester.id}
+                      value={semester.id}
+                    >
+                      {semester.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-300" />
+              </div>
             </label>
-            <label className="text-xs font-semibold text-indigo-100">
+            <label className="text-xs font-semibold text-indigo-200">
               Khoảng thời gian
-              <select
-                value={months}
-                onChange={(event) =>
-                  setMonths(Number(event.target.value) as 3 | 6 | 9 | 12)
-                }
-                className="mt-1.5 block w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white outline-none backdrop-blur focus:ring-2 focus:ring-indigo-300"
-              >
-                {[3, 6, 9, 12].map((value) => (
-                  <option className="text-slate-900" key={value} value={value}>
-                    {value} tháng gần nhất
-                  </option>
-                ))}
-              </select>
+              <div className="relative mt-1.5">
+                <select
+                  value={months}
+                  onChange={(event) =>
+                    setMonths(Number(event.target.value) as 3 | 6 | 9 | 12)
+                  }
+                  className="w-full appearance-none rounded-xl border border-white/25 bg-slate-900/85 px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
+                >
+                  {[3, 6, 9, 12].map((value) => (
+                    <option className="bg-slate-900 text-white py-1" key={value} value={value}>
+                      {value} tháng gần nhất
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-300" />
+              </div>
             </label>
           </div>
         </div>

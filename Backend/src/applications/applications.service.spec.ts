@@ -2,6 +2,7 @@ import { Role } from '../generated/prisma/client';
 import { PlacementsService } from '../placements/placements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/types/auth-user.type';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ApplicationsService } from './applications.service';
 
 type AcceptanceTestService = {
@@ -28,6 +29,7 @@ describe('ApplicationsService acceptance retry', () => {
     const service = new ApplicationsService(
       {} as PrismaService,
       {} as PlacementsService,
+      {} as NotificationsService,
     );
     const retryableService = service as unknown as AcceptanceTestService;
     const acceptOnce = jest

@@ -13,6 +13,7 @@ import {
   InternshipStatus,
   Role,
   SemesterStatus,
+  PlacementStatus,
   NotificationAction,
   NotificationType,
 } from '../generated/prisma/client';
@@ -441,7 +442,8 @@ export class ApplicationsService {
           },
         });
 
-        await this.placementsService.createPendingFromAcceptedApplication(
+        const createdPlacement =
+          await this.placementsService.createPendingFromAcceptedApplication(
           tx,
           {
             applicationId: id,
@@ -489,11 +491,22 @@ export class ApplicationsService {
           metadata: { status: ApplicationStatus.ACCEPTED },
         });
 
+        const placementNotification = await this.notifications.createInTransaction(tx, {
+          userId: current.student.userId,
+          eventKey: `placement:${createdPlacement.id}:created:${current.student.userId}`,
+          type: NotificationType.PLACEMENT,
+          action: NotificationAction.OPEN_PLACEMENT,
+          title: 'Vị trí thực tập đã được tạo',
+          content: `Vị trí thực tập cho "${createdPlacement.internship.title}" tại ${createdPlacement.company.companyName} đã được khởi tạo và đang chờ nhà trường phân công giảng viên hướng dẫn.`,
+          resourceId: createdPlacement.id,
+          metadata: { placementId: createdPlacement.id, status: PlacementStatus.PENDING },
+        });
+
         const accepted = await tx.application.findUniqueOrThrow({
           where: { id },
           select: applicationSelect,
         });
-        return { application: accepted, notifications: [notification] };
+        return { application: accepted, notifications: [notification, placementNotification] };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );

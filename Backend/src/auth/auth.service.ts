@@ -16,6 +16,8 @@ import {
   generateRefreshToken,
   hashRefreshToken,
 } from './utils/refresh-token.util';
+import { MailerService } from '../mailer/mailer.service';
+import { randomBytes } from 'crypto';
 
 interface RequestMetadata {
   userAgent?: string;
@@ -52,6 +54,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly mailerService: MailerService,
   ) {
     this.accessTokenExpiresIn = this.config.getOrThrow<number>(
       'JWT_EXPIRES_IN_SECONDS',
@@ -118,6 +121,25 @@ export class AuthService {
         return createdUser;
       });
 
+      // Generate a verification token
+      const verificationToken = randomBytes(32).toString('hex');
+      const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await this.prisma.verificationToken.create({
+        data: {
+          userId: user.id,
+          token: verificationToken,
+          expiresAt: verificationExpiresAt,
+        },
+      });
+
+      // Send verification email (fire and forget to not block registration)
+      this.mailerService
+        .sendVerificationEmail(user.email, verificationToken)
+        .catch((err) => {
+          console.error('Failed to send verification email:', err);
+        });
+
       return this.buildAuthResult(user, refreshToken);
     } catch (error: unknown) {
       if (this.isUniqueConstraintError(error)) {
@@ -171,7 +193,8 @@ export class AuthService {
       },
     });
 
-    const { passwordHash: _passwordHash, ...publicUser } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash: _, ...publicUser } = user;
     return this.buildAuthResult(publicUser, refreshToken);
   }
 
@@ -263,6 +286,34 @@ export class AuthService {
         revokedAt: null,
       },
       data: { revokedAt: new Date() },
+    });
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    const verificationToken = await this.prisma.verificationToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!verificationToken || verificationToken.expiresAt < new Date()) {
+      throw new UnauthorizedException({
+        code: 'INVALID_VERIFICATION_TOKEN',
+        message: 'Verification token is invalid or has expired',
+      });
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: verificationToken.userId },
+        data: {
+          status: 'ACTIVE',
+          emailVerifiedAt: new Date(),
+        },
+      });
+
+      await tx.verificationToken.delete({
+        where: { id: verificationToken.id },
+      });
     });
   }
 

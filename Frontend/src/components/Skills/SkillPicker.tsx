@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Check, Search, X } from "lucide-react";
 import { skillsApi } from "../../skills/api";
 
@@ -22,12 +22,23 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
   placeholder = "Tìm kỹ năng...",
   className = "",
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [options, setOptions] = useState<SkillOption[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -76,7 +87,7 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
   };
 
   return (
-    <div className={`relative min-w-0 ${className}`}>
+    <div ref={containerRef} className={`relative min-w-0 ${className}`}>
       <div className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2 py-1.5 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
         {selected.map((skill) => (
           <span
@@ -108,7 +119,7 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
         />
       </div>
       {isOpen && (
-        <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+        <div className="absolute left-0 top-full z-[100] mt-1.5 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/10">
           {isLoading ? (
             <p className="px-3 py-2 text-xs text-slate-500">Đang tìm kỹ năng...</p>
           ) : loadError ? (

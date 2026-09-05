@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import { AuthRole, RegisterInput } from '../auth/auth.types';
 import { roleHomePath } from '../auth/routes';
 import { AuthLayout } from './AuthLayout';
+import { MailCheck } from 'lucide-react';
 
 export function RegisterPage() {
   const { user, isInitializing, register } = useAuth();
@@ -15,9 +16,10 @@ export function RegisterPage() {
   const [role, setRole] = useState<RegisterInput['role']>('STUDENT');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isInitializing && user) navigate(roleHomePath(user.role), { replace: true });
+    if (!isInitializing && user && user.status === 'ACTIVE') navigate(roleHomePath(user.role as AuthRole), { replace: true });
   }, [isInitializing, navigate, user]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -25,8 +27,8 @@ export function RegisterPage() {
     setError('');
     setIsSubmitting(true);
     try {
-      const registeredUser = await register({ email, password, role });
-      navigate(roleHomePath(registeredUser.role as AuthRole), { replace: true });
+      await register({ email, password, role });
+      setRegisteredEmail(email);
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -38,8 +40,20 @@ export function RegisterPage() {
 
   return (
     <AuthLayout>
+      {registeredEmail ? (
+        <div className="rounded-3xl border border-emerald-200 bg-white p-9 text-center shadow-xl shadow-slate-200/60">
+          <MailCheck className="h-16 w-16 mx-auto text-emerald-500 mb-4" />
+          <h2 className="text-2xl font-black text-slate-900">Kiểm tra email của bạn!</h2>
+          <p className="mt-2 text-slate-500 text-sm">
+            Chúng tôi đã gửi link xác thực đến <strong>{registeredEmail}</strong>.<br/>
+            Vui lòng mở email và click vào link để kích hoạt tài khoản.
+          </p>
+          <p className="mt-4 text-xs text-slate-400">Link sẽ hết hạn sau 24 giờ.</p>
+          <p className="mt-6 text-sm text-slate-500">Đã có tài khoản? <Link className="font-bold text-indigo-600 hover:text-indigo-700" to="/login">Đăng nhập</Link></p>
+        </div>
+      ) : (
       <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60 sm:p-9">
-        <p className="text-sm font-bold text-indigo-600">Bắt đầu với InternConnect</p>
+        <p className="text-sm font-bold text-indigo-600">Bắt đầu với CareerBridge</p>
         <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-950">Tạo tài khoản</h2>
         <p className="mt-2 text-sm leading-6 text-slate-500">Hồ sơ chi tiết sẽ được hoàn thiện sau khi đăng ký.</p>
         <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
@@ -63,6 +77,7 @@ export function RegisterPage() {
         </form>
         <p className="mt-7 text-center text-sm text-slate-500">Đã có tài khoản? <Link className="font-bold text-indigo-600 hover:text-indigo-700" to="/login">Đăng nhập</Link></p>
       </div>
+      )}
     </AuthLayout>
   );
 }

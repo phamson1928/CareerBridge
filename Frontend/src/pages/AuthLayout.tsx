@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, ShieldCheck } from 'lucide-react';
+import { BriefcaseBusiness, Sparkles } from 'lucide-react';
 import { ReactNode } from 'react';
 
 export function AuthLayout({ children }: { children: ReactNode }) {
@@ -13,13 +13,13 @@ export function AuthLayout({ children }: { children: ReactNode }) {
               <BriefcaseBusiness className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xl font-black tracking-tight">InternConnect</p>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">Career Bridge Platform</p>
+              <p className="text-xl font-black tracking-tight">CareerBridge</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">Cổng thông tin thực tập</p>
             </div>
           </div>
           <div className="py-16">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-indigo-100 backdrop-blur">
-              <ShieldCheck className="h-4 w-4 text-emerald-300" /> Phiên đăng nhập được bảo vệ bằng JWT
+              <Sparkles className="h-4 w-4 text-amber-300" /> Kết nối · Thực tập · Phát triển
             </span>
             <h1 className="mt-6 text-5xl font-black leading-tight tracking-tight">Kết nối sinh viên với cơ hội thực tập phù hợp.</h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-indigo-100/80">Một nền tảng chung để sinh viên, doanh nghiệp, giảng viên và nhà trường theo dõi toàn bộ hành trình thực tập.</p>

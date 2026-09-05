@@ -263,15 +263,18 @@ export class SupervisionsService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
-    const recipients = [result.lecturer.userId, result.placement.student.userId, result.placement.company.userId];
+    const recipients = [result.lecturer.userId, result.placement.student.userId];
     for (const userId of [...new Set(recipients)]) {
+      const isLecturer = userId === result.lecturer.userId;
       await this.notifications.create({
         userId,
         eventKey: `supervision:${result.id}:assigned:${userId}`,
         type: NotificationType.SUPERVISION,
         action: NotificationAction.OPEN_SUPERVISION,
         title: 'Đã phân công giảng viên hướng dẫn',
-        content: 'Một supervision mới đã được phân công cho placement của bạn.',
+        content: isLecturer
+          ? `Bạn được phân công hướng dẫn sinh viên ${result.placement.student.fullName}.`
+          : `Bạn đã được phân công giảng viên hướng dẫn (${result.lecturer.fullName}) cho vị trí thực tập.`,
         resourceId: result.id,
         metadata: { placementId: result.placementId },
       });
@@ -422,7 +425,7 @@ export class SupervisionsService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
-    const recipients = [result.lecturer.userId, result.placement.student.userId, result.placement.company.userId];
+    const recipients = [result.lecturer.userId, result.placement.student.userId];
     for (const userId of [...new Set(recipients)]) {
       await this.notifications.create({
         userId,
@@ -430,7 +433,7 @@ export class SupervisionsService {
         type: NotificationType.SUPERVISION,
         action: NotificationAction.OPEN_SUPERVISION,
         title: 'Supervision đã bị hủy',
-        content: 'Supervision của placement đã được hủy.',
+        content: 'Phân công hướng dẫn thực tập của placement đã được hủy.',
         resourceId: result.id,
         metadata: { placementId: result.placementId },
       });

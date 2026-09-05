@@ -1,17 +1,121 @@
 import React, { useState } from 'react';
-import { Application } from '../../types';
+import { Application, ApplicationStatus } from '../../types';
 import { getStatusBadge } from '../../utils/matching';
 import { getApiErrorMessage } from '../../auth/api';
-import { FileCheck, Building2, MessageSquare, ExternalLink, Clock } from 'lucide-react';
+import { formatDate } from '../../utils/format';
+import { FileCheck, Building2, MessageSquare, ExternalLink, Clock, Check, X } from 'lucide-react';
 
 interface StudentApplicationsProps {
   applications: Application[];
+  isLoading?: boolean;
   onOpenChat: () => void;
   onWithdraw: (applicationId: string) => Promise<void>;
 }
 
+function ApplicationProgressBar({ status }: { status: ApplicationStatus }) {
+  const isRejected = status === 'REJECTED';
+  const isWithdrawn = status === 'WITHDRAWN';
+
+  let currentStep = 0;
+  if (status === 'PENDING') currentStep = 0;
+  else if (status === 'REVIEWING') currentStep = 1;
+  else if (status === 'ACCEPTED') currentStep = 2;
+  else if (status === 'REJECTED') currentStep = 2;
+
+  const steps = [
+    { title: 'Nộp hồ sơ', desc: 'Đã gửi đến doanh nghiệp' },
+    { title: 'Đang xét duyệt', desc: 'Doanh nghiệp đang xem CV' },
+    {
+      title: isRejected ? 'Từ chối' : 'Kết quả duyệt',
+      desc: isRejected
+        ? 'Chưa phù hợp đợt này'
+        : status === 'ACCEPTED'
+        ? 'Trúng tuyển thực tập'
+        : 'Chờ phản hồi',
+    },
+    {
+      title: 'Vào thực tập',
+      desc: status === 'ACCEPTED' ? 'Khởi động kỳ thực tập' : 'Chờ duyệt kết quả',
+    },
+  ];
+
+  if (isWithdrawn) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-500">
+        Đơn ứng tuyển này đã được rút bởi sinh viên.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4">
+      <h4 className="mb-3 text-xs font-bold text-slate-700">Tiến trình xử lý hồ sơ:</h4>
+      <div className="relative flex items-center justify-between px-2 sm:px-6">
+        {/* Background Connecting Line */}
+        <div className="absolute left-8 right-8 top-3.5 h-0.5 -translate-y-1/2 bg-slate-200" />
+        {/* Active Progress Line */}
+        <div
+          className={`absolute left-8 top-3.5 h-0.5 -translate-y-1/2 transition-all duration-500 ${
+            isRejected ? 'bg-rose-500' : 'bg-emerald-500'
+          }`}
+          style={{
+            width: `calc(${Math.min(currentStep, 3) / 3} * (100% - 4rem))`,
+          }}
+        />
+
+        {steps.map((step, idx) => {
+          const isDone = idx < currentStep || (idx === currentStep && status === 'ACCEPTED');
+          const isCurrent = idx === currentStep && status !== 'ACCEPTED' && !isRejected;
+          const isStepRejected = idx === currentStep && isRejected;
+
+          return (
+            <div key={idx} className="relative z-10 flex flex-col items-center text-center">
+              <div
+                className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold transition-all ${
+                  isStepRejected
+                    ? 'border-rose-500 bg-rose-500 text-white shadow-sm ring-4 ring-rose-100'
+                    : isDone
+                    ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
+                    : isCurrent
+                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm ring-4 ring-indigo-100'
+                    : 'border-slate-300 bg-white text-slate-400'
+                }`}
+              >
+                {isStepRejected ? (
+                  <X className="h-3.5 w-3.5" />
+                ) : isDone ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <span>{idx + 1}</span>
+                )}
+              </div>
+              <p
+                className={`mt-2 text-[11px] font-bold ${
+                  isStepRejected
+                    ? 'text-rose-700'
+                    : isDone
+                    ? 'text-emerald-700'
+                    : isCurrent
+                    ? 'text-indigo-700'
+                    : 'text-slate-500'
+                }`}
+              >
+                {step.title}
+              </p>
+              <p className="hidden sm:block text-[10px] text-slate-400 max-w-[100px] leading-tight mt-0.5">
+                {step.desc}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export const StudentApplications: React.FC<StudentApplicationsProps> = ({
   applications,
+  isLoading,
   onOpenChat,
   onWithdraw,
 }) => {
@@ -44,7 +148,32 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
         </div>
       </div>
 
-      {applications.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((skeletonId) => (
+            <div
+              key={skeletonId}
+              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4 animate-pulse"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div>
+                  <div className="h-5 w-48 bg-slate-200 rounded mb-2" />
+                  <div className="h-4 w-32 bg-slate-100 rounded" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-24 bg-slate-200 rounded-full" />
+                  <div className="h-8 w-8 bg-slate-100 rounded-xl" />
+                </div>
+              </div>
+              <div className="h-24 w-full bg-slate-50 rounded-2xl border border-slate-100" />
+              <div className="flex items-center justify-between pt-2">
+                <div className="h-4 w-40 bg-slate-100 rounded" />
+                <div className="h-4 w-24 bg-slate-100 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : applications.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 text-slate-400">
           <FileCheck className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-sm font-semibold text-slate-600">Bạn chưa ứng tuyển vị trí nào</p>
@@ -92,38 +221,8 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                   </div>
                 </div>
 
-                {/* Timeline status bar */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-                  <h4 className="text-xs font-bold text-slate-700 mb-2">Quy trình xử lý hồ sơ:</h4>
-                  <div className="grid grid-cols-4 gap-2 text-center text-[11px] font-semibold">
-                    <div className="p-2 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200">
-                      1. Gửi đơn ✓
-                    </div>
-                    <div
-                      className={`p-2 rounded-lg border ${
-                        app.status === 'REVIEWING' || app.status === 'ACCEPTED'
-                          ? 'bg-blue-100 text-blue-800 border-blue-200'
-                          : 'bg-white text-slate-400 border-slate-200'
-                      }`}
-                    >
-                      2. Đang xét duyệt
-                    </div>
-                    <div
-                      className={`p-2 rounded-lg border ${
-                        app.status === 'ACCEPTED'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200 font-bold'
-                          : app.status === 'REJECTED'
-                          ? 'bg-rose-100 text-rose-800 border-rose-200'
-                          : 'bg-white text-slate-400 border-slate-200'
-                      }`}
-                    >
-                      3. Kết quả
-                    </div>
-                    <div className="p-2 rounded-lg bg-slate-100 text-slate-600 border border-slate-200">
-                      4. Bắt đầu thực tập
-                    </div>
-                  </div>
-                </div>
+                {/* Progress Stepper Bar */}
+                <ApplicationProgressBar status={app.status} />
 
                 {/* Company Feedback */}
                 {app.companyFeedback && (
@@ -135,7 +234,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
 
                 <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
                   <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" /> Ngày ứng tuyển: {app.appliedAt}
+                    <Clock className="w-3.5 h-3.5" /> Ngày ứng tuyển: {formatDate(app.appliedAt)}
                   </span>
                   {app.cvUrl ? (
                     <a

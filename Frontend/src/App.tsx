@@ -35,6 +35,8 @@ import type { PlacementRecord } from "./placements/types";
 import { getApiErrorMessage } from "./auth/api";
 import { useChat } from "./chat/use-chat";
 import { useAppFeedback } from "./components/Feedback/AppFeedbackProvider";
+import { formatDate } from "./utils/format";
+
 const InternshipList = lazy(() => import("./components/StudentView/InternshipList").then(({ InternshipList }) => ({ default: InternshipList })));
 const StudentApplications = lazy(() => import("./components/StudentView/StudentApplications").then(({ StudentApplications }) => ({ default: StudentApplications })));
 const StudentReports = lazy(() => import("./components/StudentView/StudentReports").then(({ StudentReports }) => ({ default: StudentReports })));
@@ -84,7 +86,7 @@ function toLegacyInternship(record: InternshipRecord): Internship {
     requiredSkills: record.skills.map((item) => item.name),
     slots: record.slots,
     filledSlots: record.filledSlots,
-    deadline: record.deadline ?? "Chưa cập nhật",
+    deadline: formatDate(record.deadline, "Không thời hạn"),
     createdAt: record.createdAt,
     status: record.status === "OPEN" ? "ACTIVE" : "CLOSED",
   };
@@ -173,6 +175,7 @@ export default function App() {
   const [evaluationRecords, setEvaluationRecords] = useState<EvaluationRecord[]>([]);
   const [myPlacements, setMyPlacements] = useState<PlacementRecord[]>([]);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
+  const [isWorkflowLoading, setIsWorkflowLoading] = useState(true);
   const [workflowReloadKey, setWorkflowReloadKey] = useState(0);
 
   // Modals state
@@ -197,6 +200,7 @@ export default function App() {
     };
 
     const loadWorkflowData = async () => {
+      setIsWorkflowLoading(true);
       try {
         if (user.role === "STUDENT") {
           const [internshipsPage, applicationsPage, evaluationPage] =
@@ -260,6 +264,8 @@ export default function App() {
       } catch (error) {
         console.error("Unable to load application workflow data", error);
         if (active) setWorkflowError(getApiErrorMessage(error));
+      } finally {
+        if (active) setIsWorkflowLoading(false);
       }
     };
 
@@ -443,6 +449,7 @@ export default function App() {
             {activeTab === "applications" && (
               <StudentApplications
                 applications={applications}
+                isLoading={isWorkflowLoading}
                 onOpenChat={() => setIsChatOpen(true)}
                 onWithdraw={handleWithdrawApplication}
               />
@@ -545,7 +552,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="font-semibold text-slate-700">
             Hệ Thống Hỗ Trợ Tìm Kiếm & Quản Lý Thực Tập Cho Sinh Viên
-            (InternConnect) © 2026
+            (CareerBridge) © 2026
           </p>
           <span className="text-slate-500">Cổng thông tin thực tập</span>
         </div>

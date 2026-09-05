@@ -237,7 +237,7 @@ export const PlacementManagement: React.FC<{
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-100">
-              <BriefcaseBusiness className="h-3.5 w-3.5" /> Placement operations
+              <BriefcaseBusiness className="h-3.5 w-3.5" /> Quản lý vận hành placement
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight">
               Quản lý placement
@@ -403,9 +403,54 @@ export const PlacementManagement: React.FC<{
       )}
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
         {loading ? (
-          <div className="flex min-h-72 items-center justify-center text-sm text-slate-500">
-            <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
-            Đang tải placement...
+          <div className="overflow-x-auto">
+            <table className="min-w-[1160px] w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50 text-slate-500">
+                  <th className="px-5 py-3 font-bold">Sinh viên</th>
+                  <th className="px-5 py-3 font-bold">Vị trí / doanh nghiệp</th>
+                  <th className="px-5 py-3 font-bold">Lịch thực tế</th>
+                  <th className="px-5 py-3 font-bold">Hướng dẫn</th>
+                  <th className="px-5 py-3 font-bold">Tiến độ</th>
+                  <th className="px-5 py-3 font-bold">Trạng thái</th>
+                  <th className="px-5 py-3 text-right font-bold">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[1, 2, 3, 4, 5].map((skeletonId) => (
+                  <tr key={skeletonId} className="border-b border-slate-100">
+                    <td className="px-5 py-4">
+                      <div className="h-4 w-32 rounded bg-slate-200 animate-pulse mb-2"></div>
+                      <div className="h-3 w-24 rounded bg-slate-100 animate-pulse"></div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-4 w-40 rounded bg-slate-200 animate-pulse mb-2"></div>
+                      <div className="h-3 w-32 rounded bg-slate-100 animate-pulse"></div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-4 w-24 rounded bg-slate-200 animate-pulse mb-2"></div>
+                      <div className="h-3 w-32 rounded bg-slate-100 animate-pulse"></div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-4 w-32 rounded bg-slate-200 animate-pulse mb-2"></div>
+                      <div className="h-3 w-24 rounded bg-slate-100 animate-pulse"></div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex gap-2">
+                        <div className="h-6 w-12 rounded-lg bg-slate-200 animate-pulse"></div>
+                        <div className="h-6 w-12 rounded-lg bg-slate-200 animate-pulse"></div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-6 w-24 rounded-full bg-slate-200 animate-pulse"></div>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <div className="h-8 w-20 rounded-lg bg-slate-200 animate-pulse inline-block"></div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : items.length === 0 ? (
           <div className="px-6 py-16 text-center">

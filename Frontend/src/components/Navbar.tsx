@@ -14,7 +14,6 @@ import {
   Search,
   Sparkles,
   CalendarDays,
-  ShieldCheck,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -179,12 +178,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => setActiveTab(navItems[0]?.id || "")}
           >
-            <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-xs">
-              C
+            <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-base shadow-xs tracking-tight">
+              CB
             </div>
             <div>
               <span className="text-xl font-bold tracking-tight text-indigo-950">
-                Intern<span className="text-indigo-600">Connect</span>
+                Career<span className="text-indigo-600">Bridge</span>
               </span>
               <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Cổng thông tin thực tập

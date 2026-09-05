@@ -18,6 +18,7 @@ enum Role {
 enum UserStatus {
   ACTIVE
   INACTIVE
+  PENDING_VERIFICATION
   BANNED
 }
 
@@ -112,9 +113,10 @@ model User {
   email        String     @unique
   passwordHash String
   role         Role
-  status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  status          UserStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   studentProfile       StudentProfile?
   lecturerProfile      LecturerProfile?
@@ -127,6 +129,20 @@ model User {
   companyReviews       CompanyProfile[] @relation("CompanyReviewedBy")
   supervisedPlacements Supervision[]    @relation("AssignedBy")
   evaluations          Evaluation[]     @relation("EvaluationAuthor")
+  verificationTokens   VerificationToken[]
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }
 
 model RefreshToken {
