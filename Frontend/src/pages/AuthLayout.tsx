@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { ReactNode } from 'react';
 
 export function AuthLayout({ children }: { children: ReactNode }) {
@@ -9,13 +9,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         <div className="absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-violet-400/20 blur-3xl" />
         <div className="relative z-10 flex max-w-xl flex-col justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20 backdrop-blur">
-              <BriefcaseBusiness className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xl font-black tracking-tight">CareerBridge</p>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">Cổng thông tin thực tập</p>
-            </div>
+            <img src="/careerbridge-logo.svg" alt="CareerBridge" className="h-20 w-auto object-contain drop-shadow-lg" />
           </div>
           <div className="py-16">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-indigo-100 backdrop-blur">
