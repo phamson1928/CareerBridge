@@ -226,6 +226,7 @@ model LecturerProfile {
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   supervisions Supervision[]
+  conversations Conversation[]
 }
 
 model CompanyProfile {
@@ -396,6 +397,7 @@ model InternshipPlacement {
   supervision Supervision?
   reports     Report[]
   evaluations Evaluation[]
+  lecturerConversation Conversation? @relation("PlacementConversation")
 
   @@index([studentId, semesterId])
   @@index([companyId, semesterId])
@@ -476,19 +478,24 @@ model File {
 
 model Conversation {
   id            String   @id @default(cuid())
-  applicationId String   @unique
+  applicationId String?  @unique
+  placementId   String?  @unique
   studentId     String
-  companyId     String
+  companyId     String?
+  lecturerId    String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  application Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  application Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  placement   InternshipPlacement? @relation("PlacementConversation", fields: [placementId], references: [id], onDelete: Cascade)
   student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  company     CompanyProfile @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     CompanyProfile? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lecturer    LecturerProfile? @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
   messages    Message[]
 
   @@index([studentId])
   @@index([companyId])
+  @@index([lecturerId])
 }
 
 model Message {

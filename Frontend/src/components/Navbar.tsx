@@ -167,7 +167,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const navItems = getNavItems();
-  const canUseChat = currentRole === "STUDENT" || currentRole === "COMPANY";
+  const canUseChat = currentRole === "STUDENT" || currentRole === "COMPANY" || currentRole === "TEACHER";
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-10 z-40 shadow-xs">
@@ -216,7 +216,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* A conversation is private to the accepted application's student and company. */}
+            {/* Chat is limited to the student, company, or assigned lecturer. */}
             {canUseChat && (
               <button
                 id="btn-chat-toggle"

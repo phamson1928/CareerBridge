@@ -20,7 +20,7 @@ export class ChatController {
 
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateConversationDto) {
-    return this.chat.createForAcceptedApplication(user, dto.applicationId);
+    return this.chat.create(user, dto);
   }
 
   @Get('unread-count')
