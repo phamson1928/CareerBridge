@@ -3,14 +3,16 @@
 > Phạm vi chính của Người A trong tuần 7: hoàn thiện khả năng truy vết hệ thống cho Admin, kiểm tra toàn bộ luồng nghiệp vụ đã xây dựng từ tuần 1 đến tuần 6, xử lý lỗi và edge case trước khi tổng kết dự án.
 >
 > Người B phụ trách Chat. Người A chỉ hỗ trợ Người B ở contract, kiểm thử liên thông, authorization và regression; không tự mở rộng sang xây dựng Chat nếu chưa thống nhất lại trách nhiệm.
+>
+> **Cập nhật phạm vi sau kế hoạch ban đầu (10/09/2026):** Người A triển khai thêm AI Job Recommendation vì feature này mở rộng trực tiếp từ `SkillsModule` và matching do Người A phụ trách. Phần mở rộng bao gồm backend, migration, cache, AI explanation có kiểm soát, frontend Internship và regression; không chuyển phần Chat của Người B sang Người A.
 
 ---
 
 ## 1. Mục tiêu tuần 7
 
-Tuần 7 không phải tuần thêm nhiều nghiệp vụ mới. Mục tiêu là đưa hệ thống từ trạng thái “các module chạy riêng lẻ” sang trạng thái “toàn bộ workflow chạy liền mạch, có thể truy vết và đủ ổn định để demo/bàn giao”.
+Tuần 7 tập trung hardening và hoàn thiện workflow. Sau khi kế hoạch ban đầu được chốt, AI Job Recommendation được bổ sung như một extension có kiểm soát để tận dụng dữ liệu profile/kỹ năng đã hoàn thiện, không làm AI trở thành nguồn quyết định tuyển dụng.
 
-Người A cần hoàn thành bốn nhóm kết quả:
+Người A cần hoàn thành năm nhóm kết quả:
 
 1. **Audit Log hoàn chỉnh cho Admin**
    - Backend cung cấp API đọc audit log an toàn, có filter và pagination.
@@ -32,6 +34,12 @@ Người A cần hoàn thành bốn nhóm kết quả:
    - Xác nhận conversation được tạo từ application được accept.
    - Kiểm tra authorization và regression khi Chat dùng chung Realtime Gateway.
    - Đảm bảo Chat không phá Notification realtime đã hoàn thành ở tuần 6.
+
+5. **AI Job Recommendation cho Student**
+   - Lưu role, location và work type preference thật cho current student.
+   - Backend tự lọc candidate đủ điều kiện, score xác định và trả tối đa 10 kết quả.
+   - Chỉ top 3 được AI diễn giải; AI không được sửa score/rank và lỗi provider phải fallback.
+   - Frontend đặt feature trong tab Internship, có readiness banner, preferences, create/refresh, loading/empty/error/fallback state và tái sử dụng apply flow.
 
 ---
 
@@ -65,6 +73,15 @@ Người A cần hoàn thành bốn nhóm kết quả:
 - Dùng browser cho frontend visual/interaction test.
 - Dùng Socket.IO client hoặc browser cho realtime; không coi curl là công cụ kiểm tra đầy đủ Socket.IO.
 - Lưu lại test matrix, kết quả pass/fail và lỗi đã sửa.
+
+#### AI Job Recommendation
+
+- Bổ sung `RecommendationsModule`, candidate query không N+1, stable scorer và database cache theo fingerprint.
+- Thêm `StudentJobPreference` và `InternshipRecommendationCache` qua migration; preference route chỉ thao tác current student.
+- Tách shared skill calculator để matching endpoint, recommendation scorer và `Application.matchScore` snapshot không dùng ba công thức khác nhau.
+- Tích hợp provider ở backend-only, timeout/retry/schema validation/plain-text sanitization và deterministic fallback.
+- Thêm typed frontend API, readiness banner, tag-based preference form, top-10 card và AI explanation có điều kiện.
+- Xóa legacy frontend AI/score giả để không còn hai nguồn dữ liệu recommendation.
 
 #### Bug fixing
 
@@ -150,6 +167,7 @@ Nhiều module đã ghi AuditLog trực tiếp trong transaction, gồm Company 
 - Company moderation.
 - Semester.
 - Internship và matching.
+- AI Job Recommendation: preferences, recommendation cache, deterministic top-10 và UI Internship.
 - Application workflow.
 - Placement.
 - Supervision.
@@ -182,6 +200,8 @@ Week 7 của Người A chỉ được xem là hoàn thành khi:
 - Lỗi P0/P1 phát hiện trong flow đã được sửa và regression pass.
 - Backend build và frontend lint/build pass.
 - Chat merge không làm hỏng Auth, Application, Notification hoặc Socket.IO.
+- Recommendation chỉ truy cập được bằng JWT `STUDENT`; score/rank không đến từ AI hoặc frontend.
+- Curl regression preferences/recommendations pass; backend build/test/lint và frontend lint/build pass.
 
 ---
 
@@ -1396,6 +1416,7 @@ Người A bàn giao:
 6. Danh sách issue còn lại được phân loại P2/backlog.
 7. Kết quả backend build, frontend lint/build.
 8. Kết quả regression sau khi merge Chat của Người B.
+9. AI Job Recommendation: migration, API/current-user authorization, frontend UI, env guide và curl regression.
 
 Thứ tự thực thi đề xuất cho các lượt tiếp theo:
 
@@ -1406,4 +1427,4 @@ Thứ tự thực thi đề xuất cho các lượt tiếp theo:
 5. Chạy full business flow và sửa lỗi.
 6. Regression sau khi Chat của Người B hoàn tất.
 
-Plan này giữ đúng vai trò Người A Week 7: tập trung vào khả năng truy vết, chất lượng liên thông và độ ổn định của toàn hệ thống, đồng thời không lấn sang phần Chat do Người B phụ trách.
+Plan này phản ánh phần mở rộng thực tế của Người A Week 7: audit, chất lượng liên thông, AI Job Recommendation và độ ổn định hệ thống, đồng thời không lấn sang phần Chat do Người B phụ trách.
