@@ -54,6 +54,13 @@ const date = new Intl.DateTimeFormat("vi-VN", {
 });
 const formatDate = (value: string | null) =>
   value ? date.format(new Date(value)) : "Chưa cập nhật";
+const formatDateTime = (value: string | null, fallback = "Chưa cập nhật") =>
+  value
+    ? new Intl.DateTimeFormat("vi-VN", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(new Date(value))
+    : fallback;
 const isoDay = (value: string | null) => (value ? value.slice(0, 10) : "");
 
 export const PlacementManagement: React.FC<{
@@ -413,6 +420,7 @@ export const PlacementManagement: React.FC<{
                   <th className="px-5 py-3 font-bold">Hướng dẫn</th>
                   <th className="px-5 py-3 font-bold">Tiến độ</th>
                   <th className="px-5 py-3 font-bold">Trạng thái</th>
+                  <th className="px-5 py-3 font-bold">Audit phân công</th>
                   <th className="px-5 py-3 text-right font-bold">Thao tác</th>
                 </tr>
               </thead>
@@ -548,6 +556,16 @@ export const PlacementManagement: React.FC<{
                         {statusLabel[placement.status]}
                       </span>
                     </td>
+                    <td className="px-5 py-4 text-[10px] text-slate-500">
+                      {placement.supervision ? (
+                        <div className="space-y-1">
+                          <p>Phân công: <span className="font-semibold text-slate-700">{formatDateTime(placement.supervision.assignedAt)}</span></p>
+                          <p>Người phân công: <span className="font-semibold text-slate-700">{placement.supervision.assignedBy?.email ?? "Tài khoản đã bị xóa"}</span></p>
+                          <p className="max-w-44 truncate font-mono" title={placement.supervision.assignedById ?? undefined}>ID: {placement.supervision.assignedById ?? "—"}</p>
+                          <p>Hoàn tất: <span className="font-semibold text-slate-700">{formatDateTime(placement.supervision.completedAt, "Chưa hoàn tất")}</span></p>
+                        </div>
+                      ) : "—"}
+                    </td>
                     <td className="px-5 py-4 text-right">
                       <button
                         onClick={() => void openDetail(placement)}
@@ -640,6 +658,15 @@ export const PlacementManagement: React.FC<{
                       "Mở trang phân công để chỉ định"}
                   </p>
                 </div>
+                {selected.supervision && (
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-600">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Audit phân công</p>
+                    <p className="mt-2">Phân công lúc: <span className="font-semibold text-slate-800">{formatDateTime(selected.supervision.assignedAt)}</span></p>
+                    <p className="mt-1">Người phân công: <span className="font-semibold text-slate-800">{selected.supervision.assignedBy?.email ?? "Tài khoản đã bị xóa"}</span></p>
+                    <p className="mt-1 truncate font-mono" title={selected.supervision.assignedById ?? undefined}>assignedById: {selected.supervision.assignedById ?? "—"}</p>
+                    <p className="mt-1">Hoàn tất lúc: <span className="font-semibold text-slate-800">{formatDateTime(selected.supervision.completedAt, "Chưa hoàn tất")}</span></p>
+                  </div>
+                )}
               </div>
               <div className="rounded-2xl border border-slate-200 p-4">
                 <div className="flex items-center justify-between">

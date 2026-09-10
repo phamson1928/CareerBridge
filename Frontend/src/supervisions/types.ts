@@ -7,6 +7,7 @@ export interface SupervisionRecord {
   placementId: string;
   lecturerId: string;
   assignedById: string | null;
+  assignedBy: { id: string; email: string; role: string } | null;
   status: SupervisionStatus;
   assignedAt: string;
   completedAt: string | null;

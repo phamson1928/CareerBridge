@@ -8,7 +8,7 @@ import { ReviewReportDto } from './dto/review-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
-const select = { id:true, placementId:true, week:true, title:true, content:true, fileId:true, status:true, feedback:true, submittedAt:true, reviewedAt:true, createdAt:true, updatedAt:true, file:{select:{id:true,originalName:true,mimeType:true,sizeBytes:true}}, placement:{select:{id:true,status:true,student:{select:{id:true,userId:true,studentCode:true,fullName:true}}, company:{select:{companyName:true}}, internship:{select:{title:true}}, semester:{select:{name:true}}, supervision:{select:{status:true,lecturer:{select:{userId:true,fullName:true}}}}}} } satisfies Prisma.ReportSelect;
+const select = { id:true, placementId:true, week:true, title:true, content:true, fileId:true, status:true, feedback:true, submittedAt:true, reviewedAt:true, createdAt:true, updatedAt:true, file:{select:{id:true,originalName:true,mimeType:true,sizeBytes:true,createdAt:true}}, placement:{select:{id:true,status:true,student:{select:{id:true,userId:true,studentCode:true,fullName:true}}, company:{select:{companyName:true}}, internship:{select:{title:true}}, semester:{select:{name:true}}, supervision:{select:{status:true,lecturer:{select:{userId:true,fullName:true}}}}}} } satisfies Prisma.ReportSelect;
 type ReportRecord = Prisma.ReportGetPayload<{select: typeof select}>;
 
 @Injectable()
