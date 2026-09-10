@@ -17,6 +17,12 @@ export function validateEnvironment(
 
   requireNonEmptyString(config, 'DATABASE_URL');
   requireNonEmptyString(config, 'JWT_SECRET');
+  config.SMTP_HOST = requireNonEmptyString(config, 'SMTP_HOST');
+  config.SMTP_USER = requireNonEmptyString(config, 'SMTP_USER');
+  config.SMTP_PASS = requireNonEmptyString(config, 'SMTP_PASS');
+  config.SMTP_FROM = requireNonEmptyString(config, 'SMTP_FROM');
+  config.SMTP_PORT = parsePositiveInteger(config.SMTP_PORT, 'SMTP_PORT', 587);
+  config.SMTP_SECURE = parseBoolean(config.SMTP_SECURE, 'SMTP_SECURE', false);
 
   for (const [key, defaultValue] of Object.entries(integerSettings)) {
     config[key] = parsePositiveInteger(config[key], key, defaultValue);
@@ -31,7 +37,7 @@ export function validateEnvironment(
   config.FRONTEND_URL = readOptionalString(
     config.FRONTEND_URL,
     'http://localhost:5173',
-  );
+  ).replace(/\/+$/, '');
 
   config.FILES_BUCKET = readOptionalString(
     config.FILES_BUCKET,
@@ -97,4 +103,15 @@ function parsePositiveInteger(
 
 function readOptionalString(value: unknown, defaultValue: string): string {
   return typeof value === 'string' ? value : defaultValue;
+}
+
+function parseBoolean(
+  value: unknown,
+  key: string,
+  defaultValue: boolean,
+): boolean {
+  if (value === undefined || value === '') return defaultValue;
+  if (value === true || value === 'true') return true;
+  if (value === false || value === 'false') return false;
+  throw new Error(`${key} must be true or false`);
 }

@@ -59,6 +59,7 @@ export function LoginPage() {
               <input id="login-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100" placeholder="Nhập mật khẩu" />
             </span>
           </label>
+          <div className="-mt-2 text-right"><Link className="text-xs font-bold text-indigo-600 hover:text-indigo-700" to="/forgot-password">Quên mật khẩu?</Link></div>
           {error && <div id="login-error" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{error}</div>}
           <button id="btn-login-submit" type="submit" disabled={isSubmitting} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
             {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'} {!isSubmitting && <ArrowRight className="h-4 w-4" />}

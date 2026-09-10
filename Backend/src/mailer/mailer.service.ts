@@ -9,14 +9,18 @@ export class MailerService {
 
   constructor(private configService: ConfigService) {
     this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('SMTP_HOST'),
-      port: this.configService.get<number>('SMTP_PORT'),
-      secure: this.configService.get<boolean>('SMTP_SECURE', false),
+      host: this.configService.getOrThrow<string>('SMTP_HOST'),
+      port: this.configService.getOrThrow<number>('SMTP_PORT'),
+      secure: this.configService.getOrThrow<boolean>('SMTP_SECURE'),
       auth: {
-        user: this.configService.get<string>('SMTP_USER'),
-        pass: this.configService.get<string>('SMTP_PASS'),
+        user: this.configService.getOrThrow<string>('SMTP_USER'),
+        pass: this.configService.getOrThrow<string>('SMTP_PASS'),
       },
     });
+  }
+
+  private getFromAddress(): string {
+    return this.configService.getOrThrow<string>('SMTP_FROM');
   }
 
   async sendVerificationEmail(to: string, token: string) {
@@ -24,7 +28,7 @@ export class MailerService {
     const verificationLink = `${frontendUrl}/verify-email?token=${token}`;
 
     const mailOptions = {
-      from: `"CareerBridge" <${this.configService.get<string>('SMTP_FROM')}>`,
+      from: `"CareerBridge" <${this.getFromAddress()}>`,
       to,
       subject: 'Xác thực tài khoản CareerBridge',
       html: `
@@ -49,5 +53,23 @@ export class MailerService {
       this.logger.error(`Failed to send verification email to ${to}`, error);
       throw error;
     }
+  }
+
+  async sendPasswordResetEmail(to: string, token: string) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
+    await this.transporter.sendMail({
+      from: `"CareerBridge" <${this.getFromAddress()}>`,
+      to,
+      subject: 'Đặt lại mật khẩu CareerBridge',
+      html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #0f172a;">Đặt lại mật khẩu</h2>
+        <p>Bạn vừa yêu cầu đặt lại mật khẩu CareerBridge.</p>
+        <p><a href="${resetLink}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Đặt lại mật khẩu</a></p>
+        <p>Link này chỉ có hiệu lực trong 30 phút và chỉ được sử dụng một lần.</p>
+        <p style="word-break: break-all; color: #64748b;">${resetLink}</p>
+      </div>`,
+    });
+    this.logger.log(`Password reset email sent to ${to}`);
   }
 }

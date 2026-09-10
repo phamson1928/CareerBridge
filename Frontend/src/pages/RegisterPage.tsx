@@ -27,6 +27,9 @@ export function RegisterPage() {
     setError('');
     setIsSubmitting(true);
     try {
+      if (role === 'STUDENT' && !email.trim().toLowerCase().endsWith('@ut.edu.vn')) {
+        throw new Error('Sinh viên phải sử dụng email trường có đuôi @ut.edu.vn.');
+      }
       await register({ email, password, role });
       setRegisteredEmail(email);
     } catch (requestError) {
@@ -66,7 +69,8 @@ export function RegisterPage() {
           </fieldset>
           <label className="block">
             <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Email</span>
-            <span className="relative mt-2 block"><Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input id="register-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100" placeholder="you@example.com" /></span>
+            <span className="relative mt-2 block"><Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input id="register-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100" placeholder={role === 'STUDENT' ? 'mssv@ut.edu.vn' : 'contact@company.com'} /></span>
+            {role === 'STUDENT' && <p className="mt-1 text-xs text-slate-500">Sinh viên phải dùng email có đuôi @ut.edu.vn.</p>}
           </label>
           <label className="block">
             <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Mật khẩu</span>
