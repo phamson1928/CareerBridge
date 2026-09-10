@@ -86,9 +86,11 @@ const placementSelect = {
     select: {
       id: true,
       lecturerId: true,
+      assignedById: true,
       status: true,
       assignedAt: true,
       completedAt: true,
+      assignedBy: { select: { id: true, email: true, role: true } },
       lecturer: {
         select: {
           id: true,

@@ -138,10 +138,10 @@ Không thêm các hạng mục trên vào Definition of Done và không để ch
 
 ### Frontend
 
-- Đã có `NotificationCenter.tsx`, nhưng dữ liệu hiện được truyền từ mock/local state.
-- `App.tsx` đang chứa `INITIAL_NOTIFICATIONS` và tự tính unread count.
-- Type frontend hiện chưa khớp hoàn toàn với Prisma/backend.
-- Chưa cài `socket.io-client`.
+- `NotificationCenter.tsx` hiện lấy dữ liệu thật qua REST và đồng bộ unread/realtime.
+- `App.tsx` không còn dùng `INITIAL_NOTIFICATIONS`; unread count lấy từ notification state/backend.
+- Frontend types đã được đồng bộ theo contract backend.
+- Frontend đã cài và sử dụng `socket.io-client`.
 - App hiện điều hướng chủ yếu bằng tab/state; action notification cần ánh xạ vào cơ chế điều hướng đang có.
 
 ### Hệ quả thiết kế

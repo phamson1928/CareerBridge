@@ -90,3 +90,19 @@ export function getApiErrorMessage(error: unknown): string {
 
   return 'Không thể kết nối tới hệ thống. Vui lòng thử lại.';
 }
+
+export async function requestPasswordReset(email: string) {
+  const response = await authApi.post<ApiSuccess<{ message: string }>>(
+    '/auth/forgot-password',
+    { email },
+  );
+  return response.data.data;
+}
+
+export async function resetPassword(token: string, password: string) {
+  const response = await authApi.post<ApiSuccess<{ message: string }>>(
+    '/auth/reset-password',
+    { token, password },
+  );
+  return response.data.data;
+}

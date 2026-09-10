@@ -54,6 +54,7 @@ const supervisionSelect = {
       title: true,
     },
   },
+  assignedBy: { select: { id: true, email: true, role: true } },
 } satisfies Prisma.SupervisionSelect;
 
 type SupervisionRecord = Prisma.SupervisionGetPayload<{

@@ -53,6 +53,8 @@ export interface PlacementRecord {
   supervision: {
     id: string;
     lecturerId: string;
+    assignedById: string | null;
+    assignedBy: { id: string; email: string; role: string } | null;
     status: "ACTIVE" | "COMPLETED" | "CANCELLED";
     assignedAt: string;
     completedAt: string | null;

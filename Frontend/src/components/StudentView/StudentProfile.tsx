@@ -2,9 +2,12 @@ import React, { FormEvent, useEffect, useState } from "react";
 import axios from "axios";
 import {
   Edit3,
+  ExternalLink,
   FileText,
   GraduationCap,
   LoaderCircle,
+  Pencil,
+  Plus,
   Save,
   Trash2,
 } from "lucide-react";
@@ -12,6 +15,8 @@ import { getApiErrorMessage } from "../../auth/api";
 import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 import {
   studentsApi,
+  StudentProjectInput,
+  StudentProjectRecord,
   StudentProfileInput,
   StudentProfileRecord,
 } from "../../students/api";
@@ -27,6 +32,15 @@ const emptyForm: StudentProfileInput = {
   phone: "",
   summary: "",
   gpa: null,
+};
+
+const emptyProject: StudentProjectInput = {
+  title: "",
+  description: "",
+  repositoryUrl: "",
+  demoUrl: "",
+  startedAt: null,
+  endedAt: null,
 };
 
 interface StudentProfileViewProps {
@@ -49,9 +63,18 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
 
   const [studentSkills, setStudentSkills] = useState<StudentSkillRecord[]>([]);
   const [savingSkills, setSavingSkills] = useState(false);
+  const [projects, setProjects] = useState<StudentProjectRecord[]>([]);
+  const [projectForm, setProjectForm] = useState<StudentProjectInput>(emptyProject);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [savingProject, setSavingProject] = useState(false);
 
-  const applyProfile = (nextProfile: StudentProfileRecord) => {
+  const applyProfile = (
+    nextProfile: StudentProfileRecord,
+    nextSkills = studentSkills,
+  ) => {
     setProfile(nextProfile);
+    setProjects(nextProfile.projects ?? []);
     setForm({
       studentCode: nextProfile.studentCode,
       fullName: nextProfile.fullName,
@@ -61,36 +84,45 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
       gpa: nextProfile.gpa,
       cvFileId: nextProfile.cvFileId,
     });
-    onProfileChange?.(nextProfile, studentSkills);
+    onProfileChange?.(nextProfile, nextSkills);
   };
 
   useEffect(() => {
     let active = true;
     const loadProfile = async () => {
-      try {
-        const result = await studentsApi.getMine();
-        if (active) applyProfile(result);
-      } catch (requestError) {
-        if (
-          axios.isAxiosError(requestError) &&
-          requestError.response?.status === 404
-        ) {
-          if (active) setIsEditing(true);
-        } else if (active) {
-          setError(getApiErrorMessage(requestError));
-        }
-      } finally {
-        if (active) setIsLoading(false);
+      const [profileResult, skillsResult] = await Promise.allSettled([
+        studentsApi.getMine(),
+        skillsApi.getStudentMine(),
+      ]);
+
+      if (!active) return;
+
+      if (profileResult.status === "fulfilled") {
+        const loadedSkills =
+          skillsResult.status === "fulfilled" ? skillsResult.value : [];
+        setStudentSkills(loadedSkills);
+        applyProfile(profileResult.value, loadedSkills);
+      } else if (
+        axios.isAxiosError(profileResult.reason) &&
+        profileResult.reason.response?.status === 404
+      ) {
+        setIsEditing(true);
+      } else {
+        setError(getApiErrorMessage(profileResult.reason));
       }
+
+      if (skillsResult.status === "fulfilled") {
+        setStudentSkills(skillsResult.value);
+      } else if (profileResult.status === "fulfilled") {
+        setError(getApiErrorMessage(skillsResult.reason));
+      }
+
+      setIsLoading(false);
     };
     void loadProfile();
     return () => {
       active = false;
     };
-  }, []);
-
-  useEffect(() => {
-    void skillsApi.getStudentMine().then(setStudentSkills).catch(() => undefined);
   }, []);
 
   const saveSkills = async () => {
@@ -161,6 +193,91 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
       setError(getApiErrorMessage(requestError));
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const removeCv = async () => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const result = await studentsApi.updateMine({ cvFileId: null });
+      applyProfile(result);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const saveProject = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingProject(true);
+    setError(null);
+    try {
+      const payload = {
+        ...projectForm,
+        description: projectForm.description?.trim() || null,
+        repositoryUrl: projectForm.repositoryUrl?.trim() || null,
+        demoUrl: projectForm.demoUrl?.trim() || null,
+        startedAt: projectForm.startedAt || null,
+        endedAt: projectForm.endedAt || null,
+      };
+      const saved = editingProjectId
+        ? await studentsApi.updateProject(editingProjectId, payload)
+        : await studentsApi.createProject(payload);
+      setProjects((current) =>
+        editingProjectId
+          ? current.map((project) => (project.id === saved.id ? saved : project))
+          : [saved, ...current],
+      );
+      const nextProjects = editingProjectId
+        ? projects.map((project) => (project.id === saved.id ? saved : project))
+        : [saved, ...projects];
+      if (profile) {
+        onProfileChange?.({ ...profile, projects: nextProjects }, studentSkills);
+      }
+      setProjectForm(emptyProject);
+      setEditingProjectId(null);
+      setShowProjectForm(false);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setSavingProject(false);
+    }
+  };
+
+  const editProject = (project: StudentProjectRecord) => {
+    setEditingProjectId(project.id);
+    setShowProjectForm(true);
+    setProjectForm({
+      title: project.title,
+      description: project.description ?? "",
+      repositoryUrl: project.repositoryUrl ?? "",
+      demoUrl: project.demoUrl ?? "",
+      startedAt: project.startedAt?.slice(0, 10) ?? null,
+      endedAt: project.endedAt?.slice(0, 10) ?? null,
+    });
+  };
+
+  const deleteProject = async (projectId: string) => {
+    setSavingProject(true);
+    setError(null);
+    try {
+      await studentsApi.removeProject(projectId);
+      const nextProjects = projects.filter((project) => project.id !== projectId);
+      setProjects(nextProjects);
+      if (profile) {
+        onProfileChange?.({ ...profile, projects: nextProjects }, studentSkills);
+      }
+      if (editingProjectId === projectId) {
+        setEditingProjectId(null);
+        setProjectForm(emptyProject);
+        setShowProjectForm(false);
+      }
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setSavingProject(false);
     }
   };
 
@@ -292,6 +409,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
         ) : (
           profile && (
             <div className="mt-6 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+              <Info label="Email" value={profile.user.email} />
               <Info label="Mã số sinh viên" value={profile.studentCode} />
               <Info label="Ngành học" value={profile.major} />
               <Info
@@ -310,10 +428,78 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
                   {profile.summary || "Chưa cập nhật"}
                 </p>
               </div>
+              <Info
+                label="Cập nhật lần cuối"
+                value={new Date(profile.updatedAt).toLocaleDateString("vi-VN")}
+              />
             </div>
           )
         )}
       </section>
+
+      {profile && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-extrabold text-slate-900">Dự án cá nhân</h3>
+              <p className="text-xs text-slate-500">Giới thiệu các sản phẩm và dự án nổi bật.</p>
+            </div>
+            {!showProjectForm && (
+              <button type="button" onClick={() => { setProjectForm(emptyProject); setShowProjectForm(true); }} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white">
+                <Plus className="h-4 w-4" /> Thêm dự án
+              </button>
+            )}
+          </div>
+          {showProjectForm && (
+            <form onSubmit={(event) => void saveProject(event)} className="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 md:grid-cols-2">
+              <Field label="Tên dự án" required value={projectForm.title} onChange={(value) => setProjectForm({ ...projectForm, title: value })} />
+              <Field label="Link repository" value={projectForm.repositoryUrl ?? ""} onChange={(value) => setProjectForm({ ...projectForm, repositoryUrl: value })} />
+              <Field label="Link demo" value={projectForm.demoUrl ?? ""} onChange={(value) => setProjectForm({ ...projectForm, demoUrl: value })} />
+              <div className="grid grid-cols-2 gap-2">
+                <DateField label="Bắt đầu" value={projectForm.startedAt ?? ""} onChange={(value) => setProjectForm({ ...projectForm, startedAt: value || null })} />
+                <DateField label="Kết thúc" value={projectForm.endedAt ?? ""} onChange={(value) => setProjectForm({ ...projectForm, endedAt: value || null })} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-xs font-bold text-slate-800">Mô tả</label>
+                <textarea rows={3} value={projectForm.description ?? ""} onChange={(event) => setProjectForm({ ...projectForm, description: event.target.value })} className="w-full rounded-xl border border-slate-300 p-2.5" />
+              </div>
+              <div className="flex gap-2 md:col-span-2">
+                <button disabled={savingProject} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{editingProjectId ? "Lưu dự án" : "Thêm dự án"}</button>
+                {showProjectForm && <button type="button" onClick={() => { setEditingProjectId(null); setShowProjectForm(false); setProjectForm(emptyProject); }} className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold">Hủy</button>}
+              </div>
+            </form>
+          )}
+          <div className="space-y-3">
+            {projects.length === 0 && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Chưa có dự án nào.</p>}
+            {projects.map((project) => (
+              <article key={project.id} className="rounded-xl border border-slate-200 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div><h4 className="font-bold text-slate-900">{project.title}</h4><p className="mt-1 text-sm text-slate-600">{project.description || "Chưa có mô tả."}</p></div>
+                  <div className="flex shrink-0 gap-1">
+                    <button type="button" title="Sửa dự án" onClick={() => editProject(project)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Pencil className="h-4 w-4" /></button>
+                    <button type="button" title="Xóa dự án" onClick={() => void deleteProject(project.id)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold">
+                  {(project.startedAt || project.endedAt) && (
+                    <span className="text-slate-500">
+                      {project.startedAt
+                        ? new Date(project.startedAt).toLocaleDateString("vi-VN")
+                        : "?"}
+                      {" - "}
+                      {project.endedAt
+                        ? new Date(project.endedAt).toLocaleDateString("vi-VN")
+                        : "nay"}
+                    </span>
+                  )}
+                  {project.repositoryUrl && <a href={project.repositoryUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-indigo-600">Repository <ExternalLink className="h-3 w-3" /></a>}
+                  {project.demoUrl && <a href={project.demoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-indigo-600">Demo <ExternalLink className="h-3 w-3" /></a>}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {profile && (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
@@ -347,6 +533,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
             fileName={profile.cvFile?.originalName}
             mimeType={profile.cvFile?.mimeType}
             onUploaded={(file) => void updateCv(file)}
+            onRemove={() => void removeCv()}
           />
           {isSaving && (
             <p className="mt-2 text-xs text-slate-500">
@@ -402,6 +589,28 @@ function Info({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs font-bold text-slate-800">{label}</p>
       <p className="mt-1 text-slate-600">{value}</p>
+    </div>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-bold text-slate-800">{label}</label>
+      <input
+        type="date"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-slate-300 p-2.5"
+      />
     </div>
   );
 }

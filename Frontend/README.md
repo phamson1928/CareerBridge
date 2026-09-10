@@ -67,7 +67,7 @@ npm run lint
 npm run build
 ```
 
-The current dashboard features still use mock domain data. Week 1 authentication and routing use the real NestJS backend.
+The application uses the NestJS backend for authentication, profiles, internships, applications, placements, reports, evaluations, notifications and chat. The frontend includes email verification, forgot/reset password, student project management and role-specific workflows. Run the backend and configure the API environment before using protected features.
 
 ## Optional AI features
 

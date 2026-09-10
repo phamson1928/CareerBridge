@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { Role } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -70,6 +71,7 @@ export class AuthService {
     metadata: RequestMetadata,
   ): Promise<AuthResult> {
     const email = this.normalizeEmail(dto.email);
+    this.ensureRegistrationEmail(dto.role, email);
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
       select: { id: true },
@@ -317,6 +319,64 @@ export class AuthService {
     });
   }
 
+  async forgotPassword(emailAddress: string): Promise<void> {
+    const email = this.normalizeEmail(emailAddress);
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true },
+    });
+
+    if (!user) return;
+
+    const rawToken = randomBytes(48).toString('base64url');
+    const tokenHash = hashRefreshToken(rawToken);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.passwordResetToken.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      await tx.passwordResetToken.create({
+        data: { userId: user.id, tokenHash, expiresAt },
+      });
+    });
+
+    await this.mailerService.sendPasswordResetEmail(user.email, rawToken);
+  }
+
+  async resetPassword(rawToken: string, password: string): Promise<void> {
+    const token = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash: hashRefreshToken(rawToken) },
+      select: { id: true, userId: true, expiresAt: true, usedAt: true },
+    });
+    const now = new Date();
+    if (!token || token.usedAt || token.expiresAt <= now) {
+      throw new UnauthorizedException({
+        code: 'PASSWORD_RESET_TOKEN_INVALID',
+        message: 'Password reset token is invalid or has expired',
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, this.bcryptRounds);
+    await this.prisma.$transaction(async (tx) => {
+      const consumed = await tx.passwordResetToken.updateMany({
+        where: { id: token.id, usedAt: null, expiresAt: { gt: now } },
+        data: { usedAt: now },
+      });
+      if (consumed.count !== 1) throw this.invalidPasswordResetToken();
+
+      await tx.user.update({
+        where: { id: token.userId },
+        data: { passwordHash },
+      });
+      await tx.refreshToken.updateMany({
+        where: { userId: token.userId, revokedAt: null },
+        data: { revokedAt: now },
+      });
+    });
+  }
+
   async getCurrentUser(userId: string): Promise<PublicUser> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -356,6 +416,22 @@ export class AuthService {
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  private ensureRegistrationEmail(role: Role, email: string): void {
+    if (role === Role.STUDENT && !email.endsWith('@ut.edu.vn')) {
+      throw new ConflictException({
+        code: 'STUDENT_EMAIL_DOMAIN_REQUIRED',
+        message: 'Student email must use the @ut.edu.vn domain',
+      });
+    }
+  }
+
+  private invalidPasswordResetToken(): UnauthorizedException {
+    return new UnauthorizedException({
+      code: 'PASSWORD_RESET_TOKEN_INVALID',
+      message: 'Password reset token is invalid or has expired',
+    });
   }
 
   private getRefreshExpiry(): Date {

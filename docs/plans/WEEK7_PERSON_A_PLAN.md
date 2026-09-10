@@ -41,7 +41,7 @@ Người A cần hoàn thành bốn nhóm kết quả:
 
 #### Backend Audit
 
-- Hoàn thiện `AuditLogsModule` hiện đang là skeleton.
+- Duy trì và kiểm tra `AuditLogsModule` đã có controller/service/DTO; không còn là skeleton.
 - Xây dựng read-only Audit Log API dành riêng cho Admin.
 - Pagination, filter, search và date range.
 - Trả actor summary, action, entity, entityId, metadata, IP và thời gian.
@@ -132,7 +132,7 @@ model AuditLog {
 }
 ```
 
-Nhiều module đã ghi AuditLog trực tiếp trong transaction, gồm Company moderation, Semester, Application, Placement, Supervision và Report. Tuy nhiên hiện chưa có một giao diện/API thống nhất để Admin tra cứu.
+Nhiều module đã ghi AuditLog trực tiếp trong transaction, gồm Company moderation, Semester, Application, Placement, Supervision, Report và Evaluation. Audit Logs API và giao diện Admin đã được triển khai để tra cứu thống nhất.
 
 ### 3.2. Audit frontend
 
@@ -162,8 +162,8 @@ Nhiều module đã ghi AuditLog trực tiếp trong transaction, gồm Company 
 
 - Prisma đã có `Conversation` và `Message`.
 - Conversation được tạo khi application được accept.
-- `ChatModule` backend còn skeleton.
-- `ChatDrawer` frontend đang dùng mock/local state và auto-reply giả.
+- `ChatModule` backend đã có Conversation/Message API.
+- `ChatDrawer` frontend đã gọi API thật và nhận sự kiện realtime; không còn auto-reply giả.
 - Realtime Gateway từ Week 6 có thể tái sử dụng cho Chat.
 
 ---
