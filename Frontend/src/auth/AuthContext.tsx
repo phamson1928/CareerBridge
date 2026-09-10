@@ -15,6 +15,7 @@ import {
   LoginInput,
   RefreshSession,
   RegisterInput,
+  RegisterSessionResult,
 } from './auth.types';
 import { setAccessToken, subscribeAccessToken } from './token-store';
 
@@ -22,7 +23,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   isInitializing: boolean;
   login: (input: LoginInput) => Promise<AuthUser>;
-  register: (input: RegisterInput) => Promise<AuthUser>;
+  register: (input: RegisterInput) => Promise<RegisterSessionResult>;
   logout: () => Promise<void>;
 }
 
@@ -99,12 +100,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    async (input: RegisterInput) => {
+    async (input: RegisterInput): Promise<RegisterSessionResult> => {
       const response = await authApi.post<ApiSuccess<AuthSession>>(
         '/auth/register',
         input,
       );
-      return applySession(response.data.data);
+
+      const session = response.data.data;
+      const user = applySession(session);
+      return {
+        user,
+        accessToken: session.accessToken,
+        expiresIn: session.expiresIn,
+        verificationLink: session.verificationLink,
+      };
     },
     [applySession],
   );
