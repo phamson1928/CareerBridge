@@ -8,6 +8,8 @@ import { FileType, Prisma, Role } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStudentProfileDto } from './dto/create-student-profile.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { CreateStudentProjectDto } from './dto/create-student-project.dto';
+import { UpdateStudentProjectDto } from './dto/update-student-project.dto';
 
 const profileSelect = {
   id: true,
@@ -38,6 +40,9 @@ const profileSelect = {
       skill: { select: { id: true, name: true } },
     },
     orderBy: { skill: { name: 'asc' } },
+  },
+  projects: {
+    orderBy: { startedAt: 'desc' },
   },
 } satisfies Prisma.StudentProfileSelect;
 
@@ -106,6 +111,56 @@ export class StudentsService {
     }
   }
 
+  async createProject(userId: string, dto: CreateStudentProjectDto) {
+    const profile = await this.getProfileId(userId);
+    return this.prisma.studentProject.create({
+      data: {
+        studentId: profile.id,
+        title: dto.title,
+        description: dto.description,
+        repositoryUrl: dto.repositoryUrl,
+        demoUrl: dto.demoUrl,
+        startedAt: this.toDate(dto.startedAt),
+        endedAt: this.toDate(dto.endedAt),
+      },
+    });
+  }
+
+  async updateProject(
+    userId: string,
+    projectId: string,
+    dto: UpdateStudentProjectDto,
+  ) {
+    const profile = await this.getProfileId(userId);
+    const project = await this.prisma.studentProject.findFirst({
+      where: { id: projectId, studentId: profile.id },
+    });
+    if (!project) throw this.projectNotFound();
+
+    return this.prisma.studentProject.update({
+      where: { id: projectId },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.repositoryUrl !== undefined ? { repositoryUrl: dto.repositoryUrl } : {}),
+        ...(dto.demoUrl !== undefined ? { demoUrl: dto.demoUrl } : {}),
+        ...(dto.startedAt !== undefined ? { startedAt: this.toDate(dto.startedAt) } : {}),
+        ...(dto.endedAt !== undefined ? { endedAt: this.toDate(dto.endedAt) } : {}),
+      },
+    });
+  }
+
+  async removeProject(userId: string, projectId: string) {
+    const profile = await this.getProfileId(userId);
+    const project = await this.prisma.studentProject.findFirst({
+      where: { id: projectId, studentId: profile.id },
+      select: { id: true },
+    });
+    if (!project) throw this.projectNotFound();
+    await this.prisma.studentProject.delete({ where: { id: project.id } });
+    return { deleted: true, id: project.id };
+  }
+
   private toUpdateData(
     dto: UpdateStudentProfileDto,
   ): Prisma.StudentProfileUpdateInput {
@@ -150,6 +205,26 @@ export class StudentsService {
         message: 'A student profile can only belong to a STUDENT user',
       });
     }
+  }
+
+  private async getProfileId(userId: string) {
+    const profile = await this.prisma.studentProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!profile) throw this.notFound();
+    return profile;
+  }
+
+  private toDate(value: string | null | undefined): Date | null | undefined {
+    return value === undefined || value === null ? value : new Date(value);
+  }
+
+  private projectNotFound(): NotFoundException {
+    return new NotFoundException({
+      code: 'STUDENT_PROJECT_NOT_FOUND',
+      message: 'Student project not found',
+    });
   }
 
   private async ensureCvFileIsOwnedByStudent(

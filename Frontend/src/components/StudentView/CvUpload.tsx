@@ -12,6 +12,7 @@ interface CvUploadProps {
   fileName?: string;
   mimeType?: string;
   onUploaded: (file: { id: string; originalName: string }) => void;
+  onRemove?: () => void;
 }
 
 export const CvUpload: React.FC<CvUploadProps> = ({
@@ -19,6 +20,7 @@ export const CvUpload: React.FC<CvUploadProps> = ({
   fileName,
   mimeType,
   onUploaded,
+  onRemove,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -138,6 +140,15 @@ export const CvUpload: React.FC<CvUploadProps> = ({
               )}{" "}
               Xem / tải CV
             </button>
+            {onRemove && (
+              <button
+                type="button"
+                onClick={onRemove}
+                className="inline-flex shrink-0 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700"
+              >
+                Gỡ CV
+              </button>
+            )}
           </>
         )}
       </div>

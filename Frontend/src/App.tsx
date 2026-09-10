@@ -131,6 +131,17 @@ function toLegacyStudentProfile(
     cvName: record.cvFile?.originalName,
     summary: record.summary ?? undefined,
     phone: record.phone ?? undefined,
+    projects: record.projects.map((project) => ({
+      id: project.id,
+      name: project.title,
+      description: project.description ?? "",
+      techStack: [],
+      link: project.demoUrl ?? project.repositoryUrl ?? undefined,
+      repositoryUrl: project.repositoryUrl ?? undefined,
+      demoUrl: project.demoUrl ?? undefined,
+      startedAt: project.startedAt,
+      endedAt: project.endedAt,
+    })),
   };
 }
 

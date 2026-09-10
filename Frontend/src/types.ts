@@ -33,10 +33,15 @@ export interface StudentProfile {
   assignedCompanyId?: string;
   activeInternshipId?: string;
   projects?: {
+    id?: string;
     name: string;
     description: string;
     techStack: string[];
     link?: string;
+    repositoryUrl?: string;
+    demoUrl?: string;
+    startedAt?: string | null;
+    endedAt?: string | null;
   }[];
 }
 

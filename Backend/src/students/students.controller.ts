@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  Param,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -17,6 +18,8 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
 import { CreateStudentProfileDto } from './dto/create-student-profile.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { CreateStudentProjectDto } from './dto/create-student-project.dto';
+import { UpdateStudentProjectDto } from './dto/update-student-project.dto';
 import { StudentsService } from './students.service';
 
 @Controller('students')
@@ -50,5 +53,28 @@ export class StudentsController {
   @HttpCode(HttpStatus.OK)
   removeMyProfile(@CurrentUser() user: AuthUser) {
     return this.studentsService.removeByUserId(user.id);
+  }
+
+  @Post('me/projects')
+  createProject(
+    @Body() dto: CreateStudentProjectDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.studentsService.createProject(user.id, dto);
+  }
+
+  @Patch('me/projects/:id')
+  updateProject(
+    @Param('id') id: string,
+    @Body() dto: UpdateStudentProjectDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.studentsService.updateProject(user.id, id, dto);
+  }
+
+  @Delete('me/projects/:id')
+  @HttpCode(HttpStatus.OK)
+  removeProject(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.studentsService.removeProject(user.id, id);
   }
 }
