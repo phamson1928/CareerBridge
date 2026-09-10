@@ -14,6 +14,16 @@
 - **Mỗi tuần có đầu ra:** Cuối tuần phải có feature hoàn chỉnh (chạy được API + thao tác được trên UI)
 - **Tuần 1 là nền:** Cả 2 cùng setup để không ai bị chặn
 
+## Cập nhật trạng thái sau 4 commit gần nhất
+
+Các mục sau đã được triển khai sau bản kế hoạch ban đầu và là trạng thái hiện tại của codebase:
+
+- Auth có xác thực email và luồng quên/đặt lại mật khẩu: `POST /auth/verify-email`, `POST /auth/forgot-password`, `POST /auth/reset-password`, kèm mailer và token reset lưu trong database.
+- Student Profile có quản lý dự án cá nhân: tạo, cập nhật và xóa qua `/students/me/projects`.
+- Placement, Supervision và Report đã có backend/frontend end-to-end theo các role liên quan; supervision hiển thị thông tin audit phân công.
+- Evaluation UI hiển thị evaluator email/role; Report UI hiển thị MIME type, dung lượng và ngày upload.
+- Notification và Chat dùng API thật; Chat hỗ trợ conversation/message, unread count và realtime Socket.IO.
+
 ---
 
 ## Tuần 1 — Nền tảng (Cả 2)
@@ -24,6 +34,7 @@
 | ------------------------------------------------------------------- | ---------------------------------------------- |
 | NestJS project setup, Prisma schema, migration đầu tiên lên Railway | Setup React + routing + protected route layout |
 | Auth module: register, login, refresh, logout, JWT strategy         | Trang login/register form                      |
+| Email verification, forgot password, reset password, mailer         | Verify email, forgot password, reset password |
 | RolesGuard, JwtAuthGuard, CurrentUser decorator                     | Role-based redirect (sau login)                |
 | App module đăng ký sẵn tất cả module                                | Axios instance + interceptor gắn token         |
 
@@ -57,6 +68,7 @@
 | `lecturer_profiles` CRUD              | Trang hồ sơ giảng viên                 |
 | `company_profiles` CRUD + verify flow | Trang đăng ký doanh nghiệp + chờ duyệt |
 | CV upload (signed URL)                | CV upload + preview                    |
+| Student projects CRUD                 | Quản lý dự án cá nhân trong hồ sơ      |
 
 > **Đầu tuần 3:** Có data profiles + skills chuẩn để bắt đầu feature lớn.
 
@@ -136,13 +148,14 @@
 | Kiểm tra quyền: chỉ đúng người mới đánh giá | Hiển thị kết quả đánh giá  |
 | Audit log cho mọi thao tác                  | Trang xem lịch sử đánh giá |
 
-### B — Notifications + Files (MEDIUM)
+### B — Notifications (MEDIUM)
 
 | Backend                               | Frontend                              |
 | ------------------------------------- | ------------------------------------- |
 | `notifications` CRUD                  | Notification center (dropdown + list) |
-| File management hoàn chỉnh            | Upload/download file UI               |
 | Gắn thông báo khi có state transition | Badge unread trên navbar              |
+
+> File Management và file đính kèm thuộc luồng Reports/Files đã triển khai trước đó; không đưa vào phạm vi Notification Week 6 của B.
 
 > **Đầu tuần 7:** Hầu hết nghiệp vụ core hoàn thành.
 
