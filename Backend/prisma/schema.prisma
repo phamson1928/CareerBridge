@@ -70,6 +70,12 @@ enum SupervisionStatus {
   CANCELLED
 }
 
+enum RecommendationSource {
+  AI_ENHANCED
+  DETERMINISTIC_FALLBACK
+  DETERMINISTIC_ONLY
+}
+
 enum EvaluationType {
   COMPANY
   LECTURER
@@ -196,6 +202,36 @@ model StudentProfile {
   applications  Application[]
   placements    InternshipPlacement[]
   conversations Conversation[]
+  jobPreference StudentJobPreference?
+  recommendationCache InternshipRecommendationCache?
+}
+
+model StudentJobPreference {
+  id                 String   @id @default(cuid())
+  studentId          String   @unique
+  desiredRoles       String[] @default([])
+  preferredLocations String[] @default([])
+  preferredWorkTypes String[] @default([])
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model InternshipRecommendationCache {
+  id          String             @id @default(cuid())
+  studentId   String             @unique
+  fingerprint String             @db.VarChar(64)
+  result      Json
+  source      RecommendationSource
+  model       String?
+  generatedAt DateTime           @default(now())
+  expiresAt   DateTime
+  updatedAt   DateTime           @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }
 
 model StudentProject {

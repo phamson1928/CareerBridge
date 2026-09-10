@@ -10,6 +10,7 @@ import { CreateStudentProfileDto } from './dto/create-student-profile.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { CreateStudentProjectDto } from './dto/create-student-project.dto';
 import { UpdateStudentProjectDto } from './dto/update-student-project.dto';
+import { UpdateStudentJobPreferencesDto } from './dto/update-student-job-preferences.dto';
 
 const profileSelect = {
   id: true,
@@ -109,6 +110,55 @@ export class StudentsService {
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
+  }
+
+  async getJobPreferences(userId: string) {
+    const profile = await this.getProfileId(userId);
+    const preferences = await this.prisma.studentJobPreference.findUnique({
+      where: { studentId: profile.id },
+      select: {
+        desiredRoles: true,
+        preferredLocations: true,
+        preferredWorkTypes: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return (
+      preferences ?? {
+        desiredRoles: [],
+        preferredLocations: [],
+        preferredWorkTypes: [],
+        createdAt: null,
+        updatedAt: null,
+      }
+    );
+  }
+
+  async updateJobPreferences(
+    userId: string,
+    dto: UpdateStudentJobPreferencesDto,
+  ) {
+    const profile = await this.getProfileId(userId);
+    const data = {
+      desiredRoles: this.normalizePreferenceItems(dto.desiredRoles),
+      preferredLocations: this.normalizePreferenceItems(dto.preferredLocations),
+      preferredWorkTypes: this.normalizePreferenceItems(dto.preferredWorkTypes),
+    };
+
+    return this.prisma.studentJobPreference.upsert({
+      where: { studentId: profile.id },
+      create: { studentId: profile.id, ...data },
+      update: data,
+      select: {
+        desiredRoles: true,
+        preferredLocations: true,
+        preferredWorkTypes: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   async createProject(userId: string, dto: CreateStudentProjectDto) {
@@ -218,6 +268,16 @@ export class StudentsService {
 
   private toDate(value: string | null | undefined): Date | null | undefined {
     return value === undefined || value === null ? value : new Date(value);
+  }
+
+  private normalizePreferenceItems(items: string[]) {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const normalized = item.trim().toLocaleLowerCase();
+      if (!normalized || seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    });
   }
 
   private projectNotFound(): NotFoundException {
