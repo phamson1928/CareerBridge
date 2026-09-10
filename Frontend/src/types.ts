@@ -101,7 +101,7 @@ export interface Application {
   cvUrl: string;
   cvFileId?: string;
   coverLetter?: string;
-  matchScore: number;
+  matchScore: number | null;
   status: ApplicationStatus;
   companyFeedback?: string;
   appliedAt: string;

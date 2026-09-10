@@ -131,9 +131,11 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> {app.matchScore}% Match
-                    </span>
+                    {app.matchScore !== null && (
+                      <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> {app.matchScore}% Match
+                      </span>
+                    )}
 
                     <span className={`text-xs font-bold px-3 py-1 rounded-full border ${badge.bg}`}>
                       {badge.label}

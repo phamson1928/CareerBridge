@@ -1,24 +1,5 @@
 import { ApplicationStatus, ReportStatus } from '../types';
 
-export function calculateSkillMatch(studentSkills: string[], requiredSkills: string[]): number {
-  if (!requiredSkills || requiredSkills.length === 0) return 100;
-  if (!studentSkills || studentSkills.length === 0) return 30;
-
-  const normalize = (s: string) => s.trim().toLowerCase();
-  const normalizedStudent = studentSkills.map(normalize);
-  
-  let matchedCount = 0;
-  requiredSkills.forEach(req => {
-    const normReq = normalize(req);
-    const hasMatch = normalizedStudent.some(st => st.includes(normReq) || normReq.includes(st));
-    if (hasMatch) matchedCount++;
-  });
-
-  const percentage = Math.round((matchedCount / requiredSkills.length) * 100);
-  // Guarantee a reasonable base match score between 40% and 98%
-  return Math.min(98, Math.max(42, percentage));
-}
-
 export function getStatusBadge(status: ApplicationStatus) {
   switch (status) {
     case 'PENDING':

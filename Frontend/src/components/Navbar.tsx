@@ -12,7 +12,6 @@ import {
   Building,
   Users,
   Search,
-  Sparkles,
   CalendarDays,
 } from "lucide-react";
 
@@ -24,7 +23,6 @@ interface NavbarProps {
   unreadMessagesCount: number;
   onOpenNotifs: () => void;
   onOpenChat: () => void;
-  onOpenAICoach?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,7 +33,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   unreadMessagesCount,
   onOpenNotifs,
   onOpenChat,
-  onOpenAICoach,
 }) => {
   const getNavItems = () => {
     switch (currentRole) {
@@ -215,17 +212,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action Icons */}
           <div className="flex items-center gap-2">
-            {currentRole === "STUDENT" && onOpenAICoach && (
-              <button
-                id="btn-ai-coach"
-                onClick={onOpenAICoach}
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>AI CV & Gợi ý Job</span>
-              </button>
-            )}
-
             {/* A conversation is private to the accepted application's student and company. */}
             {canUseChat && (
               <button
