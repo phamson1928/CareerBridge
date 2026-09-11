@@ -295,12 +295,13 @@ export class AuthService {
   }
 
   async verifyEmail(token: string): Promise<void> {
+    const now = new Date();
     const verificationToken = await this.prisma.verificationToken.findUnique({
       where: { token },
-      include: { user: true },
+      select: { id: true, userId: true, expiresAt: true },
     });
 
-    if (!verificationToken || verificationToken.expiresAt < new Date()) {
+    if (!verificationToken || verificationToken.expiresAt < now) {
       throw new UnauthorizedException({
         code: 'INVALID_VERIFICATION_TOKEN',
         message: 'Verification token is invalid or has expired',
@@ -308,16 +309,27 @@ export class AuthService {
     }
 
     await this.prisma.$transaction(async (tx) => {
+      const consumed = await tx.verificationToken.deleteMany({
+        where: {
+          id: verificationToken.id,
+          token,
+          expiresAt: { gte: now },
+        },
+      });
+
+      if (consumed.count !== 1) {
+        throw new UnauthorizedException({
+          code: 'INVALID_VERIFICATION_TOKEN',
+          message: 'Verification token is invalid or has expired',
+        });
+      }
+
       await tx.user.update({
         where: { id: verificationToken.userId },
         data: {
           status: 'ACTIVE',
           emailVerifiedAt: new Date(),
         },
-      });
-
-      await tx.verificationToken.delete({
-        where: { id: verificationToken.id },
       });
     });
   }

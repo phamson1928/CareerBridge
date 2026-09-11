@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { authApi } from '../auth/api';
@@ -12,6 +12,7 @@ export function VerifyEmailPage() {
   const token = searchParams.get('token');
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
+  const requestedTokenRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -21,6 +22,13 @@ export function VerifyEmailPage() {
       setErrorMessage('Không tìm thấy mã xác thực.');
       return;
     }
+
+    // React StrictMode runs effects twice in development. A verification link
+    // is single-use, so do not send a second request for the same token.
+    if (requestedTokenRef.current === token) {
+      return;
+    }
+    requestedTokenRef.current = token;
 
     const verify = async () => {
       try {
