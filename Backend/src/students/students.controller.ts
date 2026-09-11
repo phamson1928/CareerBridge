@@ -9,6 +9,7 @@ import {
   Post,
   UseGuards,
   Param,
+  Put,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -20,6 +21,7 @@ import { CreateStudentProfileDto } from './dto/create-student-profile.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { CreateStudentProjectDto } from './dto/create-student-project.dto';
 import { UpdateStudentProjectDto } from './dto/update-student-project.dto';
+import { UpdateStudentJobPreferencesDto } from './dto/update-student-job-preferences.dto';
 import { StudentsService } from './students.service';
 
 @Controller('students')
@@ -53,6 +55,19 @@ export class StudentsController {
   @HttpCode(HttpStatus.OK)
   removeMyProfile(@CurrentUser() user: AuthUser) {
     return this.studentsService.removeByUserId(user.id);
+  }
+
+  @Get('me/job-preferences')
+  getMyJobPreferences(@CurrentUser() user: AuthUser) {
+    return this.studentsService.getJobPreferences(user.id);
+  }
+
+  @Put('me/job-preferences')
+  updateMyJobPreferences(
+    @Body() dto: UpdateStudentJobPreferencesDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.studentsService.updateJobPreferences(user.id, dto);
   }
 
   @Post('me/projects')

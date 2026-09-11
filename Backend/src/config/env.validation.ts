@@ -5,6 +5,8 @@ const integerSettings = {
   BCRYPT_ROUNDS: 12,
   THROTTLE_LIMIT: 60,
   SIGNED_URL_EXPIRES_IN_SECONDS: 300,
+  AI_RECOMMENDATION_TIMEOUT_MS: 8000,
+  AI_RECOMMENDATION_CACHE_TTL_MINUTES: 360,
 } as const;
 
 const allowedNodeEnvironments = new Set(['development', 'test', 'production']);
@@ -55,6 +57,23 @@ export function validateEnvironment(
   }
   config.SUPABASE_URL = supabaseUrl;
   config.SUPABASE_SERVICE_KEY = supabaseServiceKey;
+
+  config.AI_RECOMMENDATIONS_ENABLED = parseBoolean(
+    config.AI_RECOMMENDATIONS_ENABLED,
+    'AI_RECOMMENDATIONS_ENABLED',
+    false,
+  );
+  config.AI_RECOMMENDATION_MODEL = readOptionalString(
+    config.AI_RECOMMENDATION_MODEL,
+    'gemini-3.5-flash-lite',
+  );
+  const geminiApiKey = readOptionalString(config.GEMINI_API_KEY, '');
+  if (config.AI_RECOMMENDATIONS_ENABLED && !geminiApiKey) {
+    throw new Error(
+      'GEMINI_API_KEY is required when AI_RECOMMENDATIONS_ENABLED is true',
+    );
+  }
+  config.GEMINI_API_KEY = geminiApiKey;
 
   const sameSite = readOptionalString(
     config.COOKIE_SAME_SITE,

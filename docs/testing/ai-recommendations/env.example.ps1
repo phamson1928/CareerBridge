@@ -1,0 +1,5 @@
+$env:API_BASE_URL = 'http://localhost:3000/api/v1'
+$env:ADMIN_EMAIL = 'admin@internhub.local'
+$env:ADMIN_PASSWORD = 'replace-with-test-password'
+$env:STUDENT_EMAIL = 'student@internhub.local'
+$env:STUDENT_PASSWORD = 'replace-with-test-password'

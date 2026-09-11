@@ -21,6 +21,7 @@ Hệ thống phục vụ bốn nhóm người dùng:
 | Hồ sơ | Hồ sơ sinh viên, dự án cá nhân, kỹ năng, CV; hồ sơ giảng viên và doanh nghiệp. |
 | Kỳ thực tập | Tạo và quản lý thời gian, trạng thái của từng kỳ. |
 | Vị trí thực tập | Doanh nghiệp đăng vị trí theo kỳ, số lượng tuyển, hạn nộp và kỹ năng yêu cầu. |
+| AI gợi ý thực tập | Sinh viên lưu mong muốn công việc và chủ động tạo tối đa 10 gợi ý do backend xếp hạng; AI chỉ diễn giải tối đa 3 gợi ý đầu. |
 | Ứng tuyển | Sinh viên nộp đơn, doanh nghiệp xem xét và lưu lịch sử thay đổi trạng thái. |
 | Placement | Ghi nhận một đợt thực tập đã được xác nhận từ đơn được chấp nhận. |
 | Hướng dẫn | Admin phân công một giảng viên cho placement. |
@@ -83,7 +84,11 @@ flowchart TD
 - Danh mục kỹ năng được chuẩn hóa trong `skills`.
 - Sinh viên khai báo kỹ năng kèm mức độ `BEGINNER`, `INTERMEDIATE`, `ADVANCED`, `EXPERT`.
 - Doanh nghiệp gắn kỹ năng cho internship, đánh dấu bắt buộc hoặc ưu tiên và đặt trọng số.
-- Điểm matching là dữ liệu tính toán, không thay thế quyết định tuyển dụng của doanh nghiệp.
+- Điểm matching/recommendation là dữ liệu hỗ trợ, không thay thế quyết định tuyển dụng của doanh nghiệp.
+- Sinh viên có thể lưu tối đa 5 role, location và work type mong muốn cho mỗi nhóm; các preference chỉ thuộc current student.
+- Recommendation chỉ xét internship `OPEN`, chưa hết hạn, còn slot, company approved/active, semester active, chưa từng apply và không xung đột placement đang hiệu lực.
+- Backend xếp hạng tối đa 10 candidate theo profile, skills, projects và preferences. AI chỉ được giải thích top 3 đã có rank; không tạo score, không đổi rank và không tự nộp đơn.
+- Provider failure hoặc hồ sơ thiếu tín hiệu phải trả deterministic fallback thay vì làm hỏng kết quả.
 
 ### 4.5. Tệp và trao đổi
 
@@ -97,8 +102,8 @@ flowchart TD
 - Refresh token lưu hash, có hạn dùng và thời điểm thu hồi.
 - Các thao tác nhạy cảm như duyệt doanh nghiệp, đổi trạng thái đơn, phân công và đánh giá phải tạo audit log.
 - Dữ liệu PostgreSQL chạy trên Railway; chuỗi kết nối chỉ đặt trong `.env` hoặc biến môi trường, không commit vào Git.
-- Chức năng realtime, cache Redis, CI/CD và AI matching là hạng mục mở rộng, không phải điều kiện của database nền.
+- Realtime, Redis/distributed cache và CI/CD là hạng mục mở rộng. AI Job Recommendation phase đầu đã được triển khai với database cache và feature flag backend; không dùng AI matching trực tiếp từ frontend.
 
 ## 6. Phạm vi triển khai hiện tại
 
-Repository hiện có schema Prisma hoàn chỉnh và các NestJS module rỗng để nhận diện ownership. Controller, service, DTO, phân quyền chi tiết và UI cho từng module sẽ được triển khai theo từng phase. Danh sách API trong `systemDesign.md` là định hướng, không phải API đã có sẵn.
+Tài liệu này là baseline nghiệp vụ. Repository hiện có các controller/service/UI cho nhiều phân hệ core; AI Job Recommendation là extension sau baseline, được ghi nhận tại `AI_JOB_RECOMMENDATION_PLAN.md` và system design. API thực tế dùng prefix `/api/v1` và wrapper success chuẩn.

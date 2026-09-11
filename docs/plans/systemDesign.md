@@ -1,6 +1,6 @@
 # InternHub — Thiết kế hệ thống
 
-Tài liệu này mô tả cấu trúc backend và database **đang có trong repository**. Phần API được đánh dấu là kế hoạch vì các module nghiệp vụ mới dừng ở skeleton.
+Tài liệu này mô tả cấu trúc backend và database **đang có trong repository**. Các phần ghi “roadmap” là định hướng lịch sử; Recommendation API, preferences, cache và UI Internship đã được triển khai sau baseline.
 
 ## 1. Kiến trúc tổng quan
 
@@ -9,7 +9,8 @@ flowchart LR
   Web[React Web App] -->|REST API / Socket.IO| API[NestJS Backend]
   API --> DB[(Railway PostgreSQL)]
   API --> Storage[Object Storage]
-  API -. tương lai .-> Redis[Redis]
+  API -. cache mở rộng .-> Redis[Redis]
+  API -. explanation tùy chọn .-> AI[External AI provider]
 ```
 
 | Thành phần | Trách nhiệm |
@@ -19,6 +20,7 @@ flowchart LR
 | Prisma | Schema, generated client và migration PostgreSQL. |
 | Railway PostgreSQL | Nguồn dữ liệu chính của dự án. |
 | Object Storage | Lưu nội dung tệp; database chỉ lưu metadata. |
+| External AI provider | Chỉ tạo diễn giải cho top 3 recommendation đã được backend xếp hạng; không quyết định điểm hoặc thứ hạng. |
 | Redis / Socket.IO | Hạng mục mở rộng cho cache, rate limit theo distributed store và realtime. |
 
 ## 2. Cấu trúc backend
@@ -35,6 +37,7 @@ Backend/
 │   ├── companies/                 # Doanh nghiệp và phê duyệt
 │   ├── semesters/                 # Kỳ thực tập
 │   ├── skills/                    # Danh mục và matching metadata
+│   ├── recommendations/            # Ranking, cache và AI explanation có kiểm soát
 │   ├── internships/               # Bài đăng thực tập
 │   ├── applications/              # Đơn ứng tuyển và state machine
 │   ├── placements/                # Đợt thực tập đã xác nhận
@@ -62,6 +65,8 @@ Tên module dùng số nhiều nhất quán, gồm `supervisions` (không dùng 
 ```mermaid
 erDiagram
   USER ||--o| STUDENT_PROFILE : has
+  STUDENT_PROFILE ||--o| STUDENT_JOB_PREFERENCE : has
+  STUDENT_PROFILE ||--o| INTERNSHIP_RECOMMENDATION_CACHE : has
   USER ||--o| LECTURER_PROFILE : has
   USER ||--o| COMPANY_PROFILE : has
   SEMESTER ||--o{ INTERNSHIP : contains
@@ -90,6 +95,8 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 | `RefreshToken` | `tokenHash` unique, `expiresAt`, `revokedAt` | Phiên đăng nhập có thể thu hồi. |
 | `StudentProfile` | `userId` unique, `studentCode` unique, `cvFileId` | Hồ sơ sinh viên. |
 | `StudentProject` | `studentId`, repo/demo URL | Dự án cá nhân của sinh viên. |
+| `StudentJobPreference` | `studentId` unique, role/location/work-type arrays | Mong muốn công việc của sinh viên. |
+| `InternshipRecommendationCache` | `studentId` unique, fingerprint, result JSON, expiry | Cache recommendation theo dữ liệu profile và candidate. |
 | `LecturerProfile` | `userId` unique, `department` | Hồ sơ giảng viên. |
 | `CompanyProfile` | `status`, `reviewedById`, `rejectionReason` | Hồ sơ và lịch sử xét duyệt doanh nghiệp. |
 
@@ -145,9 +152,9 @@ Các ràng buộc unique trong schema xử lý tính nhất quán cơ bản. Cá
 4. Khi cấp signed URL, kiểm tra quyền trên entity tham chiếu tới file trước khi trả URL.
 5. Mọi thao tác quản trị và state transition ghi `AuditLog`.
 
-## 6. API roadmap
+## 6. API map và roadmap
 
-Các endpoint dưới đây là thiết kế dự kiến; hiện tại module chưa có controller/service nghiệp vụ đầy đủ.
+Các endpoint dưới đây là API map cấp cao. Contract chi tiết của AI Job Recommendation đã ổn định tại `AI_JOB_RECOMMENDATION_PLAN.md`; các endpoint khác cần đối chiếu controller hiện tại khi thay đổi.
 
 | Module | Endpoint dự kiến |
 |---|---|
@@ -160,6 +167,7 @@ Các endpoint dưới đây là thiết kế dự kiến; hiện tại module ch
 | Evaluations | `POST /api/v1/placements/:placementId/evaluations` |
 | Files | `POST /api/v1/files/upload-url`, `GET /api/v1/files/:id/download-url` |
 | Chat | `GET /api/v1/conversations`, `POST /api/v1/conversations/:id/messages` |
+| Recommendations | `GET /api/v1/recommendations/internships/me`, `POST /api/v1/recommendations/internships/me/generate` |
 
 ## 7. Railway PostgreSQL và migration
 

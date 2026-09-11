@@ -1,13 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, SkillLevel } from '../generated/prisma/client';
+import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-
-const levelFactors: Record<SkillLevel, number> = {
-  BEGINNER: 0.25,
-  INTERMEDIATE: 0.5,
-  ADVANCED: 0.75,
-  EXPERT: 1,
-};
+import { calculateSkillMatch } from './skill-match.calculator';
 
 const matchingStudentSelect = {
   id: true,
@@ -61,47 +55,18 @@ export class MatchingService {
       });
     }
 
-    const studentSkills = new Map(
-      student.skills.map((item) => [item.skillId, item]),
+    const result = calculateSkillMatch(
+      student.skills,
+      internship.skills.map(({ skill, ...requirement }) => ({
+        ...requirement,
+        name: skill.name,
+      })),
     );
-    const totalWeight = internship.skills.reduce(
-      (sum, item) => sum + item.weight,
-      0,
-    );
-    const skills = internship.skills.map((requirement) => {
-      const studentSkill = studentSkills.get(requirement.skillId);
-      const factor = studentSkill ? levelFactors[studentSkill.level] : 0;
-      const earnedWeight = requirement.weight * factor;
-      return {
-        skillId: requirement.skillId,
-        name: requirement.skill.name,
-        isRequired: requirement.isRequired,
-        weight: requirement.weight,
-        studentLevel: studentSkill?.level ?? null,
-        earnedWeight,
-        matched: Boolean(studentSkill),
-      };
-    });
-    const matchedWeight = skills.reduce(
-      (sum, item) => sum + item.earnedWeight,
-      0,
-    );
-    const missingRequiredSkills = skills
-      .filter((item) => item.isRequired && !item.matched)
-      .map((item) => ({ skillId: item.skillId, name: item.name }));
 
     return {
       internshipId,
       studentId: student.id,
-      matchedWeight,
-      totalWeight,
-      percentage:
-        totalWeight === 0
-          ? 100
-          : Math.round((matchedWeight / totalWeight) * 100),
-      missingRequiredSkills,
-      meetsRequiredSkills: missingRequiredSkills.length === 0,
-      skills,
+      ...result,
     };
   }
 }

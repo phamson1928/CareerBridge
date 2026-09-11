@@ -23,6 +23,7 @@ Các mục sau đã được triển khai sau bản kế hoạch ban đầu và 
 - Placement, Supervision và Report đã có backend/frontend end-to-end theo các role liên quan; supervision hiển thị thông tin audit phân công.
 - Evaluation UI hiển thị evaluator email/role; Report UI hiển thị MIME type, dung lượng và ngày upload.
 - Notification và Chat dùng API thật; Chat hỗ trợ conversation/message, unread count và realtime Socket.IO.
+- Người A đã mở rộng Week 7 với **AI Job Recommendation**: preferences thật trong PostgreSQL, deterministic ranking top 10 ở NestJS, cache theo fingerprint, AI chỉ diễn giải tối đa top 3, cùng UI trong tab Internship. Đây là feature mới sau kế hoạch ban đầu; không thay đổi ownership Chat của Người B.
 
 ---
 
@@ -58,7 +59,7 @@ Các mục sau đã được triển khai sau bản kế hoạch ban đầu và 
 | ------------------------------------------ | ------------------------------------- |
 | `skills` CRUD (danh mục kỹ năng)           | Trang Admin quản lý danh mục kỹ năng  |
 | `student_skills` + `internship_skills` API | UI gắn kỹ năng cho sinh viên + vị trí |
-| Skill matching algorithm (tính % match)    | Hiển thị % match trên internship card |
+| Shared skill-matching calculator và snapshot khi apply | Không hiển thị % giả trên internship card; điểm chỉ xuất hiện trong recommendation backend |
 
 ### B — Profiles (HEAVY)
 
@@ -161,14 +162,19 @@ Các mục sau đã được triển khai sau bản kế hoạch ban đầu và 
 
 ---
 
-## Tuần 7 — Chat + Hoàn thiện
+## Tuần 7 — Chat + Hoàn thiện + AI Job Recommendation
 
-### A — Audit + Fix (LIGHT)
+### A — Audit + AI Recommendation + Fix (MEDIUM)
 
 - Audit log UI cho Admin
 - Test toàn bộ flow nghiệp vụ
 - Fix bug, xử lý edge cases
 - Hỗ trợ B nếu cần
+- Mở rộng mới sau kế hoạch ban đầu: AI Job Recommendation end-to-end
+  - Preferences role/location/work type, migration và cache recommendation.
+  - Candidate eligibility, deterministic top-10 scoring, snapshot skill match khi apply.
+  - AI chỉ tạo explanation có kiểm soát cho top 3; provider failure luôn fallback.
+  - UI readiness, preferences dạng tag, create/refresh, fallback/empty state và reuse detail/apply flow.
 
 ### B — Chat (MEDIUM)
 
@@ -190,7 +196,7 @@ Các mục sau đã được triển khai sau bản kế hoạch ban đầu và 
 
 | Người | Số feature                                                                      | Backend logic                                     | Frontend complexity               | Độ nặng  |
 | ----- | ------------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------- | -------- |
-| **A** | Auth, Skills, Semesters, Placements, Supervision, Evaluations, Dashboard, Audit | Auth JWT, matching algorithm, aggregation queries | Forms + Tables + Charts           | **~40%** |
+| **A** | Auth, Skills, Semesters, Placements, Supervision, Evaluations, Dashboard, Audit, AI Job Recommendation | Auth JWT, matching/scoring, cache, aggregation queries | Forms, Tables, Charts, recommendation UI | **~45%** |
 | **B** | Profiles, Internships, Applications, Reports, Files, Notifications, Chat        | State machines, signed URL, file handling         | Multi-step forms, modals, chat UI | **~60%** |
 
 ---

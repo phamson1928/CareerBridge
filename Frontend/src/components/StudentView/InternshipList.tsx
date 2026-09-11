@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Internship, StudentProfile, Application } from '../../types';
-import { calculateSkillMatch } from '../../utils/matching';
 import { getApiErrorMessage } from '../../auth/api';
 import { formatDate } from '../../utils/format';
 import { SkillPicker, type SkillOption } from '../Skills/SkillPicker';
+import { JobRecommendations } from './JobRecommendations';
 import {
   Search,
   MapPin,
   DollarSign,
   Calendar,
-  Sparkles,
   Building2,
   CheckCircle2,
   Send,
@@ -34,6 +33,7 @@ interface InternshipListProps {
     skillId?: string;
   }) => Promise<InternshipPage>;
   onApply: (internshipId: string, coverLetter: string, internshipTitle: string) => Promise<void>;
+  onOpenProfile: () => void;
 }
 
 const CompanyLogo: React.FC<{ src: string; name: string; className: string }> = ({ src, name, className }) =>
@@ -51,6 +51,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
   applications,
   loadInternships,
   onApply,
+  onOpenProfile,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSkillFilter, setSelectedSkillFilter] = useState<SkillOption[]>([]);
@@ -127,16 +128,23 @@ export const InternshipList: React.FC<InternshipListProps> = ({
         <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
         <div className="relative z-10 max-w-3xl">
           <span className="bg-blue-500/20 text-blue-300 text-xs font-semibold px-3 py-1 rounded-full border border-blue-400/30 inline-flex items-center gap-1 mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Hệ thống đề xuất việc làm thông minh
+            <Search className="w-3.5 h-3.5 text-blue-300" /> Khám phá cơ hội thực tập
           </span>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             Tìm Kiếm Vị Trí Thực Tập Đóng Góp Cho Sự Nghiệp
           </h1>
           <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-            Hệ thống tự động phân tích hồ sơ sinh viên <strong className="text-white">{studentProfile.fullname}</strong> ({studentProfile.major}) để tính chỉ số <strong className="text-emerald-300">Matching %</strong> với yêu cầu thực tập của doanh nghiệp.
+            Khám phá các vị trí thực tập đang mở và tìm cơ hội phù hợp với định hướng của bạn.
           </p>
         </div>
       </div>
+
+      <JobRecommendations
+        applications={applications}
+        onOpenProfile={onOpenProfile}
+        onOpenDetail={setActiveModalInternship}
+        onApply={setApplyModalInternship}
+      />
 
       {/* Filter & Search Bar - Tách biệt, nền trắng tương phản cao, dropdown không bị clip */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
@@ -229,7 +237,6 @@ export const InternshipList: React.FC<InternshipListProps> = ({
       {!isLoadingInternships && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredInternships.map((job) => {
-            const matchScore = calculateSkillMatch(studentProfile.skills, job.requiredSkills);
             const appStatus = getApplicationStatus(job.id);
 
             return (
@@ -252,21 +259,6 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                       </div>
                     </div>
 
-                    {/* Skill Match Badge */}
-                    <div className="flex flex-col items-end">
-                      <span
-                        className={`text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border ${
-                          matchScore >= 80
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : matchScore >= 60
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-slate-50 text-slate-700 border-slate-200'
-                        }`}
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        {matchScore}% Match
-                      </span>
-                    </div>
                   </div>
 
                   {/* Job Metadata tags */}

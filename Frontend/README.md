@@ -69,12 +69,13 @@ npm run build
 
 The application uses the NestJS backend for authentication, profiles, internships, applications, placements, reports, evaluations, notifications and chat. The frontend includes email verification, forgot/reset password, student project management and role-specific workflows. Run the backend and configure the API environment before using protected features.
 
-## Optional AI features
+## Internship recommendations
 
-The existing AI CV helper requires:
+The Student Internship tab contains a “Dành cho bạn” section. It reads cached recommendations from the NestJS API, displays profile readiness, lets students save role/location/work-type preferences, and lets them explicitly create or refresh recommendations.
 
-```dotenv
-GEMINI_API_KEY=...
-```
+- Scores and ranking come from the backend; normal internship cards do not invent a match percentage.
+- Only cards whose response contains a valid detailed explanation display that explanation.
+- Recommendation cards reuse the existing detail and application flow.
+- The browser never receives an AI API key, prompt, model name or full student profile for recommendation generation.
 
-Authentication does not depend on the Gemini key.
+To use the feature locally, run the backend with the recommendation environment variables described in `Backend/.env.example`, then sign in as a student with a completed profile.

@@ -1,5 +1,6 @@
 import { api } from "../auth/api";
 import type { ApiSuccess } from "../auth/auth.types";
+import type { JobPreferences } from "../recommendations/types";
 
 export interface StudentProfileRecord {
   id: string;
@@ -83,6 +84,19 @@ export const studentsApi = {
   },
   removeMine: async () => {
     await api.delete("/students/me");
+  },
+  getJobPreferences: async () => {
+    const response = await api.get<ApiSuccess<JobPreferences>>(
+      "/students/me/job-preferences",
+    );
+    return response.data.data;
+  },
+  updateJobPreferences: async (input: Pick<JobPreferences, "desiredRoles" | "preferredLocations" | "preferredWorkTypes">) => {
+    const response = await api.put<ApiSuccess<JobPreferences>>(
+      "/students/me/job-preferences",
+      input,
+    );
+    return response.data.data;
   },
   createProject: async (input: StudentProjectInput) => {
     const response = await api.post<ApiSuccess<StudentProjectRecord>>(

@@ -25,6 +25,7 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { ListApplicationsQueryDto } from './dto/list-applications-query.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { calculateSkillMatch } from '../skills/skill-match.calculator';
 
 const applicationSelect = {
   id: true,
@@ -120,12 +121,35 @@ export class ApplicationsService {
 
     try {
       const result = await this.prisma.$transaction(async (tx) => {
+        const [studentSkills, internshipSkills] = await Promise.all([
+          tx.studentSkill.findMany({
+            where: { studentId: student.id },
+            select: { skillId: true, level: true },
+          }),
+          tx.internshipSkill.findMany({
+            where: { internshipId: internship.id },
+            select: {
+              skillId: true,
+              isRequired: true,
+              weight: true,
+              skill: { select: { name: true } },
+            },
+          }),
+        ]);
+        const skillMatch = calculateSkillMatch(
+          studentSkills,
+          internshipSkills.map(({ skill, ...requirement }) => ({
+            ...requirement,
+            name: skill.name,
+          })),
+        );
         const created = await tx.application.create({
           data: {
             studentId: student.id,
             internshipId: internship.id,
             coverLetter: dto.coverLetter.trim(),
             cvFileId: dto.cvFileId,
+            matchScore: skillMatch.percentage,
             status: ApplicationStatus.PENDING,
           },
           select: applicationSelect,

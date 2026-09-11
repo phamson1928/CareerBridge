@@ -18,14 +18,14 @@ import { Navbar } from "./components/Navbar";
 import { SessionBanner } from "./components/SessionBanner";
 import { NotificationCenter } from "./components/Notifications/NotificationCenter";
 import { ChatDrawer } from "./components/Chat/ChatDrawer";
-import { AICVCoachModal } from "./components/StudentView/AICVCoachModal";
 
 import { useAuth } from "./auth/AuthContext";
 import { useNotifications } from "./notifications/use-notifications";
 import type { NotificationAction } from "./notifications/types";
 import { applicationsApi, type ApplicationRecord } from "./applications/api";
 import { companiesApi, type CompanyProfileRecord } from "./companies/api";
-import { internshipsApi, type InternshipRecord } from "./internships/api";
+import { internshipsApi } from "./internships/api";
+import { toLegacyInternship } from "./internships/mappers";
 import { studentsApi, type StudentProfileRecord } from "./students/api";
 import { skillsApi } from "./skills/api";
 import type { StudentSkillRecord } from "./skills/types";
@@ -35,7 +35,6 @@ import type { PlacementRecord } from "./placements/types";
 import { getApiErrorMessage } from "./auth/api";
 import { useChat } from "./chat/use-chat";
 import { useAppFeedback } from "./components/Feedback/AppFeedbackProvider";
-import { formatDate } from "./utils/format";
 
 const InternshipList = lazy(() => import("./components/StudentView/InternshipList").then(({ InternshipList }) => ({ default: InternshipList })));
 const StudentApplications = lazy(() => import("./components/StudentView/StudentApplications").then(({ StudentApplications }) => ({ default: StudentApplications })));
@@ -62,36 +61,6 @@ const AuditLogManagement = lazy(() => import("./components/AdminView/AuditLogMan
 const PlacementOverview = lazy(() => import("./components/StudentView/PlacementOverview").then(({ PlacementOverview }) => ({ default: PlacementOverview })));
 const StudentEvaluations = lazy(() => import("./components/StudentView/StudentEvaluations").then(({ StudentEvaluations }) => ({ default: StudentEvaluations })));
 
-function toLegacyInternship(record: InternshipRecord): Internship {
-  const type = ["Full-time", "Part-time", "Hybrid", "Remote"].includes(
-    record.workType ?? "",
-  )
-    ? (record.workType as Internship["type"])
-    : "Full-time";
-
-  return {
-    id: record.id,
-    companyId: record.companyId,
-    companyName: record.company.companyName,
-    companyLogo: record.company.logo ?? "",
-    title: record.title,
-    department: record.department ?? "Chưa cập nhật",
-    location: record.location ?? "Chưa cập nhật",
-    type,
-    stipend: record.stipend ?? "Thỏa thuận",
-    description: record.description,
-    requirements: record.requirements
-      ? record.requirements.split("\n").filter(Boolean)
-      : [],
-    requiredSkills: record.skills.map((item) => item.name),
-    slots: record.slots,
-    filledSlots: record.filledSlots,
-    deadline: formatDate(record.deadline, "Không thời hạn"),
-    createdAt: record.createdAt,
-    status: record.status === "OPEN" ? "ACTIVE" : "CLOSED",
-  };
-}
-
 function toLegacyApplication(record: ApplicationRecord): Application {
   return {
     id: record.id,
@@ -106,7 +75,7 @@ function toLegacyApplication(record: ApplicationRecord): Application {
     cvUrl: "",
     cvFileId: record.cvFileId ?? undefined,
     coverLetter: record.coverLetter ?? undefined,
-    matchScore: record.matchScore ?? 0,
+    matchScore: record.matchScore,
     status: record.status,
     companyFeedback: record.companyFeedback ?? undefined,
     appliedAt: record.appliedAt,
@@ -192,7 +161,6 @@ export default function App() {
   // Modals state
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isAICoachOpen, setIsAICoachOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -425,7 +393,6 @@ export default function App() {
         unreadMessagesCount={chatState.unreadCount}
         onOpenNotifs={() => setIsNotifsOpen(true)}
         onOpenChat={() => setIsChatOpen(true)}
-        onOpenAICoach={() => setIsAICoachOpen(true)}
       />
 
       {/* Main Page Body Container */}
@@ -448,6 +415,7 @@ export default function App() {
                   applications={applications}
                   loadInternships={loadInternships}
                   onApply={handleApplyInternship}
+                  onOpenProfile={() => setActiveTab("profile")}
                 />
               ) : (
                 <ProfileRequiredNotice
@@ -596,14 +564,6 @@ export default function App() {
         latestMessage={chatState.latestMessage}
         onMessagesRead={chatState.refreshUnreadCount}
       />
-      {studentProfile && (
-        <AICVCoachModal
-          isOpen={isAICoachOpen}
-          onClose={() => setIsAICoachOpen(false)}
-          studentProfile={studentProfile}
-          internships={internships}
-        />
-      )}
     </div>
   );
 }

@@ -191,3 +191,13 @@ Võ Văn Quyến đã thực hiện kết nối việc phát sinh thông báo t�
 ### 2. Kế hoạch triển khai Tuần 7 (Giai đoạn hoàn thiện đồ án)
 - Phát triển Phân hệ Trò chuyện Trực tuyến (Realtime Chat): Tái sử dụng và mở rộng hạ tầng Socket.IO Gateway đã dựng ở Tuần 6 để xây dựng kênh nhắn tin trực tiếp giữa Sinh viên với Doanh nghiệp (hỗ trợ phỏng vấn/trao đổi ứng tuyển) và giữa Sinh viên với Giảng viên hướng dẫn (hỗ trợ giải đáp học vụ).
 - Hoàn thiện Kiểm toán và Hiệu năng: Rà soát toàn bộ hệ thống Audit Log, tối ưu hóa các chỉ mục cơ sở dữ liệu (Indexes) và chuẩn bị bộ dữ liệu mẫu (Seed Data) hoàn chỉnh để phục vụ báo cáo nghiệm thu đồ án trước Hội đồng.
+
+### 3. Cập nhật sau báo cáo: AI Job Recommendation của Người A
+
+Sau khi báo cáo Tuần 6 được lập, nhóm bổ sung AI Job Recommendation vào phạm vi hoàn thiện Week 7 của Người A. Đây là feature mới, không nằm trong phân công ban đầu của báo cáo này và không thay thế hai hướng Chat/Audit nêu trên.
+
+- Student lưu job preferences (role, location, work type) vào PostgreSQL.
+- NestJS lọc internship đủ điều kiện, tính score xác định và xếp hạng tối đa 10 kết quả; AI chỉ tạo explanation cho tối đa top 3.
+- Có database cache theo fingerprint, force-refresh cooldown, timeout/retry và deterministic fallback khi provider lỗi.
+- UI Student Internship hiển thị profile readiness, preference form, create/refresh, top-10 cards, empty/error/fallback state và dùng lại flow detail/apply.
+- Regression bằng curl, backend build/test/lint và frontend lint/build đã pass. Tài liệu contract/triển khai nằm trong `docs/plans/AI_JOB_RECOMMENDATION_PLAN.md` và `docs/reports/AI_JOB_RECOMMENDATION_IMPLEMENTATION.md`.
