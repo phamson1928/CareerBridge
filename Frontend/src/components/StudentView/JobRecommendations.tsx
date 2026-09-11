@@ -26,6 +26,14 @@ const emptyPreferences: JobPreferences = {
   updatedAt: null,
 };
 
+const REFRESH_COOLDOWN_MS = 10 * 60_000;
+
+function formatCooldown(remainingSeconds: number): string {
+  const minutes = Math.floor(remainingSeconds / 60);
+  const seconds = remainingSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
 export function JobRecommendations({
   applications,
   onOpenProfile,
@@ -39,6 +47,7 @@ export function JobRecommendations({
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [isPreferenceFormOpen, setIsPreferenceFormOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -60,6 +69,26 @@ export function JobRecommendations({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const refreshAvailableAt =
+    response?.hasRecommendation && response.generatedAt
+      ? new Date(response.generatedAt).getTime() + REFRESH_COOLDOWN_MS
+      : null;
+
+  useEffect(() => {
+    if (!refreshAvailableAt || refreshAvailableAt <= Date.now()) {
+      return;
+    }
+
+    setNow(Date.now());
+    const intervalId = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(intervalId);
+  }, [refreshAvailableAt]);
+
+  const remainingRefreshSeconds = refreshAvailableAt
+    ? Math.max(0, Math.ceil((refreshAvailableAt - now) / 1_000))
+    : 0;
+  const isRefreshCoolingDown = remainingRefreshSeconds > 0;
 
   const generate = async () => {
     setIsGenerating(true);
@@ -122,18 +151,29 @@ export function JobRecommendations({
     <section className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-indigo-700">Dành cho bạn</p>
-          <h2 className="mt-1 text-xl font-extrabold text-slate-900">Gợi ý vị trí thực tập</h2>
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-indigo-700">
+            <Sparkles className="h-3.5 w-3.5" /> AI hỗ trợ
+          </div>
+          <h2 className="mt-2 flex items-center gap-2 text-xl font-extrabold text-slate-900">
+            <Sparkles className="h-5 w-5 text-indigo-600" /> Gợi ý AI cho vị trí thực tập
+          </h2>
           <p className="mt-1 text-sm text-slate-500">Điểm phù hợp được tính từ hồ sơ, kỹ năng và mong muốn công việc của bạn.</p>
         </div>
         <button
           type="button"
           onClick={() => void generate()}
-          disabled={isGenerating}
+          disabled={isGenerating || isRefreshCoolingDown}
+          title={isRefreshCoolingDown ? `Có thể làm mới sau ${formatCooldown(remainingRefreshSeconds)}` : undefined}
           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : response.hasRecommendation ? <RefreshCw className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-          {isGenerating ? 'Đang tạo gợi ý...' : response.hasRecommendation ? 'Làm mới gợi ý' : 'Tạo gợi ý'}
+          {isGenerating
+            ? 'Đang tạo gợi ý...'
+            : isRefreshCoolingDown
+              ? `Làm mới sau ${formatCooldown(remainingRefreshSeconds)}`
+              : response.hasRecommendation
+                ? 'Làm mới gợi ý'
+                : 'Tạo gợi ý'}
         </button>
       </div>
 
@@ -164,6 +204,9 @@ export function JobRecommendations({
         <p className="text-xs text-slate-500">
           Cập nhật {formatRecommendationDate(response.generatedAt)}
           {response.cacheHit ? ' · Đang dùng kết quả đã lưu' : ''}
+          {isRefreshCoolingDown
+            ? ` · Có thể làm mới sau ${formatCooldown(remainingRefreshSeconds)}`
+            : ''}
         </p>
       )}
 
@@ -174,8 +217,11 @@ export function JobRecommendations({
         </div>
       ) : response.recommendations.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-7 text-center">
-          <h3 className="font-extrabold text-slate-800">Chưa có vị trí phù hợp để gợi ý</h3>
-          <p className="mt-1 text-sm text-slate-500">Hãy xem danh sách tất cả vị trí bên dưới hoặc quay lại sau khi có cơ hội mới.</p>
+          <h3 className="font-extrabold text-slate-800">Chưa có vị trí đủ điều kiện để gợi ý</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Hiện chưa có vị trí đang mở, còn hạn và còn chỗ thuộc công ty/học kỳ hợp lệ mà bạn chưa ứng tuyển.
+            Hãy xem danh sách tất cả vị trí bên dưới hoặc quay lại sau.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
