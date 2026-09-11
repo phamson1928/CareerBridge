@@ -11,6 +11,14 @@ export interface AuthSession {
   user: AuthUser;
   accessToken: string;
   expiresIn: number;
+  verificationLink?: string;
+}
+
+export interface RegisterSessionResult {
+  user: AuthUser;
+  accessToken: string;
+  expiresIn: number;
+  verificationLink?: string;
 }
 
 export interface RefreshSession {

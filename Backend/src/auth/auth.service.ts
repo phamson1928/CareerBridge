@@ -30,6 +30,7 @@ interface AuthResult {
   accessToken: string;
   expiresIn: number;
   refreshToken: string;
+  verificationLink?: string;
 }
 
 interface RefreshResult {
@@ -135,6 +136,8 @@ export class AuthService {
         },
       });
 
+      const verificationLink = this.getVerificationLink(verificationToken);
+
       // Send verification email (fire and forget to not block registration)
       this.mailerService
         .sendVerificationEmail(user.email, verificationToken)
@@ -142,7 +145,7 @@ export class AuthService {
           console.error('Failed to send verification email:', err);
         });
 
-      return this.buildAuthResult(user, refreshToken);
+      return this.buildAuthResult(user, refreshToken, verificationLink);
     } catch (error: unknown) {
       if (this.isUniqueConstraintError(error)) {
         throw new ConflictException({
@@ -396,13 +399,20 @@ export class AuthService {
   private async buildAuthResult(
     user: PublicUser,
     refreshToken: string,
+    verificationLink?: string,
   ): Promise<AuthResult> {
     return {
       user,
       accessToken: await this.signAccessToken(user),
       expiresIn: this.accessTokenExpiresIn,
       refreshToken,
+      verificationLink,
     };
+  }
+
+  private getVerificationLink(token: string): string {
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? '';
+    return `${frontendUrl}/verify-email?token=${token}`;
   }
 
   private signAccessToken(user: PublicUser): Promise<string> {

@@ -1,0 +1,33 @@
+<svg width="320" height="320" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bridgeGradient" x1="110" x2="270" y1="20" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00D7FF"/>
+      <stop offset="1" stop-color="#00A2C7"/>
+    </linearGradient>
+    <linearGradient id="bridgeGradient2" x1="235" x2="310" y1="40" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF3A3A"/>
+      <stop offset="1" stop-color="#B70D17"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Logo icon căn giữa -->
+  <g transform="translate(15, 30)">
+    <!-- left cyan tower -->
+    <path d="M90 140L120 140L150 35L170 35L170 65L150 150L130 150L120 150L90 140Z" fill="url(#bridgeGradient)" opacity="0.95"/>
+    <path d="M178 106H208V138H178Z" fill="#00C6D5" opacity="0.95"/>
+
+    <!-- right red tower -->
+    <path d="M180 140L235 140L270 40L250 40L215 150L190 150L180 140Z" fill="url(#bridgeGradient2)" opacity="0.97"/>
+
+    <!-- bridge deck -->
+    <path d="M70 160H270C285 160 300 168 310 180C250 174 210 175 170 178C140 180 105 176 70 160Z" fill="#0E1B2D" opacity="0.95"/>
+    <path d="M85 150C120 150 150 155 175 165C190 150 210 145 230 150C250 155 270 170 280 180H95C90 160 82 150 85 150Z" fill="#FFFFFF" opacity="0.8"/>
+
+    <!-- cable / support lines -->
+    <path d="M145 130C150 110 158 90 160 70" stroke="#0AE3FF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M165 160C175 150 190 145 205 150" stroke="#FF3838" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- road below -->
+    <path d="M90 180C130 190 170 180 210 175C235 172 260 176 280 180L270 200C235 196 205 202 170 198C140 194 110 198 90 180Z" fill="#0B1220" opacity="0.85"/>
+  </g>
+</svg>

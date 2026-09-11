@@ -55,6 +55,7 @@ export class AuthController {
       user: result.user,
       accessToken: result.accessToken,
       expiresIn: result.expiresIn,
+      verificationLink: result.verificationLink,
     };
   }
 

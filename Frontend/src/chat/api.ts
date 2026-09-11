@@ -12,6 +12,11 @@ export async function getConversation(id: string) {
   return response.data.data;
 }
 
+export async function createConversation(input: { applicationId?: string; placementId?: string }) {
+  const response = await api.post<ApiSuccess<Conversation>>('/conversations', input);
+  return response.data.data;
+}
+
 export async function listMessages(conversationId: string, params: { page?: number; limit?: number } = {}) {
   const response = await api.get<ApiSuccess<MessagePage>>(`/conversations/${encodeURIComponent(conversationId)}/messages`, { params });
   return response.data.data;

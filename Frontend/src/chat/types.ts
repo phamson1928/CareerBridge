@@ -2,13 +2,14 @@ export type ConversationParticipant = {
   id: string;
   userId: string;
   name: string;
-  role: 'STUDENT' | 'COMPANY';
+  role: 'STUDENT' | 'COMPANY' | 'LECTURER';
 };
 
 export type Conversation = {
   id: string;
-  applicationId: string;
-  internship: { id: string; title: string };
+  applicationId: string | null;
+  placementId: string | null;
+  internship: { id: string; title: string } | null;
   participant: ConversationParticipant;
   latestMessage: { id: string; content: string; createdAt: string; senderId: string } | null;
   createdAt: string;
