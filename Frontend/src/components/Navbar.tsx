@@ -13,6 +13,7 @@ import {
   Users,
   Search,
   CalendarDays,
+  LogOut,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -23,6 +24,7 @@ interface NavbarProps {
   unreadMessagesCount: number;
   onOpenNotifs: () => void;
   onOpenChat: () => void;
+  onLogout: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   unreadMessagesCount,
   onOpenNotifs,
   onOpenChat,
+  onLogout,
 }) => {
   const getNavItems = () => {
     switch (currentRole) {
@@ -165,9 +168,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = getNavItems();
   const canUseChat = currentRole === "STUDENT" || currentRole === "COMPANY" || currentRole === "TEACHER";
+  const useCompactSession = currentRole === "COMPANY" || currentRole === "ADMIN";
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-10 z-40 shadow-xs">
+    <header className={`bg-white border-b border-slate-200 sticky ${useCompactSession ? "top-0" : "top-10"} z-40 shadow-xs`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
@@ -233,6 +237,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               )}
             </button>
+            {useCompactSession && (
+              <button
+                id="btn-logout"
+                type="button"
+                onClick={onLogout}
+                className="p-2 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100"
+                title="Đăng xuất"
+                aria-label="Đăng xuất"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 

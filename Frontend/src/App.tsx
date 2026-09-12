@@ -380,7 +380,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased">
-      {user && (
+      {user && currentRole !== "COMPANY" && currentRole !== "ADMIN" && (
         <SessionBanner user={user} onLogout={() => void handleLogout()} />
       )}
 
@@ -393,6 +393,7 @@ export default function App() {
         unreadMessagesCount={chatState.unreadCount}
         onOpenNotifs={() => setIsNotifsOpen(true)}
         onOpenChat={() => setIsChatOpen(true)}
+        onLogout={() => void handleLogout()}
       />
 
       {/* Main Page Body Container */}
