@@ -15,6 +15,7 @@ import {
   LecturerProfileInput,
   LecturerProfileRecord,
 } from "../../lecturers/api";
+import { ProfileAvatarPreview, ProfileAvatarUpload } from "../ProfileAvatarUpload";
 
 const emptyForm: LecturerProfileInput = {
   fullName: "",
@@ -37,6 +38,7 @@ export const LecturerProfileView: React.FC = () => {
       fullName: nextProfile.fullName,
       department: nextProfile.department,
       title: nextProfile.title ?? "",
+      avatarFileId: nextProfile.avatarFileId,
     });
   };
 
@@ -114,9 +116,7 @@ export const LecturerProfileView: React.FC = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-xl font-black text-white">
-              {profile?.fullName.charAt(0) || "G"}
-            </div>
+            <ProfileAvatarPreview fileId={profile?.avatarFileId} fallback={profile?.fullName.charAt(0) || "G"} className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-xl font-black text-white" imageClassName="h-full w-full object-cover" />
             <div>
               <h2 className="text-xl font-extrabold text-slate-900">
                 {profile?.fullName || "Hoàn thiện hồ sơ giảng viên"}
@@ -148,6 +148,14 @@ export const LecturerProfileView: React.FC = () => {
               required
               value={form.fullName}
               onChange={(value) => setForm({ ...form, fullName: value })}
+            />
+            <ProfileAvatarUpload
+              fileId={form.avatarFileId}
+              fallback={form.fullName.charAt(0) || "G"}
+              accentClassName="from-purple-600 to-indigo-600"
+              disabled={isSaving}
+              onChange={(avatarFileId) => setForm({ ...form, avatarFileId })}
+              onError={setError}
             />
             <Field
               label="Khoa/Bộ môn"

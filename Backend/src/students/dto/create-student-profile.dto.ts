@@ -59,4 +59,8 @@ export class CreateStudentProfileDto {
   @IsOptional()
   @IsString()
   cvFileId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  avatarFileId?: string | null;
 }

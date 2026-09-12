@@ -29,6 +29,7 @@ export interface PlacementRecord {
     studentCode: string;
     fullName: string;
     major: string;
+    avatarFileId?: string | null;
   };
   company: {
     id: string;
@@ -64,6 +65,7 @@ export interface PlacementRecord {
       fullName: string;
       department: string;
       title: string | null;
+      avatarFileId?: string | null;
     };
   } | null;
   application: { id: string; status: string; acceptedAt: string | null };

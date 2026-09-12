@@ -33,7 +33,7 @@ const supervisionSelect = {
       id: true,
       status: true,
       student: {
-        select: { id: true, userId: true, studentCode: true, fullName: true, major: true },
+        select: { id: true, userId: true, studentCode: true, fullName: true, major: true, avatarFileId: true },
       },
       company: { select: { id: true, userId: true, companyName: true, logo: true } },
       internship: {
@@ -52,6 +52,7 @@ const supervisionSelect = {
       fullName: true,
       department: true,
       title: true,
+      avatarFileId: true,
     },
   },
   assignedBy: { select: { id: true, email: true, role: true } },

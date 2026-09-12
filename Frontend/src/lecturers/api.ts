@@ -7,14 +7,23 @@ export interface LecturerProfileRecord {
   fullName: string;
   department: string;
   title: string | null;
+  avatarFileId: string | null;
   createdAt: string;
   updatedAt: string;
+  avatarFile: {
+    id: string;
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+    createdAt: string;
+  } | null;
 }
 
 export interface LecturerProfileInput {
   fullName: string;
   department: string;
   title?: string | null;
+  avatarFileId?: string | null;
 }
 
 export const lecturersApi = {

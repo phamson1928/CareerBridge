@@ -23,6 +23,7 @@ const allowedMimeTypes: Record<FileType, readonly string[]> = {
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ],
   CERTIFICATE: ['application/pdf', 'image/jpeg', 'image/png'],
+  AVATAR: ['image/jpeg', 'image/png', 'image/webp'],
 };
 
 @Injectable()
@@ -134,6 +135,12 @@ export class FilesService {
         message: 'The file MIME type is not allowed for this file category',
       });
     }
+    if (dto.type === FileType.AVATAR && dto.sizeBytes > 5 * 1024 * 1024) {
+      throw new BadRequestException({
+        code: 'AVATAR_FILE_TOO_LARGE',
+        message: 'Avatar image must not exceed 5 MB',
+      });
+    }
   }
 
   private createStorageKey(ownerId: string, originalName: string): string {
@@ -147,6 +154,7 @@ export class FilesService {
   private canAccess(
     file: {
       ownerId: string;
+      type: FileType;
       studentCv: { userId: string } | null;
       applicationCvs: { internship: { company: { userId: string } } }[];
       reportFiles: {
@@ -158,6 +166,9 @@ export class FilesService {
     },
     user: AuthUser,
   ): boolean {
+    // Profile avatars are visible to every authenticated user; all other file
+    // categories retain their existing private access rules.
+    if (file.type === FileType.AVATAR) return true;
     if (
       user.role === 'ADMIN' ||
       file.ownerId === user.id ||

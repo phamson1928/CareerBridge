@@ -11,9 +11,9 @@ const conversationSelect = {
   id: true, applicationId: true, placementId: true, createdAt: true, updatedAt: true,
   application: { select: { internship: { select: { id: true, title: true } } } },
   placement: { select: { internship: { select: { id: true, title: true } } } },
-  student: { select: { id: true, userId: true, fullName: true } },
+  student: { select: { id: true, userId: true, fullName: true, avatarFileId: true } },
   company: { select: { id: true, userId: true, companyName: true } },
-  lecturer: { select: { id: true, userId: true, fullName: true } },
+  lecturer: { select: { id: true, userId: true, fullName: true, avatarFileId: true } },
   messages: { select: { id: true, content: true, createdAt: true, senderId: true }, orderBy: { createdAt: 'desc' }, take: 1 },
 } satisfies Prisma.ConversationSelect;
 
@@ -122,8 +122,8 @@ export class ChatService {
     const participant = user.role === Role.STUDENT
       ? conversation.company
         ? { id: conversation.company.id, userId: conversation.company.userId, name: conversation.company.companyName, role: Role.COMPANY }
-        : { id: conversation.lecturer!.id, userId: conversation.lecturer!.userId, name: conversation.lecturer!.fullName, role: Role.LECTURER }
-      : { id: conversation.student.id, userId: conversation.student.userId, name: conversation.student.fullName, role: Role.STUDENT };
+        : { id: conversation.lecturer!.id, userId: conversation.lecturer!.userId, name: conversation.lecturer!.fullName, avatarFileId: conversation.lecturer!.avatarFileId, role: Role.LECTURER }
+      : { id: conversation.student.id, userId: conversation.student.userId, name: conversation.student.fullName, avatarFileId: conversation.student.avatarFileId, role: Role.STUDENT };
     return { id: conversation.id, applicationId: conversation.applicationId, placementId: conversation.placementId, internship: conversation.application?.internship ?? conversation.placement?.internship, participant, latestMessage: conversation.messages[0] ?? null, createdAt: conversation.createdAt, updatedAt: conversation.updatedAt };
   }
 

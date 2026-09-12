@@ -14,7 +14,7 @@ export interface SupervisionRecord {
   placement: Pick<PlacementRecord, 'id' | 'status' | 'student' | 'company' | 'internship' | 'semester'> & {
     _count: { reports: number; evaluations: number };
   };
-  lecturer: { id: string; userId: string; fullName: string; department: string; title: string | null };
+  lecturer: { id: string; userId: string; fullName: string; department: string; title: string | null; avatarFileId?: string | null };
 }
 
 export interface LecturerOption {

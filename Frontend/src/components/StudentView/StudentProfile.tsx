@@ -24,6 +24,7 @@ import { CvUpload } from "./CvUpload";
 import { skillsApi } from "../../skills/api";
 import type { SkillLevel, StudentSkillRecord } from '../../skills/types';
 import { SkillPicker, type SkillOption } from '../Skills/SkillPicker';
+import { ProfileAvatarPreview, ProfileAvatarUpload } from "../ProfileAvatarUpload";
 
 const emptyForm: StudentProfileInput = {
   studentCode: "",
@@ -83,6 +84,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
       summary: nextProfile.summary ?? "",
       gpa: nextProfile.gpa,
       cvFileId: nextProfile.cvFileId,
+      avatarFileId: nextProfile.avatarFileId,
     });
     onProfileChange?.(nextProfile, nextSkills);
   };
@@ -295,9 +297,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-xl font-black text-white">
-              {profile?.fullName.charAt(0) || "S"}
-            </div>
+            <ProfileAvatarPreview fileId={profile?.avatarFileId} fallback={profile?.fullName.charAt(0) || "S"} className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-xl font-black text-white" imageClassName="h-full w-full object-cover" />
             <div>
               <h2 className="text-xl font-extrabold text-slate-900">
                 {profile?.fullName || "Hoàn thiện hồ sơ sinh viên"}
@@ -331,6 +331,13 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
               required
               value={form.studentCode}
               onChange={(value) => setForm({ ...form, studentCode: value })}
+            />
+            <ProfileAvatarUpload
+              fileId={form.avatarFileId}
+              fallback={form.fullName.charAt(0) || "S"}
+              disabled={isSaving}
+              onChange={(avatarFileId) => setForm({ ...form, avatarFileId })}
+              onError={setError}
             />
             <Field
               label="Họ và tên"

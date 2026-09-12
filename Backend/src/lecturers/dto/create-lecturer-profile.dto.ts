@@ -25,4 +25,8 @@ export class CreateLecturerProfileDto {
   @IsString()
   @MaxLength(100)
   title?: string | null;
+
+  @IsOptional()
+  @IsString()
+  avatarFileId?: string | null;
 }

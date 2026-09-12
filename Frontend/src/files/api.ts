@@ -1,7 +1,7 @@
 import { api, getApiErrorMessage } from "../auth/api";
 import type { ApiSuccess } from "../auth/auth.types";
 
-export type StorageFileType = "CV" | "REPORT" | "CERTIFICATE";
+export type StorageFileType = "CV" | "REPORT" | "CERTIFICATE" | "AVATAR";
 
 interface StoredFile {
   id: string;

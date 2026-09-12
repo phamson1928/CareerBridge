@@ -85,6 +85,7 @@ enum FileType {
   CV
   REPORT
   CERTIFICATE
+  AVATAR
 }
 
 enum SkillLevel {
@@ -192,11 +193,13 @@ model StudentProfile {
   summary     String?
   gpa         Float?
   cvFileId    String?  @unique
+  avatarFileId String? @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   cvFile        File?                 @relation("StudentCv", fields: [cvFileId], references: [id], onDelete: SetNull)
+  avatarFile    File?                 @relation("StudentAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
   skills        StudentSkill[]
   projects      StudentProject[]
   applications  Application[]
@@ -257,10 +260,12 @@ model LecturerProfile {
   fullName   String
   department String
   title      String?
+  avatarFileId String? @unique
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarFile   File?         @relation("LecturerAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
   supervisions Supervision[]
   conversations Conversation[]
 }
@@ -506,6 +511,8 @@ model File {
 
   owner          User            @relation("FileOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   studentCv      StudentProfile? @relation("StudentCv")
+  studentAvatar  StudentProfile? @relation("StudentAvatar")
+  lecturerAvatar LecturerProfile? @relation("LecturerAvatar")
   applicationCvs Application[]   @relation("ApplicationCv")
   reportFiles    Report[]        @relation("ReportFile")
 

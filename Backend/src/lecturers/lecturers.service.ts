@@ -1,9 +1,10 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/client';
+import { FileType, Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLecturerProfileDto } from './dto/create-lecturer-profile.dto';
 import { UpdateLecturerProfileDto } from './dto/update-lecturer-profile.dto';
@@ -14,9 +15,11 @@ const profileSelect = {
   fullName: true,
   department: true,
   title: true,
+  avatarFileId: true,
   createdAt: true,
   updatedAt: true,
   user: { select: { email: true } },
+  avatarFile: { select: { id: true, originalName: true, mimeType: true, sizeBytes: true, createdAt: true } },
 } satisfies Prisma.LecturerProfileSelect;
 
 @Injectable()
@@ -33,6 +36,7 @@ export class LecturersService {
   }
 
   async create(userId: string, dto: CreateLecturerProfileDto) {
+    await this.ensureAvatarFileIsOwnedByUser(dto.avatarFileId, userId);
     try {
       return await this.prisma.lecturerProfile.create({
         data: {
@@ -40,6 +44,7 @@ export class LecturersService {
           fullName: dto.fullName,
           department: dto.department,
           title: dto.title,
+          avatarFileId: dto.avatarFileId,
         },
         select: profileSelect,
       });
@@ -50,6 +55,7 @@ export class LecturersService {
 
   async updateByUserId(userId: string, dto: UpdateLecturerProfileDto) {
     const profile = await this.findByUserId(userId);
+    await this.ensureAvatarFileIsOwnedByUser(dto.avatarFileId, userId);
     try {
       return await this.prisma.lecturerProfile.update({
         where: { id: profile.id },
@@ -59,6 +65,7 @@ export class LecturersService {
             ? { department: dto.department }
             : {}),
           ...(dto.title !== undefined ? { title: dto.title } : {}),
+          ...(dto.avatarFileId !== undefined ? { avatarFileId: dto.avatarFileId } : {}),
         },
         select: profileSelect,
       });
@@ -82,6 +89,18 @@ export class LecturersService {
       code: 'LECTURER_PROFILE_NOT_FOUND',
       message: 'Lecturer profile not found',
     });
+  }
+
+  private async ensureAvatarFileIsOwnedByUser(
+    avatarFileId: string | null | undefined,
+    userId: string,
+  ) {
+    if (avatarFileId === undefined || avatarFileId === null) return;
+    const file = await this.prisma.file.findUnique({ where: { id: avatarFileId }, select: { ownerId: true, type: true } });
+    if (!file) throw new NotFoundException({ code: 'AVATAR_FILE_NOT_FOUND', message: 'Avatar file not found' });
+    if (file.ownerId !== userId || file.type !== FileType.AVATAR) {
+      throw new ForbiddenException({ code: 'INVALID_AVATAR_FILE', message: 'The avatar must be owned by this lecturer and have type AVATAR' });
+    }
   }
 
   private rethrowKnownDatabaseError(error: unknown): never {

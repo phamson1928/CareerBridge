@@ -12,10 +12,18 @@ export interface StudentProfileRecord {
   summary: string | null;
   gpa: number | null;
   cvFileId: string | null;
+  avatarFileId: string | null;
   createdAt: string;
   updatedAt: string;
   user: { email: string };
   cvFile: {
+    id: string;
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+    createdAt: string;
+  } | null;
+  avatarFile: {
     id: string;
     originalName: string;
     mimeType: string;
@@ -60,6 +68,7 @@ export interface StudentProfileInput {
   summary?: string | null;
   gpa?: number | null;
   cvFileId?: string | null;
+  avatarFileId?: string | null;
 }
 
 export const studentsApi = {

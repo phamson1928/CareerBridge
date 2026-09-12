@@ -18,6 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
+import { ProfileAvatarPreview } from "../ProfileAvatarUpload";
 import { placementsApi } from "../../placements/api";
 import type {
   PlacementRecord,
@@ -244,7 +245,8 @@ export const PlacementManagement: React.FC<{
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-100">
-              <BriefcaseBusiness className="h-3.5 w-3.5" /> Quản lý vận hành placement
+              <BriefcaseBusiness className="h-3.5 w-3.5" /> Quản lý vận hành
+              placement
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight">
               Quản lý placement
@@ -490,15 +492,7 @@ export const PlacementManagement: React.FC<{
                     key={placement.id}
                     className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70"
                   >
-                    <td className="px-5 py-4">
-                      <p className="font-bold text-slate-900">
-                        {placement.student.fullName}
-                      </p>
-                      <p className="mt-1 font-mono text-[10px] text-slate-500">
-                        {placement.student.studentCode} ·{" "}
-                        {placement.student.major}
-                      </p>
-                    </td>
+                    <td className="px-5 py-4"><div className="flex items-center gap-3"><ProfileAvatarPreview fileId={placement.student.avatarFileId} fallback={placement.student.fullName.charAt(0)} className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-black text-indigo-700" imageClassName="h-full w-full object-cover" /><div><p className="font-bold text-slate-900">{placement.student.fullName}</p><p className="mt-1 font-mono text-[10px] text-slate-500">{placement.student.studentCode} · {placement.student.major}</p></div></div></td>
                     <td className="px-5 py-4">
                       <p className="font-bold text-slate-800">
                         {placement.internship.title}
@@ -559,12 +553,40 @@ export const PlacementManagement: React.FC<{
                     <td className="px-5 py-4 text-[10px] text-slate-500">
                       {placement.supervision ? (
                         <div className="space-y-1">
-                          <p>Phân công: <span className="font-semibold text-slate-700">{formatDateTime(placement.supervision.assignedAt)}</span></p>
-                          <p>Người phân công: <span className="font-semibold text-slate-700">{placement.supervision.assignedBy?.email ?? "Tài khoản đã bị xóa"}</span></p>
-                          <p className="max-w-44 truncate font-mono" title={placement.supervision.assignedById ?? undefined}>ID: {placement.supervision.assignedById ?? "—"}</p>
-                          <p>Hoàn tất: <span className="font-semibold text-slate-700">{formatDateTime(placement.supervision.completedAt, "Chưa hoàn tất")}</span></p>
+                          <p>
+                            Phân công:{" "}
+                            <span className="font-semibold text-slate-700">
+                              {formatDateTime(placement.supervision.assignedAt)}
+                            </span>
+                          </p>
+                          <p>
+                            Người phân công:{" "}
+                            <span className="font-semibold text-slate-700">
+                              {placement.supervision.assignedBy?.email ??
+                                "Tài khoản đã bị xóa"}
+                            </span>
+                          </p>
+                          <p
+                            className="max-w-44 truncate font-mono"
+                            title={
+                              placement.supervision.assignedById ?? undefined
+                            }
+                          >
+                            ID: {placement.supervision.assignedById ?? "—"}
+                          </p>
+                          <p>
+                            Hoàn tất:{" "}
+                            <span className="font-semibold text-slate-700">
+                              {formatDateTime(
+                                placement.supervision.completedAt,
+                                "Chưa hoàn tất",
+                              )}
+                            </span>
+                          </p>
                         </div>
-                      ) : "—"}
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td className="px-5 py-4 text-right">
                       <button
@@ -660,11 +682,37 @@ export const PlacementManagement: React.FC<{
                 </div>
                 {selected.supervision && (
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-600">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Audit phân công</p>
-                    <p className="mt-2">Phân công lúc: <span className="font-semibold text-slate-800">{formatDateTime(selected.supervision.assignedAt)}</span></p>
-                    <p className="mt-1">Người phân công: <span className="font-semibold text-slate-800">{selected.supervision.assignedBy?.email ?? "Tài khoản đã bị xóa"}</span></p>
-                    <p className="mt-1 truncate font-mono" title={selected.supervision.assignedById ?? undefined}>assignedById: {selected.supervision.assignedById ?? "—"}</p>
-                    <p className="mt-1">Hoàn tất lúc: <span className="font-semibold text-slate-800">{formatDateTime(selected.supervision.completedAt, "Chưa hoàn tất")}</span></p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      Audit phân công
+                    </p>
+                    <p className="mt-2">
+                      Phân công lúc:{" "}
+                      <span className="font-semibold text-slate-800">
+                        {formatDateTime(selected.supervision.assignedAt)}
+                      </span>
+                    </p>
+                    <p className="mt-1">
+                      Người phân công:{" "}
+                      <span className="font-semibold text-slate-800">
+                        {selected.supervision.assignedBy?.email ??
+                          "Tài khoản đã bị xóa"}
+                      </span>
+                    </p>
+                    <p
+                      className="mt-1 truncate font-mono"
+                      title={selected.supervision.assignedById ?? undefined}
+                    >
+                      assignedById: {selected.supervision.assignedById ?? "—"}
+                    </p>
+                    <p className="mt-1">
+                      Hoàn tất lúc:{" "}
+                      <span className="font-semibold text-slate-800">
+                        {formatDateTime(
+                          selected.supervision.completedAt,
+                          "Chưa hoàn tất",
+                        )}
+                      </span>
+                    </p>
                   </div>
                 )}
               </div>

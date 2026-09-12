@@ -2,6 +2,7 @@ export type ConversationParticipant = {
   id: string;
   userId: string;
   name: string;
+  avatarFileId?: string | null;
   role: 'STUDENT' | 'COMPANY' | 'LECTURER';
 };
 

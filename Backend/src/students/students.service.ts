@@ -22,6 +22,7 @@ const profileSelect = {
   summary: true,
   gpa: true,
   cvFileId: true,
+  avatarFileId: true,
   createdAt: true,
   updatedAt: true,
   user: { select: { email: true } },
@@ -33,6 +34,9 @@ const profileSelect = {
       sizeBytes: true,
       createdAt: true,
     },
+  },
+  avatarFile: {
+    select: { id: true, originalName: true, mimeType: true, sizeBytes: true, createdAt: true },
   },
   skills: {
     select: {
@@ -67,6 +71,7 @@ export class StudentsService {
   async create(userId: string, dto: CreateStudentProfileDto) {
     await this.ensureStudentUser(userId);
     await this.ensureCvFileIsOwnedByStudent(dto.cvFileId, userId);
+    await this.ensureAvatarFileIsOwnedByUser(dto.avatarFileId, userId);
     try {
       const profile = await this.prisma.studentProfile.create({
         data: {
@@ -78,6 +83,7 @@ export class StudentsService {
           summary: dto.summary,
           gpa: dto.gpa,
           cvFileId: dto.cvFileId,
+          avatarFileId: dto.avatarFileId,
         },
         select: profileSelect,
       });
@@ -90,6 +96,7 @@ export class StudentsService {
   async updateByUserId(userId: string, dto: UpdateStudentProfileDto) {
     const profile = await this.findByUserId(userId);
     await this.ensureCvFileIsOwnedByStudent(dto.cvFileId, profile.userId);
+    await this.ensureAvatarFileIsOwnedByUser(dto.avatarFileId, profile.userId);
     try {
       const updatedProfile = await this.prisma.studentProfile.update({
         where: { id: profile.id },
@@ -224,6 +231,7 @@ export class StudentsService {
       ...(dto.summary !== undefined ? { summary: dto.summary } : {}),
       ...(dto.gpa !== undefined ? { gpa: dto.gpa } : {}),
       ...(dto.cvFileId !== undefined ? { cvFileId: dto.cvFileId } : {}),
+      ...(dto.avatarFileId !== undefined ? { avatarFileId: dto.avatarFileId } : {}),
     };
   }
 
@@ -307,6 +315,23 @@ export class StudentsService {
         code: 'INVALID_CV_FILE',
         message: 'The CV file must be owned by this student and have type CV',
       });
+    }
+  }
+
+  private async ensureAvatarFileIsOwnedByUser(
+    avatarFileId: string | null | undefined,
+    userId: string,
+  ) {
+    if (avatarFileId === undefined || avatarFileId === null) return;
+    const file = await this.prisma.file.findUnique({
+      where: { id: avatarFileId },
+      select: { ownerId: true, type: true },
+    });
+    if (!file) {
+      throw new NotFoundException({ code: 'AVATAR_FILE_NOT_FOUND', message: 'Avatar file not found' });
+    }
+    if (file.ownerId !== userId || file.type !== FileType.AVATAR) {
+      throw new ForbiddenException({ code: 'INVALID_AVATAR_FILE', message: 'The avatar must be owned by this user and have type AVATAR' });
     }
   }
 
