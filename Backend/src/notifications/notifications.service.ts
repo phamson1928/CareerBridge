@@ -1,14 +1,13 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, Notification } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { GetNotificationsQueryDto } from './dto/get-notifications-query.dto';
 import { toPublicNotification } from './notification.mapper';
-import { CreateNotificationInput, NotificationPublic } from './notification.types';
+import {
+  CreateNotificationInput,
+  NotificationPublic,
+} from './notification.types';
 
 @Injectable()
 export class NotificationsService {
@@ -49,7 +48,9 @@ export class NotificationsService {
   }
 
   countUnread(userId: string) {
-    return this.prisma.notification.count({ where: { userId, isRead: false } }).then((count) => ({ count }));
+    return this.prisma.notification
+      .count({ where: { userId, isRead: false } })
+      .then((count) => ({ count }));
   }
 
   async markAsRead(userId: string, id: string) {
@@ -81,6 +82,18 @@ export class NotificationsService {
     });
     this.realtime.emitToUser(userId, 'notification.read-all', { readAt });
     return { updatedCount: result.count, unreadCount: 0 };
+  }
+
+  async remove(userId: string, id: string) {
+    const existing = await this.prisma.notification.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!existing) throw this.notFound();
+
+    await this.prisma.notification.delete({ where: { id } });
+    this.realtime.emitToUser(userId, 'notification.deleted', { id });
+    return { id };
   }
 
   async create(input: CreateNotificationInput): Promise<NotificationPublic> {

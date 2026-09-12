@@ -19,7 +19,15 @@ const profileSelect = {
   createdAt: true,
   updatedAt: true,
   user: { select: { email: true } },
-  avatarFile: { select: { id: true, originalName: true, mimeType: true, sizeBytes: true, createdAt: true } },
+  avatarFile: {
+    select: {
+      id: true,
+      originalName: true,
+      mimeType: true,
+      sizeBytes: true,
+      createdAt: true,
+    },
+  },
 } satisfies Prisma.LecturerProfileSelect;
 
 @Injectable()
@@ -65,7 +73,9 @@ export class LecturersService {
             ? { department: dto.department }
             : {}),
           ...(dto.title !== undefined ? { title: dto.title } : {}),
-          ...(dto.avatarFileId !== undefined ? { avatarFileId: dto.avatarFileId } : {}),
+          ...(dto.avatarFileId !== undefined
+            ? { avatarFileId: dto.avatarFileId }
+            : {}),
         },
         select: profileSelect,
       });
@@ -96,10 +106,21 @@ export class LecturersService {
     userId: string,
   ) {
     if (avatarFileId === undefined || avatarFileId === null) return;
-    const file = await this.prisma.file.findUnique({ where: { id: avatarFileId }, select: { ownerId: true, type: true } });
-    if (!file) throw new NotFoundException({ code: 'AVATAR_FILE_NOT_FOUND', message: 'Avatar file not found' });
+    const file = await this.prisma.file.findUnique({
+      where: { id: avatarFileId },
+      select: { ownerId: true, type: true },
+    });
+    if (!file)
+      throw new NotFoundException({
+        code: 'AVATAR_FILE_NOT_FOUND',
+        message: 'Avatar file not found',
+      });
     if (file.ownerId !== userId || file.type !== FileType.AVATAR) {
-      throw new ForbiddenException({ code: 'INVALID_AVATAR_FILE', message: 'The avatar must be owned by this lecturer and have type AVATAR' });
+      throw new ForbiddenException({
+        code: 'INVALID_AVATAR_FILE',
+        message:
+          'The avatar must be owned by this lecturer and have type AVATAR',
+      });
     }
   }
 

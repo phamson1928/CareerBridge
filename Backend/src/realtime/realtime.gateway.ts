@@ -18,7 +18,9 @@ type SocketTokenPayload = { sub?: string };
   namespace: '/realtime',
   cors: { origin: true, credentials: true },
 })
-export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class RealtimeGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   private server!: Server;
 
@@ -65,7 +67,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   private readToken(socket: Socket): string | null {
     const authToken = socket.handshake.auth?.token;
-    if (typeof authToken === 'string' && authToken.trim()) return authToken.trim();
+    if (typeof authToken === 'string' && authToken.trim())
+      return authToken.trim();
     const header = socket.handshake.headers.authorization;
     if (typeof header === 'string' && header.startsWith('Bearer ')) {
       return header.slice(7).trim();

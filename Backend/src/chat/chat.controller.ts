@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -14,7 +23,10 @@ export class ChatController {
   constructor(private readonly chat: ChatService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query() query: ListConversationsQueryDto) {
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListConversationsQueryDto,
+  ) {
     return this.chat.list(user, query);
   }
 
@@ -29,12 +41,20 @@ export class ChatController {
   }
 
   @Get(':id/messages')
-  listMessages(@CurrentUser() user: AuthUser, @Param('id') id: string, @Query() query: ListMessagesQueryDto) {
+  listMessages(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Query() query: ListMessagesQueryDto,
+  ) {
     return this.chat.listMessages(user, id, query);
   }
 
   @Post(':id/messages')
-  createMessage(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: CreateMessageDto) {
+  createMessage(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: CreateMessageDto,
+  ) {
     return this.chat.createMessage(user, id, dto.content);
   }
 

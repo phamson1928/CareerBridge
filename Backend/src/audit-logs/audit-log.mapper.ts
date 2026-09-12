@@ -64,9 +64,7 @@ export function sanitizeAuditMetadata(value: unknown): unknown {
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
       key,
-      isSensitiveMetadataKey(key)
-        ? '[REDACTED]'
-        : sanitizeAuditMetadata(item),
+      isSensitiveMetadataKey(key) ? '[REDACTED]' : sanitizeAuditMetadata(item),
     ]),
   );
 }

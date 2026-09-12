@@ -444,10 +444,14 @@ export class PlacementsService {
           eventKey: `placement:${id}:status:${dto.status}:${userId}`,
           type: NotificationType.PLACEMENT,
           action: NotificationAction.OPEN_PLACEMENT,
-          title: dto.status === PublicPlacementStatus.COMPLETED ? 'Placement đã hoàn thành' : 'Placement đã bị hủy',
-          content: dto.status === PublicPlacementStatus.COMPLETED
-            ? 'Placement của bạn đã được đánh dấu hoàn thành.'
-            : 'Placement của bạn đã bị hủy.',
+          title:
+            dto.status === PublicPlacementStatus.COMPLETED
+              ? 'Placement đã hoàn thành'
+              : 'Placement đã bị hủy',
+          content:
+            dto.status === PublicPlacementStatus.COMPLETED
+              ? 'Placement của bạn đã được đánh dấu hoàn thành.'
+              : 'Placement của bạn đã bị hủy.',
           resourceId: id,
           metadata: { status: dto.status },
         });

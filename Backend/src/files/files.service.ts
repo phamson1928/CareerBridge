@@ -120,10 +120,7 @@ export class FilesService {
   }
 
   private validateUpload(dto: CreateUploadUrlDto) {
-    if (
-      dto.originalName.trim() === '' ||
-      /[\\/\r\n]/.test(dto.originalName)
-    ) {
+    if (dto.originalName.trim() === '' || /[\\/\r\n]/.test(dto.originalName)) {
       throw new BadRequestException({
         code: 'INVALID_FILE_NAME',
         message: 'File name is invalid',

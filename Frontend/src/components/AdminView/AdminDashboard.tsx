@@ -188,14 +188,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const { global, kpis, scope } = data;
 
   return (
-    <section className="space-y-5">
+    <section className="admin-page admin-page--feature space-y-5">
       <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#005c5f] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/20 sm:p-8">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/80">
               <BarChart3 className="h-3.5 w-3.5" /> Tổng quan vận hành
             </div>
-            <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+            <h1 className="admin-page-title mt-4 text-3xl font-black tracking-tight sm:text-4xl">
               Trung tâm điều hành thực tập
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80">

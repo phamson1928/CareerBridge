@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { getApiErrorMessage } from '../auth/api';
 import { subscribeAccessToken } from '../auth/token-store';
 import {
+  deleteNotification,
   getUnreadCount,
   listNotifications,
   markAllNotificationsAsRead,
@@ -117,6 +118,20 @@ export function useNotifications() {
     }
   }, [isMarkingAll, notifications, unreadCount]);
 
+  const remove = useCallback(async (id: string) => {
+    const current = notifications.find((item) => item.id === id);
+    if (!current) return;
+    setNotifications((items) => items.filter((item) => item.id !== id));
+    if (!current.isRead) setUnreadCount((count) => Math.max(0, count - 1));
+    try {
+      await deleteNotification(id);
+    } catch (requestError) {
+      mergeNotifications([current]);
+      if (!current.isRead) setUnreadCount((count) => count + 1);
+      setError(getApiErrorMessage(requestError));
+    }
+  }, [mergeNotifications, notifications]);
+
   useEffect(() => {
     mountedRef.current = true;
     if (!user) {
@@ -147,17 +162,23 @@ export function useNotifications() {
       void getUnreadCount().then((count) => setUnreadCount(count)).catch(() => undefined);
     };
     const onReadAll = () => { setNotifications((items) => items.map((item) => ({ ...item, isRead: true }))); setUnreadCount(0); };
+    const onDeleted = (payload: { id: string }) => {
+      setNotifications((items) => items.filter((item) => item.id !== payload.id));
+      void getUnreadCount().then((count) => setUnreadCount(count)).catch(() => undefined);
+    };
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('notification.created', onCreated);
     socket.on('notification.read', onRead);
     socket.on('notification.read-all', onReadAll);
+    socket.on('notification.deleted', onDeleted);
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('notification.created', onCreated);
       socket.off('notification.read', onRead);
       socket.off('notification.read-all', onReadAll);
+      socket.off('notification.deleted', onDeleted);
       socket.disconnect();
       socketRef.current = null;
       setSocketStatus('offline');
@@ -187,5 +208,6 @@ export function useNotifications() {
     loadMore,
     markAsRead,
     markAllAsRead,
+    remove,
   };
 }

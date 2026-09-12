@@ -1,10 +1,5 @@
 import { Transform, TransformFnParams } from 'class-transformer';
-import {
-  ArrayMaxSize,
-  IsArray,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { ArrayMaxSize, IsArray, IsString, MaxLength } from 'class-validator';
 
 function trimItems({ value }: TransformFnParams): unknown {
   return Array.isArray(value)

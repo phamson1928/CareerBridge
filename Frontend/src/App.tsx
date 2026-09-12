@@ -15,7 +15,6 @@ import {
 } from "./types";
 
 import { Navbar } from "./components/Navbar";
-import { SessionBanner } from "./components/SessionBanner";
 import { NotificationCenter } from "./components/Notifications/NotificationCenter";
 import { ChatDrawer } from "./components/Chat/ChatDrawer";
 
@@ -27,6 +26,7 @@ import { companiesApi, type CompanyProfileRecord } from "./companies/api";
 import { internshipsApi } from "./internships/api";
 import { toLegacyInternship } from "./internships/mappers";
 import { studentsApi, type StudentProfileRecord } from "./students/api";
+import { lecturersApi } from "./lecturers/api";
 import { skillsApi } from "./skills/api";
 import type { StudentSkillRecord } from "./skills/types";
 import { evaluationsApi, type EvaluationRecord } from "./evaluations/api";
@@ -181,6 +181,7 @@ export default function App() {
 
   const [studentProfile, setStudentProfile] =
     useState<StudentProfile | null>(null);
+  const [avatarFileId, setAvatarFileId] = useState<string | null>(null);
   const [companyProfile, setCompanyProfile] =
     useState<CompanyProfile | null>(null);
   const [internships, setInternships] = useState<Internship[]>([]);
@@ -200,6 +201,7 @@ export default function App() {
 
     let active = true;
     setStudentProfile(null);
+    setAvatarFileId(null);
     setCompanyProfile(null);
     setInternships([]);
     setApplications([]);
@@ -238,6 +240,7 @@ export default function App() {
                   studentSkills.map((skill) => skill.name),
                 ),
               );
+              setAvatarFileId(profile.avatarFileId);
             }
           } catch (profileError) {
             console.warn("Student profile is not available yet", profileError);
@@ -265,13 +268,15 @@ export default function App() {
         }
 
         if (user.role === "LECTURER") {
-          const [placements, evaluationPage] = await Promise.all([
+          const [placements, evaluationPage, lecturerProfile] = await Promise.all([
             placementsApi.listMine(),
             evaluationsApi.listMine({ page: 1, limit: 100 }),
+            lecturersApi.getMine().catch(() => null),
           ]);
           if (!active) return;
           setMyPlacements(placements.items);
           setEvaluationRecords(evaluationPage.items);
+          setAvatarFileId(lecturerProfile?.avatarFileId ?? null);
         }
       } catch (error) {
         console.error("Unable to load application workflow data", error);
@@ -291,6 +296,7 @@ export default function App() {
     profile: StudentProfileRecord | null,
     skills: StudentSkillRecord[],
   ) => {
+    setAvatarFileId(profile?.avatarFileId ?? null);
     setStudentProfile(
       profile ? toLegacyStudentProfile(profile, skills.map((skill) => skill.name)) : null,
     );
@@ -412,11 +418,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased ${currentRole === "ADMIN" ? "admin-theme pl-20 lg:pl-72" : ""}`}>
-      {user && currentRole !== "COMPANY" && currentRole !== "ADMIN" && (
-        <SessionBanner user={user} onLogout={() => void handleLogout()} />
-      )}
-
+    <div className={`min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${currentRole === "ADMIN" ? "admin-theme pl-20 lg:pl-72" : ""}`}>
       {/* Main Navbar */}
       <Navbar
         currentRole={currentRole}
@@ -425,8 +427,15 @@ export default function App() {
         unreadNotifsCount={notificationState.unreadCount}
         unreadMessagesCount={chatState.unreadCount}
         onOpenNotifs={() => setIsNotifsOpen(true)}
+        notifications={notificationState.notifications}
+        onNotificationClick={(notification) => {
+          void notificationState.markAsRead(notification.id);
+          handleNotificationNavigate(notification.action);
+        }}
         onOpenChat={() => setIsChatOpen(true)}
         onLogout={() => void handleLogout()}
+        avatarFileId={avatarFileId}
+        companyLogo={companyProfile?.logo}
       />
 
       {/* Main Page Body Container */}
@@ -560,20 +569,15 @@ export default function App() {
         </Suspense>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="font-semibold text-slate-700">
-            Hệ Thống Hỗ Trợ Tìm Kiếm & Quản Lý Thực Tập Cho Sinh Viên
-            (CareerBridge) © 2026
-          </p>
-          <span className="text-slate-500">Cổng thông tin thực tập</span>
-        </div>
-      </footer>
+      {currentRole !== "ADMIN" && (
+        <footer className="mt-12 border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
+          <p className="px-4 font-semibold text-slate-700">© 2026 CareerBridge — Hệ thống hỗ trợ tìm kiếm &amp; quản lý thực tập cho sinh viên</p>
+        </footer>
+      )}
 
       {/* Global Drawers & Modals */}
       <NotificationCenter
-        variant={currentRole === "ADMIN" ? "admin" : "default"}
+        variant="admin"
         isOpen={isNotifsOpen}
         onClose={() => setIsNotifsOpen(false)}
         notifications={notificationState.notifications}
@@ -590,6 +594,14 @@ export default function App() {
         onLoadMore={() => void notificationState.loadMore()}
         onMarkAsRead={(id) => void notificationState.markAsRead(id)}
         onMarkAllAsRead={() => void notificationState.markAllAsRead()}
+        onDelete={(id) => {
+          void feedback.confirm({
+            title: 'Xóa thông báo',
+            message: 'Bạn có chắc muốn xóa thông báo này? Thao tác này không thể hoàn tác.',
+            confirmLabel: 'Xóa thông báo',
+            tone: 'danger',
+          }).then((accepted) => { if (accepted) void notificationState.remove(id); });
+        }}
         onNavigate={(action) => { handleNotificationNavigate(action); setIsNotifsOpen(false); }}
       />
 

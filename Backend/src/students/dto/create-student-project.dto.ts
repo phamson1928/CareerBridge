@@ -17,7 +17,9 @@ export class CreateStudentProjectDto {
 
   @IsOptional()
   @Transform((params: TransformFnParams): unknown =>
-    typeof params.value === 'string' ? params.value.trim() || null : params.value,
+    typeof params.value === 'string'
+      ? params.value.trim() || null
+      : params.value,
   )
   @IsString()
   @MaxLength(2000)

@@ -36,7 +36,13 @@ const profileSelect = {
     },
   },
   avatarFile: {
-    select: { id: true, originalName: true, mimeType: true, sizeBytes: true, createdAt: true },
+    select: {
+      id: true,
+      originalName: true,
+      mimeType: true,
+      sizeBytes: true,
+      createdAt: true,
+    },
   },
   skills: {
     select: {
@@ -198,11 +204,19 @@ export class StudentsService {
       where: { id: projectId },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.description !== undefined ? { description: dto.description } : {}),
-        ...(dto.repositoryUrl !== undefined ? { repositoryUrl: dto.repositoryUrl } : {}),
+        ...(dto.description !== undefined
+          ? { description: dto.description }
+          : {}),
+        ...(dto.repositoryUrl !== undefined
+          ? { repositoryUrl: dto.repositoryUrl }
+          : {}),
         ...(dto.demoUrl !== undefined ? { demoUrl: dto.demoUrl } : {}),
-        ...(dto.startedAt !== undefined ? { startedAt: this.toDate(dto.startedAt) } : {}),
-        ...(dto.endedAt !== undefined ? { endedAt: this.toDate(dto.endedAt) } : {}),
+        ...(dto.startedAt !== undefined
+          ? { startedAt: this.toDate(dto.startedAt) }
+          : {}),
+        ...(dto.endedAt !== undefined
+          ? { endedAt: this.toDate(dto.endedAt) }
+          : {}),
       },
     });
   }
@@ -231,7 +245,9 @@ export class StudentsService {
       ...(dto.summary !== undefined ? { summary: dto.summary } : {}),
       ...(dto.gpa !== undefined ? { gpa: dto.gpa } : {}),
       ...(dto.cvFileId !== undefined ? { cvFileId: dto.cvFileId } : {}),
-      ...(dto.avatarFileId !== undefined ? { avatarFileId: dto.avatarFileId } : {}),
+      ...(dto.avatarFileId !== undefined
+        ? { avatarFileId: dto.avatarFileId }
+        : {}),
     };
   }
 
@@ -328,10 +344,16 @@ export class StudentsService {
       select: { ownerId: true, type: true },
     });
     if (!file) {
-      throw new NotFoundException({ code: 'AVATAR_FILE_NOT_FOUND', message: 'Avatar file not found' });
+      throw new NotFoundException({
+        code: 'AVATAR_FILE_NOT_FOUND',
+        message: 'Avatar file not found',
+      });
     }
     if (file.ownerId !== userId || file.type !== FileType.AVATAR) {
-      throw new ForbiddenException({ code: 'INVALID_AVATAR_FILE', message: 'The avatar must be owned by this user and have type AVATAR' });
+      throw new ForbiddenException({
+        code: 'INVALID_AVATAR_FILE',
+        message: 'The avatar must be owned by this user and have type AVATAR',
+      });
     }
   }
 

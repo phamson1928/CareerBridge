@@ -265,7 +265,10 @@ export class EvaluationsService {
         'Only active or completed placements can be evaluated',
       );
     }
-    if (type === EvaluationType.COMPANY && placement.company.userId === user.id) {
+    if (
+      type === EvaluationType.COMPANY &&
+      placement.company.userId === user.id
+    ) {
       return;
     }
     if (

@@ -104,11 +104,11 @@ export const UserManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="admin-page admin-page--standard space-y-6">
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">
+            <h2 className="admin-page-title text-xl font-bold text-slate-900">
               Quản lý người dùng
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">

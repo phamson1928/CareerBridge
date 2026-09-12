@@ -1,5 +1,12 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  Max,
+  Min,
+} from 'class-validator';
 import { NotificationType } from '../../generated/prisma/client';
 
 export class GetNotificationsQueryDto {

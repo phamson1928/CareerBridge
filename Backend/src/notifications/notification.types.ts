@@ -1,4 +1,8 @@
-import { Prisma, NotificationAction, NotificationType } from '../generated/prisma/client';
+import {
+  Prisma,
+  NotificationAction,
+  NotificationType,
+} from '../generated/prisma/client';
 
 export type CreateNotificationInput = {
   userId: string;

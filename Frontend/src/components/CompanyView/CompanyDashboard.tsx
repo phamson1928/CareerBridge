@@ -45,7 +45,7 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
   const filledSlots = internships.reduce((sum, item) => sum + item.filledSlots, 0);
 
   return <div className="space-y-6">
-    <section className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 p-6 text-white shadow-xl md:flex-row md:items-center">
+    <section className="company-hero flex flex-col items-start justify-between gap-6 rounded-2xl bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 p-6 text-white shadow-xl md:flex-row md:items-center">
       <div className="flex items-center gap-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-emerald-400 bg-emerald-100 text-xl font-black text-emerald-800 shadow-md">{company.logo ? <img src={company.logo} alt="" className="h-full w-full rounded-2xl object-cover" /> : company.companyName.charAt(0)}</div>
         <div><div className="flex items-center gap-2"><h1 className="text-2xl font-black">{company.companyName}</h1>{company.status === 'APPROVED' && <span className="rounded-full border border-emerald-400/30 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300">✓ Đã xác minh</span>}</div><p className="mt-1 text-xs text-slate-300">{company.tagline || 'Quản lý cơ hội thực tập của doanh nghiệp'}</p></div>

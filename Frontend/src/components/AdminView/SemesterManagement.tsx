@@ -183,10 +183,10 @@ export const SemesterManagement: React.FC = () => {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+    <section className="admin-page admin-page--standard rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900">Quản lý kỳ thực tập</h2>
+          <h2 className="admin-page-title text-xl font-extrabold text-slate-900">Quản lý kỳ thực tập</h2>
           <p className="mt-1 text-xs text-slate-500">
             Thiết lập khoảng thời gian để doanh nghiệp đăng và sinh viên tìm vị trí thực tập.
           </p>

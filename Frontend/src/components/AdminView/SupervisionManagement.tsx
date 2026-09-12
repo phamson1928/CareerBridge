@@ -140,13 +140,13 @@ export const SupervisionManagement: React.FC = () => {
   };
 
   return (
-    <section className="space-y-5">
+    <section className="admin-page admin-page--feature space-y-5">
       <div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-[#004f52] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/25 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/90">
             <ShieldCheck className="h-3.5 w-3.5" /> Placement control center
           </div>
-          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+          <h1 className="admin-page-title text-2xl font-black tracking-tight sm:text-3xl">
             Phân công giảng viên
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/85">

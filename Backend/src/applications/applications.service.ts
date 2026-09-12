@@ -468,18 +468,18 @@ export class ApplicationsService {
 
         const createdPlacement =
           await this.placementsService.createPendingFromAcceptedApplication(
-          tx,
-          {
-            applicationId: id,
-            studentId: current.studentId,
-            companyId: current.internship.companyId,
-            internshipId: current.internshipId,
-            semesterId: current.internship.semesterId,
-            startDate: current.internship.startDate,
-            endDate: current.internship.endDate,
-          },
-          user.id,
-        );
+            tx,
+            {
+              applicationId: id,
+              studentId: current.studentId,
+              companyId: current.internship.companyId,
+              internshipId: current.internshipId,
+              semesterId: current.internship.semesterId,
+              startDate: current.internship.startDate,
+              endDate: current.internship.endDate,
+            },
+            user.id,
+          );
 
         await tx.conversation.upsert({
           where: { applicationId: id },
@@ -510,27 +510,35 @@ export class ApplicationsService {
           type: NotificationType.APPLICATION,
           action: NotificationAction.OPEN_APPLICATION,
           title: 'Đơn ứng tuyển đã được chấp nhận',
-          content: 'Chúc mừng! Đơn ứng tuyển của bạn đã được công ty chấp nhận.',
+          content:
+            'Chúc mừng! Đơn ứng tuyển của bạn đã được công ty chấp nhận.',
           resourceId: id,
           metadata: { status: ApplicationStatus.ACCEPTED },
         });
 
-        const placementNotification = await this.notifications.createInTransaction(tx, {
-          userId: current.student.userId,
-          eventKey: `placement:${createdPlacement.id}:created:${current.student.userId}`,
-          type: NotificationType.PLACEMENT,
-          action: NotificationAction.OPEN_PLACEMENT,
-          title: 'Vị trí thực tập đã được tạo',
-          content: `Vị trí thực tập cho "${createdPlacement.internship.title}" tại ${createdPlacement.company.companyName} đã được khởi tạo và đang chờ nhà trường phân công giảng viên hướng dẫn.`,
-          resourceId: createdPlacement.id,
-          metadata: { placementId: createdPlacement.id, status: PlacementStatus.PENDING },
-        });
+        const placementNotification =
+          await this.notifications.createInTransaction(tx, {
+            userId: current.student.userId,
+            eventKey: `placement:${createdPlacement.id}:created:${current.student.userId}`,
+            type: NotificationType.PLACEMENT,
+            action: NotificationAction.OPEN_PLACEMENT,
+            title: 'Vị trí thực tập đã được tạo',
+            content: `Vị trí thực tập cho "${createdPlacement.internship.title}" tại ${createdPlacement.company.companyName} đã được khởi tạo và đang chờ nhà trường phân công giảng viên hướng dẫn.`,
+            resourceId: createdPlacement.id,
+            metadata: {
+              placementId: createdPlacement.id,
+              status: PlacementStatus.PENDING,
+            },
+          });
 
         const accepted = await tx.application.findUniqueOrThrow({
           where: { id },
           select: applicationSelect,
         });
-        return { application: accepted, notifications: [notification, placementNotification] };
+        return {
+          application: accepted,
+          notifications: [notification, placementNotification],
+        };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
@@ -611,10 +619,14 @@ export class ApplicationsService {
         eventKey: `application:${id}:status:${toStatus}:${randomUUID()}`,
         type: NotificationType.APPLICATION,
         action: NotificationAction.OPEN_APPLICATION,
-        title: toStatus === ApplicationStatus.REJECTED ? 'Đơn ứng tuyển bị từ chối' : 'Đơn ứng tuyển đang được xem xét',
-        content: toStatus === ApplicationStatus.REJECTED
-          ? 'Đơn ứng tuyển của bạn chưa được công ty chấp nhận.'
-          : 'Công ty đã bắt đầu xem xét đơn ứng tuyển của bạn.',
+        title:
+          toStatus === ApplicationStatus.REJECTED
+            ? 'Đơn ứng tuyển bị từ chối'
+            : 'Đơn ứng tuyển đang được xem xét',
+        content:
+          toStatus === ApplicationStatus.REJECTED
+            ? 'Đơn ứng tuyển của bạn chưa được công ty chấp nhận.'
+            : 'Công ty đã bắt đầu xem xét đơn ứng tuyển của bạn.',
         resourceId: id,
         metadata: { fromStatus: current.status, toStatus },
       });

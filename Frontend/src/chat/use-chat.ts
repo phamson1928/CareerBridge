@@ -11,7 +11,7 @@ export function useChat() {
   const [latestMessage, setLatestMessage] = useState<ChatMessage | null>(null);
 
   const refreshUnreadCount = useCallback(async () => {
-    if (!user || (user.role !== 'STUDENT' && user.role !== 'COMPANY')) {
+    if (!user || (user.role !== 'STUDENT' && user.role !== 'COMPANY' && user.role !== 'LECTURER')) {
       setUnreadCount(0);
       return;
     }
@@ -21,7 +21,7 @@ export function useChat() {
   useEffect(() => { void refreshUnreadCount(); }, [refreshUnreadCount]);
 
   useEffect(() => {
-    if (!user || (user.role !== 'STUDENT' && user.role !== 'COMPANY')) return;
+    if (!user || (user.role !== 'STUDENT' && user.role !== 'COMPANY' && user.role !== 'LECTURER')) return;
     const socket: NotificationSocket | null = createNotificationSocket();
     if (!socket) return;
     const onMessage = (message: ChatMessage) => {

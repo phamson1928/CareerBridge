@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { Role } from '../generated/prisma/client';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -15,18 +25,40 @@ import { EvaluationsService } from './evaluations.service';
 export class EvaluationsController {
   constructor(private readonly evaluations: EvaluationsService) {}
 
-  @Post() @Roles(Role.COMPANY, Role.LECTURER)
-  create(@Body() dto: CreateEvaluationDto, @CurrentUser() user: AuthUser) { return this.evaluations.create(dto, user); }
+  @Post()
+  @Roles(Role.COMPANY, Role.LECTURER)
+  create(@Body() dto: CreateEvaluationDto, @CurrentUser() user: AuthUser) {
+    return this.evaluations.create(dto, user);
+  }
 
-  @Get('me') @Roles(Role.STUDENT, Role.COMPANY, Role.LECTURER, Role.ADMIN)
-  listMine(@Query() query: ListEvaluationsQueryDto, @CurrentUser() user: AuthUser) { return this.evaluations.listMine(query, user); }
+  @Get('me')
+  @Roles(Role.STUDENT, Role.COMPANY, Role.LECTURER, Role.ADMIN)
+  listMine(
+    @Query() query: ListEvaluationsQueryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.evaluations.listMine(query, user);
+  }
 
-  @Get(':id') @Roles(Role.STUDENT, Role.COMPANY, Role.LECTURER, Role.ADMIN)
-  findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) { return this.evaluations.findOne(id, user); }
+  @Get(':id')
+  @Roles(Role.STUDENT, Role.COMPANY, Role.LECTURER, Role.ADMIN)
+  findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.evaluations.findOne(id, user);
+  }
 
-  @Patch(':id') @Roles(Role.COMPANY, Role.LECTURER)
-  update(@Param('id') id: string, @Body() dto: UpdateEvaluationDto, @CurrentUser() user: AuthUser) { return this.evaluations.update(id, dto, user); }
+  @Patch(':id')
+  @Roles(Role.COMPANY, Role.LECTURER)
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateEvaluationDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.evaluations.update(id, dto, user);
+  }
 
-  @Delete(':id') @Roles(Role.COMPANY, Role.LECTURER)
-  remove(@Param('id') id: string, @CurrentUser() user: AuthUser) { return this.evaluations.remove(id, user); }
+  @Delete(':id')
+  @Roles(Role.COMPANY, Role.LECTURER)
+  remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.evaluations.remove(id, user);
+  }
 }

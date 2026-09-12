@@ -71,7 +71,7 @@ export const CompanyModeration: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="admin-page admin-page--standard space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <div className="flex items-start justify-between gap-4">
           <div className="flex gap-3">
@@ -79,7 +79,7 @@ export const CompanyModeration: React.FC = () => {
               <Building2 className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="admin-page-title text-xl font-bold text-slate-900">
                 Duyệt doanh nghiệp
               </h2>
               <p className="mt-1 text-xs text-slate-500">

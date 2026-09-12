@@ -3,7 +3,9 @@ import { IsEmail, MaxLength } from 'class-validator';
 
 export class ForgotPasswordDto {
   @Transform((params: TransformFnParams): unknown =>
-    typeof params.value === 'string' ? params.value.trim().toLowerCase() : params.value,
+    typeof params.value === 'string'
+      ? params.value.trim().toLowerCase()
+      : params.value,
   )
   @IsEmail()
   @MaxLength(254)

@@ -33,9 +33,18 @@ const supervisionSelect = {
       id: true,
       status: true,
       student: {
-        select: { id: true, userId: true, studentCode: true, fullName: true, major: true, avatarFileId: true },
+        select: {
+          id: true,
+          userId: true,
+          studentCode: true,
+          fullName: true,
+          major: true,
+          avatarFileId: true,
+        },
       },
-      company: { select: { id: true, userId: true, companyName: true, logo: true } },
+      company: {
+        select: { id: true, userId: true, companyName: true, logo: true },
+      },
       internship: {
         select: { id: true, title: true, location: true, workType: true },
       },
@@ -265,7 +274,10 @@ export class SupervisionsService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
-    const recipients = [result.lecturer.userId, result.placement.student.userId];
+    const recipients = [
+      result.lecturer.userId,
+      result.placement.student.userId,
+    ];
     for (const userId of [...new Set(recipients)]) {
       const isLecturer = userId === result.lecturer.userId;
       await this.notifications.create({
@@ -427,7 +439,10 @@ export class SupervisionsService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
-    const recipients = [result.lecturer.userId, result.placement.student.userId];
+    const recipients = [
+      result.lecturer.userId,
+      result.placement.student.userId,
+    ];
     for (const userId of [...new Set(recipients)]) {
       await this.notifications.create({
         userId,

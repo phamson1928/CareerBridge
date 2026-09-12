@@ -90,7 +90,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   return (
     <section className="space-y-6">
-      <header className="rounded-3xl bg-gradient-to-br from-violet-950 via-indigo-950 to-slate-900 p-6 text-white shadow-lg sm:p-8">
+      <header className="teacher-hero rounded-3xl bg-gradient-to-br from-violet-950 via-indigo-950 to-slate-900 p-6 text-white shadow-lg sm:p-8">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-violet-100">

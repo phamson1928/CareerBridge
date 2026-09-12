@@ -34,3 +34,10 @@ export async function markAllNotificationsAsRead() {
   >('/notifications/read-all');
   return response.data.data;
 }
+
+export async function deleteNotification(id: string) {
+  const response = await api.delete<ApiSuccess<{ id: string }>>(
+    `/notifications/${encodeURIComponent(id)}`,
+  );
+  return response.data.data;
+}
