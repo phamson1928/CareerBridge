@@ -1,2 +1,46 @@
 @import "tailwindcss";
 @import "./pages/auth-visual.css";
+
+.admin-theme {
+  background: linear-gradient(135deg, #f4fbfb 0%, #f8f9fb 52%, #fff7f8 100%);
+}
+
+.admin-theme ::selection { background: #00878a; color: white; }
+
+/* Shared visual language for every Admin module.  The selectors intentionally
+   scope Tailwind utility overrides to the Admin shell so other roles keep their
+   existing visual identity. */
+.admin-theme :is([class*="bg-indigo-600"], [class*="bg-indigo-700"], [class*="bg-emerald-600"], [class*="bg-emerald-700"]) { background-color: #00878a !important; }
+.admin-theme :is([class*="hover:bg-indigo-700"], [class*="hover:bg-emerald-700"]) { background-color: #006f72 !important; }
+.admin-theme :is([class*="bg-indigo-50"], [class*="bg-indigo-100"], [class*="bg-emerald-50"]) { background-color: #e6f6f6 !important; }
+.admin-theme :is([class*="text-indigo-"], [class*="text-emerald-"]) { color: #00878a !important; }
+.admin-theme :is([class*="border-indigo-"], [class*="border-emerald-"]) { border-color: #9bd8d9 !important; }
+.admin-theme :is([class*="ring-indigo-"]) { --tw-ring-color: rgb(0 135 138 / .22) !important; }
+.admin-theme :is([class*="bg-rose-600"], [class*="bg-rose-700"]) { background-color: #da1c2d !important; }
+.admin-theme :is([class*="hover:bg-rose-700"]) { background-color: #bd1425 !important; }
+.admin-theme :is([class*="bg-rose-50"], [class*="bg-rose-100"]) { background-color: #fff0f2 !important; }
+.admin-theme :is([class*="text-rose-"]) { color: #da1c2d !important; }
+.admin-theme :is([class*="border-rose-"]) { border-color: #f4b9c0 !important; }
+.admin-theme :is([class*="from-indigo-"], [class*="to-indigo-"]) { --tw-gradient-from: #006f72 var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(0 135 138 / 0) var(--tw-gradient-to-position) !important; }
+
+.admin-notification-drawer { border-color: #b8e1e2; box-shadow: 0 24px 56px rgb(0 74 76 / .22); }
+.admin-notification-backdrop { animation: admin-notification-fade-in .22s ease-out both; }
+.admin-notification-backdrop .admin-notification-drawer { animation: admin-notification-dialog-in .26s cubic-bezier(.22, 1, .36, 1) both; }
+.admin-notification-backdrop.is-closing { animation: admin-notification-fade-out .22s ease-in both; }
+.admin-notification-backdrop.is-closing .admin-notification-drawer { animation: admin-notification-dialog-out .2s ease-in both; }
+.admin-notification-header { background: linear-gradient(135deg, #f0fbfb 0%, #fff 62%, #fff3f4 100%); border-bottom-color: #d5eeee; }
+.admin-notification-header > div:first-child > div > span { background: #00878a; color: white; box-shadow: 0 10px 20px rgb(0 135 138 / .18); }
+.admin-notification-header h2 { color: #005c5f; font-size: 1.1rem; font-weight: 800; }
+.admin-notification-header [role="tablist"] { background: #e7f5f5; border-radius: .8rem; padding: .25rem; }
+.admin-notification-header [role="tab"][aria-selected="true"] { background: #00878a; color: white !important; border-radius: .6rem; box-shadow: 0 4px 10px rgb(0 135 138 / .18); }
+.admin-notification-toolbar { background: #fbfefe; border-bottom-color: #e0f0f0; }
+.admin-notification-toolbar span:first-child { color: #477577; font-weight: 600; }
+.admin-notification-empty { min-height: 430px; padding-top: 5rem; background: radial-gradient(circle at 50% 30%, #eefafa 0%, transparent 42%); }
+.admin-notification-empty > span { background: #e1f4f4; color: #00878a; box-shadow: inset 0 0 0 1px #c4e7e7; }
+.admin-notification-empty > p:first-of-type { color: #005c5f; font-size: .95rem; font-weight: 800; }
+.admin-notification-drawer article:not([class*="bg-indigo"]) { border-color: #e0f0f0; }
+
+@keyframes admin-notification-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes admin-notification-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes admin-notification-dialog-in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes admin-notification-dialog-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(8px) scale(.98); } }

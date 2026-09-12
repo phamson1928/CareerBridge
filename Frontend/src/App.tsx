@@ -4,7 +4,7 @@
  */
 
 import React, { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Application,
   ApplicationStatus,
@@ -60,6 +60,21 @@ const SemesterManagement = lazy(() => import("./components/AdminView/SemesterMan
 const AuditLogManagement = lazy(() => import("./components/AdminView/AuditLogManagement").then(({ AuditLogManagement }) => ({ default: AuditLogManagement })));
 const PlacementOverview = lazy(() => import("./components/StudentView/PlacementOverview").then(({ PlacementOverview }) => ({ default: PlacementOverview })));
 const StudentEvaluations = lazy(() => import("./components/StudentView/StudentEvaluations").then(({ StudentEvaluations }) => ({ default: StudentEvaluations })));
+
+const adminPathByTab: Record<string, string> = {
+  "stats-dashboard": "dashboard",
+  "teacher-assignment": "supervisions",
+  "placement-management": "placements",
+  "user-management": "users",
+  "company-approval": "companies",
+  "skill-management": "skills",
+  "semester-management": "semesters",
+  "audit-logs": "audit-logs",
+};
+
+const adminTabByPath = Object.fromEntries(
+  Object.entries(adminPathByTab).map(([tab, path]) => [path, tab]),
+) as Record<string, string>;
 
 function toLegacyApplication(record: ApplicationRecord): Application {
   return {
@@ -133,6 +148,7 @@ function toLegacyCompanyProfile(record: CompanyProfileRecord): CompanyProfile {
 export default function App() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const notificationState = useNotifications();
   const chatState = useChat();
   const feedback = useAppFeedback();
@@ -143,8 +159,25 @@ export default function App() {
   );
 
   useEffect(() => {
-    setActiveTab(getDefaultTab(currentRole));
-  }, [currentRole]);
+    if (currentRole !== "ADMIN") {
+      setActiveTab(getDefaultTab(currentRole));
+      return;
+    }
+    const path = location.pathname.replace(/^\/admin\/?/, "").split("/")[0];
+    if (!path) {
+      navigate("/admin/dashboard", { replace: true });
+      return;
+    }
+    setActiveTab(adminTabByPath[path] ?? getDefaultTab(currentRole));
+  }, [currentRole, location.pathname, navigate]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (currentRole === "ADMIN") {
+      const path = adminPathByTab[tab];
+      if (path) navigate(`/admin/${path}`);
+    }
+  };
 
   const [studentProfile, setStudentProfile] =
     useState<StudentProfile | null>(null);
@@ -375,11 +408,11 @@ export default function App() {
       OPEN_EVALUATION: currentRole === "COMPANY" ? "interns-evaluation" : currentRole === "TEACHER" ? "evaluation-list" : "evaluations",
     };
     const tab = tabByAction[action];
-    if (tab) setActiveTab(tab);
+    if (tab) handleTabChange(tab);
   };
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased">
+    <div className={`min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased ${currentRole === "ADMIN" ? "admin-theme pl-20 lg:pl-72" : ""}`}>
       {user && currentRole !== "COMPANY" && currentRole !== "ADMIN" && (
         <SessionBanner user={user} onLogout={() => void handleLogout()} />
       )}
@@ -388,7 +421,7 @@ export default function App() {
       <Navbar
         currentRole={currentRole}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         unreadNotifsCount={notificationState.unreadCount}
         unreadMessagesCount={chatState.unreadCount}
         onOpenNotifs={() => setIsNotifsOpen(true)}
@@ -397,7 +430,7 @@ export default function App() {
       />
 
       {/* Main Page Body Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className={`flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 ${currentRole === "ADMIN" ? "lg:px-8 lg:py-10" : ""}`}>
         {workflowError && (
           <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 sm:flex-row sm:items-center sm:justify-between">
             <span>Không thể tải đầy đủ dữ liệu: {workflowError}</span>
@@ -509,12 +542,12 @@ export default function App() {
         {currentRole === "ADMIN" && (
           <>
             {activeTab === "stats-dashboard" && (
-              <AdminDashboard onNavigate={setActiveTab} />
+              <AdminDashboard onNavigate={handleTabChange} />
             )}
             {activeTab === "teacher-assignment" && <SupervisionManagement />}
             {activeTab === "placement-management" && (
               <PlacementManagement
-                onOpenAssignment={() => setActiveTab("teacher-assignment")}
+                onOpenAssignment={() => handleTabChange("teacher-assignment")}
               />
             )}
             {activeTab === "user-management" && <UserManagement />}
@@ -540,6 +573,7 @@ export default function App() {
 
       {/* Global Drawers & Modals */}
       <NotificationCenter
+        variant={currentRole === "ADMIN" ? "admin" : "default"}
         isOpen={isNotifsOpen}
         onClose={() => setIsNotifsOpen(false)}
         notifications={notificationState.notifications}

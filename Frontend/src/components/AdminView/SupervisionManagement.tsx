@@ -141,20 +141,20 @@ export const SupervisionManagement: React.FC = () => {
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-indigo-950 via-indigo-900 to-slate-900 p-6 text-white shadow-lg sm:p-8 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-[#004f52] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/25 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-100">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/90">
             <ShieldCheck className="h-3.5 w-3.5" /> Placement control center
           </div>
           <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
             Phân công giảng viên
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-indigo-100/80">
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/85">
             Quản lý placement đã được xác nhận, phân công người hướng dẫn và
             theo dõi lịch sử phân công.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-indigo-100/75">
+        <div className="flex items-center gap-2 text-xs text-white/85">
           <UsersRound className="h-4 w-4" /> {lecturers.length} giảng viên đang
           hoạt động
         </div>

@@ -14,6 +14,7 @@ import {
   Search,
   CalendarDays,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -169,6 +170,28 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItems = getNavItems();
   const canUseChat = currentRole === "STUDENT" || currentRole === "COMPANY" || currentRole === "TEACHER";
   const useCompactSession = currentRole === "COMPANY" || currentRole === "ADMIN";
+
+  if (currentRole === "ADMIN") {
+    return (
+      <aside className="fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-[#006f72] bg-[#00878a] text-white shadow-2xl lg:w-72">
+        <button type="button" onClick={() => setActiveTab(navItems[0]?.id || "")} className="flex h-24 items-center justify-center gap-3 border-b border-white/15 px-3 text-left lg:justify-start lg:px-7">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1 shadow-lg"><img src="/careerbridge-logo.svg" alt="CareerBridge" className="h-full w-full -translate-x-[14%] scale-[1.35] object-contain" /></span>
+          <span className="hidden lg:block"><span className="block text-base font-black tracking-tight">CareerBridge</span><span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">Admin workspace</span></span>
+        </button>
+        <div className="hidden px-4 pt-6 text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 lg:block">Điều hướng</div>
+        <nav className="mt-3 flex-1 space-y-1 overflow-y-auto px-3">
+          {navItems.map((item) => {
+            const isActive = activeTab === item.id;
+            return <button key={item.id} id={`nav-tab-${item.id}`} title={item.label} onClick={() => setActiveTab(item.id)} className={`flex w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition lg:justify-start ${isActive ? "bg-white text-[#00777a] shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white"}`}>{item.icon}<span className="hidden lg:block">{item.label}</span></button>;
+          })}
+        </nav>
+        <div className="m-3 space-y-2 border-t border-white/15 pt-3">
+          <button id="btn-notifs-toggle" title="Thông báo" onClick={onOpenNotifs} className="relative flex w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white/85 transition hover:bg-white/10 hover:text-white lg:justify-start"><Bell className="h-5 w-5" /><span className="hidden lg:block">Thông báo</span>{unreadNotifsCount > 0 && <span className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#da1c2d] px-1 text-[10px] font-bold text-white lg:static lg:ml-auto">{unreadNotifsCount}</span>}</button>
+          <button id="btn-logout" title="Đăng xuất" type="button" onClick={onLogout} className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#da1c2d] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#da1c2d]/20 transition hover:bg-[#bd1425] lg:justify-start"><LogOut className="h-5 w-5" /><span className="hidden lg:block">Đăng xuất</span></button>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <header className={`bg-white border-b border-slate-200 sticky ${useCompactSession ? "top-0" : "top-10"} z-40 shadow-xs`}>

@@ -241,17 +241,17 @@ export const PlacementManagement: React.FC<{
 
   return (
     <section className="space-y-5">
-      <header className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-xl sm:p-8">
+      <header className="rounded-3xl bg-gradient-to-br from-[#004f52] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/25 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-100">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/90">
               <BriefcaseBusiness className="h-3.5 w-3.5" /> Quản lý vận hành
               placement
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight">
               Quản lý placement
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-indigo-100/80">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/85">
               Theo dõi lịch thực tập, tiến độ báo cáo và lifecycle của từng
               placement.
             </p>

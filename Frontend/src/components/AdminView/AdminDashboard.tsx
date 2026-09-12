@@ -47,9 +47,9 @@ interface AdminDashboardProps {
 
 const placementColors: Record<string, string> = {
   PENDING: "#f59e0b",
-  ACTIVE: "#10b981",
+  ACTIVE: "#00878a",
   COMPLETED: "#64748b",
-  CANCELLED: "#f43f5e",
+  CANCELLED: "#da1c2d",
 };
 const placementLabels: Record<string, string> = {
   PENDING: "Chờ phân công",
@@ -189,28 +189,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   return (
     <section className="space-y-5">
-      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-indigo-800 p-6 text-white shadow-xl sm:p-8">
+      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#005c5f] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/20 sm:p-8">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-100">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/80">
               <BarChart3 className="h-3.5 w-3.5" /> Tổng quan vận hành
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
               Trung tâm điều hành thực tập
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-indigo-100/80">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80">
               Theo dõi tuyển dụng, placement và tiến độ báo cáo bằng dữ liệu vận
               hành thực tế.
             </p>
           </div>
           <div className="grid gap-2.5 sm:grid-cols-2">
-            <label className="text-xs font-semibold text-indigo-200">
+            <label className="text-xs font-semibold text-white/80">
               Kỳ thực tập
               <div className="relative mt-1.5">
                 <select
                   value={semesterId}
                   onChange={(event) => setSemesterId(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-slate-900/85 px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
+                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
                 >
                   <option className="bg-slate-900 text-white py-1" value="ALL">
                     Toàn hệ thống
@@ -225,10 +225,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-300" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
               </div>
             </label>
-            <label className="text-xs font-semibold text-indigo-200">
+            <label className="text-xs font-semibold text-white/80">
               Khoảng thời gian
               <div className="relative mt-1.5">
                 <select
@@ -236,7 +236,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={(event) =>
                     setMonths(Number(event.target.value) as 3 | 6 | 9 | 12)
                   }
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-slate-900/85 px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
+                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
                 >
                   {[3, 6, 9, 12].map((value) => (
                     <option className="bg-slate-900 text-white py-1" key={value} value={value}>
@@ -244,12 +244,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-300" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
               </div>
             </label>
           </div>
         </div>
-        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-xs text-indigo-100/75">
+        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-xs text-white/75">
           <span className="inline-flex items-center gap-1.5">
             <CalendarClock className="h-3.5 w-3.5" /> Cập nhật:{" "}
             {dateTime.format(new Date(scope.generatedAt))}
@@ -279,42 +279,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           value={number.format(global.totalStudents)}
           detail={`${number.format(global.activeStudentUsers)} tài khoản đang hoạt động`}
           icon={UsersRound}
-          tone="bg-blue-50 text-blue-600"
+          tone="bg-[#e6f6f6] text-[#00878a]"
         />
         <MetricCard
           label="Doanh nghiệp"
           value={number.format(global.approvedCompanies)}
           detail={`${number.format(global.pendingCompanies)} hồ sơ đang chờ duyệt`}
           icon={Building2}
-          tone="bg-emerald-50 text-emerald-600"
+          tone="bg-[#e6f6f6] text-[#00878a]"
         />
         <MetricCard
           label="Tin thực tập"
           value={number.format(kpis.openInternships)}
           detail={`${number.format(kpis.totalInternships)} tin trong phạm vi`}
           icon={BriefcaseBusiness}
-          tone="bg-violet-50 text-violet-600"
+          tone="bg-[#fff0f2] text-[#da1c2d]"
         />
         <MetricCard
           label="Ứng tuyển"
           value={number.format(kpis.totalApplications)}
           detail={`${number.format(kpis.acceptedApplications)} đơn được chấp nhận`}
           icon={ClipboardCheck}
-          tone="bg-rose-50 text-rose-600"
+          tone="bg-[#fff0f2] text-[#da1c2d]"
         />
         <MetricCard
           label="Placement hoạt động"
           value={number.format(kpis.activePlacements)}
           detail={`${number.format(kpis.totalPlacements)} placement trong phạm vi`}
           icon={Layers3}
-          tone="bg-amber-50 text-amber-600"
+          tone="bg-[#e6f6f6] text-[#00878a]"
         />
         <MetricCard
           label="Báo cáo chờ duyệt"
           value={number.format(kpis.reportsAwaitingReview)}
           detail="Cần giảng viên xử lý"
           icon={CheckCircle2}
-          tone="bg-cyan-50 text-cyan-600"
+          tone="bg-[#fff0f2] text-[#da1c2d]"
         />
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -323,19 +323,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             label: "Tỷ lệ có placement",
             value: kpis.placementCoverageRate,
             detail: `${number.format(kpis.placedStudents)}/${number.format(kpis.applicantStudents)} sinh viên ứng tuyển`,
-            color: "from-indigo-600 to-violet-600",
+            color: "from-[#00878a] to-[#006f72]",
           },
           {
             label: "Tỷ lệ lấp đầy slot",
             value: kpis.slotOccupancyRate,
             detail: `${number.format(kpis.filledSlots)}/${number.format(kpis.totalSlots)} vị trí đã dùng`,
-            color: "from-emerald-500 to-teal-600",
+            color: "from-[#006f72] to-[#00878a]",
           },
           {
             label: "Placement chưa phân công",
             value: kpis.unassignedPlacements,
             detail: "Cần chỉ định giảng viên hướng dẫn",
-            color: "from-amber-500 to-orange-500",
+            color: "from-[#da1c2d] to-[#b41425]",
             action: "teacher-assignment",
           },
         ].map((item) => (
@@ -400,10 +400,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     >
                       <stop
                         offset="5%"
-                        stopColor="#4f46e5"
+                        stopColor="#00878a"
                         stopOpacity={0.35}
                       />
-                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                      <stop offset="95%" stopColor="#00878a" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
@@ -426,7 +426,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     type="monotone"
                     dataKey="applications"
                     name="Ứng tuyển"
-                    stroke="#4f46e5"
+                    stroke="#00878a"
                     strokeWidth={2.5}
                     fill="url(#dashboardApplications)"
                   />
@@ -434,7 +434,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     type="monotone"
                     dataKey="placements"
                     name="Placement mới"
-                    stroke="#10b981"
+                    stroke="#da1c2d"
                     strokeWidth={2.5}
                     fill="transparent"
                   />
@@ -567,7 +567,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Bar
                     dataKey="internshipCount"
                     name="Tin thực tập"
-                    fill="#4f46e5"
+                  fill="#00878a"
                     radius={[0, 7, 7, 0]}
                   />
                 </BarChart>
