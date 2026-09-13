@@ -21,6 +21,7 @@ import { getApiErrorMessage } from "../../auth/api";
 import { ProfileAvatarPreview } from "../ProfileAvatarUpload";
 import { placementsApi } from "../../placements/api";
 import type {
+  AcademicMonitoringStatus,
   PlacementRecord,
   PlacementStatus,
   ReportStatus,
@@ -40,6 +41,18 @@ const statusClass: Record<PlacementStatus, string> = {
   PENDING: "border-amber-200 bg-amber-50 text-amber-700",
   ACTIVE: "border-emerald-200 bg-emerald-50 text-emerald-700",
   COMPLETED: "border-slate-200 bg-slate-100 text-slate-700",
+  CANCELLED: "border-rose-200 bg-rose-50 text-rose-700",
+};
+const academicStatusLabel: Record<AcademicMonitoringStatus, string> = {
+  PENDING: "Chờ theo dõi",
+  ACTIVE: "Đang theo dõi",
+  CLOSED: "Đã đóng học vụ",
+  CANCELLED: "Đã hủy học vụ",
+};
+const academicStatusClass: Record<AcademicMonitoringStatus, string> = {
+  PENDING: "border-amber-200 bg-amber-50 text-amber-700",
+  ACTIVE: "border-blue-200 bg-blue-50 text-blue-700",
+  CLOSED: "border-slate-200 bg-slate-100 text-slate-700",
   CANCELLED: "border-rose-200 bg-rose-50 text-rose-700",
 };
 const reportLabel: Record<ReportStatus, string> = {
@@ -168,8 +181,8 @@ export const PlacementManagement: React.FC<{
   };
   const saveSchedule = async () => {
     if (!selected) return;
-    if (!startDate && !endDate) {
-      setError("Hãy nhập ít nhất một mốc thời gian.");
+    if (!startDate || !endDate) {
+      setError("Hãy nhập đủ ngày bắt đầu và ngày kết thúc theo dõi.");
       return;
     }
     if (startDate && endDate && startDate >= endDate) {
@@ -183,19 +196,15 @@ export const PlacementManagement: React.FC<{
       (endDate && (endDate < min || endDate > max))
     ) {
       setError(
-        `Lịch phải nằm trong kỳ ${formatDate(selected.semester.startDate)} – ${formatDate(selected.semester.endDate)}.`,
+        `Lịch phải nằm trong khung theo dõi ${formatDate(selected.semester.startDate)} – ${formatDate(selected.semester.endDate)}.`,
       );
       return;
     }
     setSaving(true);
     try {
       const updated = await placementsApi.update(selected.id, {
-        startDate: startDate
-          ? new Date(`${startDate}T00:00:00.000Z`).toISOString()
-          : undefined,
-        endDate: endDate
-          ? new Date(`${endDate}T00:00:00.000Z`).toISOString()
-          : undefined,
+        startDate: new Date(`${startDate}T00:00:00.000Z`).toISOString(),
+        endDate: new Date(`${endDate}T23:59:59.999Z`).toISOString(),
       });
       setSelected(updated);
       setEditingSchedule(false);
@@ -209,7 +218,7 @@ export const PlacementManagement: React.FC<{
   const submitStatus = async () => {
     if (!selected || !action) return;
     if (action === "CANCELLED" && !note.trim()) {
-      setError("Cần nhập lý do hủy placement.");
+      setError("Cần nhập lý do hủy hồ sơ thực tập.");
       return;
     }
     setSaving(true);
@@ -245,15 +254,15 @@ export const PlacementManagement: React.FC<{
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/90">
-              <BriefcaseBusiness className="h-3.5 w-3.5" /> Quản lý vận hành
-              placement
+              <BriefcaseBusiness className="h-3.5 w-3.5" /> Theo dõi hồ sơ thực
+              tập
             </div>
             <h1 className="admin-page-title mt-4 text-3xl font-black tracking-tight">
-              Quản lý placement
+              Quản lý hồ sơ thực tập
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-white/85">
-              Theo dõi lịch thực tập, tiến độ báo cáo và lifecycle của từng
-              placement.
+              Theo dõi lịch học vụ, tiến độ báo cáo và vòng đời của từng hồ sơ
+              thực tập.
             </p>
           </div>
           <button
@@ -268,7 +277,7 @@ export const PlacementManagement: React.FC<{
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[
           {
-            label: "Tổng placement",
+            label: "Tổng hồ sơ thực tập",
             value: total,
             tone: "bg-indigo-50 text-indigo-700",
           },
@@ -422,7 +431,7 @@ export const PlacementManagement: React.FC<{
                   <th className="px-5 py-3 font-bold">Hướng dẫn</th>
                   <th className="px-5 py-3 font-bold">Tiến độ</th>
                   <th className="px-5 py-3 font-bold">Trạng thái</th>
-                  <th className="px-5 py-3 font-bold">Audit phân công</th>
+                  <th className="px-5 py-3 font-bold">Lịch sử phân công</th>
                   <th className="px-5 py-3 text-right font-bold">Thao tác</th>
                 </tr>
               </thead>
@@ -466,7 +475,7 @@ export const PlacementManagement: React.FC<{
           <div className="px-6 py-16 text-center">
             <BriefcaseBusiness className="mx-auto h-10 w-10 text-slate-300" />
             <p className="mt-3 text-sm font-black text-slate-800">
-              Không có placement phù hợp
+              Không có hồ sơ thực tập phù hợp
             </p>
             <p className="mt-1 text-xs text-slate-500">
               Thử điều chỉnh bộ lọc hoặc chờ ứng viên được chấp nhận.
@@ -492,7 +501,25 @@ export const PlacementManagement: React.FC<{
                     key={placement.id}
                     className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70"
                   >
-                    <td className="px-5 py-4"><div className="flex items-center gap-3"><ProfileAvatarPreview fileId={placement.student.avatarFileId} fallback={placement.student.fullName.charAt(0)} className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-black text-indigo-700" imageClassName="h-full w-full object-cover" /><div><p className="font-bold text-slate-900">{placement.student.fullName}</p><p className="mt-1 font-mono text-[10px] text-slate-500">{placement.student.studentCode} · {placement.student.major}</p></div></div></td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <ProfileAvatarPreview
+                          fileId={placement.student.avatarFileId}
+                          fallback={placement.student.fullName.charAt(0)}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-black text-indigo-700"
+                          imageClassName="h-full w-full object-cover"
+                        />
+                        <div>
+                          <p className="font-bold text-slate-900">
+                            {placement.student.fullName}
+                          </p>
+                          <p className="mt-1 font-mono text-[10px] text-slate-500">
+                            {placement.student.studentCode} ·{" "}
+                            {placement.student.major}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-5 py-4">
                       <p className="font-bold text-slate-800">
                         {placement.internship.title}
@@ -544,11 +571,19 @@ export const PlacementManagement: React.FC<{
                       </div>
                     </td>
                     <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusClass[placement.status]}`}
-                      >
-                        {statusLabel[placement.status]}
-                      </span>
+                      <div className="flex flex-col items-start gap-1.5">
+                        <span
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusClass[placement.status]}`}
+                        >
+                          Công việc: {statusLabel[placement.status]}
+                        </span>
+                        <span
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${academicStatusClass[placement.academicStatus]}`}
+                        >
+                          Học vụ:{" "}
+                          {academicStatusLabel[placement.academicStatus]}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-5 py-4 text-[10px] text-slate-500">
                       {placement.supervision ? (
@@ -572,7 +607,8 @@ export const PlacementManagement: React.FC<{
                               placement.supervision.assignedById ?? undefined
                             }
                           >
-                            ID: {placement.supervision.assignedById ?? "—"}
+                            Mã người phân công:{" "}
+                            {placement.supervision.assignedById ?? "—"}
                           </p>
                           <p>
                             Hoàn tất:{" "}
@@ -605,7 +641,7 @@ export const PlacementManagement: React.FC<{
         {!loading && totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
             <p className="text-xs text-slate-500">
-              {total} placement · Trang {page}/{totalPages}
+              {total} hồ sơ thực tập · Trang {page}/{totalPages}
             </p>
             <div className="flex gap-2">
               <button
@@ -637,7 +673,7 @@ export const PlacementManagement: React.FC<{
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
-                    Placement detail
+                    Chi tiết hồ sơ thực tập
                   </p>
                   <h2 className="mt-1 text-xl font-black text-slate-950">
                     {selected.student.fullName}
@@ -683,7 +719,7 @@ export const PlacementManagement: React.FC<{
                 {selected.supervision && (
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-600">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Audit phân công
+                      Lịch sử phân công
                     </p>
                     <p className="mt-2">
                       Phân công lúc:{" "}
@@ -702,7 +738,8 @@ export const PlacementManagement: React.FC<{
                       className="mt-1 truncate font-mono"
                       title={selected.supervision.assignedById ?? undefined}
                     >
-                      assignedById: {selected.supervision.assignedById ?? "—"}
+                      Mã người phân công:{" "}
+                      {selected.supervision.assignedById ?? "—"}
                     </p>
                     <p className="mt-1">
                       Hoàn tất lúc:{" "}
@@ -720,15 +757,15 @@ export const PlacementManagement: React.FC<{
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-black text-slate-900">
-                      Lịch thực tập thực tế
+                      Lịch theo dõi học vụ
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      Giới hạn kỳ: {formatDate(selected.semester.startDate)} —{" "}
+                      Khung theo dõi của trường:{" "}
+                      {formatDate(selected.semester.startDate)} —{" "}
                       {formatDate(selected.semester.endDate)}
                     </p>
                   </div>
-                  {selected.status === "PENDING" ||
-                  selected.status === "ACTIVE" ? (
+                  {selected.academicStatus === "PENDING" ? (
                     <button
                       onClick={startScheduleEdit}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700"
@@ -782,11 +819,19 @@ export const PlacementManagement: React.FC<{
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <div
+                    className={`mt-4 flex items-center gap-2 text-sm font-semibold ${selected.startDate && selected.endDate ? "text-slate-700" : "rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800"}`}
+                  >
                     <CalendarDays className="h-4 w-4 text-indigo-600" />{" "}
-                    {formatDate(selected.startDate)}{" "}
-                    <span className="text-slate-400">→</span>{" "}
-                    {formatDate(selected.endDate)}
+                    {selected.startDate && selected.endDate ? (
+                      <>
+                        {formatDate(selected.startDate)}{" "}
+                        <span className="text-slate-400">→</span>{" "}
+                        {formatDate(selected.endDate)}
+                      </>
+                    ) : (
+                      "Chưa có lịch. Hãy đặt đủ hai ngày trước khi phân công giảng viên."
+                    )}
                   </div>
                 )}
               </div>
@@ -834,19 +879,30 @@ export const PlacementManagement: React.FC<{
                 )}
               </div>
               <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-sm font-black text-slate-900">Lifecycle</p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-black text-slate-900">
+                    Quản lý trạng thái hồ sơ
+                  </p>
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${academicStatusClass[selected.academicStatus]}`}
+                  >
+                    Học vụ: {academicStatusLabel[selected.academicStatus]}
+                  </span>
+                </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {selected.status === "ACTIVE" && (
-                    <button
-                      onClick={() => {
-                        setAction("COMPLETED");
-                        setNote("");
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700"
-                    >
-                      <CheckCircle2 className="h-4 w-4" /> Hoàn tất placement
-                    </button>
-                  )}
+                  {selected.status === "ACTIVE" &&
+                    selected.academicStatus === "CLOSED" && (
+                      <button
+                        onClick={() => {
+                          setAction("COMPLETED");
+                          setNote("");
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700"
+                      >
+                        <CheckCircle2 className="h-4 w-4" /> Hoàn tất hồ sơ thực
+                        tập
+                      </button>
+                    )}
                   {(selected.status === "PENDING" ||
                     selected.status === "ACTIVE") && (
                     <button
@@ -856,28 +912,36 @@ export const PlacementManagement: React.FC<{
                       }}
                       className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
                     >
-                      <XCircle className="h-4 w-4" /> Hủy placement
+                      <XCircle className="h-4 w-4" /> Hủy hồ sơ thực tập
                     </button>
                   )}
                   {(selected.status === "COMPLETED" ||
                     selected.status === "CANCELLED") && (
                     <p className="text-xs text-slate-500">
-                      Placement đã ở trạng thái cuối, chỉ có thể xem lịch sử.
+                      Hồ sơ thực tập đã ở trạng thái cuối, chỉ có thể xem lịch
+                      sử.
                     </p>
                   )}
+                  {selected.status === "ACTIVE" &&
+                    selected.academicStatus !== "CLOSED" && (
+                      <p className="text-xs leading-5 text-slate-500">
+                        Chỉ có thể xác nhận công việc thực tế hoàn tất sau khi
+                        thời gian theo dõi học vụ đã đóng.
+                      </p>
+                    )}
                 </div>
               </div>
               {action && (
                 <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
                   <p className="text-sm font-black text-indigo-950">
                     {action === "COMPLETED"
-                      ? "Xác nhận hoàn tất placement"
-                      : "Xác nhận hủy placement"}
+                      ? "Xác nhận hoàn tất hồ sơ thực tập"
+                      : "Xác nhận hủy hồ sơ thực tập"}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-indigo-800">
                     {action === "COMPLETED"
-                      ? "Supervision đang hoạt động cũng sẽ được hoàn tất. Các báo cáo đã gửi phải được review trước."
-                      : "Lịch sử application, report và evaluation vẫn được giữ. Slot internship sẽ được trả lại."}
+                      ? "Xác nhận công việc thực tế tại doanh nghiệp đã kết thúc. Phần theo dõi học vụ đã được hệ thống đóng trước đó."
+                      : "Lịch sử ứng tuyển, báo cáo và đánh giá vẫn được giữ. Suất tuyển dụng của vị trí sẽ được hoàn lại."}
                   </p>
                   <textarea
                     value={note}

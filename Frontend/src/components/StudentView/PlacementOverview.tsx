@@ -12,9 +12,38 @@ import {
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
 import { placementsApi } from "../../placements/api";
-import type { PlacementRecord } from "../../placements/types";
+import type {
+  AcademicMonitoringStatus,
+  PlacementRecord,
+  PlacementStatus,
+} from "../../placements/types";
 import { formatDate, formatDateTime } from "../../utils/format";
 import { ProfileAvatarPreview } from "../ProfileAvatarUpload";
+
+const placementStatusLabel: Record<PlacementStatus, string> = {
+  PENDING: "Chờ bắt đầu",
+  ACTIVE: "Đang thực tập",
+  COMPLETED: "Đã kết thúc công việc",
+  CANCELLED: "Đã hủy",
+};
+
+const academicStatusLabel: Record<AcademicMonitoringStatus, string> = {
+  PENDING: "Chờ nhà trường theo dõi",
+  ACTIVE: "Đang được nhà trường theo dõi",
+  CLOSED: "Đã kết thúc theo dõi học vụ",
+  CANCELLED: "Đã hủy theo dõi học vụ",
+};
+
+const workTypeLabel: Record<string, string> = {
+  ONSITE: "Làm việc tại công ty",
+  Onsite: "Làm việc tại công ty",
+  REMOTE: "Làm việc từ xa",
+  Remote: "Làm việc từ xa",
+  HYBRID: "Kết hợp tại công ty và từ xa",
+  Hybrid: "Kết hợp tại công ty và từ xa",
+  "Full-time": "Toàn thời gian",
+  "Part-time": "Bán thời gian",
+};
 
 export const PlacementOverview: React.FC = () => {
   const [placements, setPlacements] = useState<PlacementRecord[]>([]);
@@ -62,7 +91,7 @@ export const PlacementOverview: React.FC = () => {
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-xs">
           <BriefcaseBusiness className="mx-auto h-10 w-10 text-slate-300" />
           <h2 className="mt-4 text-base font-black text-slate-800">
-            Chưa có placement
+            Chưa có hồ sơ thực tập
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
             Sau khi doanh nghiệp chấp nhận đơn ứng tuyển, thông tin thực tập sẽ
@@ -89,15 +118,18 @@ export const PlacementOverview: React.FC = () => {
                       {placement.internship.title}
                     </h2>
                   </div>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${placement.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700" : placement.status === "PENDING" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"}`}
-                  >
-                    {placement.status === "ACTIVE"
-                      ? "Đang thực tập"
-                      : placement.status === "PENDING"
-                        ? "Chờ phân công"
-                        : placement.status}
-                  </span>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${placement.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700" : placement.status === "PENDING" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"}`}
+                    >
+                      Công việc: {placementStatusLabel[placement.status]}
+                    </span>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${placement.academicStatus === "ACTIVE" ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600"}`}
+                    >
+                      {academicStatusLabel[placement.academicStatus]}
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div className="flex items-center gap-2 text-xs text-slate-600">
@@ -115,14 +147,24 @@ export const PlacementOverview: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-600">
                     <Clock3 className="h-4 w-4 text-indigo-500" />
-                    {placement.internship.workType ?? "Hình thức chưa cập nhật"}
+                    {placement.internship.workType
+                      ? (workTypeLabel[placement.internship.workType] ??
+                        placement.internship.workType)
+                      : "Hình thức chưa cập nhật"}
                   </div>
                 </div>
                 <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   {placement.supervision ? (
                     <>
                       <div className="flex items-center gap-3">
-                        <ProfileAvatarPreview fileId={placement.supervision.lecturer.avatarFileId} fallback={placement.supervision.lecturer.fullName.charAt(0)} className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-bold text-indigo-700" imageClassName="h-full w-full object-cover" />
+                        <ProfileAvatarPreview
+                          fileId={placement.supervision.lecturer.avatarFileId}
+                          fallback={placement.supervision.lecturer.fullName.charAt(
+                            0,
+                          )}
+                          className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-bold text-indigo-700"
+                          imageClassName="h-full w-full object-cover"
+                        />
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                             Giảng viên hướng dẫn
@@ -158,7 +200,7 @@ export const PlacementOverview: React.FC = () => {
                             placement.supervision.assignedById ?? undefined
                           }
                         >
-                          assignedById:{" "}
+                          Mã người phân công:{" "}
                           {placement.supervision.assignedById ?? "—"}
                         </p>
                         <p className="mt-1">
@@ -180,8 +222,8 @@ export const PlacementOverview: React.FC = () => {
                           Đang chờ nhà trường phân công
                         </p>
                         <p className="mt-1 text-xs leading-5 text-slate-500">
-                          Bạn sẽ thấy thông tin giảng viên ngay sau khi Admin
-                          hoàn tất phân công.
+                          Bạn sẽ thấy thông tin giảng viên ngay sau khi quản trị
+                          viên hoàn tất phân công.
                         </p>
                       </div>
                     </div>

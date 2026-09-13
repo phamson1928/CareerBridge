@@ -6,30 +6,30 @@ InternHub là hệ thống hỗ trợ nhà trường quản lý toàn bộ vòng
 
 Hệ thống phục vụ bốn nhóm người dùng:
 
-| Vai trò | Mục tiêu chính |
-|---|---|
-| `STUDENT` | Hoàn thiện hồ sơ, tìm vị trí, ứng tuyển, nộp báo cáo và xem kết quả. |
-| `COMPANY` | Được duyệt hồ sơ doanh nghiệp, đăng vị trí, xét ứng viên và đánh giá thực tập sinh. |
-| `LECTURER` | Theo dõi sinh viên được phân công, phản hồi báo cáo và đánh giá. |
-| `ADMIN` | Quản trị tài khoản, doanh nghiệp, kỳ thực tập, phân công và theo dõi hệ thống. |
+| Vai trò    | Mục tiêu chính                                                                      |
+| ---------- | ----------------------------------------------------------------------------------- |
+| `STUDENT`  | Hoàn thiện hồ sơ, tìm vị trí, ứng tuyển, nộp báo cáo và xem kết quả.                |
+| `COMPANY`  | Được duyệt hồ sơ doanh nghiệp, đăng vị trí, xét ứng viên và đánh giá thực tập sinh. |
+| `LECTURER` | Theo dõi sinh viên được phân công, phản hồi báo cáo và đánh giá.                    |
+| `ADMIN`    | Quản trị tài khoản, doanh nghiệp, kỳ thực tập, phân công và theo dõi hệ thống.      |
 
 ## 2. Phạm vi chức năng
 
-| Phân hệ | Nghiệp vụ |
-|---|---|
-| Authentication | Đăng ký, đăng nhập, refresh token, đăng xuất và RBAC. |
-| Hồ sơ | Hồ sơ sinh viên, dự án cá nhân, kỹ năng, CV; hồ sơ giảng viên và doanh nghiệp. |
-| Đợt thực tập | Quản lý cửa sổ tuyển dụng và khoảng theo dõi học vụ của từng đợt. |
-| Vị trí thực tập | Doanh nghiệp đăng vị trí theo kỳ, số lượng tuyển, hạn nộp và kỹ năng yêu cầu. |
+| Phân hệ           | Nghiệp vụ                                                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Authentication    | Đăng ký, đăng nhập, refresh token, đăng xuất và RBAC.                                                                       |
+| Hồ sơ             | Hồ sơ sinh viên, dự án cá nhân, kỹ năng, CV; hồ sơ giảng viên và doanh nghiệp.                                              |
+| Đợt thực tập      | Quản lý cửa sổ tuyển dụng và khoảng theo dõi học vụ của từng đợt.                                                           |
+| Vị trí thực tập   | Doanh nghiệp đăng vị trí theo kỳ, số lượng tuyển, hạn nộp và kỹ năng yêu cầu.                                               |
 | AI gợi ý thực tập | Sinh viên lưu mong muốn công việc và chủ động tạo tối đa 10 gợi ý do backend xếp hạng; AI chỉ diễn giải tối đa 3 gợi ý đầu. |
-| Ứng tuyển | Sinh viên nộp đơn, doanh nghiệp xem xét và lưu lịch sử thay đổi trạng thái. |
-| Placement | Ghi nhận một đợt thực tập đã được xác nhận từ đơn được chấp nhận. |
-| Hướng dẫn | Admin phân công một giảng viên cho placement. |
-| Báo cáo | Sinh viên nộp báo cáo tuần; giảng viên phản hồi, duyệt hoặc yêu cầu sửa. |
-| Đánh giá | Doanh nghiệp và giảng viên gửi hai đánh giá độc lập cho một placement. |
-| Tệp tin | Quản lý metadata tệp CV, báo cáo, chứng chỉ; tệp lưu ở object storage. |
-| Trao đổi | Hội thoại giữa sinh viên và doanh nghiệp trong ngữ cảnh một đơn ứng tuyển. |
-| Hệ thống | Thông báo, dashboard, audit log. |
+| Ứng tuyển         | Sinh viên nộp đơn, doanh nghiệp xem xét và lưu lịch sử thay đổi trạng thái.                                                 |
+| Placement         | Ghi nhận một đợt thực tập đã được xác nhận từ đơn được chấp nhận.                                                           |
+| Hướng dẫn         | Admin phân công một giảng viên cho placement.                                                                               |
+| Báo cáo           | Sinh viên nộp báo cáo tuần; giảng viên phản hồi, duyệt hoặc yêu cầu sửa.                                                    |
+| Đánh giá          | Doanh nghiệp và giảng viên gửi hai đánh giá độc lập cho một placement.                                                      |
+| Tệp tin           | Quản lý metadata tệp CV, báo cáo, chứng chỉ; tệp lưu ở object storage.                                                      |
+| Trao đổi          | Hội thoại giữa sinh viên và doanh nghiệp trong ngữ cảnh một đơn ứng tuyển.                                                  |
+| Hệ thống          | Thông báo, dashboard, audit log.                                                                                            |
 
 ## 3. Vòng đời thực tập
 
@@ -66,18 +66,19 @@ flowchart TD
 - Một sinh viên chỉ có một application cho cùng một internship.
 - Trạng thái application: `PENDING → REVIEWING → ACCEPTED | REJECTED`; sinh viên có thể chuyển đơn chưa kết thúc sang `WITHDRAWN`.
 - Khi chấp nhận đơn, hệ thống tạo một `InternshipPlacement` duy nhất cho application đó và ghi `ApplicationStatusHistory`.
-- Phải kiểm tra nghiệp vụ để một sinh viên không có nhiều placement `ACTIVE` trong cùng một semester.
+- Phải kiểm tra nghiệp vụ để một sinh viên không có nhiều placement `PENDING` hoặc `ACTIVE` trong cùng một đợt.
 - Hủy placement không được xóa lịch sử application, report hay evaluation; chỉ thay đổi trạng thái sang `CANCELLED` khi phù hợp.
-- `startDate` và `endDate` của placement là thời gian làm thực tế; không bị ép phải nằm trong ngày bắt đầu/kết thúc của đợt.
+- `Internship.startDate/endDate` là lịch học vụ dự kiến do doanh nghiệp đề xuất. Phải nhập đủ cả hai và nằm trong khung theo dõi của đợt, hoặc để trống cả hai để Admin quyết định sau khi có placement.
+- `InternshipPlacement.startDate/endDate` là khoảng trường chính thức theo dõi riêng cho sinh viên, không phải cam kết về toàn bộ thời gian làm thực tế tại doanh nghiệp. Admin phải đặt đủ hai ngày trong khung của đợt trước khi phân công giảng viên; lịch không được sửa sau khi theo dõi đã bắt đầu.
 
 ### 4.3. Phân công, báo cáo và đánh giá
 
 - Một placement có tối đa một supervision đang hiệu lực; Admin là người tạo hoặc thay đổi phân công.
-- Một placement có tối đa một báo cáo cho mỗi tuần (`week`).
+- Một placement có tối đa một báo cáo cho mỗi tuần (`week`). Tuần 1 được tính từ `placement.startDate`; sinh viên được nộp tuần hiện tại hoặc tuần đã qua nhưng không được nộp tuần tương lai hay ngoài khoảng placement.
 - Báo cáo có trạng thái `DRAFT`, `SUBMITTED`, `APPROVED`, `REJECTED`.
 - Mỗi placement có tối đa một evaluation loại `COMPANY` và một evaluation loại `LECTURER`.
 - Chỉ tài khoản doanh nghiệp của placement hoặc giảng viên được phân công mới được tạo evaluation tương ứng. Quy tắc quyền này được kiểm tra ở service/guard.
-- Chỉ tạo hoặc nộp report, tạo/sửa evaluation trong khoảng theo dõi học vụ. Khi đợt kết thúc, `academicStatus` chuyển `CLOSED`, supervision được hoàn tất; report đã `SUBMITTED` vẫn có thể được giảng viên duyệt để chốt kết quả.
+- Chỉ tạo hoặc nộp report, tạo/sửa/xóa evaluation trong khoảng theo dõi riêng của placement và đồng thời phải nằm trong pha `MONITORING` của đợt. Khi `placement.endDate` hoặc đợt kết thúc, `academicStatus` chuyển `CLOSED`, supervision được hoàn tất; report đã `SUBMITTED` vẫn có thể được giảng viên duyệt để chốt kết quả.
 
 ### 4.4. Kỹ năng và đề xuất
 

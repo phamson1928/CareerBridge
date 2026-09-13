@@ -13,7 +13,7 @@ interface Props {
 const evaluatorRoleLabel: Record<string, string> = { COMPANY: 'Doanh nghiệp', LECTURER: 'Giảng viên', ADMIN: 'Quản trị viên', STUDENT: 'Sinh viên' };
 
 export function TeacherEvaluations({ placements, evaluations, onSubmit, onUpdate }: Props) {
-  const evaluable = useMemo(() => placements.filter((placement) => placement.status === 'ACTIVE' || placement.status === 'COMPLETED'), [placements]);
+  const evaluable = useMemo(() => placements.filter((placement) => placement.academicStatus === 'ACTIVE'), [placements]);
   const [placementId, setPlacementId] = useState('');
   const [score, setScore] = useState(8);
   const [comment, setComment] = useState('');

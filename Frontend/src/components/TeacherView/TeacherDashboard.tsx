@@ -71,8 +71,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   if (error || !profile) {
     return (
       <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-800">
-        <h1 className="text-lg font-black">Chưa thể tải dashboard giảng viên</h1>
-        <p className="mt-2 text-sm">{error ?? "Hồ sơ giảng viên chưa sẵn sàng."}</p>
+        <h1 className="text-lg font-black">
+          Chưa thể tải bảng điều khiển của giảng viên
+        </h1>
+        <p className="mt-2 text-sm">
+          {error ?? "Hồ sơ giảng viên chưa sẵn sàng."}
+        </p>
         <button
           onClick={() => onNavigateTab("lecturer-profile")}
           className="mt-4 rounded-xl bg-rose-700 px-4 py-2 text-xs font-bold text-white hover:bg-rose-800"
@@ -94,7 +98,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-violet-100">
-              <GraduationCap className="h-3.5 w-3.5" /> Academic supervision
+              <GraduationCap className="h-3.5 w-3.5" /> Theo dõi và hướng dẫn
+              học vụ
             </p>
             <h1 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">
               {profile.fullName}
@@ -113,34 +118,74 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Metric label="Sinh viên đang hướng dẫn" value={activeSupervisions.length} icon={<UsersRound className="h-5 w-5" />} tone="bg-indigo-50 text-indigo-700" />
-        <Metric label="Báo cáo chờ duyệt" value={pendingReports} icon={<ClipboardCheck className="h-5 w-5" />} tone="bg-amber-50 text-amber-700" onClick={() => onNavigateTab("review-reports")} />
-        <Metric label="Đánh giá đã gửi" value={evaluations.length} icon={<BarChart3 className="h-5 w-5" />} tone="bg-emerald-50 text-emerald-700" onClick={() => onNavigateTab("evaluation-list")} />
+        <Metric
+          label="Sinh viên đang hướng dẫn"
+          value={activeSupervisions.length}
+          icon={<UsersRound className="h-5 w-5" />}
+          tone="bg-indigo-50 text-indigo-700"
+        />
+        <Metric
+          label="Báo cáo chờ duyệt"
+          value={pendingReports}
+          icon={<ClipboardCheck className="h-5 w-5" />}
+          tone="bg-amber-50 text-amber-700"
+          onClick={() => onNavigateTab("review-reports")}
+        />
+        <Metric
+          label="Đánh giá đã gửi"
+          value={evaluations.length}
+          icon={<BarChart3 className="h-5 w-5" />}
+          tone="bg-emerald-50 text-emerald-700"
+          onClick={() => onNavigateTab("evaluation-list")}
+        />
       </div>
 
       <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
           <div>
-            <h2 className="font-black text-slate-900">Sinh viên đang phụ trách</h2>
-            <p className="mt-0.5 text-xs text-slate-500">Placement được Admin phân công cho tài khoản của bạn.</p>
+            <h2 className="font-black text-slate-900">
+              Sinh viên đang phụ trách
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Hồ sơ thực tập được quản trị viên phân công cho tài khoản của bạn.
+            </p>
           </div>
-          <button onClick={() => onNavigateTab("supervised-placements")} className="text-xs font-bold text-indigo-700 hover:underline">Xem tất cả</button>
+          <button
+            onClick={() => onNavigateTab("supervised-placements")}
+            className="text-xs font-bold text-indigo-700 hover:underline"
+          >
+            Xem tất cả
+          </button>
         </div>
         {recentStudents.length === 0 ? (
-          <div className="px-6 py-14 text-center text-sm text-slate-500">Chưa có placement đang hoạt động được phân công cho bạn.</div>
+          <div className="px-6 py-14 text-center text-sm text-slate-500">
+            Chưa có hồ sơ thực tập đang hoạt động được phân công cho bạn.
+          </div>
         ) : (
           <div className="grid gap-px bg-slate-100 md:grid-cols-2">
             {recentStudents.map((item) => (
               <div key={item.id} className="bg-white p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-bold text-slate-900">{item.placement.student.fullName}</h3>
-                    <p className="mt-1 font-mono text-[11px] text-slate-500">{item.placement.student.studentCode} · {item.placement.student.major}</p>
+                    <h3 className="font-bold text-slate-900">
+                      {item.placement.student.fullName}
+                    </h3>
+                    <p className="mt-1 font-mono text-[11px] text-slate-500">
+                      {item.placement.student.studentCode} ·{" "}
+                      {item.placement.student.major}
+                    </p>
                   </div>
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Đang hướng dẫn</span>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
+                    Đang hướng dẫn
+                  </span>
                 </div>
-                <p className="mt-4 text-sm font-semibold text-slate-700">{item.placement.internship.title}</p>
-                <p className="mt-1 text-xs text-slate-500">{item.placement.company.companyName} · {item.placement._count.reports} báo cáo</p>
+                <p className="mt-4 text-sm font-semibold text-slate-700">
+                  {item.placement.internship.title}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {item.placement.company.companyName} ·{" "}
+                  {item.placement._count.reports} báo cáo
+                </p>
               </div>
             ))}
           </div>

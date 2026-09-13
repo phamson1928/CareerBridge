@@ -1,6 +1,15 @@
 export type SemesterStatus =
   | 'UPCOMING'
   | 'ACTIVE'
+  | 'RECRUITING'
+  | 'MONITORING'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
+export type InternshipCampaignPhase =
+  | 'UPCOMING'
+  | 'RECRUITING'
+  | 'MONITORING'
   | 'COMPLETED'
   | 'CANCELLED';
 
@@ -10,6 +19,8 @@ export interface SemesterRecord {
   startDate: string;
   endDate: string;
   status: SemesterStatus;
+  recruitmentStart: string;
+  phase: InternshipCampaignPhase;
   internshipCount: number;
   placementCount: number;
   createdAt: string;

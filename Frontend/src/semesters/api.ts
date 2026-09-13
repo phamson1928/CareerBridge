@@ -39,7 +39,7 @@ export const semestersApi = {
     return response.data.data;
   },
 
-  async updateStatus(id: string, status: SemesterStatus) {
+  async updateStatus(id: string, status: Extract<SemesterStatus, 'CANCELLED'>) {
     const response = await api.patch<ApiSuccess<SemesterRecord>>(
       `/semesters/${id}/status`,
       { status },

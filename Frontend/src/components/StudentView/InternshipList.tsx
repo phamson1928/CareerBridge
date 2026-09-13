@@ -30,7 +30,7 @@ interface InternshipListProps {
     page: number;
     limit: number;
     search?: string;
-    skillId?: string;
+    skillIds?: string[];
   }) => Promise<InternshipPage>;
   onApply: (internshipId: string, coverLetter: string, internshipTitle: string) => Promise<void>;
   onOpenProfile: () => void;
@@ -83,7 +83,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
           page,
           limit: 12,
           search: searchTerm.trim() || undefined,
-          skillId: selectedSkillFilter[0]?.id,
+          skillIds: selectedSkillFilter.map((skill) => skill.id),
         });
         if (active) setInternshipPage(result);
       } catch (error) {
@@ -177,6 +177,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
           </div>
           <div className="w-full sm:w-80">
             <SkillPicker
+              multiple
               selected={selectedSkillFilter}
               onChange={(skills) => {
                 setSelectedSkillFilter(skills);
@@ -184,6 +185,11 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               }}
               placeholder="Lọc theo kỹ năng..."
             />
+            {selectedSkillFilter.length > 1 && (
+              <p className="mt-1 px-1 text-[11px] text-slate-500">
+                Chỉ hiển thị vị trí có đủ {selectedSkillFilter.length} kỹ năng đã chọn.
+              </p>
+            )}
           </div>
         </div>
       </div>

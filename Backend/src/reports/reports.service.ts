@@ -24,6 +24,8 @@ import { UpdateReportDto } from './dto/update-report.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 const select = {
   id: true,
   placementId: true,
@@ -51,6 +53,8 @@ const select = {
       id: true,
       status: true,
       academicStatus: true,
+      startDate: true,
+      endDate: true,
       student: {
         select: { id: true, userId: true, studentCode: true, fullName: true },
       },
@@ -86,7 +90,8 @@ export class ReportsService {
 
   async create(dto: CreateReportDto, user: AuthUser) {
     await this.lifecycle.reconcile();
-    await this.studentPlacement(dto.placementId, user.id);
+    const placement = await this.studentPlacement(dto.placementId, user.id);
+    this.assertReportWeekAvailable(placement, dto.week);
     await this.validateFile(dto.fileId, user.id);
     try {
       const report = await this.prisma.report.create({
@@ -154,9 +159,10 @@ export class ReportsService {
     });
   }
   async submit(id: string, user: AuthUser) {
+    await this.lifecycle.reconcile();
     const current = await this.findOne(id, user);
     if (current.placement.student.userId !== user.id) throw this.denied();
-    this.assertMonitoringOpen(current.placement);
+    this.assertReportWeekAvailable(current.placement, current.week);
     if (
       current.status !== ReportStatus.DRAFT &&
       current.status !== ReportStatus.REJECTED
@@ -295,6 +301,8 @@ export class ReportsService {
       select: {
         status: true,
         academicStatus: true,
+        startDate: true,
+        endDate: true,
         semester: {
           select: { id: true, status: true, startDate: true, endDate: true },
         },
@@ -307,6 +315,7 @@ export class ReportsService {
         'Reports require active academic monitoring',
       );
     this.lifecycle.assertMonitoringOpen(p.semester);
+    return p;
   }
   private assertMonitoringOpen(placement: {
     academicStatus: AcademicMonitoringStatus;
@@ -324,6 +333,53 @@ export class ReportsService {
       );
     }
     this.lifecycle.assertMonitoringOpen(placement.semester);
+  }
+  private assertReportWeekAvailable(
+    placement: {
+      academicStatus: AcademicMonitoringStatus;
+      startDate: Date | null;
+      endDate: Date | null;
+      semester: {
+        id: string;
+        status: SemesterStatus;
+        startDate: Date;
+        endDate: Date;
+      };
+    },
+    week: number,
+    now = new Date(),
+  ) {
+    this.assertMonitoringOpen(placement);
+    if (!placement.startDate || !placement.endDate) {
+      throw this.conflict(
+        'PLACEMENT_SCHEDULE_REQUIRED',
+        'Academic monitoring dates have not been configured',
+      );
+    }
+    if (now < placement.startDate || now > placement.endDate) {
+      throw this.conflict(
+        'REPORT_OUTSIDE_MONITORING_WINDOW',
+        'Reports can only be submitted during this placement monitoring window',
+      );
+    }
+    const totalWeeks = Math.ceil(
+      (placement.endDate.getTime() - placement.startDate.getTime() + 1) /
+        WEEK_MS,
+    );
+    if (week > totalWeeks) {
+      throw this.conflict(
+        'REPORT_WEEK_OUT_OF_RANGE',
+        `This placement has only ${totalWeeks} academic monitoring week(s)`,
+      );
+    }
+    const currentWeek =
+      Math.floor((now.getTime() - placement.startDate.getTime()) / WEEK_MS) + 1;
+    if (week > currentWeek) {
+      throw this.conflict(
+        'REPORT_WEEK_IN_FUTURE',
+        `Week ${week} has not started yet`,
+      );
+    }
   }
   private async validateFile(fileId: string | undefined, userId: string) {
     if (!fileId) return;

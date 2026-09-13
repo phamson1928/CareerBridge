@@ -1,4 +1,8 @@
-import { SemesterStatus } from '../generated/prisma/client';
+import {
+  AcademicMonitoringStatus,
+  SemesterStatus,
+  SupervisionStatus,
+} from '../generated/prisma/client';
 import { SemesterLifecycleService } from './semester-lifecycle.service';
 
 describe('SemesterLifecycleService', () => {
@@ -44,5 +48,49 @@ describe('SemesterLifecycleService', () => {
         new Date('2026-02-15T00:00:00.000Z'),
       ),
     ).toBe('CANCELLED');
+  });
+
+  it('activates and closes academic monitoring by placement dates', async () => {
+    const prisma = {
+      semester: { findMany: jest.fn().mockResolvedValue([]) },
+      internship: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      internshipPlacement: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      supervision: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+    };
+    const service = new SemesterLifecycleService(prisma as never);
+    const now = new Date('2026-09-14T12:00:00.000Z');
+
+    await service.reconcile(now);
+
+    expect(prisma.internshipPlacement.updateMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        academicStatus: AcademicMonitoringStatus.PENDING,
+        semester: { status: SemesterStatus.MONITORING },
+        startDate: { not: null, lte: now },
+        endDate: { not: null, gte: now },
+        supervision: { is: { status: SupervisionStatus.ACTIVE } },
+      },
+      data: { academicStatus: AcademicMonitoringStatus.ACTIVE },
+    });
+    expect(prisma.internshipPlacement.updateMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        academicStatus: {
+          in: [
+            AcademicMonitoringStatus.PENDING,
+            AcademicMonitoringStatus.ACTIVE,
+          ],
+        },
+        OR: [
+          { semester: { status: SemesterStatus.COMPLETED } },
+          { endDate: { not: null, lt: now } },
+        ],
+      },
+      data: {
+        academicStatus: AcademicMonitoringStatus.CLOSED,
+        academicClosedAt: now,
+      },
+    });
   });
 });

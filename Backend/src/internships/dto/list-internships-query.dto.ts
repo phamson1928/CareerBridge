@@ -1,7 +1,10 @@
 import { Transform, TransformFnParams, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayUnique,
   IsEnum,
   IsInt,
+  IsArray,
   IsOptional,
   IsString,
   Max,
@@ -9,6 +12,26 @@ import {
   Min,
 } from 'class-validator';
 import { InternshipStatus } from '../../generated/prisma/client';
+
+const toStringArray = (params: TransformFnParams): unknown => {
+  if (
+    params.value === undefined ||
+    params.value === null ||
+    params.value === ''
+  ) {
+    return undefined;
+  }
+
+  const values = Array.isArray(params.value) ? params.value : [params.value];
+  return [
+    ...new Set(
+      values
+        .flatMap((value) => (typeof value === 'string' ? value.split(',') : []))
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  ];
+};
 
 export class ListInternshipsQueryDto {
   @IsOptional()
@@ -41,6 +64,15 @@ export class ListInternshipsQueryDto {
   @IsOptional()
   @IsString()
   skillId?: string;
+
+  @IsOptional()
+  @Transform(toStringArray)
+  @IsArray()
+  @ArrayUnique()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  skillIds?: string[];
 
   @IsOptional()
   @IsEnum(InternshipStatus)

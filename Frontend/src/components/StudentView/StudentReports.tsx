@@ -1,23 +1,49 @@
-import { useEffect, useRef, useState } from 'react';
-import { CalendarDays, CheckCircle2, CheckSquare, FileText, Plus, Send, Upload, X } from 'lucide-react';
-import { getApiErrorMessage } from '../../auth/api';
-import { downloadPrivateFile, uploadPrivateFile } from '../../files/api';
-import { placementsApi } from '../../placements/api';
-import type { PlacementRecord } from '../../placements/types';
-import { ReportFileDetails } from '../../reports/ReportFileDetails';
-import { reportsApi } from '../../reports/api';
-import type { ReportRecord } from '../../reports/types';
-import { formatFileSize } from '../../utils/format';
+import { useEffect, useRef, useState } from "react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  CheckSquare,
+  FileText,
+  Plus,
+  Send,
+  Upload,
+  X,
+} from "lucide-react";
+import { getApiErrorMessage } from "../../auth/api";
+import { downloadPrivateFile, uploadPrivateFile } from "../../files/api";
+import { placementsApi } from "../../placements/api";
+import type { PlacementRecord } from "../../placements/types";
+import { ReportFileDetails } from "../../reports/ReportFileDetails";
+import { reportsApi } from "../../reports/api";
+import type { ReportRecord } from "../../reports/types";
+import { formatDate, formatFileSize } from "../../utils/format";
 
-const statusStyle: Record<ReportRecord['status'], string> = {
-  DRAFT: 'bg-slate-100 text-slate-700',
-  SUBMITTED: 'bg-blue-50 text-blue-700',
-  APPROVED: 'bg-emerald-50 text-emerald-700',
-  REJECTED: 'bg-rose-50 text-rose-700',
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+const elapsedWeeks = (placement: PlacementRecord, now = new Date()) => {
+  if (!placement.startDate || !placement.endDate) return 0;
+  const start = new Date(placement.startDate).getTime();
+  const end = new Date(placement.endDate).getTime();
+  const current = now.getTime();
+  if (current < start || end <= start) return 0;
+  const totalWeeks = Math.ceil((end - start + 1) / WEEK_MS);
+  const currentWeek =
+    Math.floor((Math.min(current, end) - start) / WEEK_MS) + 1;
+  return Math.min(totalWeeks, currentWeek);
 };
 
-const statusLabel: Record<ReportRecord['status'], string> = {
-  DRAFT: 'Bản nháp', SUBMITTED: 'Chờ duyệt', APPROVED: 'Đã duyệt', REJECTED: 'Cần bổ sung',
+const statusStyle: Record<ReportRecord["status"], string> = {
+  DRAFT: "bg-slate-100 text-slate-700",
+  SUBMITTED: "bg-blue-50 text-blue-700",
+  APPROVED: "bg-emerald-50 text-emerald-700",
+  REJECTED: "bg-rose-50 text-rose-700",
+};
+
+const statusLabel: Record<ReportRecord["status"], string> = {
+  DRAFT: "Bản nháp",
+  SUBMITTED: "Chờ duyệt",
+  APPROVED: "Đã duyệt",
+  REJECTED: "Cần bổ sung",
 };
 
 export const StudentReports = () => {
@@ -27,16 +53,48 @@ export const StudentReports = () => {
   const [editing, setEditing] = useState<ReportRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const [form, setForm] = useState({ placementId: '', week: 1, title: '', content: '', file: null as File | null });
+  const [form, setForm] = useState({
+    placementId: "",
+    week: 1,
+    title: "",
+    content: "",
+    file: null as File | null,
+  });
+
+  const availableWeeks = (placement: PlacementRecord) => {
+    const usedWeeks = new Set(
+      reports
+        .filter((report) => report.placementId === placement.id)
+        .map((report) => report.week),
+    );
+    return Array.from(
+      { length: elapsedWeeks(placement) },
+      (_, index) => index + 1,
+    ).filter((week) => !usedWeeks.has(week));
+  };
+  const reportablePlacements = placements.filter(
+    (placement) => availableWeeks(placement).length > 0,
+  );
+  const selectedPlacement = placements.find(
+    (placement) => placement.id === form.placementId,
+  );
+  const selectedWeeks = selectedPlacement
+    ? availableWeeks(selectedPlacement)
+    : [];
 
   const load = async () => {
     setLoading(true);
     try {
-      const [reportsPage, placementsPage] = await Promise.all([reportsApi.mine({ limit: 100 }), placementsApi.listMine()]);
+      const [reportsPage, placementsPage] = await Promise.all([
+        reportsApi.mine({ limit: 100 }),
+        placementsApi.listMine(),
+      ]);
       setReports(reportsPage.items);
-      setPlacements(placementsPage.items.filter((item) => item.status === 'ACTIVE'));
+      setPlacements(
+        placementsPage.items.filter((item) => item.academicStatus === "ACTIVE"),
+      );
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -44,17 +102,33 @@ export const StudentReports = () => {
     }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   const openCreate = () => {
+    const placement = reportablePlacements[0];
+    const weeks = placement ? availableWeeks(placement) : [];
     setEditing(null);
-    setForm({ placementId: '', week: 1, title: '', content: '', file: null });
+    setForm({
+      placementId: placement?.id ?? "",
+      week: weeks.at(-1) ?? 1,
+      title: "",
+      content: "",
+      file: null,
+    });
     setIsOpen(true);
   };
 
   const openEdit = (report: ReportRecord) => {
     setEditing(report);
-    setForm({ placementId: report.placementId, week: report.week, title: report.title ?? '', content: report.content, file: null });
+    setForm({
+      placementId: report.placementId,
+      week: report.week,
+      title: report.title ?? "",
+      content: report.content,
+      file: null,
+    });
     setIsOpen(true);
   };
 
@@ -62,18 +136,30 @@ export const StudentReports = () => {
     if (saving) return;
     setIsOpen(false);
     setEditing(null);
-    setError('');
+    setError("");
   };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
-    setError('');
+    setError("");
     try {
-      const fileId = form.file ? (await uploadPrivateFile(form.file, 'REPORT')).id : undefined;
+      const fileId = form.file
+        ? (await uploadPrivateFile(form.file, "REPORT")).id
+        : undefined;
       const report = editing
-        ? await reportsApi.update(editing.id, { title: form.title || undefined, content: form.content, ...(fileId ? { fileId } : {}) })
-        : await reportsApi.create({ placementId: form.placementId, week: form.week, title: form.title || undefined, content: form.content, fileId });
+        ? await reportsApi.update(editing.id, {
+            title: form.title || undefined,
+            content: form.content,
+            ...(fileId ? { fileId } : {}),
+          })
+        : await reportsApi.create({
+            placementId: form.placementId,
+            week: form.week,
+            title: form.title || undefined,
+            content: form.content,
+            fileId,
+          });
       await reportsApi.submit(report.id);
       close();
       await load();
@@ -85,24 +171,324 @@ export const StudentReports = () => {
   };
 
   const download = async (fileId: string) => {
-    try { await downloadPrivateFile(fileId); }
-    catch (requestError) { setError(getApiErrorMessage(requestError)); }
+    try {
+      await downloadPrivateFile(fileId);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    }
   };
 
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-blue-100 bg-linear-to-br from-blue-50 via-white to-indigo-50 px-6 py-6 shadow-xs sm:px-8">
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-          <div><div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700"><CheckSquare className="h-4 w-4" />Thực tập của tôi</div><h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Báo cáo thực tập tuần</h2><p className="mt-2 text-sm text-slate-600">Ghi nhận tiến độ, đính kèm minh chứng và nhận phản hồi từ giảng viên.</p></div>
-          <button type="button" disabled={!placements.length} onClick={openCreate} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"><Plus className="h-4 w-4" />Tạo báo cáo</button>
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700">
+              <CheckSquare className="h-4 w-4" />
+              Thực tập của tôi
+            </div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
+              Báo cáo thực tập tuần
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Ghi nhận tiến độ, đính kèm minh chứng và nhận phản hồi từ giảng
+              viên.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={!reportablePlacements.length}
+            onClick={openCreate}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            Tạo báo cáo
+          </button>
         </div>
-        {!placements.length && !loading && <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Bạn cần có kỳ thực tập đang hoạt động và được phân công giảng viên trước khi nộp báo cáo.</p>}
+        {!reportablePlacements.length && !loading && (
+          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Hiện chưa có tuần báo cáo khả dụng. Tuần mới chỉ mở khi bắt đầu theo
+            lịch theo dõi của hồ sơ thực tập và mỗi tuần chỉ có một báo cáo.
+          </p>
+        )}
       </section>
-      {error && <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
-      {loading ? <div className="rounded-2xl bg-white p-8 text-sm text-slate-500 shadow-xs">Đang tải báo cáo...</div> : reports.length === 0 ? <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center"><CheckSquare className="mx-auto h-11 w-11 text-slate-300" /><h3 className="mt-4 font-bold text-slate-800">Chưa có báo cáo nào</h3><p className="mt-1 text-sm text-slate-500">Bắt đầu với báo cáo tuần đầu tiên của bạn.</p></div> : <div className="space-y-4">
-        {reports.map((report) => <article key={report.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs"><div className="flex flex-col justify-between gap-3 border-b border-slate-100 pb-4 sm:flex-row"><div className="flex gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-extrabold text-blue-700">T{report.week}</div><div><h3 className="font-bold text-slate-900">{report.title || `Báo cáo tuần ${report.week}`}</h3><p className="mt-0.5 text-xs text-slate-500">{report.placement.internship.title} · {report.placement.company.companyName}</p></div></div><span className={`self-start rounded-full px-3 py-1 text-xs font-bold ${statusStyle[report.status]}`}>{statusLabel[report.status]}</span></div><p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-700">{report.content}</p>{report.feedback && <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50 p-3 text-sm text-violet-900"><b>Phản hồi của giảng viên</b><p className="mt-1">{report.feedback}</p></div>}<div className="mt-4 flex flex-wrap gap-2">{report.file && <ReportFileDetails file={report.file} onDownload={download} />}{report.status === 'REJECTED' && <button type="button" onClick={() => openEdit(report)} className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-white hover:bg-amber-600"><CheckCircle2 className="h-4 w-4" />Chỉnh sửa và nộp lại</button>}</div></article>)}
-      </div>}
-      {isOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"><form onSubmit={submit} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl"><header className="flex items-start justify-between border-b border-slate-100 px-6 py-5 sm:px-8"><div><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700"><FileText className="h-4 w-4" />Báo cáo tiến độ</div><h3 className="mt-1 text-xl font-extrabold text-slate-900">{editing ? `Chỉnh sửa báo cáo tuần ${editing.week}` : 'Tạo báo cáo mới'}</h3><p className="mt-1 text-sm text-slate-500">{editing ? 'Cập nhật theo nhận xét rồi gửi lại cho giảng viên.' : 'Điền nội dung rõ ràng để giảng viên dễ theo dõi.'}</p></div><button type="button" onClick={close} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-5 w-5" /></button></header><div className="space-y-5 px-6 py-6 sm:px-8"><div className="grid gap-4 sm:grid-cols-[1fr_150px]"><label className="block"><span className="mb-2 block text-sm font-bold text-slate-800">Kỳ thực tập <span className="text-rose-500">*</span></span><select disabled={Boolean(editing)} required value={form.placementId} onChange={(event) => setForm({ ...form, placementId: event.target.value })} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100"><option value="">Chọn kỳ thực tập</option>{placements.map((placement) => <option key={placement.id} value={placement.id}>{placement.internship.title} — {placement.company.companyName}</option>)}</select></label><label className="block"><span className="mb-2 block text-sm font-bold text-slate-800">Tuần báo cáo <span className="text-rose-500">*</span></span><div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" /><input disabled={Boolean(editing)} required min="1" max="52" type="number" value={form.week} onChange={(event) => setForm({ ...form, week: Number(event.target.value) })} className="w-full rounded-xl border border-slate-300 py-3 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100" /></div></label></div><label className="block"><span className="mb-2 block text-sm font-bold text-slate-800">Tiêu đề <span className="font-normal text-slate-400">(không bắt buộc)</span></span><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Ví dụ: Hoàn thiện module đăng nhập" className="w-full rounded-xl border border-slate-300 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></label><label className="block"><span className="mb-2 block text-sm font-bold text-slate-800">Nội dung báo cáo <span className="text-rose-500">*</span></span><textarea required rows={7} value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} placeholder={'• Công việc đã hoàn thành\n• Kết quả đạt được\n• Khó khăn và hướng xử lý\n• Kế hoạch tuần tiếp theo'} className="w-full resize-y rounded-xl border border-slate-300 px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></label><div><span className="mb-2 block text-sm font-bold text-slate-800">Tệp minh chứng <span className="font-normal text-slate-400">(PDF, DOC, DOCX · tối đa 10 MB)</span></span><input ref={inputRef} accept=".pdf,.doc,.docx" type="file" className="hidden" onChange={(event) => setForm({ ...form, file: event.target.files?.[0] ?? null })} /><button type="button" onClick={() => inputRef.current?.click()} className="flex w-full items-center gap-3 rounded-xl border border-dashed border-blue-300 bg-blue-50/60 p-4 text-left hover:bg-blue-50"><span className="rounded-lg bg-white p-2 text-blue-600 shadow-xs"><Upload className="h-5 w-5" /></span><span><b className="block text-sm text-slate-800">{form.file?.name || editing?.file?.originalName || 'Chọn tệp để đính kèm'}</b><span className="text-xs text-slate-500">{form.file ? formatFileSize(form.file.size) : editing?.file ? `Tệp hiện tại: ${editing.file.mimeType} · ${formatFileSize(editing.file.sizeBytes)} · tải lên ${new Date(editing.file.createdAt).toLocaleString('vi-VN')}` : 'Tệp là không bắt buộc'}</span></span></button></div></div><footer className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end sm:px-8"><button type="button" onClick={close} className="rounded-xl px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-200">Hủy</button><button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"><Send className="h-4 w-4" />{saving ? 'Đang gửi báo cáo...' : editing ? 'Cập nhật và nộp lại' : 'Tạo và nộp báo cáo'}</button></footer></form></div>}
+      {error && (
+        <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+          {error}
+        </p>
+      )}
+      {loading ? (
+        <div className="rounded-2xl bg-white p-8 text-sm text-slate-500 shadow-xs">
+          Đang tải báo cáo...
+        </div>
+      ) : reports.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+          <CheckSquare className="mx-auto h-11 w-11 text-slate-300" />
+          <h3 className="mt-4 font-bold text-slate-800">Chưa có báo cáo nào</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Bắt đầu với báo cáo tuần đầu tiên của bạn.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {reports.map((report) => (
+            <article
+              key={report.id}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs"
+            >
+              <div className="flex flex-col justify-between gap-3 border-b border-slate-100 pb-4 sm:flex-row">
+                <div className="flex gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-extrabold text-blue-700">
+                    T{report.week}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">
+                      {report.title || `Báo cáo tuần ${report.week}`}
+                    </h3>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {report.placement.internship.title} ·{" "}
+                      {report.placement.company.companyName}
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={`self-start rounded-full px-3 py-1 text-xs font-bold ${statusStyle[report.status]}`}
+                >
+                  {statusLabel[report.status]}
+                </span>
+              </div>
+              <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-700">
+                {report.content}
+              </p>
+              {report.feedback && (
+                <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50 p-3 text-sm text-violet-900">
+                  <b>Phản hồi của giảng viên</b>
+                  <p className="mt-1">{report.feedback}</p>
+                </div>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {report.file && (
+                  <ReportFileDetails file={report.file} onDownload={download} />
+                )}
+                {report.status === "REJECTED" &&
+                  report.placement.academicStatus === "ACTIVE" && (
+                    <button
+                      type="button"
+                      onClick={() => openEdit(report)}
+                      className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-white hover:bg-amber-600"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Chỉnh sửa và nộp lại
+                    </button>
+                  )}
+                {report.status === "REJECTED" &&
+                  report.placement.academicStatus !== "ACTIVE" && (
+                    <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
+                      Đợt theo dõi đã kết thúc, không thể nộp lại
+                    </span>
+                  )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={submit}
+            className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+          >
+            <header className="flex items-start justify-between border-b border-slate-100 px-6 py-5 sm:px-8">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700">
+                  <FileText className="h-4 w-4" />
+                  Báo cáo tiến độ
+                </div>
+                <h3 className="mt-1 text-xl font-extrabold text-slate-900">
+                  {editing
+                    ? `Chỉnh sửa báo cáo tuần ${editing.week}`
+                    : "Tạo báo cáo mới"}
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  {editing
+                    ? "Cập nhật theo nhận xét rồi gửi lại cho giảng viên."
+                    : "Điền nội dung rõ ràng để giảng viên dễ theo dõi."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={close}
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </header>
+            <div className="space-y-5 px-6 py-6 sm:px-8">
+              <div className="grid gap-4 sm:grid-cols-[1fr_150px]">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-bold text-slate-800">
+                    Đợt thực tập <span className="text-rose-500">*</span>
+                  </span>
+                  <select
+                    disabled={Boolean(editing)}
+                    required
+                    value={form.placementId}
+                    onChange={(event) => {
+                      const placement = reportablePlacements.find(
+                        (item) => item.id === event.target.value,
+                      );
+                      const weeks = placement ? availableWeeks(placement) : [];
+                      setForm({
+                        ...form,
+                        placementId: event.target.value,
+                        week: weeks.at(-1) ?? 1,
+                      });
+                    }}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100"
+                  >
+                    <option value="">Chọn đợt thực tập</option>
+                    {reportablePlacements.map((placement) => (
+                      <option key={placement.id} value={placement.id}>
+                        {placement.internship.title} —{" "}
+                        {placement.company.companyName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-bold text-slate-800">
+                    Tuần báo cáo <span className="text-rose-500">*</span>
+                  </span>
+                  <div className="relative">
+                    <CalendarDays className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                    <select
+                      disabled={Boolean(editing)}
+                      required
+                      value={form.week}
+                      onChange={(event) =>
+                        setForm({ ...form, week: Number(event.target.value) })
+                      }
+                      className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100"
+                    >
+                      {editing ? (
+                        <option value={editing.week}>
+                          Tuần {editing.week}
+                        </option>
+                      ) : (
+                        selectedWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            Tuần {week}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                </label>
+              </div>
+              {selectedPlacement?.startDate && selectedPlacement.endDate && (
+                <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800">
+                  Lịch theo dõi: {formatDate(selectedPlacement.startDate)} –{" "}
+                  {formatDate(selectedPlacement.endDate)}. Chỉ các tuần đã bắt
+                  đầu mới được nộp.
+                </p>
+              )}
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-slate-800">
+                  Tiêu đề{" "}
+                  <span className="font-normal text-slate-400">
+                    (không bắt buộc)
+                  </span>
+                </span>
+                <input
+                  value={form.title}
+                  onChange={(event) =>
+                    setForm({ ...form, title: event.target.value })
+                  }
+                  placeholder="Ví dụ: Hoàn thiện module đăng nhập"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-slate-800">
+                  Nội dung báo cáo <span className="text-rose-500">*</span>
+                </span>
+                <textarea
+                  required
+                  rows={7}
+                  value={form.content}
+                  onChange={(event) =>
+                    setForm({ ...form, content: event.target.value })
+                  }
+                  placeholder={
+                    "• Công việc đã hoàn thành\n• Kết quả đạt được\n• Khó khăn và hướng xử lý\n• Kế hoạch tuần tiếp theo"
+                  }
+                  className="w-full resize-y rounded-xl border border-slate-300 px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
+              </label>
+              <div>
+                <span className="mb-2 block text-sm font-bold text-slate-800">
+                  Tệp minh chứng{" "}
+                  <span className="font-normal text-slate-400">
+                    (PDF, DOC, DOCX · tối đa 10 MB)
+                  </span>
+                </span>
+                <input
+                  ref={inputRef}
+                  accept=".pdf,.doc,.docx"
+                  type="file"
+                  className="hidden"
+                  onChange={(event) =>
+                    setForm({ ...form, file: event.target.files?.[0] ?? null })
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="flex w-full items-center gap-3 rounded-xl border border-dashed border-blue-300 bg-blue-50/60 p-4 text-left hover:bg-blue-50"
+                >
+                  <span className="rounded-lg bg-white p-2 text-blue-600 shadow-xs">
+                    <Upload className="h-5 w-5" />
+                  </span>
+                  <span>
+                    <b className="block text-sm text-slate-800">
+                      {form.file?.name ||
+                        editing?.file?.originalName ||
+                        "Chọn tệp để đính kèm"}
+                    </b>
+                    <span className="text-xs text-slate-500">
+                      {form.file
+                        ? formatFileSize(form.file.size)
+                        : editing?.file
+                          ? `Tệp hiện tại: ${editing.file.mimeType} · ${formatFileSize(editing.file.sizeBytes)} · tải lên ${new Date(editing.file.createdAt).toLocaleString("vi-VN")}`
+                          : "Tệp là không bắt buộc"}
+                    </span>
+                  </span>
+                </button>
+              </div>
+            </div>
+            <footer className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end sm:px-8">
+              <button
+                type="button"
+                onClick={close}
+                className="rounded-xl px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-200"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={saving}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
+              >
+                <Send className="h-4 w-4" />
+                {saving
+                  ? "Đang gửi báo cáo..."
+                  : editing
+                    ? "Cập nhật và nộp lại"
+                    : "Tạo và nộp báo cáo"}
+              </button>
+            </footer>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

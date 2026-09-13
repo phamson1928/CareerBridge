@@ -290,7 +290,7 @@ async function main() {
       filledSlots: 2,
       deadline: new Date('2026-12-01T00:00:00.000Z'),
       startDate: new Date('2026-09-01T00:00:00.000Z'),
-      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T23:59:59.999Z'),
       status: 'OPEN',
     },
     create: {
@@ -308,7 +308,7 @@ async function main() {
       filledSlots: 2,
       deadline: new Date('2026-12-01T00:00:00.000Z'),
       startDate: new Date('2026-09-01T00:00:00.000Z'),
-      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T23:59:59.999Z'),
       status: 'OPEN',
     },
     select: { id: true },
@@ -433,7 +433,7 @@ async function main() {
       semesterId: semester.id,
       status: 'ACTIVE',
       startDate: new Date('2026-09-01T00:00:00.000Z'),
-      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T23:59:59.999Z'),
     },
     create: {
       id: 'seed-placement-active',
@@ -444,7 +444,7 @@ async function main() {
       semesterId: semester.id,
       status: 'ACTIVE',
       startDate: new Date('2026-09-01T00:00:00.000Z'),
-      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T23:59:59.999Z'),
     },
     select: { id: true },
   });
@@ -458,7 +458,7 @@ async function main() {
       semesterId: semester.id,
       status: 'PENDING',
       startDate: new Date('2026-09-01T00:00:00.000Z'),
-      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T23:59:59.999Z'),
     },
     create: {
       id: 'seed-placement-pending',
@@ -469,7 +469,7 @@ async function main() {
       semesterId: semester.id,
       status: 'PENDING',
       startDate: new Date('2026-09-01T00:00:00.000Z'),
-      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T23:59:59.999Z'),
     },
     select: { id: true },
   });

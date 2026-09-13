@@ -64,7 +64,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           },
           {
             id: "placement",
-            label: "Placement của tôi",
+            label: "Hồ sơ thực tập",
             icon: <Briefcase className="w-4 h-4" />,
           },
           {
@@ -115,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           },
           {
             id: "supervised-placements",
-            label: "Placement hướng dẫn",
+            label: "Sinh viên hướng dẫn",
             icon: <Briefcase className="w-4 h-4" />,
           },
           {
@@ -148,7 +148,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           },
           {
             id: "placement-management",
-            label: "Quản lý Placement",
+            label: "Quản lý thực tập",
             icon: <Briefcase className="w-4 h-4" />,
           },
           {
@@ -178,10 +178,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const navItems = getNavItems();
-  const canUseChat = currentRole === "STUDENT" || currentRole === "COMPANY" || currentRole === "TEACHER";
+  const canUseChat =
+    currentRole === "STUDENT" ||
+    currentRole === "COMPANY" ||
+    currentRole === "TEACHER";
   const showLogoutInNavbar = currentRole !== "ADMIN";
-  const showNotificationPreview = currentRole === "STUDENT" || currentRole === "COMPANY" || currentRole === "TEACHER";
-  const unreadNotifications = notifications.filter((notification) => !notification.isRead).slice(0, 4);
+  const showNotificationPreview =
+    currentRole === "STUDENT" ||
+    currentRole === "COMPANY" ||
+    currentRole === "TEACHER";
+  const unreadNotifications = notifications
+    .filter((notification) => !notification.isRead)
+    .slice(0, 4);
 
   const notificationPreview = showNotificationPreview ? (
     <div
@@ -190,15 +198,51 @@ export const Navbar: React.FC<NavbarProps> = ({
       aria-label="Xem nhanh thông báo"
     >
       <div className="flex items-center justify-between px-3 py-2">
-        <div><p className="text-sm font-bold text-slate-800">Thông báo</p><p className="text-[11px] text-slate-500">{unreadNotifsCount ? `${unreadNotifsCount} chưa đọc` : "Bạn đã cập nhật đầy đủ"}</p></div>
-        <button type="button" onClick={onOpenNotifs} className="rounded-lg px-2 py-1 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-700">Xem tất cả</button>
+        <div>
+          <p className="text-sm font-bold text-slate-800">Thông báo</p>
+          <p className="text-[11px] text-slate-500">
+            {unreadNotifsCount
+              ? `${unreadNotifsCount} chưa đọc`
+              : "Bạn đã cập nhật đầy đủ"}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onOpenNotifs}
+          className="rounded-lg px-2 py-1 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-700"
+        >
+          Xem tất cả
+        </button>
       </div>
       <div className="max-h-80 space-y-1 overflow-y-auto pt-1">
-        {unreadNotifications.length ? unreadNotifications.map((notification) => (
-          <button key={notification.id} type="button" onClick={() => onNotificationClick(notification)} className={`w-full rounded-xl px-3 py-2.5 text-left transition hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none ${notification.isRead ? "" : "bg-indigo-50/60"}`}>
-            <div className="flex items-start gap-2"><span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${notification.isRead ? "bg-slate-300" : "bg-indigo-600"}`} /><span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-slate-800">{notification.title}</span><span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-slate-500">{notification.content}</span></span></div>
-          </button>
-        )) : <div className="px-3 py-8 text-center text-xs text-slate-500">Bạn đã đọc hết thông báo</div>}
+        {unreadNotifications.length ? (
+          unreadNotifications.map((notification) => (
+            <button
+              key={notification.id}
+              type="button"
+              onClick={() => onNotificationClick(notification)}
+              className={`w-full rounded-xl px-3 py-2.5 text-left transition hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none ${notification.isRead ? "" : "bg-indigo-50/60"}`}
+            >
+              <div className="flex items-start gap-2">
+                <span
+                  className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${notification.isRead ? "bg-slate-300" : "bg-indigo-600"}`}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-xs font-bold text-slate-800">
+                    {notification.title}
+                  </span>
+                  <span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-slate-500">
+                    {notification.content}
+                  </span>
+                </span>
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="px-3 py-8 text-center text-xs text-slate-500">
+            Bạn đã đọc hết thông báo
+          </div>
+        )}
       </div>
     </div>
   ) : null;
@@ -206,20 +250,72 @@ export const Navbar: React.FC<NavbarProps> = ({
   if (currentRole === "ADMIN") {
     return (
       <aside className="fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-[#006f72] bg-[#00878a] text-white shadow-2xl lg:w-72">
-        <button type="button" onClick={() => setActiveTab(navItems[0]?.id || "")} className="flex h-24 items-center justify-center gap-3 border-b border-white/15 px-3 text-left lg:justify-start lg:px-7">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1 shadow-lg"><img src="/careerbridge-logo.svg" alt="CareerBridge" className="h-full w-full -translate-x-[14%] scale-[1.35] object-contain" /></span>
-          <span className="hidden lg:block"><span className="block text-base font-black tracking-tight">CareerBridge</span><span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">Admin workspace</span></span>
+        <button
+          type="button"
+          onClick={() => setActiveTab(navItems[0]?.id || "")}
+          className="flex h-24 items-center justify-center gap-3 border-b border-white/15 px-3 text-left lg:justify-start lg:px-7"
+        >
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1 shadow-lg">
+            <img
+              src="/careerbridge-logo.svg"
+              alt="CareerBridge"
+              className="h-full w-full -translate-x-[14%] scale-[1.35] object-contain"
+            />
+          </span>
+          <span className="hidden lg:block">
+            <span className="block text-base font-black tracking-tight">
+              CareerBridge
+            </span>
+            <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">
+              Khu vực quản trị
+            </span>
+          </span>
         </button>
-        <div className="hidden px-4 pt-6 text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 lg:block">Điều hướng</div>
+        <div className="hidden px-4 pt-6 text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 lg:block">
+          Điều hướng
+        </div>
         <nav className="mt-3 flex-1 space-y-1 overflow-y-auto px-3">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
-            return <button key={item.id} id={`nav-tab-${item.id}`} title={item.label} onClick={() => setActiveTab(item.id)} className={`flex w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition lg:justify-start ${isActive ? "bg-white text-[#00777a] shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white"}`}>{item.icon}<span className="hidden lg:block">{item.label}</span></button>;
+            return (
+              <button
+                key={item.id}
+                id={`nav-tab-${item.id}`}
+                title={item.label}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition lg:justify-start ${isActive ? "bg-white text-[#00777a] shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+              >
+                {item.icon}
+                <span className="hidden lg:block">{item.label}</span>
+              </button>
+            );
           })}
         </nav>
         <div className="m-3 space-y-2 border-t border-white/15 pt-3">
-          <button id="btn-notifs-toggle" title="Thông báo" onClick={onOpenNotifs} className="relative flex w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white/85 transition hover:bg-white/10 hover:text-white lg:justify-start"><Bell className="h-5 w-5" /><span className="hidden lg:block">Thông báo</span>{unreadNotifsCount > 0 && <span className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#da1c2d] px-1 text-[10px] font-bold text-white lg:static lg:ml-auto">{unreadNotifsCount}</span>}</button>
-          <button id="btn-logout" title="Đăng xuất" type="button" onClick={onLogout} className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#da1c2d] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#da1c2d]/20 transition hover:bg-[#bd1425] lg:justify-start"><LogOut className="h-5 w-5" /><span className="hidden lg:block">Đăng xuất</span></button>
+          <button
+            id="btn-notifs-toggle"
+            title="Thông báo"
+            onClick={onOpenNotifs}
+            className="relative flex w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white/85 transition hover:bg-white/10 hover:text-white lg:justify-start"
+          >
+            <Bell className="h-5 w-5" />
+            <span className="hidden lg:block">Thông báo</span>
+            {unreadNotifsCount > 0 && (
+              <span className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#da1c2d] px-1 text-[10px] font-bold text-white lg:static lg:ml-auto">
+                {unreadNotifsCount}
+              </span>
+            )}
+          </button>
+          <button
+            id="btn-logout"
+            title="Đăng xuất"
+            type="button"
+            onClick={onLogout}
+            className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#da1c2d] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#da1c2d]/20 transition hover:bg-[#bd1425] lg:justify-start"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="hidden lg:block">Đăng xuất</span>
+          </button>
         </div>
       </aside>
     );
@@ -234,7 +330,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => setActiveTab(navItems[0]?.id || "")}
           >
-            <img src="/careerbridge-logo.svg" alt="CareerBridge" className="h-14 w-auto object-contain" />
+            <img
+              src="/careerbridge-logo.svg"
+              alt="CareerBridge"
+              className="h-14 w-auto object-contain"
+            />
           </div>
 
           {/* Navigation Links */}
@@ -296,8 +396,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
               {notificationPreview}
             </div>
-            {showLogoutInNavbar && (
-              currentRole === "COMPANY" ? (
+            {showLogoutInNavbar &&
+              (currentRole === "COMPANY" ? (
                 <button
                   id="btn-logout"
                   type="button"
@@ -307,31 +407,58 @@ export const Navbar: React.FC<NavbarProps> = ({
                   aria-label="Đăng xuất"
                 >
                   <span className="flex h-full w-full items-center justify-center transition-all duration-150 group-hover:scale-75 group-hover:opacity-0">
-                    {companyLogo ? <img src={companyLogo} alt="Logo công ty" className="h-full w-full object-cover" /> : <Building className="h-5 w-5" />}
+                    {companyLogo ? (
+                      <img
+                        src={companyLogo}
+                        alt="Logo công ty"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Building className="h-5 w-5" />
+                    )}
                   </span>
                   <LogOut className="pointer-events-none absolute h-5 w-5 scale-75 opacity-0 transition-all duration-150 group-hover:scale-100 group-hover:opacity-100" />
                 </button>
               ) : (
-              <div className="group relative">
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-black text-slate-600 transition hover:border-indigo-200 hover:ring-2 hover:ring-indigo-100"
-                  title="Tài khoản của tôi"
-                  aria-label="Tài khoản của tôi"
-                >
-                  <ProfileAvatarPreview fileId={avatarFileId} fallback={currentRole === "TEACHER" ? "G" : "S"} className={`flex h-full w-full items-center justify-center ${currentRole === "TEACHER" ? "bg-purple-100 text-purple-700" : "bg-indigo-100 text-indigo-700"}`} imageClassName="h-full w-full object-cover" />
-                </button>
-                <div className="invisible absolute right-0 top-full z-50 mt-2 w-44 translate-y-1 rounded-xl border border-slate-200 bg-white p-1.5 opacity-0 shadow-xl transition-all duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                  <button type="button" onClick={() => setActiveTab(currentRole === "TEACHER" ? "lecturer-profile" : "profile")} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
-                    <User className="h-4 w-4" /> Hồ sơ
+                <div className="group relative">
+                  <button
+                    type="button"
+                    className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-black text-slate-600 transition hover:border-indigo-200 hover:ring-2 hover:ring-indigo-100"
+                    title="Tài khoản của tôi"
+                    aria-label="Tài khoản của tôi"
+                  >
+                    <ProfileAvatarPreview
+                      fileId={avatarFileId}
+                      fallback={currentRole === "TEACHER" ? "G" : "S"}
+                      className={`flex h-full w-full items-center justify-center ${currentRole === "TEACHER" ? "bg-purple-100 text-purple-700" : "bg-indigo-100 text-indigo-700"}`}
+                      imageClassName="h-full w-full object-cover"
+                    />
                   </button>
-                  <button id="btn-logout" type="button" onClick={onLogout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50">
-                    <LogOut className="h-4 w-4" /> Đăng xuất
-                  </button>
+                  <div className="invisible absolute right-0 top-full z-50 mt-2 w-44 translate-y-1 rounded-xl border border-slate-200 bg-white p-1.5 opacity-0 shadow-xl transition-all duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveTab(
+                          currentRole === "TEACHER"
+                            ? "lecturer-profile"
+                            : "profile",
+                        )
+                      }
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
+                    >
+                      <User className="h-4 w-4" /> Hồ sơ
+                    </button>
+                    <button
+                      id="btn-logout"
+                      type="button"
+                      onClick={onLogout}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50"
+                    >
+                      <LogOut className="h-4 w-4" /> Đăng xuất
+                    </button>
+                  </div>
                 </div>
-              </div>
-              )
-            )}
+              ))}
           </div>
         </div>
 

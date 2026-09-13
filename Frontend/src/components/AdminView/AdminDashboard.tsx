@@ -173,7 +173,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <section className="rounded-3xl border border-rose-200 bg-rose-50 p-8 text-center">
         <AlertCircle className="mx-auto h-10 w-10 text-rose-600" />
         <h1 className="mt-4 text-xl font-black text-slate-900">
-          Không thể tải dashboard
+          Không thể tải bảng điều khiển
         </h1>
         <p className="mx-auto mt-2 max-w-lg text-sm text-rose-700">{error}</p>
         <button
@@ -199,8 +199,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               Trung tâm điều hành thực tập
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80">
-              Theo dõi tuyển dụng, placement và tiến độ báo cáo bằng dữ liệu vận
-              hành thực tế.
+              Theo dõi tuyển dụng, hồ sơ thực tập và tiến độ báo cáo bằng dữ
+              liệu vận hành thực tế.
             </p>
           </div>
           <div className="grid gap-2.5 sm:grid-cols-2">
@@ -239,7 +239,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
                 >
                   {[3, 6, 9, 12].map((value) => (
-                    <option className="bg-slate-900 text-white py-1" key={value} value={value}>
+                    <option
+                      className="bg-slate-900 text-white py-1"
+                      key={value}
+                      value={value}
+                    >
                       {value} tháng gần nhất
                     </option>
                   ))}
@@ -303,9 +307,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           tone="bg-[#fff0f2] text-[#da1c2d]"
         />
         <MetricCard
-          label="Placement hoạt động"
+          label="Hồ sơ đang hoạt động"
           value={number.format(kpis.activePlacements)}
-          detail={`${number.format(kpis.totalPlacements)} placement trong phạm vi`}
+          detail={`${number.format(kpis.totalPlacements)} hồ sơ trong phạm vi`}
           icon={Layers3}
           tone="bg-[#e6f6f6] text-[#00878a]"
         />
@@ -320,7 +324,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {[
           {
-            label: "Tỷ lệ có placement",
+            label: "Tỷ lệ sinh viên đã có nơi thực tập",
             value: kpis.placementCoverageRate,
             detail: `${number.format(kpis.placedStudents)}/${number.format(kpis.applicantStudents)} sinh viên ứng tuyển`,
             color: "from-[#00878a] to-[#006f72]",
@@ -332,7 +336,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             color: "from-[#006f72] to-[#00878a]",
           },
           {
-            label: "Placement chưa phân công",
+            label: "Hồ sơ chưa phân công",
             value: kpis.unassignedPlacements,
             detail: "Cần chỉ định giảng viên hướng dẫn",
             color: "from-[#da1c2d] to-[#b41425]",
@@ -371,7 +375,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div>
               <h2 className="font-black text-slate-900">Nhịp độ tuyển dụng</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Lượt ứng tuyển, placement mới và placement hoàn tất theo tháng.
+                Lượt ứng tuyển, hồ sơ thực tập mới và hồ sơ hoàn tất theo tháng.
               </p>
             </div>
             <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700">
@@ -433,7 +437,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Area
                     type="monotone"
                     dataKey="placements"
-                    name="Placement mới"
+                    name="Hồ sơ thực tập mới"
                     stroke="#da1c2d"
                     strokeWidth={2.5}
                     fill="transparent"
@@ -454,7 +458,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </article>
         <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-          <h2 className="font-black text-slate-900">Trạng thái placement</h2>
+          <h2 className="font-black text-slate-900">
+            Trạng thái hồ sơ thực tập
+          </h2>
           <p className="mt-1 text-xs text-slate-500">
             Phân bố trong phạm vi đang chọn.
           </p>
@@ -491,12 +497,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     {number.format(placementTotal)}
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    Placement
+                    Hồ sơ
                   </span>
                 </div>
               </>
             ) : (
-              <EmptyChart message="Chưa có placement." />
+              <EmptyChart message="Chưa có hồ sơ thực tập." />
             )}
           </div>
           <div className="space-y-2">
@@ -567,7 +573,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Bar
                     dataKey="internshipCount"
                     name="Tin thực tập"
-                  fill="#00878a"
+                    fill="#00878a"
                     radius={[0, 7, 7, 0]}
                   />
                 </BarChart>
@@ -592,7 +598,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               },
               {
                 value: kpis.unassignedPlacements,
-                label: "Placement chưa phân công",
+                label: "Hồ sơ chưa phân công",
                 tab: "teacher-assignment",
                 tone: "bg-violet-50 text-violet-700",
               },

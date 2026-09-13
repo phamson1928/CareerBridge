@@ -316,7 +316,7 @@ export default function App() {
     page: number;
     limit: number;
     search?: string;
-    skillId?: string;
+    skillIds?: string[];
   }) => {
     const result = await internshipsApi.list(params);
     return {

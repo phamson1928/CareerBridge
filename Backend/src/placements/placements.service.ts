@@ -250,18 +250,20 @@ export class PlacementsService {
           select: {
             id: true,
             status: true,
+            academicStatus: true,
             startDate: true,
             endDate: true,
+            semester: {
+              select: { startDate: true, endDate: true },
+            },
           },
         });
         if (!current) throw this.notFound();
-        if (
-          current.status !== PlacementStatus.PENDING &&
-          current.status !== PlacementStatus.ACTIVE
-        ) {
+        if (current.academicStatus !== 'PENDING') {
           throw new ConflictException({
             code: 'PLACEMENT_IMMUTABLE',
-            message: 'Only pending or active placements can be rescheduled',
+            message:
+              'Academic dates cannot be changed after monitoring has started or ended',
           });
         }
 
@@ -271,14 +273,34 @@ export class PlacementsService {
             : new Date(dto.startDate);
         const endDate =
           dto.endDate === undefined ? current.endDate : new Date(dto.endDate);
-        if (startDate && endDate && startDate >= endDate) {
+        if (!startDate || !endDate) {
+          throw new BadRequestException({
+            code: 'PLACEMENT_DATES_INCOMPLETE',
+            message: 'Both startDate and endDate are required',
+          });
+        }
+        if (startDate >= endDate) {
           throw new BadRequestException({
             code: 'INVALID_PLACEMENT_DATE_RANGE',
             message: 'startDate must be before endDate',
           });
         }
+        if (
+          startDate < current.semester.startDate ||
+          endDate > current.semester.endDate
+        ) {
+          throw new BadRequestException({
+            code: 'PLACEMENT_DATES_OUTSIDE_CAMPAIGN',
+            message:
+              'Placement academic dates must stay within the campaign monitoring window',
+          });
+        }
         const update = await tx.internshipPlacement.updateMany({
-          where: { id, status: current.status },
+          where: {
+            id,
+            status: current.status,
+            academicStatus: current.academicStatus,
+          },
           data: { startDate, endDate },
         });
         if (update.count !== 1) {

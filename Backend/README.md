@@ -18,12 +18,12 @@ NestJS + PostgreSQL + Prisma backend for the internship-management platform.
 
 Run `npm exec prisma db seed` to create or update one active account for each role. The command is idempotent and uses `SEED_PASSWORD` when provided, otherwise `Seed@123456`.
 
-| Role | Email |
-| --- | --- |
-| ADMIN | admin@internhub.local |
-| STUDENT | student@internhub.local |
+| Role     | Email                    |
+| -------- | ------------------------ |
+| ADMIN    | admin@internhub.local    |
+| STUDENT  | student@internhub.local  |
 | LECTURER | lecturer@internhub.local |
-| COMPANY | company@internhub.local |
+| COMPANY  | company@internhub.local  |
 
 These credentials are for local/development testing only. Do not use them in production.
 
@@ -57,6 +57,9 @@ Business rules that depend on current state must be enforced in services/transac
 - Only an open, non-expired internship can receive an application.
 - Accepting an application must atomically create the placement, status history, conversation, and increment `filledSlots`.
 - A student may have at most one active placement in a semester.
+- Proposed internship dates must be both empty or both inside the campaign monitoring window.
+- Admin must set both placement monitoring dates before lecturer assignment; those dates become immutable when academic monitoring starts.
+- Report weeks are counted from the placement start date and cannot be submitted before that week begins.
 - The evaluation author must be the placement company account or its assigned lecturer.
 
 ## Module boundaries
@@ -99,11 +102,11 @@ npm test
 
 Student users can save job preferences and generate up to 10 eligible internship recommendations. Ranking is computed deterministically in the backend from profile signals, skills, projects and preferences. An optional external AI provider may only produce a Vietnamese explanation for the first three already-ranked results; it cannot change score or order.
 
-| Method | Endpoint | Access |
-| --- | --- | --- |
-| `GET` | `/api/v1/students/me/job-preferences` | Current student |
-| `PUT` | `/api/v1/students/me/job-preferences` | Current student |
-| `GET` | `/api/v1/recommendations/internships/me` | Current student |
+| Method | Endpoint                                          | Access          |
+| ------ | ------------------------------------------------- | --------------- |
+| `GET`  | `/api/v1/students/me/job-preferences`             | Current student |
+| `PUT`  | `/api/v1/students/me/job-preferences`             | Current student |
+| `GET`  | `/api/v1/recommendations/internships/me`          | Current student |
 | `POST` | `/api/v1/recommendations/internships/me/generate` | Current student |
 
 The `GET` endpoint reads a valid cache only; it never calls the AI provider. `POST` generates or returns a matching cached result. A forced refresh is rate-limited and has a per-student 10-minute cooldown. If an AI call fails or the profile lacks enough signals, the deterministic result remains available.

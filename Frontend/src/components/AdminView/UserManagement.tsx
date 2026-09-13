@@ -89,7 +89,12 @@ export const UserManagement: React.FC = () => {
   };
 
   const deleteUser = async (user: ManagedUser) => {
-    const accepted = await confirm({ title: 'Xóa tài khoản', message: `Xóa tài khoản ${user.email}? Thao tác này không thể hoàn tác.`, confirmLabel: 'Xóa tài khoản', tone: 'danger' });
+    const accepted = await confirm({
+      title: "Xóa tài khoản",
+      message: `Xóa tài khoản ${user.email}? Thao tác này không thể hoàn tác.`,
+      confirmLabel: "Xóa tài khoản",
+      tone: "danger",
+    });
     if (!accepted) return;
     setSavingId(user.id);
     setError(null);
@@ -112,8 +117,8 @@ export const UserManagement: React.FC = () => {
               Quản lý người dùng
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Dữ liệu được lấy trực tiếp từ hệ thống. Chỉ Admin có quyền thao
-              tác.
+              Dữ liệu được lấy trực tiếp từ hệ thống. Chỉ quản trị viên có quyền
+              thao tác.
             </p>
           </div>
           <button

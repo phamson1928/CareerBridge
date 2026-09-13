@@ -17,7 +17,11 @@ import { getApiErrorMessage } from "../../auth/api";
 import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 import { ProfileAvatarPreview } from "../ProfileAvatarUpload";
 import { placementsApi } from "../../placements/api";
-import type { PlacementRecord, PlacementStatus } from "../../placements/types";
+import type {
+  AcademicMonitoringStatus,
+  PlacementRecord,
+  PlacementStatus,
+} from "../../placements/types";
 import { supervisionsApi } from "../../supervisions/api";
 import type { LecturerOption } from "../../supervisions/types";
 import { formatDate, formatDateTime } from "../../utils/format";
@@ -33,6 +37,12 @@ const statusClass: Record<PlacementStatus, string> = {
   ACTIVE: "border-emerald-200 bg-emerald-50 text-emerald-700",
   COMPLETED: "border-slate-200 bg-slate-100 text-slate-600",
   CANCELLED: "border-rose-200 bg-rose-50 text-rose-700",
+};
+const academicStatusLabel: Record<AcademicMonitoringStatus, string> = {
+  PENDING: "Chờ theo dõi",
+  ACTIVE: "Đang theo dõi",
+  CLOSED: "Đã đóng học vụ",
+  CANCELLED: "Đã hủy học vụ",
 };
 
 export const SupervisionManagement: React.FC = () => {
@@ -144,14 +154,14 @@ export const SupervisionManagement: React.FC = () => {
       <div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-[#004f52] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/25 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/90">
-            <ShieldCheck className="h-3.5 w-3.5" /> Placement control center
+            <ShieldCheck className="h-3.5 w-3.5" /> Quản lý phân công hướng dẫn
           </div>
           <h1 className="admin-page-title text-2xl font-black tracking-tight sm:text-3xl">
             Phân công giảng viên
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/85">
-            Quản lý placement đã được xác nhận, phân công người hướng dẫn và
-            theo dõi lịch sử phân công.
+            Quản lý hồ sơ thực tập đã được xác nhận, phân công người hướng dẫn
+            và theo dõi lịch sử phân công.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-white/85">
@@ -162,7 +172,7 @@ export const SupervisionManagement: React.FC = () => {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[
           {
-            label: "Tổng placement",
+            label: "Tổng hồ sơ thực tập",
             value: total,
             icon: BriefcaseBusiness,
             tone: "bg-indigo-50 text-indigo-600",
@@ -247,13 +257,13 @@ export const SupervisionManagement: React.FC = () => {
         {loading ? (
           <div className="flex min-h-64 items-center justify-center text-sm text-slate-500">
             <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
-            Đang tải dữ liệu placement...
+            Đang tải hồ sơ thực tập...
           </div>
         ) : items.length === 0 ? (
           <div className="px-6 py-16 text-center">
             <BriefcaseBusiness className="mx-auto h-9 w-9 text-slate-300" />
             <p className="mt-3 text-sm font-bold text-slate-700">
-              Chưa có placement phù hợp
+              Chưa có hồ sơ thực tập phù hợp
             </p>
           </div>
         ) : (
@@ -266,7 +276,7 @@ export const SupervisionManagement: React.FC = () => {
                   <th className="px-5 py-3 font-bold">Kỳ</th>
                   <th className="px-5 py-3 font-bold">Trạng thái</th>
                   <th className="px-5 py-3 font-bold">Giảng viên hướng dẫn</th>
-                  <th className="px-5 py-3 font-bold">Audit phân công</th>
+                  <th className="px-5 py-3 font-bold">Lịch sử phân công</th>
                   <th className="px-5 py-3 text-right font-bold">Thao tác</th>
                 </tr>
               </thead>
@@ -280,7 +290,12 @@ export const SupervisionManagement: React.FC = () => {
                     >
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <ProfileAvatarPreview fileId={placement.student.avatarFileId} fallback={placement.student.fullName.charAt(0)} className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-black text-indigo-700" imageClassName="h-full w-full object-cover" />
+                          <ProfileAvatarPreview
+                            fileId={placement.student.avatarFileId}
+                            fallback={placement.student.fullName.charAt(0)}
+                            className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-black text-indigo-700"
+                            imageClassName="h-full w-full object-cover"
+                          />
                           <div>
                             <p className="font-bold text-slate-900">
                               {placement.student.fullName}
@@ -311,11 +326,17 @@ export const SupervisionManagement: React.FC = () => {
                         </p>
                       </td>
                       <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusClass[placement.status]}`}
-                        >
-                          {statusLabel[placement.status]}
-                        </span>
+                        <div className="space-y-1.5">
+                          <span
+                            className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusClass[placement.status]}`}
+                          >
+                            Công việc: {statusLabel[placement.status]}
+                          </span>
+                          <p className="text-[10px] font-semibold text-slate-500">
+                            Học vụ:{" "}
+                            {academicStatusLabel[placement.academicStatus]}
+                          </p>
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         {supervision ? (
@@ -353,7 +374,8 @@ export const SupervisionManagement: React.FC = () => {
                               className="max-w-44 truncate font-mono"
                               title={supervision.assignedById ?? undefined}
                             >
-                              ID: {supervision.assignedById ?? "—"}
+                              Mã người phân công:{" "}
+                              {supervision.assignedById ?? "—"}
                             </p>
                             <p>
                               Hoàn tất:{" "}
@@ -371,8 +393,12 @@ export const SupervisionManagement: React.FC = () => {
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex justify-end gap-2">
-                          {placement.status !== "COMPLETED" &&
-                            placement.status !== "CANCELLED" && (
+                          {placement.startDate &&
+                            placement.endDate &&
+                            placement.status !== "COMPLETED" &&
+                            placement.status !== "CANCELLED" &&
+                            placement.academicStatus !== "CLOSED" &&
+                            placement.academicStatus !== "CANCELLED" && (
                               <button
                                 type="button"
                                 onClick={() => openAssign(placement)}
@@ -382,6 +408,11 @@ export const SupervisionManagement: React.FC = () => {
                                 {supervision ? "Đổi GV" : "Phân công"}
                               </button>
                             )}
+                          {!placement.startDate || !placement.endDate ? (
+                            <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700">
+                              Cần đặt lịch trước
+                            </span>
+                          ) : null}
                           {supervision?.status === "ACTIVE" && (
                             <button
                               type="button"
@@ -464,7 +495,8 @@ export const SupervisionManagement: React.FC = () => {
                     Giảng viên phụ trách
                   </p>
                   <p className="mt-0.5 text-[11px] text-indigo-700">
-                    Chọn tài khoản đang hoạt động và cân bằng workload.
+                    Chọn giảng viên đang hoạt động và cân bằng khối lượng hướng
+                    dẫn.
                   </p>
                 </div>
               </div>
@@ -477,8 +509,8 @@ export const SupervisionManagement: React.FC = () => {
               <option value="">Chọn giảng viên...</option>
               {lecturers.map((lecturer) => (
                 <option key={lecturer.id} value={lecturer.id}>
-                  {lecturer.fullName} · {lecturer.activeSupervisionCount}{" "}
-                  placement đang phụ trách
+                  {lecturer.fullName} · {lecturer.activeSupervisionCount} lượt
+                  hướng dẫn đang phụ trách
                 </option>
               ))}
             </select>

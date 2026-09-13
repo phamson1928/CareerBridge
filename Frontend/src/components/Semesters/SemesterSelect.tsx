@@ -6,7 +6,9 @@ import type { SemesterRecord, SemesterStatus } from '../../semesters/types';
 
 const labels: Record<SemesterStatus, string> = {
   UPCOMING: 'Sắp diễn ra',
-  ACTIVE: 'Đang hoạt động',
+  ACTIVE: 'Đang hoạt động (cũ)',
+  RECRUITING: 'Đang tuyển dụng',
+  MONITORING: 'Đang theo dõi',
   COMPLETED: 'Đã hoàn thành',
   CANCELLED: 'Đã hủy',
 };
@@ -29,7 +31,7 @@ export const SemesterSelect: React.FC<SemesterSelectProps> = ({
   onChange,
   allowedStatuses,
   includeAllOption = false,
-  allOptionLabel = 'Tất cả kỳ thực tập',
+  allOptionLabel = 'Tất cả đợt thực tập',
   disabled = false,
   required = false,
   label,
@@ -92,7 +94,7 @@ export const SemesterSelect: React.FC<SemesterSelectProps> = ({
             <option value="">{allOptionLabel}</option>
           ) : (
             <option value="" disabled>
-              Chọn kỳ thực tập
+              Chọn đợt thực tập
             </option>
           )}
           {items.map((semester) => (

@@ -16,6 +16,12 @@ import type { SupervisionRecord } from "../../supervisions/types";
 import { formatDate, formatDateTime } from "../../utils/format";
 import { ProfileAvatarPreview } from "../ProfileAvatarUpload";
 
+const supervisionStatusLabel: Record<SupervisionRecord["status"], string> = {
+  ACTIVE: "Đang hướng dẫn",
+  COMPLETED: "Đã hoàn tất",
+  CANCELLED: "Đã hủy",
+};
+
 export const SupervisedPlacements: React.FC = () => {
   const [items, setItems] = useState<SupervisionRecord[]>([]);
   const [search, setSearch] = useState("");
@@ -47,13 +53,14 @@ export const SupervisedPlacements: React.FC = () => {
       <div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-indigo-950 via-indigo-900 to-slate-900 p-6 text-white shadow-lg sm:p-8 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-100">
-            <ClipboardCheck className="h-3.5 w-3.5" /> Academic supervision
+            <ClipboardCheck className="h-3.5 w-3.5" /> Theo dõi và hướng dẫn học
+            vụ
           </div>
           <h1 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">
             Sinh viên đang phụ trách
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-indigo-100/80">
-            Danh sách được tải từ các supervision đang gắn với tài khoản giảng
+            Danh sách được lấy từ các phân công đang gắn với tài khoản giảng
             viên của bạn.
           </p>
         </div>
@@ -90,7 +97,8 @@ export const SupervisedPlacements: React.FC = () => {
             Chưa có sinh viên phù hợp
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Các placement được Admin phân công cho bạn sẽ xuất hiện tại đây.
+            Các hồ sơ thực tập được quản trị viên phân công cho bạn sẽ xuất hiện
+            tại đây.
           </p>
         </div>
       ) : (
@@ -102,7 +110,12 @@ export const SupervisedPlacements: React.FC = () => {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <ProfileAvatarPreview fileId={item.placement.student.avatarFileId} fallback={item.placement.student.fullName.charAt(0)} className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-indigo-100 text-lg font-black text-indigo-700" imageClassName="h-full w-full object-cover" />
+                  <ProfileAvatarPreview
+                    fileId={item.placement.student.avatarFileId}
+                    fallback={item.placement.student.fullName.charAt(0)}
+                    className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-indigo-100 text-lg font-black text-indigo-700"
+                    imageClassName="h-full w-full object-cover"
+                  />
                   <div>
                     <h2 className="font-black text-slate-900">
                       {item.placement.student.fullName}
@@ -116,7 +129,7 @@ export const SupervisedPlacements: React.FC = () => {
                 <span
                   className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${item.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
                 >
-                  {item.status === "ACTIVE" ? "Đang hướng dẫn" : item.status}
+                  {supervisionStatusLabel[item.status]}
                 </span>
               </div>
               <div className="mt-5 space-y-2.5 border-t border-slate-100 pt-4 text-xs text-slate-600">
@@ -157,7 +170,7 @@ export const SupervisedPlacements: React.FC = () => {
                   className="mt-1 truncate font-mono"
                   title={item.assignedById ?? undefined}
                 >
-                  assignedById: {item.assignedById ?? "—"}
+                  Mã người phân công: {item.assignedById ?? "—"}
                 </p>
                 <p className="mt-1">
                   Hoàn tất lúc:{" "}

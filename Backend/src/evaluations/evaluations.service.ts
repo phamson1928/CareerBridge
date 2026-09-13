@@ -37,6 +37,8 @@ const select = {
       id: true,
       status: true,
       academicStatus: true,
+      startDate: true,
+      endDate: true,
       semester: {
         select: { id: true, status: true, startDate: true, endDate: true },
       },
@@ -82,6 +84,8 @@ export class EvaluationsService {
             id: true,
             status: true,
             academicStatus: true,
+            startDate: true,
+            endDate: true,
             semester: {
               select: {
                 id: true,
@@ -192,6 +196,7 @@ export class EvaluationsService {
   }
 
   async update(id: string, dto: UpdateEvaluationDto, user: AuthUser) {
+    await this.lifecycle.reconcile();
     const current = await this.findOne(id, user);
     if (current.evaluatorId !== user.id) throw this.denied();
     this.assertMonitoringOpen(current.placement);
@@ -231,8 +236,10 @@ export class EvaluationsService {
   }
 
   async remove(id: string, user: AuthUser) {
+    await this.lifecycle.reconcile();
     const current = await this.findOne(id, user);
     if (current.evaluatorId !== user.id) throw this.denied();
+    this.assertMonitoringOpen(current.placement);
 
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -265,6 +272,8 @@ export class EvaluationsService {
   private assertCanEvaluate(
     placement: {
       academicStatus: AcademicMonitoringStatus;
+      startDate: Date | null;
+      endDate: Date | null;
       semester: {
         id: string;
         status: SemesterStatus;
@@ -300,6 +309,8 @@ export class EvaluationsService {
 
   private assertMonitoringOpen(placement: {
     academicStatus: AcademicMonitoringStatus;
+    startDate: Date | null;
+    endDate: Date | null;
     semester: {
       id: string;
       status: SemesterStatus;
@@ -314,6 +325,18 @@ export class EvaluationsService {
       );
     }
     this.lifecycle.assertMonitoringOpen(placement.semester);
+    const now = new Date();
+    if (
+      !placement.startDate ||
+      !placement.endDate ||
+      now < placement.startDate ||
+      now > placement.endDate
+    ) {
+      throw this.conflict(
+        'ACADEMIC_MONITORING_CLOSED',
+        'Evaluations are only available during this placement monitoring window',
+      );
+    }
   }
 
   private scope(user: AuthUser): Prisma.EvaluationWhereInput {

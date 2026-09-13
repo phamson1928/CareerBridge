@@ -1,5 +1,6 @@
 import { api } from '../auth/api';
 import type { ApiSuccess } from '../auth/auth.types';
+import type { InternshipCampaignPhase, SemesterStatus } from '../semesters/types';
 
 export type InternshipStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'CANCELLED';
 
@@ -27,10 +28,12 @@ export interface InternshipRecord {
   startDate: string | null;
   endDate: string | null;
   status: InternshipStatus;
+  recruitmentStart: string;
+  campaignPhase: InternshipCampaignPhase;
   createdAt: string;
   updatedAt: string;
   company: { id: string; companyName: string; logo: string | null; status: string };
-  semester: { id: string; name: string; startDate: string; endDate: string; status: string };
+  semester: { id: string; name: string; startDate: string; endDate: string; status: SemesterStatus };
   skills: InternshipSkillRecord[];
 }
 
@@ -55,13 +58,22 @@ export interface InternshipsPage {
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
-type ListParams = { page?: number; limit?: number; search?: string; semesterId?: string; skillId?: string; status?: InternshipStatus };
+export type ListInternshipsParams = { page?: number; limit?: number; search?: string; semesterId?: string; skillId?: string; skillIds?: string[]; status?: InternshipStatus };
+
+const serializeListParams = (params?: ListInternshipsParams) => {
+  if (!params) return undefined;
+  const { skillIds, ...rest } = params;
+  return {
+    ...rest,
+    ...(skillIds?.length ? { skillIds: skillIds.join(',') } : {}),
+  };
+};
 
 export const internshipsApi = {
-  list: async (params?: ListParams) =>
-    (await api.get<ApiSuccess<InternshipsPage>>('/internships', { params })).data.data,
-  listMine: async (params?: ListParams) =>
-    (await api.get<ApiSuccess<InternshipsPage>>('/internships/me', { params })).data.data,
+  list: async (params?: ListInternshipsParams) =>
+    (await api.get<ApiSuccess<InternshipsPage>>('/internships', { params: serializeListParams(params) })).data.data,
+  listMine: async (params?: ListInternshipsParams) =>
+    (await api.get<ApiSuccess<InternshipsPage>>('/internships/me', { params: serializeListParams(params) })).data.data,
   get: async (id: string) =>
     (await api.get<ApiSuccess<InternshipRecord>>(`/internships/${id}`)).data.data,
   create: async (input: InternshipInput) =>

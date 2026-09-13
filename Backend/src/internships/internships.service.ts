@@ -13,7 +13,10 @@ import {
   SemesterStatus,
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
+import {
+  SemesterLifecycleService,
+  type SemesterWindow,
+} from '../semesters/semester-lifecycle.service';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateInternshipDto } from './dto/create-internship.dto';
 import { ListInternshipsQueryDto } from './dto/list-internships-query.dto';
@@ -106,7 +109,7 @@ export class InternshipsService {
   async create(dto: CreateInternshipDto, userId: string) {
     const company = await this.getApprovedCompanyForUser(userId);
     const semester = await this.resolvePostingSemester(dto.semesterId);
-    this.validateDates(dto);
+    this.validateDates(dto, semester);
     this.ensureCanOpen(
       dto.status ?? InternshipStatus.DRAFT,
       dto.deadline,
@@ -172,11 +175,12 @@ export class InternshipsService {
       });
     }
     const merged = {
-      deadline: dto.deadline ?? current.deadline,
-      startDate: dto.startDate ?? current.startDate,
-      endDate: dto.endDate ?? current.endDate,
+      deadline: dto.deadline === undefined ? current.deadline : dto.deadline,
+      startDate:
+        dto.startDate === undefined ? current.startDate : dto.startDate,
+      endDate: dto.endDate === undefined ? current.endDate : dto.endDate,
     };
-    this.validateDates(merged);
+    this.validateDates(merged, semester);
     this.ensureCanOpen(dto.status ?? current.status, merged.deadline, semester);
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -276,6 +280,36 @@ export class InternshipsService {
     companyId?: string,
   ): Prisma.InternshipWhereInput {
     const status = enforcedStatus ?? query.status;
+    const skillIds = [
+      ...(query.skillIds ?? []),
+      ...(query.skillId ? [query.skillId] : []),
+    ].filter((skillId, index, values) => values.indexOf(skillId) === index);
+    const and: Prisma.InternshipWhereInput[] = skillIds.map((skillId) => ({
+      skills: { some: { skillId } },
+    }));
+
+    if (query.search) {
+      and.push({
+        OR: [
+          { title: { contains: query.search, mode: 'insensitive' } },
+          {
+            description: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            company: {
+              companyName: {
+                contains: query.search,
+                mode: 'insensitive',
+              },
+            },
+          },
+        ],
+      });
+    }
+
     return {
       ...(companyId ? { companyId } : {}),
       ...(status ? { status } : {}),
@@ -283,34 +317,7 @@ export class InternshipsService {
         ? { OR: [{ deadline: null }, { deadline: { gte: new Date() } }] }
         : {}),
       ...(query.semesterId ? { semesterId: query.semesterId } : {}),
-      ...(query.skillId
-        ? { skills: { some: { skillId: query.skillId } } }
-        : {}),
-      ...(query.search
-        ? {
-            AND: [
-              {
-                OR: [
-                  { title: { contains: query.search, mode: 'insensitive' } },
-                  {
-                    description: {
-                      contains: query.search,
-                      mode: 'insensitive',
-                    },
-                  },
-                  {
-                    company: {
-                      companyName: {
-                        contains: query.search,
-                        mode: 'insensitive',
-                      },
-                    },
-                  },
-                ],
-              },
-            ],
-          }
-        : {}),
+      ...(and.length ? { AND: and } : {}),
     };
   }
 
@@ -389,20 +396,42 @@ export class InternshipsService {
     return recruitingSemesters[0];
   }
 
-  private validateDates(dates: {
-    deadline?: Date | null;
-    startDate?: Date | null;
-    endDate?: Date | null;
-  }) {
-    if (dates.startDate && dates.endDate && dates.startDate > dates.endDate)
+  private validateDates(
+    dates: {
+      deadline?: Date | null;
+      startDate?: Date | null;
+      endDate?: Date | null;
+    },
+    semester: SemesterWindow,
+  ) {
+    const hasStartDate = Boolean(dates.startDate);
+    const hasEndDate = Boolean(dates.endDate);
+    if (hasStartDate !== hasEndDate) {
+      throw new BadRequestException({
+        code: 'INTERNSHIP_DATES_INCOMPLETE',
+        message: 'Provide both startDate and endDate, or leave both empty',
+      });
+    }
+    if (dates.startDate && dates.endDate && dates.startDate >= dates.endDate)
       throw new BadRequestException({
         code: 'INVALID_DATE_RANGE',
         message: 'Start date must be before end date',
       });
-    if (dates.deadline && dates.startDate && dates.deadline > dates.startDate)
+    if (
+      dates.startDate &&
+      dates.endDate &&
+      (dates.startDate < semester.startDate || dates.endDate > semester.endDate)
+    ) {
+      throw new BadRequestException({
+        code: 'INTERNSHIP_DATES_OUTSIDE_CAMPAIGN',
+        message:
+          'Proposed academic dates must stay within the campaign monitoring window',
+      });
+    }
+    if (dates.deadline && dates.startDate && dates.deadline >= dates.startDate)
       throw new BadRequestException({
         code: 'INVALID_DEADLINE',
-        message: 'Deadline must not be after the internship start date',
+        message: 'Deadline must be before the internship start date',
       });
   }
 

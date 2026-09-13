@@ -223,6 +223,8 @@ export class SupervisionsService {
             status: true,
             studentId: true,
             semesterId: true,
+            startDate: true,
+            endDate: true,
             supervision: { select: { id: true } },
           },
         });
@@ -240,6 +242,7 @@ export class SupervisionsService {
             message: 'Placement is not available for first assignment',
           });
         }
+        this.assertPlacementSchedule(placement);
         const lecturer = await this.getActiveLecturer(tx, dto.lecturerId);
         await this.assertNoOtherActivePlacement(
           tx,
@@ -313,6 +316,8 @@ export class SupervisionsService {
                 academicStatus: true,
                 studentId: true,
                 semesterId: true,
+                startDate: true,
+                endDate: true,
               },
             },
           },
@@ -328,6 +333,7 @@ export class SupervisionsService {
             message: 'Terminal placements cannot be reassigned',
           });
         }
+        this.assertPlacementSchedule(current.placement);
         if (
           current.lecturerId === dto.lecturerId &&
           current.status === SupervisionStatus.ACTIVE
@@ -477,6 +483,19 @@ export class SupervisionsService {
         message: 'Lecturer account is not active',
       });
     return lecturer;
+  }
+
+  private assertPlacementSchedule(placement: {
+    startDate: Date | null;
+    endDate: Date | null;
+  }) {
+    if (!placement.startDate || !placement.endDate) {
+      throw new ConflictException({
+        code: 'PLACEMENT_SCHEDULE_REQUIRED',
+        message:
+          'Set both academic monitoring dates before assigning a lecturer',
+      });
+    }
   }
 
   private async assertNoOtherActivePlacement(

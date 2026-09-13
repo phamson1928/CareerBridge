@@ -153,6 +153,8 @@ export class SemesterLifecycleService implements OnModuleInit, OnModuleDestroy {
       where: {
         academicStatus: AcademicMonitoringStatus.PENDING,
         semester: { status: SemesterStatus.MONITORING },
+        startDate: { not: null, lte: now },
+        endDate: { not: null, gte: now },
         supervision: { is: { status: SupervisionStatus.ACTIVE } },
       },
       data: { academicStatus: AcademicMonitoringStatus.ACTIVE },
@@ -166,7 +168,10 @@ export class SemesterLifecycleService implements OnModuleInit, OnModuleDestroy {
             AcademicMonitoringStatus.ACTIVE,
           ],
         },
-        semester: { status: SemesterStatus.COMPLETED },
+        OR: [
+          { semester: { status: SemesterStatus.COMPLETED } },
+          { endDate: { not: null, lt: now } },
+        ],
       },
       data: {
         academicStatus: AcademicMonitoringStatus.CLOSED,

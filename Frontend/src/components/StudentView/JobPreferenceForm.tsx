@@ -1,10 +1,10 @@
-import { Plus, X } from 'lucide-react';
-import { useState } from 'react';
-import type { JobPreferences } from '../../recommendations/types';
+import { Plus, X } from "lucide-react";
+import { useState } from "react";
+import type { JobPreferences } from "../../recommendations/types";
 
 type PreferenceInput = Pick<
   JobPreferences,
-  'desiredRoles' | 'preferredLocations' | 'preferredWorkTypes'
+  "desiredRoles" | "preferredLocations" | "preferredWorkTypes"
 >;
 
 interface JobPreferenceFormProps {
@@ -34,7 +34,7 @@ export function JobPreferenceForm({
       await onSave(value);
       onClose();
     } catch {
-      setError('Không thể lưu mong muốn công việc. Vui lòng thử lại.');
+      setError("Không thể lưu mong muốn công việc. Vui lòng thử lại.");
     }
   };
 
@@ -46,9 +46,12 @@ export function JobPreferenceForm({
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
-            <h2 className="text-lg font-extrabold text-slate-900">Mong muốn công việc</h2>
+            <h2 className="text-lg font-extrabold text-slate-900">
+              Mong muốn công việc
+            </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Thêm tối đa 5 tag cho mỗi nhóm để hệ thống ưu tiên các cơ hội phù hợp.
+              Thêm tối đa 5 tag cho mỗi nhóm để hệ thống ưu tiên các cơ hội phù
+              hợp.
             </p>
           </div>
           <button
@@ -66,11 +69,13 @@ export function JobPreferenceForm({
             label="Vị trí mong muốn"
             placeholder="Ví dụ: Backend Developer"
             values={value.desiredRoles}
-            onChange={(desiredRoles) => setValue((current) => ({ ...current, desiredRoles }))}
+            onChange={(desiredRoles) =>
+              setValue((current) => ({ ...current, desiredRoles }))
+            }
           />
           <TagField
             label="Địa điểm mong muốn"
-            placeholder="Ví dụ: Hồ Chí Minh hoặc Remote"
+            placeholder="Ví dụ: Hồ Chí Minh hoặc làm việc từ xa"
             values={value.preferredLocations}
             onChange={(preferredLocations) =>
               setValue((current) => ({ ...current, preferredLocations }))
@@ -78,7 +83,7 @@ export function JobPreferenceForm({
           />
           <TagField
             label="Hình thức làm việc"
-            placeholder="Ví dụ: Hybrid"
+            placeholder="Ví dụ: Kết hợp tại công ty và từ xa"
             values={value.preferredWorkTypes}
             onChange={(preferredWorkTypes) =>
               setValue((current) => ({ ...current, preferredWorkTypes }))
@@ -100,7 +105,7 @@ export function JobPreferenceForm({
             disabled={isSaving}
             className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
           >
-            {isSaving ? 'Đang lưu...' : 'Lưu mong muốn'}
+            {isSaving ? "Đang lưu..." : "Lưu mong muốn"}
           </button>
         </div>
       </form>
@@ -119,20 +124,30 @@ function TagField({
   values: string[];
   onChange: (values: string[]) => void;
 }) {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const add = () => {
     const next = input.trim();
-    if (!next || values.length >= 5 || values.some((item) => item.toLowerCase() === next.toLowerCase())) return;
+    if (
+      !next ||
+      values.length >= 5 ||
+      values.some((item) => item.toLowerCase() === next.toLowerCase())
+    )
+      return;
     onChange([...values, next]);
-    setInput('');
+    setInput("");
   };
 
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-bold text-slate-800">{label}</label>
+      <label className="mb-1.5 block text-sm font-bold text-slate-800">
+        {label}
+      </label>
       <div className="flex min-h-12 flex-wrap items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 p-2 focus-within:border-indigo-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100">
         {values.map((item) => (
-          <span key={item} className="inline-flex items-center gap-1 rounded-lg bg-indigo-100 px-2 py-1 text-xs font-bold text-indigo-800">
+          <span
+            key={item}
+            className="inline-flex items-center gap-1 rounded-lg bg-indigo-100 px-2 py-1 text-xs font-bold text-indigo-800"
+          >
             {item}
             <button
               type="button"
@@ -149,12 +164,12 @@ function TagField({
           disabled={values.length >= 5}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ',') {
+            if (event.key === "Enter" || event.key === ",") {
               event.preventDefault();
               add();
             }
           }}
-          placeholder={values.length >= 5 ? 'Đã đủ 5 lựa chọn' : placeholder}
+          placeholder={values.length >= 5 ? "Đã đủ 5 lựa chọn" : placeholder}
           className="min-w-40 flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-slate-400"
         />
         <button

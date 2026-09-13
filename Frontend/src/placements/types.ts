@@ -1,4 +1,9 @@
 export type PlacementStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+export type AcademicMonitoringStatus =
+  | "PENDING"
+  | "ACTIVE"
+  | "CLOSED"
+  | "CANCELLED";
 export type ReportStatus = "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
 export type ApplicationStatus =
   "PENDING" | "REVIEWING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
@@ -19,6 +24,8 @@ export interface PlacementRecord {
   id: string;
   applicationId: string;
   status: PlacementStatus;
+  academicStatus: AcademicMonitoringStatus;
+  academicClosedAt: string | null;
   startDate: string | null;
   endDate: string | null;
   createdAt: string;
