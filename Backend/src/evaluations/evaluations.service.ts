@@ -6,11 +6,12 @@ import {
 } from '@nestjs/common';
 import {
   EvaluationType,
+  AcademicMonitoringStatus,
   NotificationAction,
   NotificationType,
-  PlacementStatus,
   Prisma,
   Role,
+  SemesterStatus,
   SupervisionStatus,
 } from '../generated/prisma/client';
 import type { AuthUser } from '../auth/types/auth-user.type';
@@ -19,6 +20,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { ListEvaluationsQueryDto } from './dto/list-evaluations-query.dto';
 import { UpdateEvaluationDto } from './dto/update-evaluation.dto';
+import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
 
 const select = {
   id: true,
@@ -34,6 +36,10 @@ const select = {
     select: {
       id: true,
       status: true,
+      academicStatus: true,
+      semester: {
+        select: { id: true, status: true, startDate: true, endDate: true },
+      },
       student: {
         select: {
           id: true,
@@ -62,9 +68,11 @@ export class EvaluationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly lifecycle: SemesterLifecycleService,
   ) {}
 
   async create(dto: CreateEvaluationDto, user: AuthUser) {
+    await this.lifecycle.reconcile();
     const type = this.typeFor(user);
     try {
       const result = await this.prisma.$transaction(async (tx) => {
@@ -73,6 +81,15 @@ export class EvaluationsService {
           select: {
             id: true,
             status: true,
+            academicStatus: true,
+            semester: {
+              select: {
+                id: true,
+                status: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
             student: { select: { userId: true } },
             company: { select: { userId: true } },
             supervision: {
@@ -177,6 +194,7 @@ export class EvaluationsService {
   async update(id: string, dto: UpdateEvaluationDto, user: AuthUser) {
     const current = await this.findOne(id, user);
     if (current.evaluatorId !== user.id) throw this.denied();
+    this.assertMonitoringOpen(current.placement);
     if (dto.score === undefined && dto.comment === undefined) {
       throw this.conflict(
         'EVALUATION_UPDATE_EMPTY',
@@ -246,7 +264,13 @@ export class EvaluationsService {
 
   private assertCanEvaluate(
     placement: {
-      status: PlacementStatus;
+      academicStatus: AcademicMonitoringStatus;
+      semester: {
+        id: string;
+        status: SemesterStatus;
+        startDate: Date;
+        endDate: Date;
+      };
       company: { userId: string };
       supervision: {
         status: SupervisionStatus;
@@ -256,15 +280,7 @@ export class EvaluationsService {
     user: AuthUser,
     type: EvaluationType,
   ) {
-    if (
-      placement.status !== PlacementStatus.ACTIVE &&
-      placement.status !== PlacementStatus.COMPLETED
-    ) {
-      throw this.conflict(
-        'PLACEMENT_NOT_EVALUABLE',
-        'Only active or completed placements can be evaluated',
-      );
-    }
+    this.assertMonitoringOpen(placement);
     if (
       type === EvaluationType.COMPANY &&
       placement.company.userId === user.id
@@ -280,6 +296,24 @@ export class EvaluationsService {
       return;
     }
     throw this.denied();
+  }
+
+  private assertMonitoringOpen(placement: {
+    academicStatus: AcademicMonitoringStatus;
+    semester: {
+      id: string;
+      status: SemesterStatus;
+      startDate: Date;
+      endDate: Date;
+    };
+  }) {
+    if (placement.academicStatus !== AcademicMonitoringStatus.ACTIVE) {
+      throw this.conflict(
+        'ACADEMIC_MONITORING_CLOSED',
+        'Academic monitoring for this placement is closed',
+      );
+    }
+    this.lifecycle.assertMonitoringOpen(placement.semester);
   }
 
   private scope(user: AuthUser): Prisma.EvaluationWhereInput {

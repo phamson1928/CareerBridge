@@ -35,7 +35,7 @@ Backend/
 │   ├── students/                  # Hồ sơ, dự án, CV, kỹ năng
 │   ├── lecturers/                 # Hồ sơ giảng viên
 │   ├── companies/                 # Doanh nghiệp và phê duyệt
-│   ├── semesters/                 # Kỳ thực tập
+│   ├── semesters/                 # Đợt thực tập và lifecycle theo thời gian
 │   ├── skills/                    # Danh mục và matching metadata
 │   ├── recommendations/            # Ranking, cache và AI explanation có kiểm soát
 │   ├── internships/               # Bài đăng thực tập
@@ -81,7 +81,7 @@ erDiagram
   CONVERSATION ||--o{ MESSAGE : contains
 ```
 
-`InternshipPlacement` là bản ghi xác nhận sinh viên thực tập tại một internship trong một semester. Đây là “aggregate” dùng cho theo dõi sau tuyển dụng; không dùng `student_id` đơn lẻ cho report, supervision hoặc evaluation.
+`InternshipPlacement` là bản ghi xác nhận sinh viên thực tập tại một internship trong một đợt thực tập. Đây là “aggregate” dùng cho theo dõi sau tuyển dụng; không dùng `student_id` đơn lẻ cho report, supervision hoặc evaluation. `academicStatus` tách phần trường theo dõi khỏi trạng thái làm việc thực tế tại công ty.
 
 ## 4. Thiết kế database
 
@@ -104,7 +104,7 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 
 | Model | Trường / ràng buộc quan trọng | Mục đích |
 |---|---|---|
-| `Semester` | `name` unique, thời gian, `status` | Kỳ thực tập. |
+| `Semester` | `name` unique, `startDate`, `endDate`, `status` | Đợt thực tập; cửa sổ tuyển được suy ra là một tháng trước `startDate`. |
 | `Internship` | `companyId`, `semesterId`, `slots`, `filledSlots`, `deadline`, `status` | Vị trí doanh nghiệp tuyển trong một kỳ. |
 | `Skill` | `name` unique | Danh mục kỹ năng chuẩn. |
 | `StudentSkill` | PK `(studentId, skillId)`, `level` | Kỹ năng và mức độ của sinh viên. |
@@ -116,7 +116,7 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 |---|---|---|
 | `Application` | unique `(studentId, internshipId)`, `status`, `cvFileId` | Đơn ứng tuyển. |
 | `ApplicationStatusHistory` | `fromStatus`, `toStatus`, `changedById` | Lịch sử thay đổi trạng thái đơn. |
-| `InternshipPlacement` | `applicationId` unique, student/company/internship/semester | Đợt thực tập được xác nhận. |
+| `InternshipPlacement` | `applicationId` unique, student/company/internship/semester, `academicStatus`, `academicClosedAt` | Placement thực tế và trạng thái phần học vụ. |
 | `Supervision` | `placementId` unique, `lecturerId`, `assignedById` | Một giảng viên hướng dẫn placement. |
 | `Report` | unique `(placementId, week)`, `fileId`, `status` | Báo cáo tuần. |
 | `Evaluation` | unique `(placementId, type)`, `evaluatorId`, `score` | Một đánh giá company và một đánh giá lecturer. |
@@ -138,6 +138,7 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 | `Role` | `ADMIN`, `STUDENT`, `LECTURER`, `COMPANY` |
 | `ApplicationStatus` | `PENDING`, `REVIEWING`, `ACCEPTED`, `REJECTED`, `WITHDRAWN` |
 | `PlacementStatus` | `PENDING`, `ACTIVE`, `COMPLETED`, `CANCELLED` |
+| `AcademicMonitoringStatus` | `PENDING`, `ACTIVE`, `CLOSED`, `CANCELLED` |
 | `ReportStatus` | `DRAFT`, `SUBMITTED`, `APPROVED`, `REJECTED` |
 | `EvaluationType` | `COMPANY`, `LECTURER` |
 | `CompanyStatus` | `PENDING`, `APPROVED`, `REJECTED` |
@@ -147,10 +148,11 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 Các ràng buộc unique trong schema xử lý tính nhất quán cơ bản. Các quy tắc dưới đây phải nằm trong service và chạy transaction khi có nhiều thao tác ghi:
 
 1. Khi company chấp nhận application: kiểm tra internship còn chỗ, chuyển status, tạo status history, tạo placement, tạo conversation nếu chưa có, rồi tăng `filledSlots`.
-2. Chỉ cho phép một placement `ACTIVE` của một student trong cùng semester.
-3. Khi tạo report/evaluation, kiểm tra người gọi là chủ placement hoặc người được phân công phù hợp.
-4. Khi cấp signed URL, kiểm tra quyền trên entity tham chiếu tới file trước khi trả URL.
-5. Mọi thao tác quản trị và state transition ghi `AuditLog`.
+2. Một đợt có ba pha tự tính theo thời gian: `UPCOMING`, `RECRUITING` (một tháng trước ngày bắt đầu), `MONITORING` (từ ngày bắt đầu đến hết ngày kết thúc), sau đó `COMPLETED`. Chỉ pha `RECRUITING` được đăng tin, ứng tuyển và chấp nhận.
+3. Khi đợt chuyển sang `MONITORING`, các tin `OPEN` còn lại được đóng. Khi đợt kết thúc, `academicStatus` được đóng nhưng không tự kết thúc placement thực tế.
+4. Khi tạo report/evaluation, kiểm tra người gọi là chủ placement hoặc người được phân công phù hợp, đồng thời đang trong pha theo dõi học vụ.
+5. Khi cấp signed URL, kiểm tra quyền trên entity tham chiếu tới file trước khi trả URL.
+6. Mọi thao tác quản trị và state transition ghi `AuditLog`.
 
 ## 6. API map và roadmap
 

@@ -19,7 +19,7 @@ Hệ thống phục vụ bốn nhóm người dùng:
 |---|---|
 | Authentication | Đăng ký, đăng nhập, refresh token, đăng xuất và RBAC. |
 | Hồ sơ | Hồ sơ sinh viên, dự án cá nhân, kỹ năng, CV; hồ sơ giảng viên và doanh nghiệp. |
-| Kỳ thực tập | Tạo và quản lý thời gian, trạng thái của từng kỳ. |
+| Đợt thực tập | Quản lý cửa sổ tuyển dụng và khoảng theo dõi học vụ của từng đợt. |
 | Vị trí thực tập | Doanh nghiệp đăng vị trí theo kỳ, số lượng tuyển, hạn nộp và kỹ năng yêu cầu. |
 | AI gợi ý thực tập | Sinh viên lưu mong muốn công việc và chủ động tạo tối đa 10 gợi ý do backend xếp hạng; AI chỉ diễn giải tối đa 3 gợi ý đầu. |
 | Ứng tuyển | Sinh viên nộp đơn, doanh nghiệp xem xét và lưu lịch sử thay đổi trạng thái. |
@@ -35,30 +35,28 @@ Hệ thống phục vụ bốn nhóm người dùng:
 
 ```mermaid
 flowchart TD
-  A[Student hoàn thiện hồ sơ] --> B[Company đã được Admin duyệt đăng Internship]
+  A[Đợt mở cửa sổ tuyển dụng] --> B[Company đã được Admin duyệt đăng Internship]
   B --> C[Student nộp Application]
-  C --> D{Company xét duyệt}
+  C --> D{Company xét duyệt trong cửa sổ tuyển}
   D -->|Từ chối| E[REJECTED]
-  D -->|Chấp nhận| F[ACCEPTED]
-  F --> G[Tạo InternshipPlacement]
+  D -->|Chấp nhận| F[ACCEPTED + InternshipPlacement]
+  F --> G[Đợt bắt đầu: khóa tuyển mới]
   G --> H[Admin phân công Lecturer qua Supervision]
-  H --> I[Placement ACTIVE]
-  I --> J[Student nộp Report theo tuần]
-  J --> K[Lecturer review report]
-  I --> L[Company đánh giá]
-  I --> M[Lecturer đánh giá]
-  L --> N[Placement COMPLETED]
-  M --> N
+  H --> I[Theo dõi học vụ: Report + Evaluation]
+  I --> J[Đợt kết thúc: academicStatus CLOSED]
+  J --> K[Chốt phần học vụ; công việc thực tế có thể tiếp tục]
 ```
 
-`InternshipPlacement` là bản ghi trung tâm của giai đoạn thực tập thực tế. Mọi báo cáo, phân công và đánh giá đều phải gắn với placement, không chỉ gắn với sinh viên. Nhờ đó một sinh viên có thể có dữ liệu lịch sử rõ ràng qua nhiều kỳ hoặc nhiều công ty.
+`InternshipPlacement` là bản ghi trung tâm của giai đoạn thực tập thực tế. Mọi báo cáo, phân công và đánh giá đều phải gắn với placement, không chỉ gắn với sinh viên. `academicStatus` là vòng đời riêng cho phần trường theo dõi; khi đợt kết thúc, phần học vụ được đóng mà không ép công ty hoặc sinh viên kết thúc công việc thực tế.
 
 ## 4. Quy tắc nghiệp vụ
 
 ### 4.1. Doanh nghiệp và vị trí thực tập
 
 - Doanh nghiệp mới đăng ký có trạng thái `PENDING`; chỉ `APPROVED` mới được mở bài đăng.
-- Internship luôn thuộc một `Semester`.
+- Internship luôn thuộc một `Semester` (tên kỹ thuật); trên nghiệp vụ/UI gọi là **Đợt thực tập**.
+- Cửa sổ tuyển bắt đầu đúng một tháng dương lịch trước `startDate` và kết thúc khi đợt bắt đầu. Chỉ trong cửa sổ này được đăng/mở tin, nộp đơn hoặc chấp nhận ứng viên.
+- Khi đợt bắt đầu, hệ thống đóng các tin `OPEN` còn lại. Không có tuyển mới trong khoảng theo dõi học vụ.
 - Internship có các trạng thái `DRAFT`, `OPEN`, `CLOSED`, `CANCELLED`.
 - Chỉ vị trí `OPEN`, chưa hết hạn và còn chỗ mới nhận đơn.
 - `filledSlots` được tăng trong cùng transaction khi chấp nhận ứng viên.
@@ -70,6 +68,7 @@ flowchart TD
 - Khi chấp nhận đơn, hệ thống tạo một `InternshipPlacement` duy nhất cho application đó và ghi `ApplicationStatusHistory`.
 - Phải kiểm tra nghiệp vụ để một sinh viên không có nhiều placement `ACTIVE` trong cùng một semester.
 - Hủy placement không được xóa lịch sử application, report hay evaluation; chỉ thay đổi trạng thái sang `CANCELLED` khi phù hợp.
+- `startDate` và `endDate` của placement là thời gian làm thực tế; không bị ép phải nằm trong ngày bắt đầu/kết thúc của đợt.
 
 ### 4.3. Phân công, báo cáo và đánh giá
 
@@ -78,6 +77,7 @@ flowchart TD
 - Báo cáo có trạng thái `DRAFT`, `SUBMITTED`, `APPROVED`, `REJECTED`.
 - Mỗi placement có tối đa một evaluation loại `COMPANY` và một evaluation loại `LECTURER`.
 - Chỉ tài khoản doanh nghiệp của placement hoặc giảng viên được phân công mới được tạo evaluation tương ứng. Quy tắc quyền này được kiểm tra ở service/guard.
+- Chỉ tạo hoặc nộp report, tạo/sửa evaluation trong khoảng theo dõi học vụ. Khi đợt kết thúc, `academicStatus` chuyển `CLOSED`, supervision được hoàn tất; report đã `SUBMITTED` vẫn có thể được giảng viên duyệt để chốt kết quả.
 
 ### 4.4. Kỹ năng và đề xuất
 
@@ -86,7 +86,7 @@ flowchart TD
 - Doanh nghiệp gắn kỹ năng cho internship, đánh dấu bắt buộc hoặc ưu tiên và đặt trọng số.
 - Điểm matching/recommendation là dữ liệu hỗ trợ, không thay thế quyết định tuyển dụng của doanh nghiệp.
 - Sinh viên có thể lưu tối đa 5 role, location và work type mong muốn cho mỗi nhóm; các preference chỉ thuộc current student.
-- Recommendation chỉ xét internship `OPEN`, chưa hết hạn, còn slot, company approved/active, semester active, chưa từng apply và không xung đột placement đang hiệu lực.
+- Recommendation chỉ xét internship `OPEN`, chưa hết hạn, còn slot, company approved/active, đợt đang `RECRUITING`, chưa từng apply và không xung đột placement đang hiệu lực.
 - Backend xếp hạng tối đa 10 candidate theo profile, skills, projects và preferences. AI chỉ được giải thích top 3 đã có rank; không tạo score, không đổi rank và không tự nộp đơn.
 - Provider failure hoặc hồ sơ thiếu tín hiệu phải trả deterministic fallback thay vì làm hỏng kết quả.
 

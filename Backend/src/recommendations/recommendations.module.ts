@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SkillsModule } from '../skills/skills.module';
+import { SemestersModule } from '../semesters/semesters.module';
 import { AiRecommendationService } from './ai-recommendation.service';
 import { ProfileReadinessService } from './profile-readiness.service';
 import { RecommendationCacheService } from './recommendation-cache.service';
@@ -11,7 +12,7 @@ import { RecommendationsController } from './recommendations.controller';
 import { RecommendationsService } from './recommendations.service';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, SkillsModule],
+  imports: [ConfigModule, PrismaModule, SkillsModule, SemestersModule],
   controllers: [RecommendationsController],
   providers: [
     AiRecommendationService,

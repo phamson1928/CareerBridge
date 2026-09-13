@@ -1,5 +1,4 @@
 import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
-import { ReportStatus } from '../../generated/prisma/client';
 
 export enum ReviewReportStatus {
   APPROVED = 'APPROVED',

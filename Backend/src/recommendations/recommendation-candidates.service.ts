@@ -6,6 +6,7 @@ import {
   SemesterStatus,
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
 import {
   RecommendationCandidate,
   RecommendationStudent,
@@ -73,12 +74,16 @@ const candidateSelect = {
 
 @Injectable()
 export class RecommendationCandidatesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly lifecycle: SemesterLifecycleService,
+  ) {}
 
   async loadForUser(userId: string): Promise<{
     student: RecommendationStudent;
     candidates: RecommendationCandidate[];
   }> {
+    await this.lifecycle.reconcile();
     const student = await this.prisma.studentProfile.findUnique({
       where: { userId },
       select: studentSelect,
@@ -98,7 +103,7 @@ export class RecommendationCandidatesService {
           { company: { status: 'APPROVED', user: { status: 'ACTIVE' } } },
           {
             semester: {
-              status: SemesterStatus.ACTIVE,
+              status: SemesterStatus.RECRUITING,
               placements: {
                 none: {
                   studentId: student.id,

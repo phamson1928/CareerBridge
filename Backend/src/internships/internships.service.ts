@@ -13,6 +13,7 @@ import {
   SemesterStatus,
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateInternshipDto } from './dto/create-internship.dto';
 import { ListInternshipsQueryDto } from './dto/list-internships-query.dto';
@@ -66,9 +67,13 @@ type InternshipRecord = Prisma.InternshipGetPayload<{
 
 @Injectable()
 export class InternshipsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly lifecycle: SemesterLifecycleService,
+  ) {}
 
   async list(query: ListInternshipsQueryDto, user: AuthUser) {
+    await this.lifecycle.reconcile();
     const where = this.buildWhere(
       query,
       user.role === Role.ADMIN ? undefined : InternshipStatus.OPEN,
@@ -77,11 +82,13 @@ export class InternshipsService {
   }
 
   async listMine(query: ListInternshipsQueryDto, userId: string) {
+    await this.lifecycle.reconcile();
     const company = await this.getCompanyForUser(userId);
     return this.paginate(this.buildWhere(query, undefined, company.id), query);
   }
 
   async findOne(id: string, user: AuthUser) {
+    await this.lifecycle.reconcile();
     const internship = await this.prisma.internship.findUnique({
       where: { id },
       select: internshipSelect,
@@ -100,7 +107,11 @@ export class InternshipsService {
     const company = await this.getApprovedCompanyForUser(userId);
     const semester = await this.resolvePostingSemester(dto.semesterId);
     this.validateDates(dto);
-    this.ensureCanOpen(dto.status ?? InternshipStatus.DRAFT, dto.deadline);
+    this.ensureCanOpen(
+      dto.status ?? InternshipStatus.DRAFT,
+      dto.deadline,
+      semester,
+    );
     const record = await this.prisma.$transaction(async (tx) => {
       const internship = await tx.internship.create({
         data: {
@@ -151,9 +162,9 @@ export class InternshipsService {
         message: 'A cancelled internship cannot be edited',
       });
     }
-    if (dto.semesterId !== undefined) {
-      await this.ensureSemesterAvailable(dto.semesterId);
-    }
+    const semester = await this.ensureSemesterAvailable(
+      dto.semesterId ?? current.semesterId,
+    );
     if (dto.slots !== undefined && dto.slots < current.filledSlots) {
       throw new BadRequestException({
         code: 'SLOTS_BELOW_FILLED',
@@ -166,7 +177,7 @@ export class InternshipsService {
       endDate: dto.endDate ?? current.endDate,
     };
     this.validateDates(merged);
-    this.ensureCanOpen(dto.status ?? current.status, merged.deadline);
+    this.ensureCanOpen(dto.status ?? current.status, merged.deadline, semester);
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const internship = await tx.internship.update({
@@ -329,58 +340,53 @@ export class InternshipsService {
   private async ensureSemesterAvailable(semesterId: string) {
     const semester = await this.prisma.semester.findUnique({
       where: { id: semesterId },
-      select: { status: true },
+      select: { id: true, status: true, startDate: true, endDate: true },
     });
     if (!semester)
       throw new NotFoundException({
         code: 'SEMESTER_NOT_FOUND',
         message: 'Semester not found',
       });
-    if (
-      semester.status === SemesterStatus.CANCELLED ||
-      semester.status === SemesterStatus.COMPLETED
-    ) {
-      throw new BadRequestException({
-        code: 'SEMESTER_NOT_AVAILABLE',
-        message:
-          'Internships can only be assigned to an upcoming or active semester',
-      });
-    }
+    this.lifecycle.assertRecruitmentOpen(semester);
+    return semester;
   }
 
   private async resolvePostingSemester(requestedSemesterId?: string | null) {
     if (requestedSemesterId) {
       const semester = await this.prisma.semester.findUnique({
         where: { id: requestedSemesterId },
-        select: { id: true, status: true },
+        select: { id: true, status: true, startDate: true, endDate: true },
       });
-      if (!semester || semester.status !== SemesterStatus.ACTIVE) {
+      if (!semester) {
         throw new BadRequestException({
-          code: 'SEMESTER_NOT_ACTIVE',
-          message: 'The selected internship semester is not active',
+          code: 'SEMESTER_NOT_FOUND',
+          message: 'The selected internship campaign was not found',
         });
       }
+      this.lifecycle.assertRecruitmentOpen(semester);
       return semester;
     }
 
-    const activeSemesters = await this.prisma.semester.findMany({
-      where: { status: SemesterStatus.ACTIVE },
-      select: { id: true },
+    const semesters = await this.prisma.semester.findMany({
+      select: { id: true, status: true, startDate: true, endDate: true },
       orderBy: [{ startDate: 'desc' }, { createdAt: 'desc' }],
     });
-    if (!activeSemesters.length) {
+    const recruitingSemesters = semesters.filter(
+      (semester) => this.lifecycle.phaseOf(semester) === 'RECRUITING',
+    );
+    if (!recruitingSemesters.length) {
       throw new BadRequestException({
-        code: 'NO_ACTIVE_SEMESTER',
-        message: 'No active internship semester is available for posting',
+        code: 'NO_RECRUITING_SEMESTER',
+        message: 'No internship campaign is currently recruiting',
       });
     }
-    if (activeSemesters.length > 1) {
+    if (recruitingSemesters.length > 1) {
       throw new BadRequestException({
         code: 'SEMESTER_SELECTION_REQUIRED',
-        message: 'Select an active internship semester before posting',
+        message: 'Select an internship campaign before posting',
       });
     }
-    return activeSemesters[0];
+    return recruitingSemesters[0];
   }
 
   private validateDates(dates: {
@@ -400,7 +406,16 @@ export class InternshipsService {
       });
   }
 
-  private ensureCanOpen(status: InternshipStatus, deadline?: Date | null) {
+  private ensureCanOpen(
+    status: InternshipStatus,
+    deadline: Date | null | undefined,
+    semester: {
+      id: string;
+      status: SemesterStatus;
+      startDate: Date;
+      endDate: Date;
+    },
+  ) {
     if (
       status === InternshipStatus.OPEN &&
       deadline &&
@@ -411,11 +426,18 @@ export class InternshipsService {
         message: 'An open internship must have a future deadline',
       });
     }
+    if (status === InternshipStatus.OPEN) {
+      this.lifecycle.assertRecruitmentOpen(semester);
+    }
   }
 
   private toResponse(record: InternshipRecord) {
     return {
       ...record,
+      recruitmentStart: this.lifecycle.recruitmentStart(
+        record.semester.startDate,
+      ),
+      campaignPhase: this.lifecycle.phaseOf(record.semester),
       skills: record.skills.map(({ skill, ...item }) => ({
         ...item,
         name: skill.name,

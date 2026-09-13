@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, SemesterStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SemesterLifecycleService } from './semester-lifecycle.service';
 import { CreateSemesterDto } from './dto/create-semester.dto';
 import { ListSemestersQueryDto } from './dto/list-semesters-query.dto';
 import { UpdateSemesterDto } from './dto/update-semester.dto';
@@ -30,18 +31,15 @@ type SemesterRecord = Prisma.SemesterGetPayload<{
   select: typeof semesterSelect;
 }>;
 
-const transitions: Record<SemesterStatus, readonly SemesterStatus[]> = {
-  [SemesterStatus.UPCOMING]: [SemesterStatus.ACTIVE, SemesterStatus.CANCELLED],
-  [SemesterStatus.ACTIVE]: [SemesterStatus.COMPLETED, SemesterStatus.CANCELLED],
-  [SemesterStatus.COMPLETED]: [],
-  [SemesterStatus.CANCELLED]: [],
-};
-
 @Injectable()
 export class SemestersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly lifecycle: SemesterLifecycleService,
+  ) {}
 
   async list(query: ListSemestersQueryDto) {
+    await this.lifecycle.reconcile();
     const { page, limit, search, status } = query;
     const where: Prisma.SemesterWhereInput = {
       ...(status ? { status } : {}),
@@ -71,6 +69,7 @@ export class SemestersService {
   }
 
   async findById(id: string) {
+    await this.lifecycle.reconcile();
     const semester = await this.prisma.semester.findUnique({
       where: { id },
       select: semesterSelect,
@@ -90,7 +89,17 @@ export class SemestersService {
     try {
       return await this.prisma.$transaction(async (tx) => {
         const semester = await tx.semester.create({
-          data: { name, startDate, endDate, status: SemesterStatus.UPCOMING },
+          data: {
+            name,
+            startDate,
+            endDate,
+            status: this.lifecycle.statusFor({
+              id: '',
+              status: SemesterStatus.UPCOMING,
+              startDate,
+              endDate,
+            }),
+          },
           select: semesterSelect,
         });
         await tx.auditLog.create({
@@ -122,22 +131,20 @@ export class SemestersService {
     }
 
     const current = await this.getForMutation(id);
-    if (
-      current.status === SemesterStatus.COMPLETED ||
-      current.status === SemesterStatus.CANCELLED
-    ) {
+    const phase = this.lifecycle.phaseOf(current);
+    if (phase === 'COMPLETED' || phase === 'CANCELLED') {
       throw new ConflictException({
         code: 'SEMESTER_IMMUTABLE',
         message: 'Completed or cancelled semesters cannot be edited',
       });
     }
     if (
-      current.status === SemesterStatus.ACTIVE &&
-      dto.startDate !== undefined
+      (dto.startDate !== undefined || dto.endDate !== undefined) &&
+      phase !== 'UPCOMING'
     ) {
       throw new ConflictException({
         code: 'SEMESTER_IMMUTABLE',
-        message: 'The start date of an active semester cannot be changed',
+        message: 'Campaign dates cannot be changed after recruitment begins',
       });
     }
 
@@ -157,7 +164,17 @@ export class SemestersService {
       return await this.prisma.$transaction(async (tx) => {
         const semester = await tx.semester.update({
           where: { id },
-          data: { name, startDate, endDate },
+          data: {
+            name,
+            startDate,
+            endDate,
+            status: this.lifecycle.statusFor({
+              id,
+              status: current.status,
+              startDate,
+              endDate,
+            }),
+          },
           select: semesterSelect,
         });
         await tx.auditLog.create({
@@ -185,10 +202,20 @@ export class SemestersService {
 
   async updateStatus(id: string, status: SemesterStatus, actorId: string) {
     const current = await this.getForMutation(id);
-    if (!transitions[current.status].includes(status)) {
+    if (status !== SemesterStatus.CANCELLED) {
+      throw new ConflictException({
+        code: 'SEMESTER_STATUS_AUTOMATIC',
+        message:
+          'Campaign status is determined automatically from its dates. Only cancellation is manual.',
+      });
+    }
+    if (
+      this.lifecycle.phaseOf(current) === 'COMPLETED' ||
+      current.status === SemesterStatus.CANCELLED
+    ) {
       throw new ConflictException({
         code: 'INVALID_SEMESTER_TRANSITION',
-        message: `Cannot change semester status from ${current.status} to ${status}`,
+        message: `Cannot cancel campaign from ${current.status}`,
       });
     }
 
@@ -218,7 +245,7 @@ export class SemestersService {
   async remove(id: string, actorId: string) {
     const current = await this.getForMutation(id);
     if (
-      current.status !== SemesterStatus.UPCOMING &&
+      this.lifecycle.phaseOf(current) !== 'UPCOMING' &&
       current.status !== SemesterStatus.CANCELLED
     ) {
       throw new ConflictException({
@@ -269,26 +296,13 @@ export class SemestersService {
 
   async assertAcceptsDraftInternship(id: string) {
     const semester = await this.assertExists(id);
-    if (
-      semester.status !== SemesterStatus.UPCOMING &&
-      semester.status !== SemesterStatus.ACTIVE
-    ) {
-      throw new ConflictException({
-        code: 'SEMESTER_NOT_ACCEPTING_INTERNSHIPS',
-        message: 'The semester does not accept internship drafts',
-      });
-    }
+    this.lifecycle.assertRecruitmentOpen(semester);
     return semester;
   }
 
   async assertAcceptsOpenInternship(id: string) {
     const semester = await this.assertExists(id);
-    if (semester.status !== SemesterStatus.ACTIVE) {
-      throw new ConflictException({
-        code: 'SEMESTER_NOT_ACTIVE',
-        message: 'Internships can be opened only in an active semester',
-      });
-    }
+    this.lifecycle.assertRecruitmentOpen(semester);
     return semester;
   }
 
@@ -348,6 +362,8 @@ export class SemestersService {
       startDate: item.startDate,
       endDate: item.endDate,
       status: item.status,
+      recruitmentStart: this.lifecycle.recruitmentStart(item.startDate),
+      phase: this.lifecycle.phaseOf(item),
       internshipCount: item._count.internships,
       placementCount: item._count.placements,
       createdAt: item.createdAt,

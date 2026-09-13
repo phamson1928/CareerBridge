@@ -31,6 +31,8 @@ enum CompanyStatus {
 enum SemesterStatus {
   UPCOMING
   ACTIVE
+  RECRUITING
+  MONITORING
   COMPLETED
   CANCELLED
 }
@@ -54,6 +56,13 @@ enum PlacementStatus {
   PENDING
   ACTIVE
   COMPLETED
+  CANCELLED
+}
+
+enum AcademicMonitoringStatus {
+  PENDING
+  ACTIVE
+  CLOSED
   CANCELLED
 }
 
@@ -425,6 +434,8 @@ model InternshipPlacement {
   internshipId  String
   semesterId    String
   status        PlacementStatus @default(PENDING)
+  academicStatus AcademicMonitoringStatus @default(PENDING)
+  academicClosedAt DateTime?
   startDate     DateTime?
   endDate       DateTime?
   createdAt     DateTime        @default(now())
@@ -443,6 +454,7 @@ model InternshipPlacement {
   @@index([studentId, semesterId])
   @@index([companyId, semesterId])
   @@index([semesterId, status])
+  @@index([semesterId, academicStatus])
 }
 
 model Supervision {

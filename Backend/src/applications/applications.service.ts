@@ -25,6 +25,7 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { ListApplicationsQueryDto } from './dto/list-applications-query.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
 import { calculateSkillMatch } from '../skills/skill-match.calculator';
 
 const applicationSelect = {
@@ -104,6 +105,7 @@ export class ApplicationsService {
     private readonly prisma: PrismaService,
     private readonly placementsService: PlacementsService,
     private readonly notifications: NotificationsService,
+    private readonly lifecycle: SemesterLifecycleService,
   ) {}
 
   async create(dto: CreateApplicationDto, user: AuthUser) {
@@ -115,6 +117,7 @@ export class ApplicationsService {
     }
 
     const student = await this.getStudentByUserId(user.id);
+    await this.lifecycle.reconcile();
     const internship = await this.getOpenInternship(dto.internshipId);
     this.ensureInternshipAcceptingApplications(internship);
     await this.ensureCvFileIsOwnedByStudent(dto.cvFileId, user.id);
@@ -217,7 +220,7 @@ export class ApplicationsService {
       select: applicationSelect,
     });
     if (!application) throw this.notFound();
-    await this.ensureCanAccess(application, user);
+    this.ensureCanAccess(application, user);
     return this.toResponse(application);
   }
 
@@ -227,7 +230,7 @@ export class ApplicationsService {
       select: applicationSelect,
     });
     if (!application) throw this.notFound();
-    await this.ensureCanAccess(application, user);
+    this.ensureCanAccess(application, user);
 
     const history = await this.prisma.applicationStatusHistory.findMany({
       where: { applicationId: id },
@@ -406,7 +409,14 @@ export class ApplicationsService {
                 startDate: true,
                 endDate: true,
                 company: { select: { userId: true, status: true } },
-                semester: { select: { status: true } },
+                semester: {
+                  select: {
+                    id: true,
+                    status: true,
+                    startDate: true,
+                    endDate: true,
+                  },
+                },
               },
             },
             placement: { select: { id: true, status: true } },
@@ -441,7 +451,7 @@ export class ApplicationsService {
           });
         }
 
-        await this.ensureSemesterActive(current.internship.semesterId, tx);
+        this.lifecycle.assertRecruitmentOpen(current.internship.semester);
         await this.reserveInternshipSlot(current.internshipId, tx);
 
         await tx.application.update({
@@ -571,7 +581,7 @@ export class ApplicationsService {
         },
       });
       if (!current) throw this.notFound();
-      await this.ensureCanTransition(
+      this.ensureCanTransition(
         current.status,
         toStatus,
         user,
@@ -673,7 +683,7 @@ export class ApplicationsService {
     return this.paginate(query, { internship: { company: { userId } } });
   }
 
-  private async ensureCanAccess(
+  private ensureCanAccess(
     application: {
       id: string;
       student: { userId: string };
@@ -695,7 +705,7 @@ export class ApplicationsService {
     });
   }
 
-  private async ensureCanTransition(
+  private ensureCanTransition(
     fromStatus: ApplicationStatus,
     toStatus: ApplicationStatus,
     user: AuthUser,
@@ -763,28 +773,6 @@ export class ApplicationsService {
       throw new ForbiddenException({
         code: 'APPLICATION_NOT_ACCESSIBLE',
         message: 'You cannot review this application',
-      });
-    }
-  }
-
-  private async ensureSemesterActive(
-    semesterId: string,
-    tx: PrismaClientLike = this.prisma,
-  ) {
-    const semester = await tx.semester.findUnique({
-      where: { id: semesterId },
-      select: { status: true },
-    });
-    if (!semester) {
-      throw new NotFoundException({
-        code: 'SEMESTER_NOT_FOUND',
-        message: 'Semester not found',
-      });
-    }
-    if (semester.status !== SemesterStatus.ACTIVE) {
-      throw new BadRequestException({
-        code: 'SEMESTER_NOT_ACTIVE',
-        message: 'Semester must be active before accepting applications',
       });
     }
   }
@@ -860,6 +848,9 @@ export class ApplicationsService {
         semesterId: true,
         startDate: true,
         endDate: true,
+        semester: {
+          select: { id: true, status: true, startDate: true, endDate: true },
+        },
         company: { select: { status: true, userId: true } },
       },
     });
@@ -875,6 +866,12 @@ export class ApplicationsService {
   private ensureInternshipAcceptingApplications(internship: {
     status: InternshipStatus;
     deadline: Date | null;
+    semester: {
+      id: string;
+      status: SemesterStatus;
+      startDate: Date;
+      endDate: Date;
+    };
     company: { status: CompanyStatus };
   }) {
     if (internship.status !== InternshipStatus.OPEN) {
@@ -895,6 +892,7 @@ export class ApplicationsService {
         message: 'Company must be approved before receiving applications',
       });
     }
+    this.lifecycle.assertRecruitmentOpen(internship.semester);
   }
 
   private toResponse(record: ApplicationRecord) {

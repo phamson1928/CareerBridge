@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { SemestersModule } from '../semesters/semesters.module';
 import { InternshipsController } from './internships.controller';
 import { InternshipsService } from './internships.service';
 
 /** Company internship posts scoped to a semester. */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, SemestersModule],
   controllers: [InternshipsController],
   providers: [InternshipsService],
   exports: [InternshipsService],

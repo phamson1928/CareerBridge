@@ -32,6 +32,7 @@ const supervisionSelect = {
     select: {
       id: true,
       status: true,
+      academicStatus: true,
       student: {
         select: {
           id: true,
@@ -309,6 +310,7 @@ export class SupervisionsService {
               select: {
                 id: true,
                 status: true,
+                academicStatus: true,
                 studentId: true,
                 semesterId: true,
               },
@@ -317,8 +319,9 @@ export class SupervisionsService {
         });
         if (!current) throw this.notFound();
         if (
-          current.placement.status === PlacementStatus.COMPLETED ||
-          current.placement.status === PlacementStatus.CANCELLED
+          current.placement.status === PlacementStatus.CANCELLED ||
+          current.placement.academicStatus === 'CLOSED' ||
+          current.placement.academicStatus === 'CANCELLED'
         ) {
           throw new ConflictException({
             code: 'INVALID_SUPERVISION_TRANSITION',

@@ -26,6 +26,7 @@ import {
 } from './dto/update-placement-status.dto';
 import { UpdatePlacementDto } from './dto/update-placement.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
 
 export interface AcceptedApplicationSnapshot {
   applicationId: string;
@@ -45,6 +46,8 @@ const placementSelect = {
   internshipId: true,
   semesterId: true,
   status: true,
+  academicStatus: true,
+  academicClosedAt: true,
   startDate: true,
   endDate: true,
   createdAt: true,
@@ -126,9 +129,11 @@ export class PlacementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly lifecycle: SemesterLifecycleService,
   ) {}
 
   async list(query: ListPlacementsQueryDto) {
+    await this.lifecycle.reconcile();
     const search = query.search?.trim();
     const activeSupervision: Prisma.SupervisionWhereInput = {
       status: SupervisionStatus.ACTIVE,
@@ -203,6 +208,7 @@ export class PlacementsService {
   }
 
   async listMine(user: AuthUser) {
+    await this.lifecycle.reconcile();
     const where = await this.scopeForUser(user);
     const items = await this.prisma.internshipPlacement.findMany({
       where,
@@ -218,6 +224,7 @@ export class PlacementsService {
   }
 
   async findById(id: string, user: AuthUser) {
+    await this.lifecycle.reconcile();
     const placement = await this.prisma.internshipPlacement.findUnique({
       where: { id },
       select: placementSelect,
@@ -245,7 +252,6 @@ export class PlacementsService {
             status: true,
             startDate: true,
             endDate: true,
-            semester: { select: { startDate: true, endDate: true } },
           },
         });
         if (!current) throw this.notFound();
@@ -271,19 +277,6 @@ export class PlacementsService {
             message: 'startDate must be before endDate',
           });
         }
-        for (const date of [startDate, endDate]) {
-          if (
-            date &&
-            (date < current.semester.startDate ||
-              date > current.semester.endDate)
-          ) {
-            throw new BadRequestException({
-              code: 'INVALID_PLACEMENT_DATE_RANGE',
-              message: 'Placement dates must be within the semester period',
-            });
-          }
-        }
-
         const update = await tx.internshipPlacement.updateMany({
           where: { id, status: current.status },
           data: { startDate, endDate },
@@ -331,6 +324,7 @@ export class PlacementsService {
             id: true,
             internshipId: true,
             status: true,
+            academicStatus: true,
             supervision: { select: { id: true, status: true } },
           },
         });
@@ -344,6 +338,16 @@ export class PlacementsService {
           throw new ConflictException({
             code: 'INVALID_PLACEMENT_TRANSITION',
             message: `Cannot change placement status from ${current.status} to ${dto.status}`,
+          });
+        }
+        if (
+          dto.status === PublicPlacementStatus.COMPLETED &&
+          current.academicStatus !== 'CLOSED'
+        ) {
+          throw new ConflictException({
+            code: 'ACADEMIC_MONITORING_STILL_ACTIVE',
+            message:
+              'The actual placement cannot be completed before academic monitoring closes.',
           });
         }
         if (dto.status === PublicPlacementStatus.COMPLETED) {
@@ -361,7 +365,12 @@ export class PlacementsService {
 
         const statusUpdate = await tx.internshipPlacement.updateMany({
           where: { id, status: current.status },
-          data: { status: dto.status },
+          data: {
+            status: dto.status,
+            ...(dto.status === PublicPlacementStatus.CANCELLED
+              ? { academicStatus: 'CANCELLED', academicClosedAt: new Date() }
+              : {}),
+          },
         });
         if (statusUpdate.count !== 1) {
           throw new ConflictException({

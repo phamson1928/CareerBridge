@@ -6,21 +6,23 @@ import {
 } from '@nestjs/common';
 import {
   FileType,
+  AcademicMonitoringStatus,
   NotificationAction,
   NotificationType,
-  PlacementStatus,
   Prisma,
   ReportStatus,
   Role,
+  SemesterStatus,
   SupervisionStatus,
 } from '../generated/prisma/client';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ListReportsQueryDto } from './dto/list-reports-query.dto';
-import { ReviewReportDto } from './dto/review-report.dto';
+import { ReviewReportDto, ReviewReportStatus } from './dto/review-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
 
 const select = {
   id: true,
@@ -48,12 +50,21 @@ const select = {
     select: {
       id: true,
       status: true,
+      academicStatus: true,
       student: {
         select: { id: true, userId: true, studentCode: true, fullName: true },
       },
       company: { select: { companyName: true } },
       internship: { select: { title: true } },
-      semester: { select: { name: true } },
+      semester: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+        },
+      },
       supervision: {
         select: {
           status: true,
@@ -70,9 +81,11 @@ export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly lifecycle: SemesterLifecycleService,
   ) {}
 
   async create(dto: CreateReportDto, user: AuthUser) {
+    await this.lifecycle.reconcile();
     await this.studentPlacement(dto.placementId, user.id);
     await this.validateFile(dto.fileId, user.id);
     try {
@@ -100,7 +113,9 @@ export class ReportsService {
         supervision: {
           is: {
             lecturer: { userId: user.id },
-            status: SupervisionStatus.ACTIVE,
+            status: {
+              in: [SupervisionStatus.ACTIVE, SupervisionStatus.COMPLETED],
+            },
           },
         },
       },
@@ -141,6 +156,7 @@ export class ReportsService {
   async submit(id: string, user: AuthUser) {
     const current = await this.findOne(id, user);
     if (current.placement.student.userId !== user.id) throw this.denied();
+    this.assertMonitoringOpen(current.placement);
     if (
       current.status !== ReportStatus.DRAFT &&
       current.status !== ReportStatus.REJECTED
@@ -191,7 +207,8 @@ export class ReportsService {
     const current = await this.findOne(id, user);
     if (
       current.placement.supervision?.lecturer.userId !== user.id ||
-      current.placement.supervision.status !== SupervisionStatus.ACTIVE
+      (current.placement.supervision.status !== SupervisionStatus.ACTIVE &&
+        current.placement.supervision.status !== SupervisionStatus.COMPLETED)
     )
       throw this.denied();
     if (current.status !== ReportStatus.SUBMITTED)
@@ -213,7 +230,9 @@ export class ReportsService {
         data: {
           userId: user.id,
           action:
-            dto.status === 'APPROVED' ? 'REPORT_APPROVED' : 'REPORT_REJECTED',
+            dto.status === ReviewReportStatus.APPROVED
+              ? 'REPORT_APPROVED'
+              : 'REPORT_REJECTED',
           entity: 'Report',
           entityId: id,
           metadata: { placementId: report.placementId },
@@ -273,14 +292,38 @@ export class ReportsService {
   private async studentPlacement(placementId: string, userId: string) {
     const p = await this.prisma.internshipPlacement.findFirst({
       where: { id: placementId, student: { userId } },
-      select: { status: true },
+      select: {
+        status: true,
+        academicStatus: true,
+        semester: {
+          select: { id: true, status: true, startDate: true, endDate: true },
+        },
+      },
     });
     if (!p) throw this.denied();
-    if (p.status !== PlacementStatus.ACTIVE)
+    if (p.academicStatus !== AcademicMonitoringStatus.ACTIVE)
       throw this.conflict(
         'PLACEMENT_NOT_ACTIVE',
-        'Reports require an active placement',
+        'Reports require active academic monitoring',
       );
+    this.lifecycle.assertMonitoringOpen(p.semester);
+  }
+  private assertMonitoringOpen(placement: {
+    academicStatus: AcademicMonitoringStatus;
+    semester: {
+      id: string;
+      status: SemesterStatus;
+      startDate: Date;
+      endDate: Date;
+    };
+  }) {
+    if (placement.academicStatus !== AcademicMonitoringStatus.ACTIVE) {
+      throw this.conflict(
+        'ACADEMIC_MONITORING_CLOSED',
+        'Academic monitoring for this placement is closed',
+      );
+    }
+    this.lifecycle.assertMonitoringOpen(placement.semester);
   }
   private async validateFile(fileId: string | undefined, userId: string) {
     if (!fileId) return;
