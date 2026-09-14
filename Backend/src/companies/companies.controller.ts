@@ -21,6 +21,7 @@ import { CompaniesService } from './companies.service';
 import { CreateCompanyProfileDto } from './dto/create-company-profile.dto';
 import { ListCompanyProfilesQueryDto } from './dto/list-company-profiles-query.dto';
 import { RejectCompanyDto } from './dto/reject-company.dto';
+import { SuspendCompanyDto } from './dto/suspend-company.dto';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
 
 @Controller('companies')
@@ -59,10 +60,22 @@ export class CompaniesController {
     return this.companiesService.removeByUserId(user.id);
   }
 
+  @Post('me/submit-verification')
+  @Roles(Role.COMPANY)
+  submitVerification(@CurrentUser() user: AuthUser) {
+    return this.companiesService.submitVerification(user.id);
+  }
+
   @Get()
   @Roles(Role.ADMIN)
   findAll(@Query() query: ListCompanyProfilesQueryDto) {
     return this.companiesService.findAll(query);
+  }
+
+  @Get(':id')
+  @Roles(Role.ADMIN)
+  findOne(@Param('id') id: string) {
+    return this.companiesService.findOne(id);
   }
 
   @Post(':id/approve')
@@ -79,5 +92,15 @@ export class CompaniesController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.companiesService.reject(id, user.id, dto.reason);
+  }
+
+  @Post(':id/suspend')
+  @Roles(Role.ADMIN)
+  suspend(
+    @Param('id') id: string,
+    @Body() dto: SuspendCompanyDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companiesService.suspend(id, user.id, dto.reason);
   }
 }

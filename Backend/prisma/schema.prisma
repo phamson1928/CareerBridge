@@ -23,9 +23,11 @@ enum UserStatus {
 }
 
 enum CompanyStatus {
+  DRAFT
   PENDING
   APPROVED
   REJECTED
+  SUSPENDED
 }
 
 enum SemesterStatus {
@@ -94,6 +96,7 @@ enum FileType {
   CV
   REPORT
   CERTIFICATE
+  COMPANY_REGISTRATION
   AVATAR
 }
 
@@ -125,10 +128,10 @@ enum NotificationAction {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  passwordHash String
-  role         Role
+  id              String     @id @default(cuid())
+  email           String     @unique
+  passwordHash    String
+  role            Role
   status          UserStatus @default(PENDING_VERIFICATION)
   emailVerifiedAt DateTime?
   createdAt       DateTime   @default(now())
@@ -138,13 +141,13 @@ model User {
   lecturerProfile      LecturerProfile?
   companyProfile       CompanyProfile?
   refreshTokens        RefreshToken[]
-  files                File[]           @relation("FileOwner")
-  sentMessages         Message[]        @relation("SentMessages")
+  files                File[]               @relation("FileOwner")
+  sentMessages         Message[]            @relation("SentMessages")
   notifications        Notification[]
   auditLogs            AuditLog[]
-  companyReviews       CompanyProfile[] @relation("CompanyReviewedBy")
-  supervisedPlacements Supervision[]    @relation("AssignedBy")
-  evaluations          Evaluation[]     @relation("EvaluationAuthor")
+  companyReviews       CompanyProfile[]     @relation("CompanyReviewedBy")
+  supervisedPlacements Supervision[]        @relation("AssignedBy")
+  evaluations          Evaluation[]         @relation("EvaluationAuthor")
   verificationTokens   VerificationToken[]
   passwordResetTokens  PasswordResetToken[]
 }
@@ -193,28 +196,28 @@ model RefreshToken {
 }
 
 model StudentProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  studentCode String   @unique
-  fullName    String
-  major       String
-  phone       String?
-  summary     String?
-  gpa         Float?
-  cvFileId    String?  @unique
-  avatarFileId String? @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  studentCode  String   @unique
+  fullName     String
+  major        String
+  phone        String?
+  summary      String?
+  gpa          Float?
+  cvFileId     String?  @unique
+  avatarFileId String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cvFile        File?                 @relation("StudentCv", fields: [cvFileId], references: [id], onDelete: SetNull)
-  avatarFile    File?                 @relation("StudentAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
-  skills        StudentSkill[]
-  projects      StudentProject[]
-  applications  Application[]
-  placements    InternshipPlacement[]
-  conversations Conversation[]
-  jobPreference StudentJobPreference?
+  user                User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cvFile              File?                          @relation("StudentCv", fields: [cvFileId], references: [id], onDelete: SetNull)
+  avatarFile          File?                          @relation("StudentAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
+  skills              StudentSkill[]
+  projects            StudentProject[]
+  applications        Application[]
+  placements          InternshipPlacement[]
+  conversations       Conversation[]
+  jobPreference       StudentJobPreference?
   recommendationCache InternshipRecommendationCache?
 }
 
@@ -231,15 +234,15 @@ model StudentJobPreference {
 }
 
 model InternshipRecommendationCache {
-  id          String             @id @default(cuid())
-  studentId   String             @unique
-  fingerprint String             @db.VarChar(64)
+  id          String               @id @default(cuid())
+  studentId   String               @unique
+  fingerprint String               @db.VarChar(64)
   result      Json
   source      RecommendationSource
   model       String?
-  generatedAt DateTime           @default(now())
+  generatedAt DateTime             @default(now())
   expiresAt   DateTime
-  updatedAt   DateTime           @updatedAt
+  updatedAt   DateTime             @updatedAt
 
   student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
@@ -264,44 +267,52 @@ model StudentProject {
 }
 
 model LecturerProfile {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  fullName   String
-  department String
-  title      String?
-  avatarFileId String? @unique
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  fullName     String
+  department   String
+  title        String?
+  avatarFileId String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  avatarFile   File?         @relation("LecturerAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
-  supervisions Supervision[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarFile    File?          @relation("LecturerAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
+  supervisions  Supervision[]
   conversations Conversation[]
 }
 
 model CompanyProfile {
-  id              String        @id @default(cuid())
-  userId          String        @unique
-  companyName     String
-  tagline         String?
-  description     String?
-  industry        String?
-  website         String?
-  address         String?
-  logo            String?
-  contactEmail    String?
-  status          CompanyStatus @default(PENDING)
-  reviewedById    String?
-  reviewedAt      DateTime?
-  rejectionReason String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                         String        @id @default(cuid())
+  userId                     String        @unique
+  companyName                String
+  businessRegistrationNumber String?       @unique
+  contactPersonName          String?
+  contactPhone               String?
+  tagline                    String?
+  description                String?
+  industry                   String?
+  website                    String?
+  address                    String?
+  logo                       String?
+  contactEmail               String?
+  registrationDocumentFileId String?       @unique
+  status                     CompanyStatus @default(DRAFT)
+  reviewedById               String?
+  reviewedAt                 DateTime?
+  rejectionReason            String?
+  submittedAt                DateTime?
+  suspensionReason           String?
+  suspendedAt                DateTime?
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
 
-  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviewedBy    User?                 @relation("CompanyReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-  internships   Internship[]
-  placements    InternshipPlacement[]
-  conversations Conversation[]
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy           User?                 @relation("CompanyReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  registrationDocument File?                 @relation("CompanyRegistrationDocument", fields: [registrationDocumentFileId], references: [id], onDelete: SetNull)
+  internships          Internship[]
+  placements           InternshipPlacement[]
+  conversations        Conversation[]
 
   @@index([status])
 }
@@ -427,29 +438,29 @@ model ApplicationStatusHistory {
 }
 
 model InternshipPlacement {
-  id            String          @id @default(cuid())
-  applicationId String          @unique
-  studentId     String
-  companyId     String
-  internshipId  String
-  semesterId    String
-  status        PlacementStatus @default(PENDING)
-  academicStatus AcademicMonitoringStatus @default(PENDING)
+  id               String                   @id @default(cuid())
+  applicationId    String                   @unique
+  studentId        String
+  companyId        String
+  internshipId     String
+  semesterId       String
+  status           PlacementStatus          @default(PENDING)
+  academicStatus   AcademicMonitoringStatus @default(PENDING)
   academicClosedAt DateTime?
-  startDate     DateTime?
-  endDate       DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  startDate        DateTime?
+  endDate          DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
 
-  application Application    @relation(fields: [applicationId], references: [id], onDelete: Restrict)
-  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  company     CompanyProfile @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  internship  Internship     @relation(fields: [internshipId], references: [id], onDelete: Restrict)
-  semester    Semester       @relation(fields: [semesterId], references: [id], onDelete: Restrict)
-  supervision Supervision?
-  reports     Report[]
-  evaluations Evaluation[]
-  lecturerConversation Conversation? @relation("PlacementConversation")
+  application          Application    @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  student              StudentProfile @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  company              CompanyProfile @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  internship           Internship     @relation(fields: [internshipId], references: [id], onDelete: Restrict)
+  semester             Semester       @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  supervision          Supervision?
+  reports              Report[]
+  evaluations          Evaluation[]
+  lecturerConversation Conversation?  @relation("PlacementConversation")
 
   @@index([studentId, semesterId])
   @@index([companyId, semesterId])
@@ -521,12 +532,13 @@ model File {
   sizeBytes    Int
   createdAt    DateTime @default(now())
 
-  owner          User            @relation("FileOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  studentCv      StudentProfile? @relation("StudentCv")
-  studentAvatar  StudentProfile? @relation("StudentAvatar")
-  lecturerAvatar LecturerProfile? @relation("LecturerAvatar")
-  applicationCvs Application[]   @relation("ApplicationCv")
-  reportFiles    Report[]        @relation("ReportFile")
+  owner                       User             @relation("FileOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  studentCv                   StudentProfile?  @relation("StudentCv")
+  studentAvatar               StudentProfile?  @relation("StudentAvatar")
+  lecturerAvatar              LecturerProfile? @relation("LecturerAvatar")
+  applicationCvs              Application[]    @relation("ApplicationCv")
+  reportFiles                 Report[]         @relation("ReportFile")
+  companyRegistrationDocument CompanyProfile?  @relation("CompanyRegistrationDocument")
 
   @@index([ownerId, type])
 }
@@ -541,11 +553,11 @@ model Conversation {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  application Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  application Application?         @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   placement   InternshipPlacement? @relation("PlacementConversation", fields: [placementId], references: [id], onDelete: Cascade)
-  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  company     CompanyProfile? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  lecturer    LecturerProfile? @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  student     StudentProfile       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  company     CompanyProfile?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lecturer    LecturerProfile?     @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
   messages    Message[]
 
   @@index([studentId])

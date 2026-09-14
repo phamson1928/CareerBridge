@@ -23,6 +23,7 @@ const allowedMimeTypes: Record<FileType, readonly string[]> = {
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ],
   CERTIFICATE: ['application/pdf', 'image/jpeg', 'image/png'],
+  COMPANY_REGISTRATION: ['application/pdf', 'image/jpeg', 'image/png'],
   AVATAR: ['image/jpeg', 'image/png', 'image/webp'],
 };
 
@@ -34,6 +35,12 @@ export class FilesService {
   ) {}
 
   async createUploadUrl(dto: CreateUploadUrlDto, user: AuthUser) {
+    if (dto.type === FileType.COMPANY_REGISTRATION && user.role !== 'COMPANY') {
+      throw new ForbiddenException({
+        code: 'COMPANY_REGISTRATION_UPLOAD_FORBIDDEN',
+        message: 'Only company accounts can upload company registration files',
+      });
+    }
     this.validateUpload(dto);
     const storageKey = this.createStorageKey(user.id, dto.originalName);
     const file = await this.prisma.file.create({
@@ -136,6 +143,15 @@ export class FilesService {
       throw new BadRequestException({
         code: 'AVATAR_FILE_TOO_LARGE',
         message: 'Avatar image must not exceed 5 MB',
+      });
+    }
+    if (
+      dto.type === FileType.COMPANY_REGISTRATION &&
+      dto.sizeBytes > 10 * 1024 * 1024
+    ) {
+      throw new BadRequestException({
+        code: 'COMPANY_REGISTRATION_FILE_TOO_LARGE',
+        message: 'Company registration file must not exceed 10 MB',
       });
     }
   }

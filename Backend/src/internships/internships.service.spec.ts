@@ -36,6 +36,17 @@ describe('InternshipsService skill filters', () => {
       AND: [{ skills: { some: { skillId: 'skill-a' } } }],
     });
   });
+
+  it('limits public listings to approved companies when requested', () => {
+    const where = (buildWhere as (query: ListInternshipsQueryDto, status?: unknown, companyId?: string, onlyApprovedCompany?: boolean) => unknown)(
+      { page: 1, limit: 20 },
+      undefined,
+      undefined,
+      true,
+    );
+
+    expect(where).toEqual({ company: { status: 'APPROVED' } });
+  });
 });
 
 describe('InternshipsService academic date validation', () => {

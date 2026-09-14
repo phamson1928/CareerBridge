@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { CompanyStatus } from '../../generated/prisma/client';
 
 export class ListCompanyProfilesQueryDto {
@@ -19,4 +19,8 @@ export class ListCompanyProfilesQueryDto {
   @IsOptional()
   @IsEnum(CompanyStatus)
   status?: CompanyStatus;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

@@ -1,9 +1,11 @@
 import { Transform, TransformFnParams } from 'class-transformer';
 import {
   IsEmail,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   MaxLength,
 } from 'class-validator';
 
@@ -12,8 +14,44 @@ export class CreateCompanyProfileDto {
     typeof params.value === 'string' ? params.value.trim() : params.value,
   )
   @IsString()
+  @IsNotEmpty()
   @MaxLength(200)
   companyName!: string;
+
+  @IsOptional()
+  @Transform((params: TransformFnParams): unknown =>
+    typeof params.value === 'string'
+      ? params.value.replace(/\s+/g, '').toUpperCase() || null
+      : params.value,
+  )
+  @IsString()
+  @Matches(/^[A-Z0-9-]{8,30}$/, {
+    message:
+      'businessRegistrationNumber must contain 8-30 letters, numbers, or hyphens',
+  })
+  businessRegistrationNumber?: string | null;
+
+  @IsOptional()
+  @Transform((params: TransformFnParams): unknown =>
+    typeof params.value === 'string'
+      ? params.value.trim() || null
+      : params.value,
+  )
+  @IsString()
+  @MaxLength(200)
+  contactPersonName?: string | null;
+
+  @IsOptional()
+  @Transform((params: TransformFnParams): unknown =>
+    typeof params.value === 'string'
+      ? params.value.trim() || null
+      : params.value,
+  )
+  @IsString()
+  @Matches(/^[0-9+().\s-]{8,30}$/, {
+    message: 'contactPhone must be a valid phone number',
+  })
+  contactPhone?: string | null;
 
   @IsOptional()
   @Transform((params: TransformFnParams): unknown =>
@@ -84,4 +122,14 @@ export class CreateCompanyProfileDto {
   @IsEmail()
   @MaxLength(254)
   contactEmail?: string | null;
+
+  @IsOptional()
+  @Transform((params: TransformFnParams): unknown =>
+    typeof params.value === 'string'
+      ? params.value.trim() || null
+      : params.value,
+  )
+  @IsString()
+  @MaxLength(30)
+  registrationDocumentFileId?: string | null;
 }

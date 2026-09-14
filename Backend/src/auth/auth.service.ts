@@ -30,7 +30,11 @@ interface AuthResult {
   accessToken: string;
   expiresIn: number;
   refreshToken: string;
-  verificationLink?: string;
+}
+
+export interface RegisterResult {
+  email: string;
+  verificationExpiresAt: Date;
 }
 
 interface RefreshResult {
@@ -70,7 +74,7 @@ export class AuthService {
   async register(
     dto: RegisterDto,
     metadata: RequestMetadata,
-  ): Promise<AuthResult> {
+  ): Promise<RegisterResult> {
     const email = this.normalizeEmail(dto.email);
     this.ensureRegistrationEmail(dto.role, email);
     const existingUser = await this.prisma.user.findUnique({
@@ -86,8 +90,8 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, this.bcryptRounds);
-    const refreshToken = generateRefreshToken();
-    const expiresAt = this.getRefreshExpiry();
+    const verificationToken = randomBytes(32).toString('hex');
+    const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     try {
       const user = await this.prisma.$transaction(async (tx) => {
@@ -100,13 +104,11 @@ export class AuthService {
           select: publicUserSelect,
         });
 
-        await tx.refreshToken.create({
+        await tx.verificationToken.create({
           data: {
             userId: createdUser.id,
-            tokenHash: hashRefreshToken(refreshToken),
-            expiresAt,
-            userAgent: this.sanitizeUserAgent(metadata.userAgent),
-            ipAddress: metadata.ipAddress,
+            token: verificationToken,
+            expiresAt: verificationExpiresAt,
           },
         });
 
@@ -124,20 +126,6 @@ export class AuthService {
         return createdUser;
       });
 
-      // Generate a verification token
-      const verificationToken = randomBytes(32).toString('hex');
-      const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      await this.prisma.verificationToken.create({
-        data: {
-          userId: user.id,
-          token: verificationToken,
-          expiresAt: verificationExpiresAt,
-        },
-      });
-
-      const verificationLink = this.getVerificationLink(verificationToken);
-
       // Send verification email (fire and forget to not block registration)
       this.mailerService
         .sendVerificationEmail(user.email, verificationToken)
@@ -145,7 +133,7 @@ export class AuthService {
           console.error('Failed to send verification email:', err);
         });
 
-      return this.buildAuthResult(user, refreshToken, verificationLink);
+      return { email: user.email, verificationExpiresAt };
     } catch (error: unknown) {
       if (this.isUniqueConstraintError(error)) {
         throw new ConflictException({
@@ -155,6 +143,38 @@ export class AuthService {
       }
       throw error;
     }
+  }
+
+  async resendVerification(emailAddress: string): Promise<void> {
+    const email = this.normalizeEmail(emailAddress);
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, status: true },
+    });
+
+    // Keep this response intentionally generic so the endpoint cannot be used
+    // to enumerate registered email addresses.
+    if (!user || user.status !== 'PENDING_VERIFICATION') return;
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.verificationToken.deleteMany({
+        where: { userId: user.id },
+      });
+      await tx.verificationToken.create({
+        data: { userId: user.id, token, expiresAt },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'VERIFICATION_EMAIL_RESENT',
+          entity: 'User',
+          entityId: user.id,
+        },
+      });
+    });
+    await this.mailerService.sendVerificationEmail(user.email, token);
   }
 
   async login(dto: LoginDto, metadata: RequestMetadata): Promise<AuthResult> {
@@ -411,20 +431,13 @@ export class AuthService {
   private async buildAuthResult(
     user: PublicUser,
     refreshToken: string,
-    verificationLink?: string,
   ): Promise<AuthResult> {
     return {
       user,
       accessToken: await this.signAccessToken(user),
       expiresIn: this.accessTokenExpiresIn,
       refreshToken,
-      verificationLink,
     };
-  }
-
-  private getVerificationLink(token: string): string {
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? '';
-    return `${frontendUrl}/verify-email?token=${token}`;
   }
 
   private signAccessToken(user: PublicUser): Promise<string> {

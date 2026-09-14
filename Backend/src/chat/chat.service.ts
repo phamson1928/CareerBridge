@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   ApplicationStatus,
+  CompanyStatus,
   Prisma,
   Role,
   SupervisionStatus,
@@ -85,6 +86,7 @@ export class ChatService {
   }
 
   async create(user: AuthUser, dto: CreateConversationDto) {
+    if (user.role === Role.COMPANY) await this.assertCompanyApproved(user.id);
     if (dto.applicationId && !dto.placementId)
       return this.createForAcceptedApplication(user, dto.applicationId);
     if (dto.placementId && !dto.applicationId)
@@ -226,6 +228,7 @@ export class ChatService {
   }
 
   async createMessage(user: AuthUser, conversationId: string, content: string) {
+    if (user.role === Role.COMPANY) await this.assertCompanyApproved(user.id);
     const conversation = await this.findAccessibleConversation(
       user,
       conversationId,
@@ -281,6 +284,19 @@ export class ChatService {
     if (user.role === Role.COMPANY) return { company: { userId: user.id } };
     if (user.role === Role.LECTURER) return { lecturer: { userId: user.id } };
     throw this.accessDenied();
+  }
+
+  private async assertCompanyApproved(userId: string) {
+    const company = await this.prisma.companyProfile.findUnique({
+      where: { userId },
+      select: { status: true },
+    });
+    if (!company || company.status !== CompanyStatus.APPROVED) {
+      throw new ForbiddenException({
+        code: 'COMPANY_NOT_APPROVED',
+        message: 'Company must be approved before using recruitment messaging',
+      });
+    }
   }
 
   private async findAccessibleConversation(user: AuthUser, id: string) {

@@ -32,6 +32,7 @@ interface NavbarProps {
   onLogout: () => void;
   avatarFileId?: string | null;
   companyLogo?: string | null;
+  companyVerificationStatus?: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED" | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -47,6 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   avatarFileId,
   companyLogo,
+  companyVerificationStatus,
 }) => {
   const getNavItems = () => {
     switch (currentRole) {
@@ -85,26 +87,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             label: "Đăng ký doanh nghiệp",
             icon: <Building className="w-4 h-4" />,
           },
-          {
+          ...(companyVerificationStatus === "APPROVED" ? [{
             id: "dashboard",
             label: "Tổng quan",
             icon: <LayoutDashboard className="w-4 h-4" />,
-          },
-          {
+          }, {
             id: "postings",
             label: "Đăng & Quản lý tin",
             icon: <Briefcase className="w-4 h-4" />,
-          },
-          {
+          }, {
             id: "applicants",
             label: "Ứng viên & Duyệt CV",
             icon: <Users className="w-4 h-4" />,
-          },
-          {
+          }, {
             id: "interns-evaluation",
             label: "Thực tập sinh & Đánh giá",
             icon: <CheckSquare className="w-4 h-4" />,
-          },
+          }] : []),
         ];
       case "TEACHER":
         return [

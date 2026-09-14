@@ -11,14 +11,11 @@ export interface AuthSession {
   user: AuthUser;
   accessToken: string;
   expiresIn: number;
-  verificationLink?: string;
 }
 
-export interface RegisterSessionResult {
-  user: AuthUser;
-  accessToken: string;
-  expiresIn: number;
-  verificationLink?: string;
+export interface RegisterResult {
+  email: string;
+  verificationExpiresAt: string;
 }
 
 export interface RefreshSession {

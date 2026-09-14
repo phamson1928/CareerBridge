@@ -184,6 +184,8 @@ export default function App() {
   const [avatarFileId, setAvatarFileId] = useState<string | null>(null);
   const [companyProfile, setCompanyProfile] =
     useState<CompanyProfile | null>(null);
+  const [companyVerificationStatus, setCompanyVerificationStatus] =
+    useState<CompanyProfileRecord["status"] | null>(null);
   const [internships, setInternships] = useState<Internship[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [evaluationRecords, setEvaluationRecords] = useState<EvaluationRecord[]>([]);
@@ -203,6 +205,7 @@ export default function App() {
     setStudentProfile(null);
     setAvatarFileId(null);
     setCompanyProfile(null);
+    setCompanyVerificationStatus(null);
     setInternships([]);
     setApplications([]);
     setEvaluationRecords([]);
@@ -261,7 +264,10 @@ export default function App() {
 
           try {
             const profile = await companiesApi.getMine();
-            if (active) setCompanyProfile(toLegacyCompanyProfile(profile));
+            if (active) {
+              setCompanyProfile(toLegacyCompanyProfile(profile));
+              setCompanyVerificationStatus(profile.status);
+            }
           } catch (profileError) {
             console.warn("Company profile is not available yet", profileError);
           }
@@ -304,7 +310,18 @@ export default function App() {
 
   const handleCompanyProfileChange = (profile: CompanyProfileRecord) => {
     setCompanyProfile(toLegacyCompanyProfile(profile));
+    setCompanyVerificationStatus(profile.status);
   };
+
+  useEffect(() => {
+    if (
+      currentRole === "COMPANY" &&
+      companyVerificationStatus !== "APPROVED" &&
+      activeTab !== "company-profile"
+    ) {
+      setActiveTab("company-profile");
+    }
+  }, [activeTab, companyVerificationStatus, currentRole]);
 
   const handleLogout = async () => {
     await logout();
@@ -436,6 +453,7 @@ export default function App() {
         onLogout={() => void handleLogout()}
         avatarFileId={avatarFileId}
         companyLogo={companyProfile?.logo}
+        companyVerificationStatus={companyVerificationStatus}
       />
 
       {/* Main Page Body Container */}

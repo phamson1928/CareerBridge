@@ -78,6 +78,7 @@ erDiagram
   INTERNSHIP_PLACEMENT ||--o{ REPORT : contains
   INTERNSHIP_PLACEMENT ||--o{ EVALUATION : receives
   APPLICATION ||--o| CONVERSATION : opens
+  INTERNSHIP_PLACEMENT ||--o| CONVERSATION : opens
   CONVERSATION ||--o{ MESSAGE : contains
 ```
 
@@ -91,14 +92,16 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 
 | Model                           | Trường / ràng buộc quan trọng                        | Mục đích                                                |
 | ------------------------------- | ---------------------------------------------------- | ------------------------------------------------------- |
-| `User`                          | `email` unique, `role`, `status`                     | Tài khoản gốc cho bốn role.                             |
+| `User`                          | `email` unique, `role`, `status`, `emailVerifiedAt`  | Tài khoản gốc cho bốn role.                             |
+| `VerificationToken`             | `token` unique, `userId`, `expiresAt`                | Token xác thực email một lần cho tài khoản mới.          |
+| `PasswordResetToken`            | `tokenHash` unique, `userId`, `expiresAt`, `usedAt`  | Token đặt lại mật khẩu một lần, lưu dưới dạng hash.      |
 | `RefreshToken`                  | `tokenHash` unique, `expiresAt`, `revokedAt`         | Phiên đăng nhập có thể thu hồi.                         |
 | `StudentProfile`                | `userId` unique, `studentCode` unique, `cvFileId`    | Hồ sơ sinh viên.                                        |
 | `StudentProject`                | `studentId`, repo/demo URL                           | Dự án cá nhân của sinh viên.                            |
 | `StudentJobPreference`          | `studentId` unique, role/location/work-type arrays   | Mong muốn công việc của sinh viên.                      |
 | `InternshipRecommendationCache` | `studentId` unique, fingerprint, result JSON, expiry | Cache recommendation theo dữ liệu profile và candidate. |
 | `LecturerProfile`               | `userId` unique, `department`                        | Hồ sơ giảng viên.                                       |
-| `CompanyProfile`                | `status`, `reviewedById`, `rejectionReason`          | Hồ sơ và lịch sử xét duyệt doanh nghiệp.                |
+| `CompanyProfile`                | `status`, mã số doanh nghiệp, `registrationDocumentFileId`, `submittedAt`, `reviewedById/reviewedAt`, `rejectionReason`, `suspensionReason/suspendedAt` | Hồ sơ pháp lý, tệp ĐKDN và lịch sử xét duyệt doanh nghiệp. |
 
 ### 4.2. Nhóm kỳ, vị trí và kỹ năng
 
@@ -117,7 +120,7 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 | `Application`              | unique `(studentId, internshipId)`, `status`, `cvFileId`                                                               | Đơn ứng tuyển.                                           |
 | `ApplicationStatusHistory` | `fromStatus`, `toStatus`, `changedById`                                                                                | Lịch sử thay đổi trạng thái đơn.                         |
 | `InternshipPlacement`      | `applicationId` unique, student/company/internship/semester, `startDate/endDate`, `academicStatus`, `academicClosedAt` | Placement và khoảng trường theo dõi riêng cho sinh viên. |
-| `Supervision`              | `placementId` unique, `lecturerId`, `assignedById`                                                                     | Một giảng viên hướng dẫn placement.                      |
+| `Supervision`              | `placementId` unique, `lecturerId`, `assignedById`, `assignedAt`, `completedAt`                                       | Một giảng viên hướng dẫn placement, có audit phân công.  |
 | `Report`                   | unique `(placementId, week)`, `fileId`, `status`                                                                       | Báo cáo tuần.                                            |
 | `Evaluation`               | unique `(placementId, type)`, `evaluatorId`, `score`                                                                   | Một đánh giá company và một đánh giá lecturer.           |
 
@@ -126,7 +129,7 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 | Model          | Trường / ràng buộc quan trọng                                | Mục đích                             |
 | -------------- | ------------------------------------------------------------ | ------------------------------------ |
 | `File`         | `storageKey` unique, `originalName`, `mimeType`, `sizeBytes` | Metadata cho tệp private.            |
-| `Conversation` | `applicationId` unique, `studentId`, `companyId`             | Hội thoại có ngữ cảnh đơn ứng tuyển. |
+| `Conversation` | `applicationId` unique, `placementId` unique, student/company/lecturer IDs | Hội thoại theo application hoặc placement. |
 | `Message`      | `conversationId`, `senderId`, `readAt`                       | Tin nhắn trong conversation.         |
 | `Notification` | `userId`, `isRead`, `readAt`                                 | Thông báo cho người dùng.            |
 | `AuditLog`     | `userId`, `action`, `entity`, `entityId`, `metadata`         | Truy vết hoạt động.                  |
@@ -136,14 +139,16 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 | Enum                       | Giá trị                                                     |
 | -------------------------- | ----------------------------------------------------------- |
 | `Role`                     | `ADMIN`, `STUDENT`, `LECTURER`, `COMPANY`                   |
+| `UserStatus`               | `ACTIVE`, `INACTIVE`, `PENDING_VERIFICATION`, `BANNED`      |
 | `ApplicationStatus`        | `PENDING`, `REVIEWING`, `ACCEPTED`, `REJECTED`, `WITHDRAWN` |
 | `PlacementStatus`          | `PENDING`, `ACTIVE`, `COMPLETED`, `CANCELLED`               |
 | `AcademicMonitoringStatus` | `PENDING`, `ACTIVE`, `CLOSED`, `CANCELLED`                  |
 | `ReportStatus`             | `DRAFT`, `SUBMITTED`, `APPROVED`, `REJECTED`                |
 | `EvaluationType`           | `COMPANY`, `LECTURER`                                       |
-| `CompanyStatus`            | `PENDING`, `APPROVED`, `REJECTED`                           |
+| `CompanyStatus`            | `DRAFT`, `PENDING`, `APPROVED`, `REJECTED`, `SUSPENDED`    |
+| `FileType`                 | `CV`, `REPORT`, `CERTIFICATE`, `COMPANY_REGISTRATION`, `AVATAR` |
 
-## 5. Transaction và phân quyền cần triển khai
+## 5. Transaction và phân quyền đang được thực thi
 
 Các ràng buộc unique trong schema xử lý tính nhất quán cơ bản. Các quy tắc dưới đây phải nằm trong service và chạy transaction khi có nhiều thao tác ghi:
 
@@ -155,23 +160,25 @@ Các ràng buộc unique trong schema xử lý tính nhất quán cơ bản. Cá
 6. Khi tạo hoặc sửa evaluation, kiểm tra đúng company/lecturer và placement đang trong khoảng theo dõi học vụ.
 7. Khi cấp signed URL, kiểm tra quyền trên entity tham chiếu tới file trước khi trả URL.
 8. Mọi thao tác quản trị và state transition ghi `AuditLog`.
+9. Company verification chỉ cho `DRAFT`/`REJECTED` submit thành `PENDING` sau khi kiểm tra đủ trường pháp lý và file do chính company sở hữu, loại `FileType.COMPANY_REGISTRATION`. `PENDING` không được sửa; admin chỉ approve/reject `PENDING`, còn suspend chỉ áp dụng `APPROVED`. Reject/suspend cần lý do tối thiểu 3 ký tự; mỗi transition lưu metadata review, audit log và notification.
 
-## 6. API map và roadmap
+## 6. API map hiện tại
 
-Các endpoint dưới đây là API map cấp cao. Contract chi tiết của AI Job Recommendation đã ổn định tại `AI_JOB_RECOMMENDATION_PLAN.md`; các endpoint khác cần đối chiếu controller hiện tại khi thay đổi.
+Mọi controller đều dùng prefix `/api/v1` và wrapper thành công `{ success, data, timestamp }`. Lỗi có `{ success: false, statusCode, code, message, timestamp, path }`.
 
-| Module          | Endpoint dự kiến                                                                                     |
-| --------------- | ---------------------------------------------------------------------------------------------------- |
-| Auth            | `POST /api/v1/auth/register`, `/login`, `/refresh`, `/logout`                                        |
-| Internships     | `GET /api/v1/internships`, `POST /api/v1/internships`, `PATCH /api/v1/internships/:id`               |
-| Applications    | `POST /api/v1/applications`, `PATCH /api/v1/applications/:id/status`                                 |
-| Placements      | `GET /api/v1/placements/me`, `PATCH /api/v1/placements/:id/status`                                   |
-| Supervisions    | `POST /api/v1/supervisions`, `GET /api/v1/supervisions/me`                                           |
-| Reports         | `POST /api/v1/reports`, `PATCH /api/v1/reports/:id/review`                                           |
-| Evaluations     | `POST /api/v1/placements/:placementId/evaluations`                                                   |
-| Files           | `POST /api/v1/files/upload-url`, `GET /api/v1/files/:id/download-url`                                |
-| Chat            | `GET /api/v1/conversations`, `POST /api/v1/conversations/:id/messages`                               |
-| Recommendations | `GET /api/v1/recommendations/internships/me`, `POST /api/v1/recommendations/internships/me/generate` |
+| Module | Endpoint đang có |
+| --- | --- |
+| Auth | `POST /auth/register`, `/login`, `/refresh`, `/logout`, `/verify-email`, `/resend-verification`, `/forgot-password`, `/reset-password`; `GET /auth/me` |
+| Users | `GET, POST /users`; `GET, PATCH, DELETE /users/:id` |
+| Student / Lecturer / Company profiles | `GET, POST, PATCH, DELETE /students/me`, `/lecturers/me`, `/companies/me`; `POST /companies/me/submit-verification`; admin `GET /companies`, `GET /companies/:id`, `POST /companies/:id/approve`, `/reject`, `/suspend` |
+| Skills | `GET, POST /skills`; `GET, PATCH, DELETE /skills/:id`; `GET, PUT /students/me/skills`; `GET, PUT /internships/:internshipId/skills`; `GET /internships/:internshipId/match/me` |
+| Semesters / Internships | CRUD `/semesters` (including `PATCH /:id/status`); list/detail/CRUD `/internships` and `GET /internships/me` |
+| Applications | `POST, GET /applications`; `GET /applications/me`, `/:id`, `/:id/history`; `PATCH /:id/status` |
+| Placements / Supervisions | `GET /placements`, `/placements/me`, `/placements/:id`; `PATCH /placements/:id`, `/:id/status`; `GET, POST /supervisions`, `/supervisions/me`, `/supervisions/lecturer-options`, `/:id`; `PATCH /supervisions/:id`, `/:id/status` |
+| Reports / Evaluations | `POST /reports`; `GET /reports/me`, `/supervised`, `/:id`; `PATCH /reports/:id`; `POST /reports/:id/submit`, `/:id/review`; `POST, GET /evaluations`, `/evaluations/me`, `/:id`; `PATCH, DELETE /evaluations/:id` |
+| Files / Chat / Notifications | `POST /files/upload-url`, `GET /files/:id/download-url`; conversation/message/read routes under `/conversations`; notification list, unread count, read/delete routes under `/notifications` |
+| Dashboard / Audit | `GET /dashboard/admin`; `GET /audit-logs`, `/audit-logs/:id` |
+| Recommendations | student preferences under `/students/me/job-preferences`; cached read and generation under `/recommendations/internships/me` |
 
 ## 7. Railway PostgreSQL và migration
 

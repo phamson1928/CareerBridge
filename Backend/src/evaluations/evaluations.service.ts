@@ -7,6 +7,7 @@ import {
 import {
   EvaluationType,
   AcademicMonitoringStatus,
+  CompanyStatus,
   NotificationAction,
   NotificationType,
   Prisma,
@@ -95,7 +96,7 @@ export class EvaluationsService {
               },
             },
             student: { select: { userId: true } },
-            company: { select: { userId: true } },
+            company: { select: { userId: true, status: true } },
             supervision: {
               select: {
                 status: true,
@@ -280,7 +281,7 @@ export class EvaluationsService {
         startDate: Date;
         endDate: Date;
       };
-      company: { userId: string };
+      company: { userId: string; status: CompanyStatus };
       supervision: {
         status: SupervisionStatus;
         lecturer: { userId: string };
@@ -294,6 +295,12 @@ export class EvaluationsService {
       type === EvaluationType.COMPANY &&
       placement.company.userId === user.id
     ) {
+      if (placement.company.status !== CompanyStatus.APPROVED) {
+        throw new ForbiddenException({
+          code: 'COMPANY_NOT_APPROVED',
+          message: 'Company must be approved before submitting evaluations',
+        });
+      }
       return;
     }
     if (

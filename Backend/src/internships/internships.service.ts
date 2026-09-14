@@ -80,6 +80,8 @@ export class InternshipsService {
     const where = this.buildWhere(
       query,
       user.role === Role.ADMIN ? undefined : InternshipStatus.OPEN,
+      undefined,
+      user.role !== Role.ADMIN,
     );
     return this.paginate(where, query);
   }
@@ -100,7 +102,10 @@ export class InternshipsService {
     if (user.role === Role.COMPANY) {
       const company = await this.getCompanyForUser(user.id);
       if (internship.companyId !== company.id) throw this.notFound();
-    } else if (internship.status !== InternshipStatus.OPEN) {
+    } else if (
+      internship.status !== InternshipStatus.OPEN ||
+      internship.company.status !== CompanyStatus.APPROVED
+    ) {
       throw this.notFound();
     }
     return this.toResponse(internship);
@@ -278,6 +283,7 @@ export class InternshipsService {
     query: ListInternshipsQueryDto,
     enforcedStatus?: InternshipStatus,
     companyId?: string,
+    onlyApprovedCompany = false,
   ): Prisma.InternshipWhereInput {
     const status = enforcedStatus ?? query.status;
     const skillIds = [
@@ -312,6 +318,9 @@ export class InternshipsService {
 
     return {
       ...(companyId ? { companyId } : {}),
+      ...(onlyApprovedCompany
+        ? { company: { status: CompanyStatus.APPROVED } }
+        : {}),
       ...(status ? { status } : {}),
       ...(enforcedStatus === InternshipStatus.OPEN
         ? { OR: [{ deadline: null }, { deadline: { gte: new Date() } }] }

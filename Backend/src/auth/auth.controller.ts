@@ -26,6 +26,7 @@ import {
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -39,23 +40,15 @@ export class AuthController {
   async register(
     @Body() dto: RegisterDto,
     @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
   ) {
     const result = await this.authService.register(
       dto,
       this.getRequestMetadata(request),
     );
-    response.cookie(
-      REFRESH_COOKIE_NAME,
-      result.refreshToken,
-      getRefreshCookieOptions(this.config),
-    );
 
     return {
-      user: result.user,
-      accessToken: result.accessToken,
-      expiresIn: result.expiresIn,
-      verificationLink: result.verificationLink,
+      email: result.email,
+      verificationExpiresAt: result.verificationExpiresAt,
     };
   }
 
@@ -126,6 +119,17 @@ export class AuthController {
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     await this.authService.verifyEmail(dto.token);
     return { success: true, message: 'Email verified successfully' };
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 15 * 60_000 } })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    await this.authService.resendVerification(dto.email);
+    return {
+      message:
+        'Nếu tài khoản chưa xác thực tồn tại, email xác thực mới đã được gửi.',
+    };
   }
 
   @Post('forgot-password')

@@ -9,10 +9,12 @@ NestJS + PostgreSQL + Prisma backend for the internship-management platform.
 
 ## Start locally
 
-1. Copy `.env.example` to `.env` and set a local PostgreSQL `DATABASE_URL` plus a strong `JWT_SECRET`.
+1. Copy `.env.example` to `.env` and set `DATABASE_URL`, a strong `JWT_SECRET`, and valid `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM` values.
 2. Install packages: `npm install`.
-3. Create the database schema: `npm exec prisma migrate dev -- --name init`.
+3. Apply local migrations: `npm exec prisma migrate dev`.
 4. Start the API: `npm run start:dev`.
+
+Use `npm exec prisma migrate deploy` for a shared or production database. `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are optional, but must be configured together when file storage is enabled.
 
 ### Development seed accounts
 
@@ -56,15 +58,15 @@ Business rules that depend on current state must be enforced in services/transac
 - Only an approved company can publish an internship.
 - Only an open, non-expired internship can receive an application.
 - Accepting an application must atomically create the placement, status history, conversation, and increment `filledSlots`.
-- A student may have at most one active placement in a semester.
-- Proposed internship dates must be both empty or both inside the campaign monitoring window.
+- A student may have at most one `PENDING` or `ACTIVE` placement in a semester.
+- Proposed internship dates must be both empty or both inside the semester monitoring window.
 - Admin must set both placement monitoring dates before lecturer assignment; those dates become immutable when academic monitoring starts.
 - Report weeks are counted from the placement start date and cannot be submitted before that week begins.
 - The evaluation author must be the placement company account or its assigned lecturer.
 
 ## Module boundaries
 
-Each feature currently has an intentionally empty Nest module, ready to receive its controller, DTOs, service, and tests:
+The following implemented Nest modules own their controller, DTOs, service, and authorization rules:
 
 ```text
 src/
@@ -73,7 +75,7 @@ src/
 ├── students             # Profiles, projects, CV, skills
 ├── lecturers            # Lecturer profiles
 ├── companies            # Company registration and verification
-├── semesters            # Internship terms
+├── semesters            # Internship campaign lifecycle
 ├── skills               # Canonical skills and matching metadata
 ├── recommendations       # Deterministic internship ranking, cache and optional explanations
 ├── internships          # Internship posts
@@ -90,6 +92,12 @@ src/
 ├── common               # Guards, decorators, filters, interceptors
 └── prisma               # Prisma service
 ```
+
+## Authentication lifecycle
+
+Only `STUDENT` and `COMPANY` can self-register. Student registration requires an `@ut.edu.vn` email address. A new user starts as `PENDING_VERIFICATION`; `POST /api/v1/auth/verify-email` activates the account. Tokens for email verification expire after 24 hours. Registration no longer returns an access token or verification token; `POST /api/v1/auth/resend-verification` resends the email without revealing whether an address exists.
+
+`POST /api/v1/auth/forgot-password` always returns the same response, then sends a 30-minute, one-time reset token only when the email exists. `POST /api/v1/auth/reset-password` consumes that token, updates the password, and revokes every active refresh token for the account. Only users with status `ACTIVE` can log in, refresh a session, or access protected endpoints.
 
 ## Verification
 
@@ -124,3 +132,14 @@ AI_RECOMMENDATION_CACHE_TTL_MINUTES=360
 When enabled, `GEMINI_API_KEY` is required at startup. Do not expose it to the frontend or commit it. The provider receives only the minimum profile signals required for an explanation; it never receives email, phone, student code, CV or application history.
 
 For a repeatable REST regression, see `../docs/testing/ai-recommendations/`.
+
+## Company verification
+
+Company onboarding has two separate states:
+
+1. The account must verify its email before it can use protected APIs.
+2. The company profile starts as `DRAFT` and must be submitted for admin review.
+
+The submitted profile must contain the legal company name, business registration number, registered address, contact person, contact phone, contact email, and a private PDF/JPG/PNG business-registration document (maximum 10 MB). Only `DRAFT` and `REJECTED` profiles can call `POST /api/v1/companies/me/submit-verification`; a successful submission resets prior review metadata and moves the profile to `PENDING`. A `PENDING` or `SUSPENDED` profile cannot be edited. Only an admin can approve or reject a `PENDING` profile; rejection and suspension require a reason of at least three characters. An approved company may later be `SUSPENDED` for a recorded reason.
+
+Only `APPROVED` companies can create, edit, publish, or manage internships. After approval, legal identity fields (company name, registration number, address, contact person, phone, email, and registration document) are locked. Each submission/review/suspension creates an audit record and review decisions notify the company. Admin review endpoints are `GET /api/v1/companies`, `GET /api/v1/companies/:id`, `POST /api/v1/companies/:id/approve`, `POST /api/v1/companies/:id/reject`, and `POST /api/v1/companies/:id/suspend`.

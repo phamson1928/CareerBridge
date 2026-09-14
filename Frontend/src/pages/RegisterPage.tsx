@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Building2, CheckCircle2, Eye, EyeOff, GraduationCap, LockKeyhole, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getApiErrorMessage } from '../auth/api';
+import { authApi, getApiErrorMessage } from '../auth/api';
 import { useAuth } from '../auth/AuthContext';
 import { AuthRole, RegisterInput } from '../auth/auth.types';
 import { roleHomePath } from '../auth/routes';
@@ -18,6 +18,18 @@ export function RegisterPage() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRegisterConfirmation, setShowRegisterConfirmation] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((value) => Math.max(0, value - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (!isInitializing && user && user.status === 'ACTIVE') {
@@ -32,7 +44,9 @@ export function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      await register({ email, password, role });
+      const result = await register({ email, password, role });
+      setRegisteredEmail(result.email);
+      setResendMessage('');
       setShowRegisterConfirmation(true);
     } catch (requestError) {
       const errorMessage = getApiErrorMessage(requestError);
@@ -45,6 +59,21 @@ export function RegisterPage() {
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const resendVerification = async () => {
+    if (!registeredEmail || resendCooldown > 0 || isResending) return;
+    setIsResending(true);
+    setResendMessage('');
+    try {
+      await authApi.post('/auth/resend-verification', { email: registeredEmail });
+      setResendCooldown(60);
+      setResendMessage('Đã gửi lại email xác thực.');
+    } catch (requestError) {
+      setResendMessage(getApiErrorMessage(requestError));
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -115,8 +144,22 @@ export function RegisterPage() {
             <div className="register-confirmation-content">
               <h2 id="register-confirmation-title">Tài khoản đã được đăng ký</h2>
               <p>
-                Vui lòng xác thực email. Một email xác thực đã được gửi đến địa chỉ email của bạn. Hãy kiểm tra hộp thư và làm theo hướng dẫn trong email để kích hoạt tài khoản.
+                Một email xác thực đã được gửi đến <strong>{registeredEmail}</strong>. Hãy kiểm tra hộp thư và làm theo hướng dẫn trong email để kích hoạt tài khoản.
               </p>
+
+              <button
+                type="button"
+                className="mt-4 text-sm font-bold text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => void resendVerification()}
+                disabled={isResending || resendCooldown > 0}
+              >
+                {isResending
+                  ? 'Đang gửi lại...'
+                  : resendCooldown > 0
+                    ? `Gửi lại sau ${resendCooldown}s`
+                    : 'Gửi lại email xác thực'}
+              </button>
+              {resendMessage && <p className="mt-2 text-xs text-slate-500">{resendMessage}</p>}
 
               <button type="button" className="register-confirmation-login-button" onClick={() => {
                 setShowRegisterConfirmation(false);
