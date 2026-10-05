@@ -123,21 +123,22 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Hero Header */}
-      <div className="student-hero bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
-        <div className="relative z-10 max-w-3xl">
-          <span className="bg-blue-500/20 text-blue-300 text-xs font-semibold px-3 py-1 rounded-full border border-blue-400/30 inline-flex items-center gap-1 mb-3">
-            <Search className="w-3.5 h-3.5 text-blue-300" /> Khám phá cơ hội thực tập
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Tìm Kiếm Vị Trí Thực Tập Đóng Góp Cho Sự Nghiệp
-          </h1>
-          <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-            Khám phá các vị trí thực tập đang mở và tìm cơ hội phù hợp với định hướng của bạn.
-          </p>
-        </div>
-      </div>
+      {/* Video giới thiệu: nhấp để đi tới danh sách tin tuyển dụng. */}
+      <button
+        type="button"
+        onClick={() => document.getElementById('tin-tuyen-dung')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        className="relative left-1/2 -mt-8 block h-[calc(100svh-4rem)] w-[100dvw] -translate-x-1/2 overflow-hidden bg-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300"
+        aria-label="Xem tin tuyển dụng"
+      >
+        <video
+          className="h-full w-full object-cover"
+          src="/homepage.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      </button>
 
       <JobRecommendations
         applications={applications}
@@ -147,7 +148,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
       />
 
       {/* Filter & Search Bar - Tách biệt, nền trắng tương phản cao, dropdown không bị clip */}
-      <div className="student-search rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div id="tin-tuyen-dung" className="student-search scroll-mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-slate-800 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
             <Search className="w-4 h-4 text-slate-400 shrink-0" />
