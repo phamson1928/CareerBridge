@@ -435,7 +435,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${currentRole === "ADMIN" ? "admin-theme pl-20 lg:pl-72" : ""}`}>
+    <div className={`min-h-screen overflow-x-clip bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${currentRole === "ADMIN" ? "admin-theme pl-20 lg:pl-72" : ""}`}>
       {/* Main Navbar */}
       <Navbar
         currentRole={currentRole}
