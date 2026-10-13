@@ -8,9 +8,12 @@
 .role-student, .role-teacher, .role-company { background: #f7fbfb; }
 .role-student main, .role-teacher main, .role-company main { max-width: 1280px; padding-top: 2rem; }
 .role-navbar { border-color: #d8e8e8; background: #fff; box-shadow: 0 3px 18px rgb(0 86 90 / .08); }
-.role-navbar nav button { color: #397176; }
-.role-navbar nav button:hover { background: #f0f9f9; color: var(--cb-deep); }
-.role-navbar nav button.bg-indigo-50 { border-color: #b9dddd; background: #e8f7f7; color: var(--cb-deep); box-shadow: none; }
+.role-navbar nav button { position: relative; border-color: transparent; background: transparent; color: #1f2937; }
+.role-navbar nav button:hover { background: transparent; color: var(--cb-deep); }
+.role-navbar nav button.bg-indigo-50,
+.role-navbar nav button:focus-visible { border-color: transparent !important; background: transparent !important; color: var(--cb-teal); box-shadow: none; outline: none; }
+.role-navbar nav button.bg-indigo-50::after,
+.role-navbar nav button:focus-visible::after { content: ""; position: absolute; right: .9rem; bottom: .2rem; left: .9rem; height: 1px; border-radius: 999px; background: var(--cb-teal); }
 .role-navbar :is(#btn-chat-toggle, #btn-notifs-toggle) { color: #397176; }
 .role-navbar :is(#btn-chat-toggle, #btn-notifs-toggle):hover { border-color: #c9e3e3; background: #f0f9f9; color: var(--cb-deep); }
 .role-navbar .group > button[aria-label="Tài khoản của tôi"] { border-color: #c9e3e3; background: #effafa; color: var(--cb-deep); }
