@@ -24,6 +24,10 @@ export interface InternshipRecord {
   requirements: string | null;
   slots: number;
   filledSlots: number;
+  viewCount?: number;
+  uniqueViewerCount?: number;
+  sourceTemplateId?: string | null;
+  sourceInternshipId?: string | null;
   deadline: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -35,6 +39,7 @@ export interface InternshipRecord {
   company: { id: string; companyName: string; logo: string | null; status: string };
   semester: { id: string; name: string; startDate: string; endDate: string; status: SemesterStatus };
   skills: InternshipSkillRecord[];
+  warnings?: string[];
 }
 
 export interface InternshipInput {
@@ -53,12 +58,37 @@ export interface InternshipInput {
   status?: InternshipStatus;
 }
 
+export interface RepostInternshipInput {
+  semesterId: string;
+  title?: string;
+  department?: string | null;
+  location?: string | null;
+  workType?: string | null;
+  stipend?: string | null;
+  description?: string;
+  requirements?: string | null;
+  slots?: number;
+  deadline?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  status?: InternshipStatus;
+  skills?: Array<{ skillId: string; isRequired?: boolean; weight?: number }>;
+}
+
 export interface InternshipsPage {
   items: InternshipRecord[];
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
-export type ListInternshipsParams = { page?: number; limit?: number; search?: string; semesterId?: string; skillId?: string; skillIds?: string[]; status?: InternshipStatus };
+export type ListInternshipsParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  semesterId?: string;
+  skillId?: string;
+  skillIds?: string[];
+  status?: InternshipStatus;
+};
 
 const serializeListParams = (params?: ListInternshipsParams) => {
   if (!params) return undefined;
@@ -82,4 +112,8 @@ export const internshipsApi = {
     (await api.patch<ApiSuccess<InternshipRecord>>(`/internships/${id}`, input)).data.data,
   remove: async (id: string) =>
     (await api.delete<ApiSuccess<{ deleted: boolean; id: string }>>(`/internships/${id}`)).data.data,
+  saveAsTemplate: async (id: string, name: string) =>
+    (await api.post<ApiSuccess<any>>(`/internships/${id}/save-as-template`, { name })).data.data,
+  repost: async (id: string, input: RepostInternshipInput) =>
+    (await api.post<ApiSuccess<InternshipRecord>>(`/internships/${id}/repost`, input)).data.data,
 };

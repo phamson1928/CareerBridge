@@ -3,6 +3,7 @@ import { PlacementsService } from '../placements/placements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
 import { ApplicationsService } from './applications.service';
 
 type AcceptanceTestService = {
@@ -30,6 +31,7 @@ describe('ApplicationsService acceptance retry', () => {
       {} as PrismaService,
       {} as PlacementsService,
       {} as NotificationsService,
+      {} as SemesterLifecycleService,
     );
     const retryableService = service as unknown as AcceptanceTestService;
     const acceptOnce = jest
@@ -38,13 +40,13 @@ describe('ApplicationsService acceptance retry', () => {
       .mockRejectedValueOnce({ code: 'P2034' })
       .mockResolvedValueOnce({ id: 'application-id', status: 'ACCEPTED' });
 
-    const result = await retryableService.accept(
+    const result = await (service as any).accept(
       'application-id',
       companyUser,
-      null,
+      'Welcome aboard',
     );
 
-    expect(acceptOnce).toHaveBeenCalledTimes(3);
     expect(result).toEqual({ id: 'application-id', status: 'ACCEPTED' });
+    expect(acceptOnce).toHaveBeenCalledTimes(3);
   });
 });

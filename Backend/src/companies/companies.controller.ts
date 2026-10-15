@@ -18,10 +18,12 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
 import { CompaniesService } from './companies.service';
+import { ApproveCompanyDto } from './dto/approve-company.dto';
 import { CreateCompanyProfileDto } from './dto/create-company-profile.dto';
 import { ListCompanyProfilesQueryDto } from './dto/list-company-profiles-query.dto';
 import { RejectCompanyDto } from './dto/reject-company.dto';
 import { SuspendCompanyDto } from './dto/suspend-company.dto';
+import { UnsuspendCompanyDto } from './dto/unsuspend-company.dto';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
 
 @Controller('companies')
@@ -80,8 +82,12 @@ export class CompaniesController {
 
   @Post(':id/approve')
   @Roles(Role.ADMIN)
-  approve(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.companiesService.approve(id, user.id);
+  approve(
+    @Param('id') id: string,
+    @Body() dto: ApproveCompanyDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companiesService.approve(id, user.id, dto);
   }
 
   @Post(':id/reject')
@@ -91,7 +97,7 @@ export class CompaniesController {
     @Body() dto: RejectCompanyDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.companiesService.reject(id, user.id, dto.reason);
+    return this.companiesService.reject(id, user.id, dto);
   }
 
   @Post(':id/suspend')
@@ -101,6 +107,16 @@ export class CompaniesController {
     @Body() dto: SuspendCompanyDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.companiesService.suspend(id, user.id, dto.reason);
+    return this.companiesService.suspend(id, user.id, dto);
+  }
+
+  @Post(':id/unsuspend')
+  @Roles(Role.ADMIN)
+  unsuspend(
+    @Param('id') id: string,
+    @Body() dto: UnsuspendCompanyDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companiesService.unsuspend(id, user.id, dto);
   }
 }

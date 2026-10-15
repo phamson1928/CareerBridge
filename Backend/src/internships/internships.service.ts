@@ -20,7 +20,10 @@ import {
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateInternshipDto } from './dto/create-internship.dto';
 import { ListInternshipsQueryDto } from './dto/list-internships-query.dto';
+import { RepostInternshipDto } from './dto/repost-internship.dto';
+import { SaveAsTemplateDto } from './dto/save-as-template.dto';
 import { UpdateInternshipDto } from './dto/update-internship.dto';
+import type { CreateInternshipFromTemplateDto } from '../internship-templates/dto/create-internship-from-template.dto';
 
 const internshipSelect = {
   id: true,
@@ -39,6 +42,10 @@ const internshipSelect = {
   startDate: true,
   endDate: true,
   status: true,
+  sourceTemplateId: true,
+  sourceInternshipId: true,
+  viewCount: true,
+  uniqueViewerCount: true,
   createdAt: true,
   updatedAt: true,
   company: {
@@ -147,6 +154,7 @@ export class InternshipsService {
     });
     return this.toResponse(record);
   }
+
   async update(id: string, dto: UpdateInternshipDto, userId: string) {
     const company = await this.getApprovedCompanyForUser(userId);
     const current = await this.prisma.internship.findUnique({
@@ -216,6 +224,7 @@ export class InternshipsService {
     });
     return this.toResponse(updated);
   }
+
   async remove(id: string, userId: string) {
     const company = await this.getCompanyForUser(userId);
     const internship = await this.prisma.internship.findUnique({
@@ -254,6 +263,379 @@ export class InternshipsService {
     });
     return { deleted: true, id };
   }
+
+  async saveAsTemplate(id: string, userId: string, dto: SaveAsTemplateDto) {
+    const company = await this.getApprovedCompanyForUser(userId);
+    const internship = await this.prisma.internship.findUnique({
+      where: { id },
+      include: {
+        skills: {
+          select: { skillId: true, isRequired: true, weight: true },
+        },
+      },
+    });
+    if (!internship) throw this.notFound();
+    if (internship.companyId !== company.id) throw this.notOwned();
+
+    const templateCount = await this.prisma.internshipTemplate.count({
+      where: { companyId: company.id },
+    });
+    if (templateCount >= 20) {
+      throw new BadRequestException({
+        code: 'INTERNSHIP_TEMPLATE_LIMIT',
+        message: 'Tối đa 20 mẫu tin tuyển dụng cho mỗi doanh nghiệp',
+      });
+    }
+
+    const trimmedName = dto.name.trim();
+    const existingName = await this.prisma.internshipTemplate.findUnique({
+      where: {
+        companyId_name: {
+          companyId: company.id,
+          name: trimmedName,
+        },
+      },
+      select: { id: true },
+    });
+    if (existingName) {
+      throw new ConflictException({
+        code: 'INTERNSHIP_TEMPLATE_NAME_EXISTS',
+        message: 'Tên mẫu tin đã tồn tại trong doanh nghiệp này',
+      });
+    }
+
+    const template = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.internshipTemplate.create({
+        data: {
+          companyId: company.id,
+          name: trimmedName,
+          title: internship.title,
+          department: internship.department,
+          location: internship.location,
+          workType: internship.workType,
+          stipend: internship.stipend,
+          description: internship.description,
+          requirements: internship.requirements,
+          slotsDefault: internship.slots,
+          skills: {
+            create: internship.skills.map((s) => ({
+              skillId: s.skillId,
+              isRequired: s.isRequired,
+              weight: s.weight,
+            })),
+          },
+        },
+        include: {
+          skills: {
+            include: { skill: { select: { id: true, name: true } } },
+          },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'INTERNSHIP_TEMPLATE_CREATED',
+          entity: 'InternshipTemplate',
+          entityId: created.id,
+          metadata: {
+            companyId: company.id,
+            fromInternshipId: internship.id,
+            name: created.name,
+          },
+        },
+      });
+
+      return created;
+    });
+
+    return template;
+  }
+
+  async repost(id: string, userId: string, dto: RepostInternshipDto) {
+    const company = await this.getApprovedCompanyForUser(userId);
+    const source = await this.prisma.internship.findUnique({
+      where: { id },
+      include: {
+        skills: {
+          include: { skill: { select: { id: true, name: true } } },
+        },
+      },
+    });
+    if (!source) throw this.notFound();
+    if (source.companyId !== company.id) throw this.notOwned();
+
+    const semester = await this.ensureSemesterAvailable(dto.semesterId);
+
+    const mergedDates = {
+      deadline: dto.deadline !== undefined ? dto.deadline : null,
+      startDate: dto.startDate !== undefined ? dto.startDate : null,
+      endDate: dto.endDate !== undefined ? dto.endDate : null,
+    };
+    this.validateDates(mergedDates, semester);
+
+    const targetStatus = dto.status ?? InternshipStatus.DRAFT;
+    this.ensureCanOpen(targetStatus, mergedDates.deadline, semester);
+
+    const targetSlots = dto.slots ?? source.slots;
+    if (targetSlots < 1) {
+      throw new BadRequestException({
+        code: 'INVALID_SLOTS',
+        message: 'Số lượng tuyển phải lớn hơn hoặc bằng 1',
+      });
+    }
+
+    const rawSkills = dto.skills
+      ? dto.skills.map((s) => ({
+          skillId: s.skillId,
+          isRequired: s.isRequired ?? true,
+          weight: s.weight ?? 1,
+        }))
+      : source.skills.map((s) => ({
+          skillId: s.skillId,
+          isRequired: s.isRequired,
+          weight: s.weight,
+        }));
+
+    const uniqueSkillMap = new Map<
+      string,
+      { skillId: string; isRequired: boolean; weight: number }
+    >();
+    for (const s of rawSkills) {
+      uniqueSkillMap.set(s.skillId, s);
+    }
+    const uniqueSkills = Array.from(uniqueSkillMap.values());
+
+    const validCatalogSkills = await this.prisma.skill.findMany({
+      where: { id: { in: uniqueSkills.map((s) => s.skillId) } },
+      select: { id: true, name: true },
+    });
+    const validSkillIdSet = new Set(validCatalogSkills.map((s) => s.id));
+    const warnings: string[] = [];
+    const skillsToCreate = uniqueSkills.filter((s) => {
+      const exists = validSkillIdSet.has(s.skillId);
+      if (!exists) {
+        const original = source.skills.find((os) => os.skillId === s.skillId);
+        const skillName = original?.skill?.name || s.skillId;
+        warnings.push(
+          `Kỹ năng "${skillName}" không còn tồn tại trong hệ thống và đã được bỏ qua.`,
+        );
+      }
+      return exists;
+    });
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const newInternship = await tx.internship.create({
+        data: {
+          companyId: company.id,
+          semesterId: semester.id,
+          title: dto.title ?? source.title,
+          department:
+            dto.department !== undefined ? dto.department : source.department,
+          location:
+            dto.location !== undefined ? dto.location : source.location,
+          workType:
+            dto.workType !== undefined ? dto.workType : source.workType,
+          stipend: dto.stipend !== undefined ? dto.stipend : source.stipend,
+          description: dto.description ?? source.description,
+          requirements:
+            dto.requirements !== undefined
+              ? dto.requirements
+              : source.requirements,
+          slots: targetSlots,
+          filledSlots: 0,
+          viewCount: 0,
+          uniqueViewerCount: 0,
+          deadline: mergedDates.deadline,
+          startDate: mergedDates.startDate,
+          endDate: mergedDates.endDate,
+          status: targetStatus,
+          sourceInternshipId: source.id,
+          sourceTemplateId: null,
+          skills: {
+            create: skillsToCreate.map((s) => ({
+              skillId: s.skillId,
+              isRequired: s.isRequired,
+              weight: s.weight,
+            })),
+          },
+        },
+        select: internshipSelect,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'INTERNSHIP_REPOSTED',
+          entity: 'Internship',
+          entityId: newInternship.id,
+          metadata: {
+            companyId: company.id,
+            sourceInternshipId: source.id,
+            newInternshipId: newInternship.id,
+            semesterId: semester.id,
+            status: targetStatus,
+          },
+        },
+      });
+
+      return newInternship;
+    });
+
+    return {
+      ...this.toResponse(created),
+      warnings,
+    };
+  }
+
+  async createFromTemplate(
+    templateId: string,
+    userId: string,
+    dto: CreateInternshipFromTemplateDto,
+  ) {
+    const company = await this.getApprovedCompanyForUser(userId);
+    const template = await this.prisma.internshipTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        skills: {
+          include: { skill: { select: { id: true, name: true } } },
+        },
+      },
+    });
+    if (!template) {
+      throw new NotFoundException({
+        code: 'INTERNSHIP_TEMPLATE_NOT_FOUND',
+        message: 'Mẫu tin tuyển dụng không tìm thấy',
+      });
+    }
+    if (template.companyId !== company.id) throw this.notOwned();
+
+    const semester = await this.ensureSemesterAvailable(dto.semesterId);
+
+    const mergedDates = {
+      deadline: dto.deadline !== undefined ? dto.deadline : null,
+      startDate: dto.startDate !== undefined ? dto.startDate : null,
+      endDate: dto.endDate !== undefined ? dto.endDate : null,
+    };
+    this.validateDates(mergedDates, semester);
+
+    const targetStatus = dto.status ?? InternshipStatus.DRAFT;
+    this.ensureCanOpen(targetStatus, mergedDates.deadline, semester);
+
+    const targetSlots = dto.slots ?? template.slotsDefault;
+    if (targetSlots < 1) {
+      throw new BadRequestException({
+        code: 'INVALID_SLOTS',
+        message: 'Số lượng tuyển phải lớn hơn hoặc bằng 1',
+      });
+    }
+
+    const rawSkills = dto.skills
+      ? dto.skills.map((s) => ({
+          skillId: s.skillId,
+          isRequired: s.isRequired ?? true,
+          weight: s.weight ?? 1,
+        }))
+      : template.skills.map((s) => ({
+          skillId: s.skillId,
+          isRequired: s.isRequired,
+          weight: s.weight,
+        }));
+
+    const uniqueSkillMap = new Map<
+      string,
+      { skillId: string; isRequired: boolean; weight: number }
+    >();
+    for (const s of rawSkills) {
+      uniqueSkillMap.set(s.skillId, s);
+    }
+    const uniqueSkills = Array.from(uniqueSkillMap.values());
+
+    const validCatalogSkills = await this.prisma.skill.findMany({
+      where: { id: { in: uniqueSkills.map((s) => s.skillId) } },
+      select: { id: true, name: true },
+    });
+    const validSkillIdSet = new Set(validCatalogSkills.map((s) => s.id));
+    const warnings: string[] = [];
+    const skillsToCreate = uniqueSkills.filter((s) => {
+      const exists = validSkillIdSet.has(s.skillId);
+      if (!exists) {
+        const original = template.skills.find((ts) => ts.skillId === s.skillId);
+        const skillName = original?.skill?.name || s.skillId;
+        warnings.push(
+          `Kỹ năng "${skillName}" không còn tồn tại trong hệ thống và đã được bỏ qua.`,
+        );
+      }
+      return exists;
+    });
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const newInternship = await tx.internship.create({
+        data: {
+          companyId: company.id,
+          semesterId: semester.id,
+          title: dto.title ?? template.title,
+          department:
+            dto.department !== undefined
+              ? dto.department
+              : template.department,
+          location:
+            dto.location !== undefined ? dto.location : template.location,
+          workType:
+            dto.workType !== undefined ? dto.workType : template.workType,
+          stipend:
+            dto.stipend !== undefined ? dto.stipend : template.stipend,
+          description: dto.description ?? template.description,
+          requirements:
+            dto.requirements !== undefined
+              ? dto.requirements
+              : template.requirements,
+          slots: targetSlots,
+          filledSlots: 0,
+          viewCount: 0,
+          uniqueViewerCount: 0,
+          deadline: mergedDates.deadline,
+          startDate: mergedDates.startDate,
+          endDate: mergedDates.endDate,
+          status: targetStatus,
+          sourceTemplateId: template.id,
+          sourceInternshipId: null,
+          skills: {
+            create: skillsToCreate.map((s) => ({
+              skillId: s.skillId,
+              isRequired: s.isRequired,
+              weight: s.weight,
+            })),
+          },
+        },
+        select: internshipSelect,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'INTERNSHIP_CREATED_FROM_TEMPLATE',
+          entity: 'Internship',
+          entityId: newInternship.id,
+          metadata: {
+            companyId: company.id,
+            templateId: template.id,
+            newInternshipId: newInternship.id,
+            semesterId: semester.id,
+            status: targetStatus,
+          },
+        },
+      });
+
+      return newInternship;
+    });
+
+    return {
+      ...this.toResponse(created),
+      warnings,
+    };
+  }
+
   private async paginate(
     where: Prisma.InternshipWhereInput,
     query: ListInternshipsQueryDto,
@@ -330,7 +712,7 @@ export class InternshipsService {
     };
   }
 
-  private async getCompanyForUser(userId: string) {
+  async getCompanyForUser(userId: string) {
     const company = await this.prisma.companyProfile.findUnique({
       where: { userId },
       select: { id: true, status: true },
@@ -343,7 +725,7 @@ export class InternshipsService {
     return company;
   }
 
-  private async getApprovedCompanyForUser(userId: string) {
+  async getApprovedCompanyForUser(userId: string) {
     const company = await this.getCompanyForUser(userId);
     if (company.status !== CompanyStatus.APPROVED)
       throw new ForbiddenException({
@@ -353,7 +735,7 @@ export class InternshipsService {
     return company;
   }
 
-  private async ensureSemesterAvailable(semesterId: string) {
+  async ensureSemesterAvailable(semesterId: string) {
     const semester = await this.prisma.semester.findUnique({
       where: { id: semesterId },
       select: { id: true, status: true, startDate: true, endDate: true },
@@ -405,7 +787,7 @@ export class InternshipsService {
     return recruitingSemesters[0];
   }
 
-  private validateDates(
+  validateDates(
     dates: {
       deadline?: Date | null;
       startDate?: Date | null;
@@ -444,7 +826,7 @@ export class InternshipsService {
       });
   }
 
-  private ensureCanOpen(
+  ensureCanOpen(
     status: InternshipStatus,
     deadline: Date | null | undefined,
     semester: {
@@ -469,7 +851,7 @@ export class InternshipsService {
     }
   }
 
-  private toResponse(record: InternshipRecord) {
+  toResponse(record: InternshipRecord) {
     return {
       ...record,
       recruitmentStart: this.lifecycle.recruitmentStart(

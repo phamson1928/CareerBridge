@@ -39,6 +39,7 @@ Backend/
 │   ├── skills/                    # Danh mục và matching metadata
 │   ├── recommendations/            # Ranking, cache và AI explanation có kiểm soát
 │   ├── internships/               # Bài đăng thực tập
+│   ├── internship-templates/      # Mẫu tin tuyển dụng và quản lý template
 │   ├── applications/              # Đơn ứng tuyển và state machine
 │   ├── placements/                # Đợt thực tập đã xác nhận
 │   ├── supervisions/              # Phân công giảng viên theo placement
@@ -101,17 +102,19 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 | `StudentJobPreference`          | `studentId` unique, role/location/work-type arrays   | Mong muốn công việc của sinh viên.                      |
 | `InternshipRecommendationCache` | `studentId` unique, fingerprint, result JSON, expiry | Cache recommendation theo dữ liệu profile và candidate. |
 | `LecturerProfile`               | `userId` unique, `department`                        | Hồ sơ giảng viên.                                       |
-| `CompanyProfile`                | `status`, mã số doanh nghiệp, `registrationDocumentFileId`, `submittedAt`, `reviewedById/reviewedAt`, `rejectionReason`, `suspensionReason/suspendedAt` | Hồ sơ pháp lý, tệp ĐKDN và lịch sử xét duyệt doanh nghiệp. |
+| `CompanyProfile`                | `status`, mã số doanh nghiệp, `registrationDocumentFileId`, `submittedAt`, `reviewDueAt`, `reviewChecklist`, `reviewedById/reviewedAt`, `rejectionReason`, `rejectionReasonCode`, `suspensionReason/suspensionReasonCode/suspendedAt` | Hồ sơ pháp lý, tệp ĐKDN và lịch sử xét duyệt doanh nghiệp kèm SLA và checklist. |
 
 ### 4.2. Nhóm kỳ, vị trí và kỹ năng
 
-| Model             | Trường / ràng buộc quan trọng                                                                         | Mục đích                                                               |
-| ----------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `Semester`        | `name` unique, `startDate`, `endDate`, `status`                                                       | Đợt thực tập; cửa sổ tuyển được suy ra là một tháng trước `startDate`. |
-| `Internship`      | `companyId`, `semesterId`, `slots`, `filledSlots`, `deadline`, optional `startDate/endDate`, `status` | Vị trí tuyển và lịch học vụ dự kiến của doanh nghiệp.                  |
-| `Skill`           | `name` unique                                                                                         | Danh mục kỹ năng chuẩn.                                                |
-| `StudentSkill`    | PK `(studentId, skillId)`, `level`                                                                    | Kỹ năng và mức độ của sinh viên.                                       |
-| `InternshipSkill` | PK `(internshipId, skillId)`, `isRequired`, `weight`                                                  | Yêu cầu kỹ năng của vị trí.                                            |
+| Model                     | Trường / ràng buộc quan trọng                                                                         | Mục đích                                                               |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `Semester`                | `name` unique, `startDate`, `endDate`, `status`                                                       | Đợt thực tập; cửa sổ tuyển được suy ra là một tháng trước `startDate`. |
+| `Internship`              | `companyId`, `semesterId`, `slots`, `filledSlots`, `deadline`, optional `startDate/endDate`, `status`, `sourceTemplateId`, `sourceInternshipId`, `viewCount`, `uniqueViewerCount` | Vị trí tuyển và lịch học vụ dự kiến của doanh nghiệp; liên kết nguồn tạo từ template / repost. |
+| `InternshipTemplate`      | unique `(companyId, name)`, `slotsDefault`, các trường nội dung                                       | Mẫu tin tuyển dụng độc lập với đợt, tối đa 20 mẫu/công ty.             |
+| `InternshipTemplateSkill` | PK `(templateId, skillId)`, `isRequired`, `weight`                                                  | Kỹ năng gắn với mẫu tin tuyển dụng.                                    |
+| `Skill`                   | `name` unique                                                                                         | Danh mục kỹ năng chuẩn.                                                |
+| `StudentSkill`            | PK `(studentId, skillId)`, `level`                                                                    | Kỹ năng và mức độ của sinh viên.                                       |
+| `InternshipSkill`         | PK `(internshipId, skillId)`, `isRequired`, `weight`                                                  | Yêu cầu kỹ năng của vị trí.                                            |
 
 ### 4.3. Nhóm workflow thực tập
 
@@ -146,7 +149,16 @@ Schema nguồn: `Backend/prisma/schema.prisma`. Prisma Client được generate 
 | `ReportStatus`             | `DRAFT`, `SUBMITTED`, `APPROVED`, `REJECTED`                |
 | `EvaluationType`           | `COMPANY`, `LECTURER`                                       |
 | `CompanyStatus`            | `DRAFT`, `PENDING`, `APPROVED`, `REJECTED`, `SUSPENDED`    |
+| `CompanyRejectionReasonCode` | `MISSING_DOCUMENT`, `DOCUMENT_UNCLEAR`, `NAME_MISMATCH`, `REGISTRATION_MISMATCH`, `ADDRESS_MISMATCH`, `CONTACT_INVALID`, `OTHER` |
+| `CompanySuspensionReasonCode` | `POLICY_VIOLATION`, `FAKE_INFORMATION`, `ABUSIVE_POSTING`, `LEGAL_COMPLAINT`, `OTHER` |
 | `FileType`                 | `CV`, `REPORT`, `CERTIFICATE`, `COMPANY_REGISTRATION`, `AVATAR` |
+| `SemesterStatus`           | `UPCOMING`, `ACTIVE`, `RECRUITING`, `MONITORING`, `COMPLETED`, `CANCELLED` |
+| `InternshipStatus`         | `DRAFT`, `OPEN`, `CLOSED`, `CANCELLED`                      |
+| `SupervisionStatus`        | `ACTIVE`, `COMPLETED`, `CANCELLED`                          |
+| `RecommendationSource`     | `AI_ENHANCED`, `DETERMINISTIC_FALLBACK`, `DETERMINISTIC_ONLY` |
+| `SkillLevel`               | `BEGINNER`, `INTERMEDIATE`, `ADVANCED`, `EXPERT`            |
+| `NotificationType`         | `APPLICATION`, `REPORT`, `SUPERVISION`, `PLACEMENT`, `COMPANY`, `EVALUATION`, `SYSTEM` |
+| `NotificationAction`       | `NONE`, `OPEN_APPLICATION`, `OPEN_REPORT`, `OPEN_SUPERVISION`, `OPEN_PLACEMENT`, `OPEN_COMPANY_PROFILE`, `OPEN_EVALUATION` |
 
 ## 5. Transaction và phân quyền đang được thực thi
 
@@ -160,7 +172,8 @@ Các ràng buộc unique trong schema xử lý tính nhất quán cơ bản. Cá
 6. Khi tạo hoặc sửa evaluation, kiểm tra đúng company/lecturer và placement đang trong khoảng theo dõi học vụ.
 7. Khi cấp signed URL, kiểm tra quyền trên entity tham chiếu tới file trước khi trả URL.
 8. Mọi thao tác quản trị và state transition ghi `AuditLog`.
-9. Company verification chỉ cho `DRAFT`/`REJECTED` submit thành `PENDING` sau khi kiểm tra đủ trường pháp lý và file do chính company sở hữu, loại `FileType.COMPANY_REGISTRATION`. `PENDING` không được sửa; admin chỉ approve/reject `PENDING`, còn suspend chỉ áp dụng `APPROVED`. Reject/suspend cần lý do tối thiểu 3 ký tự; mỗi transition lưu metadata review, audit log và notification.
+9. Company verification chỉ cho `DRAFT`/`REJECTED` submit thành `PENDING` sau khi kiểm tra đủ trường pháp lý và file do chính company sở hữu, loại `FileType.COMPANY_REGISTRATION`. Khi submit, thiết lập `reviewDueAt` theo `COMPANY_REVIEW_SLA_HOURS` (mặc định 72 giờ) và xóa metadata từ chối/checklist cũ. `PENDING` không được sửa; admin duyệt bắt buộc đủ 6 mục checklist và email user phải verified; từ chối/đình chỉ bắt buộc chọn mã lý do (`reasonCode`) và giải thích chi tiết ≥10 ký tự. Suspend trong cùng transaction đóng mọi tin `OPEN` của công ty. Unsuspend chuyển từ `SUSPENDED` sang `APPROVED` có kiểm soát lý do và không tự mở lại tin cũ.
+10. Mẫu tin và đăng lại: Doanh nghiệp `APPROVED` được lưu tối đa 20 mẫu (`InternshipTemplate`), quản lý CRUD độc lập với đợt thực tập và không nhân bản số liệu thống kê/ứng viên. Khi tạo tin từ mẫu hoặc repost sang đợt mới, hệ thống tái sử dụng toàn bộ quy tắc validate đợt tuyển (`RECRUITING`), ngày bắt đầu/kết thúc và deadline tương lai nếu tin ở trạng thái `OPEN`. Các kỹ năng bị xóa khỏi danh mục sẽ được bỏ qua và trả cảnh báo `warnings[]`.
 
 ## 6. API map hiện tại
 
@@ -170,9 +183,9 @@ Mọi controller đều dùng prefix `/api/v1` và wrapper thành công `{ succe
 | --- | --- |
 | Auth | `POST /auth/register`, `/login`, `/refresh`, `/logout`, `/verify-email`, `/resend-verification`, `/forgot-password`, `/reset-password`; `GET /auth/me` |
 | Users | `GET, POST /users`; `GET, PATCH, DELETE /users/:id` |
-| Student / Lecturer / Company profiles | `GET, POST, PATCH, DELETE /students/me`, `/lecturers/me`, `/companies/me`; `POST /companies/me/submit-verification`; admin `GET /companies`, `GET /companies/:id`, `POST /companies/:id/approve`, `/reject`, `/suspend` |
+| Student / Lecturer / Company profiles | `GET, POST, PATCH, DELETE /students/me`, `/lecturers/me`, `/companies/me`; `POST /companies/me/submit-verification`; admin `GET /companies`, `GET /companies/:id`, `POST /companies/:id/approve` (checklist), `/reject` (code + detail), `/suspend` (code + detail, đóng tin OPEN), `/unsuspend` (detail) |
 | Skills | `GET, POST /skills`; `GET, PATCH, DELETE /skills/:id`; `GET, PUT /students/me/skills`; `GET, PUT /internships/:internshipId/skills`; `GET /internships/:internshipId/match/me` |
-| Semesters / Internships | CRUD `/semesters` (including `PATCH /:id/status`); list/detail/CRUD `/internships` and `GET /internships/me` |
+| Semesters / Internships / Templates | CRUD `/semesters` (including `PATCH /:id/status`); list/detail/CRUD `/internships`, `GET /internships/me`, `POST /internships/:id/save-as-template`, `POST /internships/:id/repost`; CRUD `/internship-templates`, `GET /internship-templates/me`, `POST /internship-templates/:id/create-internship` |
 | Applications | `POST, GET /applications`; `GET /applications/me`, `/:id`, `/:id/history`; `PATCH /:id/status` |
 | Placements / Supervisions | `GET /placements`, `/placements/me`, `/placements/:id`; `PATCH /placements/:id`, `/:id/status`; `GET, POST /supervisions`, `/supervisions/me`, `/supervisions/lecturer-options`, `/:id`; `PATCH /supervisions/:id`, `/:id/status` |
 | Reports / Evaluations | `POST /reports`; `GET /reports/me`, `/supervised`, `/:id`; `PATCH /reports/:id`; `POST /reports/:id/submit`, `/:id/review`; `POST, GET /evaluations`, `/evaluations/me`, `/:id`; `PATCH, DELETE /evaluations/:id` |

@@ -1,6 +1,7 @@
 import React, { FormEvent, useEffect, useState } from "react";
 import axios from "axios";
 import {
+  AlertTriangle,
   Building2,
   CheckCircle2,
   Clock3,
@@ -15,6 +16,8 @@ import {
   companiesApi,
   CompanyProfileInput,
   CompanyProfileRecord,
+  REJECTION_REASON_LABELS,
+  SUSPENSION_REASON_LABELS,
 } from "../../companies/api";
 import {
   downloadPrivateFile,
@@ -181,7 +184,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
         </div>
         {profile && <VerificationStatus profile={profile} />}
         {error && (
-          <p className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
+          <p className="mt-5 rounded-xl bg-rose-50 border border-rose-200 p-3 text-sm text-rose-700">
             {error}
           </p>
         )}
@@ -289,7 +292,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
                 <button
                   type="button"
                   onClick={() => void downloadPrivateFile(profile.registrationDocumentFileId!)}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-indigo-700 shadow-sm"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-indigo-700 shadow-xs border border-indigo-200"
                 >
                   <Download className="h-3.5 w-3.5" /> Xem tài liệu
                 </button>
@@ -338,54 +341,119 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
 };
 
 function VerificationStatus({ profile }: { profile: CompanyProfileRecord }) {
-  const content =
-    profile.status === "APPROVED"
-      ? {
-          Icon: CheckCircle2,
-          title: "Đã được nhà trường xác minh hồ sơ",
-          body: profile.reviewedAt
-            ? `Đã duyệt ngày ${new Date(profile.reviewedAt).toLocaleDateString("vi-VN")}.`
-            : "Hồ sơ của bạn đã được duyệt.",
-          className: "border-emerald-200 bg-emerald-50 text-emerald-800",
-        }
-      : profile.status === "SUSPENDED"
-        ? {
-            Icon: XCircle,
-            title: "Quyền doanh nghiệp đang bị tạm đình chỉ",
-            body: profile.suspensionReason || "Vui lòng liên hệ quản trị viên.",
-            className: "border-rose-200 bg-rose-50 text-rose-800",
-          }
-        : profile.status === "REJECTED"
-        ? {
-            Icon: XCircle,
-            title: "Hồ sơ cần bổ sung",
-            body:
-              profile.rejectionReason ||
-              "Hãy cập nhật thông tin và gửi duyệt lại.",
-            className: "border-rose-200 bg-rose-50 text-rose-800",
-          }
-        : profile.status === "PENDING"
-          ? {
-              Icon: Clock3,
-              title: "Nhà trường đang kiểm tra hồ sơ",
-              body: "Bạn chưa thể đăng tin hoặc xử lý ứng viên trong thời gian chờ duyệt.",
-              className: "border-amber-200 bg-amber-50 text-amber-800",
-            }
-          : {
-          Icon: Clock3,
-            title: "Hồ sơ đang soạn",
-            body: "Bổ sung đủ thông tin và gửi hồ sơ để nhà trường kiểm tra.",
-            className: "border-amber-200 bg-amber-50 text-amber-800",
-            };
-  const { Icon } = content;
+  if (profile.status === "APPROVED") {
+    return (
+      <div className="mt-6 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+        <div>
+          <p className="text-sm font-bold">Đã được nhà trường xác minh hồ sơ</p>
+          <p className="mt-1 text-xs leading-relaxed">
+            {profile.reviewedAt
+              ? `Đã duyệt ngày ${new Date(profile.reviewedAt).toLocaleDateString("vi-VN")}.`
+              : "Hồ sơ của bạn đã được xác minh thành công. Bạn có thể đăng tin tuyển dụng."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (profile.status === "SUSPENDED") {
+    const reasonLabel = profile.suspensionReasonCode
+      ? SUSPENSION_REASON_LABELS[profile.suspensionReasonCode]
+      : null;
+
+    return (
+      <div className="mt-6 flex gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+        <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+        <div className="space-y-1">
+          <p className="text-sm font-bold">Quyền hoạt động của doanh nghiệp đang bị tạm đình chỉ</p>
+          {reasonLabel && (
+            <p className="text-xs font-semibold text-rose-900">
+              Lý do: {reasonLabel}
+            </p>
+          )}
+          <p className="text-xs leading-relaxed text-rose-700">
+            {profile.suspensionReason || "Vui lòng liên hệ ban quản trị nhà trường để giải quyết khiếu nại."}
+          </p>
+          <p className="text-[11px] text-rose-600 font-medium">
+            (Toàn bộ tin tuyển dụng đang mở của doanh nghiệp đã tự động đóng trong thời gian tạm dừng)
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (profile.status === "REJECTED") {
+    const reasonLabel = profile.rejectionReasonCode
+      ? REJECTION_REASON_LABELS[profile.rejectionReasonCode]
+      : null;
+
+    return (
+      <div className="mt-6 flex gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+        <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+        <div className="space-y-1">
+          <p className="text-sm font-bold">Hồ sơ cần bổ sung thông tin</p>
+          {reasonLabel && (
+            <p className="text-xs font-semibold text-rose-900">
+              Vấn đề: {reasonLabel}
+            </p>
+          )}
+          <p className="text-xs leading-relaxed text-rose-700">
+            {profile.rejectionReason || "Hãy cập nhật thông tin và gửi duyệt lại."}
+          </p>
+          <p className="text-[11px] text-slate-600">
+            Bạn có thể chỉnh sửa lại các trường thông tin ở biểu mẫu bên dưới và bấm "Gửi hồ sơ xác minh" để nộp lại.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (profile.status === "PENDING") {
+    const dueDate = profile.reviewDueAt ? new Date(profile.reviewDueAt) : null;
+    const isOverdue = profile.isOverdue;
+
+    return (
+      <div
+        className={`mt-6 flex gap-3 rounded-xl border p-4 ${
+          isOverdue
+            ? "border-rose-200 bg-rose-50 text-rose-800"
+            : "border-amber-200 bg-amber-50 text-amber-800"
+        }`}
+      >
+        <Clock3 className="mt-0.5 h-5 w-5 shrink-0" />
+        <div className="space-y-1">
+          <p className="text-sm font-bold">Nhà trường đang kiểm tra hồ sơ</p>
+          {dueDate && (
+            <p className="text-xs font-semibold">
+              {isOverdue ? (
+                <span className="text-rose-700 font-bold">
+                  Đã vượt quá hạn cam kết SLA ({dueDate.toLocaleString("vi-VN")}). Đội ngũ quản trị đang ưu tiên xử lý hồ sơ của bạn.
+                </span>
+              ) : (
+                <span>
+                  Dự kiến xử lý trước: {dueDate.toLocaleString("vi-VN")}
+                  {profile.hoursRemaining !== null && ` (còn khoảng ${profile.hoursRemaining} giờ)`}
+                </span>
+              )}
+            </p>
+          )}
+          <p className="text-xs leading-relaxed text-slate-600">
+            Bạn chưa thể đăng tin tuyển dụng hoặc duyệt ứng viên trong thời gian chờ kiểm tra. Vui lòng theo dõi thông báo hoặc email.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`mt-6 flex gap-3 rounded-xl border p-4 ${content.className}`}
-    >
-      <Icon className="mt-0.5 h-5 w-5 shrink-0" />
+    <div className="mt-6 flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
+      <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
       <div>
-        <p className="text-sm font-bold">{content.title}</p>
-        <p className="mt-1 text-xs leading-relaxed">{content.body}</p>
+        <p className="text-sm font-bold">Hồ sơ đang soạn</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+          Vui lòng bổ sung đầy đủ thông tin pháp lý và tệp Giấy đăng ký doanh nghiệp trước khi bấm gửi duyệt.
+        </p>
       </div>
     </div>
   );
@@ -419,7 +487,7 @@ function TextField({
         placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 text-sm font-normal"
+        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 text-sm font-normal disabled:bg-slate-100 disabled:text-slate-500"
       />
     </label>
   );

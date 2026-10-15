@@ -30,6 +30,24 @@ enum CompanyStatus {
   SUSPENDED
 }
 
+enum CompanyRejectionReasonCode {
+  MISSING_DOCUMENT
+  DOCUMENT_UNCLEAR
+  NAME_MISMATCH
+  REGISTRATION_MISMATCH
+  ADDRESS_MISMATCH
+  CONTACT_INVALID
+  OTHER
+}
+
+enum CompanySuspensionReasonCode {
+  POLICY_VIOLATION
+  FAKE_INFORMATION
+  ABUSIVE_POSTING
+  LEGAL_COMPLAINT
+  OTHER
+}
+
 enum SemesterStatus {
   UPCOMING
   ACTIVE
@@ -297,24 +315,31 @@ model CompanyProfile {
   logo                       String?
   contactEmail               String?
   registrationDocumentFileId String?       @unique
-  status                     CompanyStatus @default(DRAFT)
+  status                     CompanyStatus                @default(DRAFT)
   reviewedById               String?
   reviewedAt                 DateTime?
   rejectionReason            String?
+  rejectionReasonCode        CompanyRejectionReasonCode?
   submittedAt                DateTime?
+  reviewDueAt                DateTime?
+  reviewChecklist            Json?
   suspensionReason           String?
+  suspensionReasonCode       CompanySuspensionReasonCode?
   suspendedAt                DateTime?
-  createdAt                  DateTime      @default(now())
-  updatedAt                  DateTime      @updatedAt
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
 
   user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   reviewedBy           User?                 @relation("CompanyReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
   registrationDocument File?                 @relation("CompanyRegistrationDocument", fields: [registrationDocumentFileId], references: [id], onDelete: SetNull)
   internships          Internship[]
+  templates            InternshipTemplate[]
   placements           InternshipPlacement[]
   conversations        Conversation[]
 
   @@index([status])
+  @@index([status, reviewDueAt])
+  @@index([status, submittedAt])
 }
 
 model Semester {
@@ -336,8 +361,9 @@ model Skill {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  studentSkills    StudentSkill[]
-  internshipSkills InternshipSkill[]
+  studentSkills            StudentSkill[]
+  internshipSkills         InternshipSkill[]
+  internshipTemplateSkills InternshipTemplateSkill[]
 }
 
 model StudentSkill {
@@ -379,21 +405,66 @@ model Internship {
   slots        Int              @default(1)
   filledSlots  Int              @default(0)
   deadline     DateTime?
-  startDate    DateTime?
-  endDate      DateTime?
-  status       InternshipStatus @default(DRAFT)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  startDate          DateTime?
+  endDate            DateTime?
+  status             InternshipStatus     @default(DRAFT)
+  sourceTemplateId   String?
+  sourceInternshipId String?
+  viewCount          Int                  @default(0)
+  uniqueViewerCount  Int                  @default(0)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
-  company      CompanyProfile        @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  semester     Semester              @relation(fields: [semesterId], references: [id], onDelete: Restrict)
-  skills       InternshipSkill[]
-  applications Application[]
-  placements   InternshipPlacement[]
+  company             CompanyProfile        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  semester            Semester              @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  sourceTemplate      InternshipTemplate?   @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
+  sourceInternship    Internship?           @relation("InternshipRepostSource", fields: [sourceInternshipId], references: [id], onDelete: SetNull)
+  repostedInternships Internship[]          @relation("InternshipRepostSource")
+  skills              InternshipSkill[]
+  applications        Application[]
+  placements          InternshipPlacement[]
 
   @@index([companyId, status])
   @@index([semesterId, status])
   @@index([deadline])
+  @@index([sourceTemplateId])
+  @@index([sourceInternshipId])
+}
+
+model InternshipTemplate {
+  id           String   @id @default(cuid())
+  companyId    String
+  name         String
+  title        String
+  department   String?
+  location     String?
+  workType     String?
+  stipend      String?
+  description  String
+  requirements String?
+  slotsDefault Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company     CompanyProfile            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  skills      InternshipTemplateSkill[]
+  internships Internship[]
+
+  @@unique([companyId, name])
+  @@index([companyId, updatedAt])
+}
+
+model InternshipTemplateSkill {
+  templateId String
+  skillId    String
+  isRequired Boolean @default(true)
+  weight     Int     @default(1)
+
+  template InternshipTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  skill    Skill              @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([templateId, skillId])
+  @@index([skillId])
 }
 
 model Application {

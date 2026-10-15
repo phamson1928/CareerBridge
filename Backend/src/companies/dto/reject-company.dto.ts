@@ -1,8 +1,13 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import { CompanyRejectionReasonCode } from '../../generated/prisma/client';
 
 export class RejectCompanyDto {
+  @IsEnum(CompanyRejectionReasonCode)
+  reasonCode!: CompanyRejectionReasonCode;
+
   @IsString()
-  @MinLength(3)
+  @IsNotEmpty()
+  @MinLength(10)
   @MaxLength(1000)
-  reason!: string;
+  reasonDetail!: string;
 }
