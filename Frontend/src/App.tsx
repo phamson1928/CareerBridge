@@ -197,6 +197,7 @@ export default function App() {
   // Modals state
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatPlacementId, setChatPlacementId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -547,7 +548,13 @@ export default function App() {
         {currentRole === "TEACHER" && (
           <>
             {activeTab === "students-list" && (
-              <TeacherDashboard onNavigateTab={setActiveTab} />
+              <TeacherDashboard
+                onNavigateTab={setActiveTab}
+                onOpenChat={(placementId) => {
+                  setChatPlacementId(placementId);
+                  setIsChatOpen(true);
+                }}
+              />
             )}
             {activeTab === "supervised-placements" && <SupervisedPlacements />}
             {activeTab === "review-reports" && (
@@ -625,9 +632,13 @@ export default function App() {
 
       <ChatDrawer
         isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
+        onClose={() => {
+          setIsChatOpen(false);
+          setChatPlacementId(null);
+        }}
         latestMessage={chatState.latestMessage}
         onMessagesRead={chatState.refreshUnreadCount}
+        initialPlacementId={chatPlacementId}
       />
     </div>
   );
