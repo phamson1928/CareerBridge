@@ -33,6 +33,8 @@ const supervisionSelect = {
       id: true,
       status: true,
       academicStatus: true,
+      startDate: true,
+      endDate: true,
       student: {
         select: {
           id: true,

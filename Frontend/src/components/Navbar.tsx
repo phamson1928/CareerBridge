@@ -109,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         return [
           {
             id: "students-list",
-            label: "Sinh viên phụ trách",
+            label: "Tổng quan",
             icon: <Users className="w-4 h-4" />,
           },
           {
