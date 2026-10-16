@@ -27,6 +27,7 @@ interface ChatDrawerProps {
   onClose: () => void;
   latestMessage: ChatMessage | null;
   onMessagesRead: () => Promise<void>;
+  initialPlacementId?: string | null;
 }
 
 const dateTime = (value: string) =>
@@ -42,6 +43,7 @@ export function ChatDrawer({
   onClose,
   latestMessage,
   onMessagesRead,
+  initialPlacementId,
 }: ChatDrawerProps) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -68,14 +70,15 @@ export function ChatDrawer({
           ? placementsApi.listMine()
           : Promise.resolve(null),
       ]);
-      setConversations(conversationPage.items);
-      setSupervisedPlacements(
-        (placementPage?.items ?? []).filter(
+      const placements = (placementPage?.items ?? []).filter(
           (placement) => placement.supervision?.status === "ACTIVE",
-        ),
-      );
+        );
+      setConversations(conversationPage.items);
+      setSupervisedPlacements(placements);
+      return { conversations: conversationPage.items, placements };
     } catch (loadError) {
       setError(getApiErrorMessage(loadError));
+      return null;
     } finally {
       setIsLoadingConversations(false);
     }
@@ -143,9 +146,26 @@ export function ChatDrawer({
     if (isOpen) {
       setSelected(null);
       setMessages([]);
-      void loadConversations();
+      void loadConversations().then(async (loaded) => {
+        if (!loaded || !initialPlacementId) return;
+        try {
+          const existing = loaded.conversations.find(
+            (conversation) => conversation.placementId === initialPlacementId,
+          );
+          const conversation =
+            existing ??
+            (await createConversation({ placementId: initialPlacementId }));
+          setConversations((items) => [
+            conversation,
+            ...items.filter((item) => item.id !== conversation.id),
+          ]);
+          await openConversation(conversation);
+        } catch (createError) {
+          setError(getApiErrorMessage(createError));
+        }
+      });
     }
-  }, [isOpen]);
+  }, [initialPlacementId, isOpen]);
   useEffect(() => {
     if (!latestMessage) return;
     setConversations((items) =>

@@ -109,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         return [
           {
             id: "students-list",
-            label: "Sinh viên phụ trách",
+            label: "Tổng quan",
             icon: <Users className="w-4 h-4" />,
           },
           {
@@ -323,7 +323,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="role-navbar sticky top-0 z-40 border-b border-slate-200 bg-white shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex h-[72px] items-center justify-between">
           {/* Logo & Brand */}
           <div
             className="flex items-center gap-3 cursor-pointer"
@@ -337,7 +337,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-1">
+          <nav className="hidden items-center space-x-1 md:flex">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -345,13 +345,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={item.id}
                   id={`nav-tab-${item.id}`}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  className={`flex items-center rounded-lg px-3.5 py-2 text-sm font-medium transition-all ${
                     isActive
                       ? "bg-indigo-50 text-indigo-700 border border-indigo-100/60 shadow-2xs"
                       : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                   }`}
                 >
-                  {item.icon}
                   <span>{item.label}</span>
                 </button>
               );
@@ -365,10 +364,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="btn-chat-toggle"
                 onClick={onOpenChat}
-                className="relative p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-200"
+                className="relative rounded-lg border border-transparent p-2 text-slate-600 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-indigo-600"
                 title="Trao đổi Realtime"
               >
-                <MessageSquare className="w-5 h-5" />
+                <MessageSquare className="h-5 w-5" />
                 {unreadMessagesCount > 0 && (
                   <span className="absolute top-1 right-1 w-4 h-4 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
                     {unreadMessagesCount}
@@ -386,7 +385,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Thông báo"
                 aria-haspopup={showNotificationPreview ? "dialog" : undefined}
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="h-5 w-5" />
                 {unreadNotifsCount > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white animate-pulse">
                     {unreadNotifsCount}
@@ -401,7 +400,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   id="btn-logout"
                   type="button"
                   onClick={onLogout}
-                  className="group relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 hover:ring-2 hover:ring-rose-100"
+                  className="group relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 hover:ring-2 hover:ring-rose-100"
                   title="Đăng xuất"
                   aria-label="Đăng xuất"
                 >
@@ -422,7 +421,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="group relative">
                   <button
                     type="button"
-                    className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-black text-slate-600 transition hover:border-indigo-200 hover:ring-2 hover:ring-indigo-100"
+                    className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-black text-slate-600 transition hover:border-indigo-200 hover:ring-2 hover:ring-indigo-100"
                     title="Tài khoản của tôi"
                     aria-label="Tài khoản của tôi"
                   >
@@ -469,13 +468,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap ${
+                className={`flex items-center px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap ${
                   isActive
                     ? "bg-indigo-600 text-white font-semibold"
                     : "text-slate-600 bg-slate-100"
                 }`}
               >
-                {item.icon}
                 <span>{item.label}</span>
               </button>
             );
