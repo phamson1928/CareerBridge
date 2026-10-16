@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -77,6 +78,8 @@ type InternshipRecord = Prisma.InternshipGetPayload<{
 
 @Injectable()
 export class InternshipsService {
+  private readonly logger = new Logger(InternshipsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly lifecycle: SemesterLifecycleService,
@@ -115,7 +118,84 @@ export class InternshipsService {
     ) {
       throw this.notFound();
     }
+
+    if (user.role === Role.STUDENT) {
+      const inc = await this.recordStudentView(id, user.id);
+      internship.viewCount += inc.viewIncrement;
+      internship.uniqueViewerCount += inc.uniqueIncrement;
+    }
+
     return this.toResponse(internship);
+  }
+
+  private async recordStudentView(
+    internshipId: string,
+    userId: string,
+  ): Promise<{ viewIncrement: number; uniqueIncrement: number }> {
+    try {
+      const now = new Date();
+      const existing = await this.prisma.internshipView.findUnique({
+        where: {
+          internshipId_viewerUserId: {
+            internshipId,
+            viewerUserId: userId,
+          },
+        },
+        select: {
+          id: true,
+          lastViewedAt: true,
+        },
+      });
+
+      if (!existing) {
+        await this.prisma.$transaction([
+          this.prisma.internshipView.create({
+            data: {
+              internshipId,
+              viewerUserId: userId,
+              firstViewedAt: now,
+              lastViewedAt: now,
+            },
+          }),
+          this.prisma.internship.update({
+            where: { id: internshipId },
+            data: {
+              viewCount: { increment: 1 },
+              uniqueViewerCount: { increment: 1 },
+            },
+          }),
+        ]);
+        return { viewIncrement: 1, uniqueIncrement: 1 };
+      }
+
+      const diffMs = now.getTime() - existing.lastViewedAt.getTime();
+      const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+      if (diffMs >= TWENTY_FOUR_HOURS_MS) {
+        await this.prisma.$transaction([
+          this.prisma.internshipView.update({
+            where: { id: existing.id },
+            data: {
+              lastViewedAt: now,
+            },
+          }),
+          this.prisma.internship.update({
+            where: { id: internshipId },
+            data: {
+              viewCount: { increment: 1 },
+            },
+          }),
+        ]);
+        return { viewIncrement: 1, uniqueIncrement: 0 };
+      }
+
+      return { viewIncrement: 0, uniqueIncrement: 0 };
+    } catch (error) {
+      this.logger.warn(
+        `Failed to record view for internship ${internshipId} by student ${userId}`,
+        error,
+      );
+      return { viewIncrement: 0, uniqueIncrement: 0 };
+    }
   }
 
   async create(dto: CreateInternshipDto, userId: string) {

@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import {
   AlertCircle,
+  BarChart3,
   Bookmark,
   Briefcase,
   Copy,
   Edit3,
+  Eye,
   FilterX,
   Layers,
   LoaderCircle,
@@ -14,6 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { CompanyInternshipStatsModal } from "./CompanyInternshipStatsModal";
 import { getApiErrorMessage } from "../../auth/api";
 import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 import {
@@ -73,7 +76,14 @@ const workTypeLabels: Record<string, string> = {
 };
 
 export function CompanyInternships() {
-  const { confirm, showToast } = useAppFeedback();
+  const { confirm, notify } = useAppFeedback();
+  const showToast = (opts: { message: string; tone?: string; title?: string }) => {
+    notify({
+      title: opts.title || (opts.tone === "negative" || opts.tone === "error" ? "Thất bại" : "Thành công"),
+      message: opts.message,
+      tone: opts.tone === "negative" || opts.tone === "error" ? "error" : opts.tone === "info" ? "info" : "success",
+    });
+  };
 
   // Active view tab
   const [activeTab, setActiveTab] = useState<"INTERNSHIPS" | "TEMPLATES">("INTERNSHIPS");
@@ -88,6 +98,9 @@ export function CompanyInternships() {
   // Templates list state
   const [templates, setTemplates] = useState<InternshipTemplateRecord[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  // Statistics modal state
+  const [statsInternshipId, setStatsInternshipId] = useState<string | null>(null);
 
   // Filter state
   const [search, setSearch] = useState("");
@@ -776,23 +789,44 @@ export function CompanyInternships() {
                   </div>
 
                   <div className="mt-5 border-t border-slate-100 pt-3">
-                    <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
-                      <span>
-                        Chỉ tiêu: <strong className="text-slate-800">{job.filledSlots}/{job.slots}</strong>
-                      </span>
-                      {job.sourceTemplateId && (
-                        <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-medium">
-                          Tạo từ mẫu
+                    <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 mb-3 gap-y-1">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="flex items-center gap-1 font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+                          <Eye className="h-3 w-3 text-blue-500" />
+                          <span>{job.viewCount || 0} lượt xem</span>
+                          <span className="text-slate-400 text-[10px]">({job.uniqueViewerCount || 0} SV)</span>
                         </span>
-                      )}
-                      {job.sourceInternshipId && (
-                        <span className="text-[10px] text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full font-medium">
-                          Đăng lại
+                        <span>
+                          Chỉ tiêu: <strong className="text-slate-800">{job.filledSlots}/{job.slots}</strong>
+                          <span className="ml-1 text-[11px] font-bold text-emerald-700">
+                            ({job.slots > 0 ? Math.round((job.filledSlots / job.slots) * 100) : 0}%)
+                          </span>
                         </span>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {job.sourceTemplateId && (
+                          <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-medium">
+                            Tạo từ mẫu
+                          </span>
+                        )}
+                        {job.sourceInternshipId && (
+                          <span className="text-[10px] text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full font-medium">
+                            Đăng lại
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setStatsInternshipId(job.id)}
+                        title="Xem thống kê tuyển dụng chi tiết của tin này"
+                        className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-3 py-1.5 font-bold text-emerald-700 hover:bg-emerald-100 transition border border-emerald-200"
+                      >
+                        <BarChart3 className="h-3.5 w-3.5" /> Thống kê
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleOpenSaveAsTemplate(job)}
@@ -1605,6 +1639,14 @@ export function CompanyInternships() {
             </div>
           </form>
         </div>
+      )}
+
+      {/* Modal thống kê chi tiết tuyển dụng */}
+      {statsInternshipId && (
+        <CompanyInternshipStatsModal
+          internshipId={statsInternshipId}
+          onClose={() => setStatsInternshipId(null)}
+        />
       )}
     </div>
   );

@@ -168,6 +168,7 @@ model User {
   evaluations          Evaluation[]         @relation("EvaluationAuthor")
   verificationTokens   VerificationToken[]
   passwordResetTokens  PasswordResetToken[]
+  internshipViews      InternshipView[]
 }
 
 model VerificationToken {
@@ -423,6 +424,7 @@ model Internship {
   skills              InternshipSkill[]
   applications        Application[]
   placements          InternshipPlacement[]
+  views               InternshipView[]
 
   @@index([companyId, status])
   @@index([semesterId, status])
@@ -465,6 +467,20 @@ model InternshipTemplateSkill {
 
   @@id([templateId, skillId])
   @@index([skillId])
+}
+
+model InternshipView {
+  id            String   @id @default(cuid())
+  internshipId  String
+  viewerUserId  String
+  firstViewedAt DateTime @default(now())
+  lastViewedAt  DateTime @default(now())
+
+  internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  viewer     User       @relation(fields: [viewerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([internshipId, viewerUserId])
+  @@index([internshipId, lastViewedAt])
 }
 
 model Application {

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   ApplicationStatus,
   CompanyStatus,
@@ -11,6 +15,7 @@ import {
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminDashboardQueryDto } from './dto/admin-dashboard-query.dto';
+import { CompanyDashboardQueryDto } from './dto/company-dashboard-query.dto';
 
 const APPLICATION_STATUSES = Object.values(ApplicationStatus);
 const PLACEMENT_STATUSES = Object.values(PlacementStatus);
@@ -411,5 +416,639 @@ export class DashboardService {
     return denominator === 0
       ? 0
       : Math.round((numerator / denominator) * 1000) / 10;
+  }
+
+  async getCompanyDashboard(userId: string, query: CompanyDashboardQueryDto) {
+    const company = await this.prisma.companyProfile.findUnique({
+      where: { userId },
+      select: { id: true, status: true, companyName: true },
+    });
+    if (!company) {
+      throw new NotFoundException({
+        code: 'COMPANY_PROFILE_NOT_FOUND',
+        message: 'Hồ sơ doanh nghiệp không tồn tại',
+      });
+    }
+
+    if (
+      company.status !== CompanyStatus.APPROVED &&
+      company.status !== CompanyStatus.SUSPENDED
+    ) {
+      throw new ForbiddenException({
+        code: 'COMPANY_STATS_FORBIDDEN',
+        message:
+          'Chỉ doanh nghiệp đã được phê duyệt hoặc đang tạm dừng mới có thể xem thống kê tuyển dụng',
+      });
+    }
+
+    const semester = query.semesterId
+      ? await this.prisma.semester.findUnique({
+          where: { id: query.semesterId },
+          select: { id: true, name: true },
+        })
+      : null;
+    if (query.semesterId && !semester) {
+      throw new NotFoundException({
+        code: 'SEMESTER_NOT_FOUND',
+        message: 'Học kỳ không tồn tại',
+      });
+    }
+
+    const internshipWhere: Prisma.InternshipWhereInput = {
+      companyId: company.id,
+      ...(semester ? { semesterId: semester.id } : {}),
+    };
+
+    const allInternships = await this.prisma.internship.findMany({
+      where: internshipWhere,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        semesterId: true,
+        semester: { select: { name: true } },
+        slots: true,
+        filledSlots: true,
+        viewCount: true,
+        uniqueViewerCount: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const totalInternships = allInternships.length;
+    let openInternships = 0;
+    let closedInternships = 0;
+    let draftInternships = 0;
+    let cancelledInternships = 0;
+    let totalSlots = 0;
+    let filledSlots = 0;
+    let totalViews = 0;
+    let uniqueViewers = 0;
+
+    for (const job of allInternships) {
+      if (job.status === InternshipStatus.OPEN) openInternships++;
+      else if (job.status === InternshipStatus.CLOSED) closedInternships++;
+      else if (job.status === InternshipStatus.DRAFT) draftInternships++;
+      else if (job.status === InternshipStatus.CANCELLED) cancelledInternships++;
+
+      totalSlots += job.slots;
+      filledSlots += job.filledSlots;
+      totalViews += job.viewCount;
+      uniqueViewers += job.uniqueViewerCount;
+    }
+
+    const fillRate =
+      totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 1000) / 1000 : 0;
+
+    const internshipIds = allInternships.map((i) => i.id);
+
+    const applications =
+      internshipIds.length > 0
+        ? await this.prisma.application.findMany({
+            where: { internshipId: { in: internshipIds } },
+            select: {
+              id: true,
+              studentId: true,
+              internshipId: true,
+              status: true,
+              appliedAt: true,
+              acceptedAt: true,
+              rejectedAt: true,
+              withdrawnAt: true,
+              matchScore: true,
+              statusHistory: {
+                select: { toStatus: true },
+              },
+            },
+          })
+        : [];
+
+    const totalApplications = applications.length;
+    const applicationsByStatus: Record<ApplicationStatus, number> = {
+      PENDING: 0,
+      REVIEWING: 0,
+      ACCEPTED: 0,
+      REJECTED: 0,
+      WITHDRAWN: 0,
+    };
+
+    const hoursToAcceptList: number[] = [];
+    const hoursToDecisionList: number[] = [];
+    let everReviewingCount = 0;
+
+    for (const app of applications) {
+      applicationsByStatus[app.status]++;
+
+      const hasReviewHistory =
+        app.statusHistory.some(
+          (h) => h.toStatus === ApplicationStatus.REVIEWING,
+        ) ||
+        app.status === ApplicationStatus.REVIEWING ||
+        app.status === ApplicationStatus.ACCEPTED ||
+        app.status === ApplicationStatus.REJECTED;
+
+      if (hasReviewHistory) {
+        everReviewingCount++;
+      }
+
+      if (app.status === ApplicationStatus.ACCEPTED && app.acceptedAt) {
+        const diffHours =
+          (app.acceptedAt.getTime() - app.appliedAt.getTime()) / (3600 * 1000);
+        if (diffHours >= 0) {
+          hoursToAcceptList.push(diffHours);
+          hoursToDecisionList.push(diffHours);
+        }
+      } else if (app.status === ApplicationStatus.REJECTED && app.rejectedAt) {
+        const diffHours =
+          (app.rejectedAt.getTime() - app.appliedAt.getTime()) / (3600 * 1000);
+        if (diffHours >= 0) {
+          hoursToDecisionList.push(diffHours);
+        }
+      }
+    }
+
+    const avgHoursToAccept =
+      hoursToAcceptList.length > 0
+        ? Math.round(
+            (hoursToAcceptList.reduce((a, b) => a + b, 0) /
+              hoursToAcceptList.length) *
+              10,
+          ) / 10
+        : null;
+
+    const avgHoursToDecision =
+      hoursToDecisionList.length > 0
+        ? Math.round(
+            (hoursToDecisionList.reduce((a, b) => a + b, 0) /
+              hoursToDecisionList.length) *
+              10,
+          ) / 10
+        : null;
+
+    const applied = totalApplications;
+    const accepted = applicationsByStatus.ACCEPTED;
+    const rejected = applicationsByStatus.REJECTED;
+    const withdrawn = applicationsByStatus.WITHDRAWN;
+
+    const reviewRate =
+      applied > 0 ? Math.round((everReviewingCount / applied) * 1000) / 1000 : null;
+    const acceptRate =
+      applied > 0 ? Math.round((accepted / applied) * 1000) / 1000 : null;
+    const rejectRate =
+      applied > 0 ? Math.round((rejected / applied) * 1000) / 1000 : null;
+    const withdrawRate =
+      applied > 0 ? Math.round((withdrawn / applied) * 1000) / 1000 : null;
+    const acceptGivenReview =
+      everReviewingCount > 0
+        ? Math.round((accepted / everReviewingCount) * 1000) / 1000
+        : null;
+
+    // Applicant Skills (top 10 distinct)
+    const distinctStudentIds = Array.from(
+      new Set(applications.map((a) => a.studentId)),
+    );
+    let applicantSkills: Array<{
+      skillId: string;
+      name: string;
+      applicantCount: number;
+      share: number;
+    }> = [];
+
+    if (distinctStudentIds.length > 0) {
+      const studentSkills = await this.prisma.studentSkill.findMany({
+        where: { studentId: { in: distinctStudentIds } },
+        select: {
+          studentId: true,
+          skillId: true,
+          skill: { select: { id: true, name: true } },
+        },
+      });
+
+      const skillMap = new Map<
+        string,
+        { skillId: string; name: string; studentIds: Set<string> }
+      >();
+      for (const ss of studentSkills) {
+        if (!skillMap.has(ss.skillId)) {
+          skillMap.set(ss.skillId, {
+            skillId: ss.skillId,
+            name: ss.skill.name,
+            studentIds: new Set(),
+          });
+        }
+        skillMap.get(ss.skillId)!.studentIds.add(ss.studentId);
+      }
+
+      applicantSkills = Array.from(skillMap.values())
+        .map((s) => ({
+          skillId: s.skillId,
+          name: s.name,
+          applicantCount: s.studentIds.size,
+          share:
+            Math.round(
+              (s.studentIds.size / distinctStudentIds.length) * 1000,
+            ) / 1000,
+        }))
+        .sort(
+          (a, b) =>
+            b.applicantCount - a.applicantCount ||
+            a.name.localeCompare(b.name),
+        )
+        .slice(0, 10);
+    }
+
+    // Per Internship list with pagination
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.max(1, Math.min(100, query.limit || 20));
+    const totalPages = Math.ceil(totalInternships / limit) || 1;
+    const pagedInternships = allInternships.slice(
+      (page - 1) * limit,
+      page * limit,
+    );
+
+    const appByJobMap = new Map<
+      string,
+      { total: number; accepted: number }
+    >();
+    for (const app of applications) {
+      const current = appByJobMap.get(app.internshipId) || {
+        total: 0,
+        accepted: 0,
+      };
+      current.total++;
+      if (app.status === ApplicationStatus.ACCEPTED) current.accepted++;
+      appByJobMap.set(app.internshipId, current);
+    }
+
+    const perInternshipItems = pagedInternships.map((job) => {
+      const jobStats = appByJobMap.get(job.id) || { total: 0, accepted: 0 };
+      const jobFillRate =
+        job.slots > 0 ? Math.round((job.filledSlots / job.slots) * 1000) / 1000 : 0;
+      const jobAcceptRate =
+        jobStats.total > 0
+          ? Math.round((jobStats.accepted / jobStats.total) * 1000) / 1000
+          : null;
+
+      return {
+        id: job.id,
+        title: job.title,
+        status: job.status,
+        semesterId: job.semesterId,
+        semesterName: job.semester?.name,
+        views: job.viewCount,
+        uniqueViewers: job.uniqueViewerCount,
+        applications: jobStats.total,
+        filledSlots: job.filledSlots,
+        slots: job.slots,
+        fillRate: jobFillRate,
+        acceptRate: jobAcceptRate,
+      };
+    });
+
+    return {
+      kpis: {
+        totalInternships,
+        openInternships,
+        closedInternships,
+        draftInternships,
+        cancelledInternships,
+        totalSlots,
+        filledSlots,
+        fillRate,
+        totalViews,
+        uniqueViewers,
+        totalApplications,
+        applicationsByStatus,
+        avgHoursToAccept,
+        avgHoursToDecision,
+      },
+      funnel: {
+        applied,
+        everReviewing: everReviewingCount,
+        accepted,
+        rejected,
+        withdrawn,
+        reviewRate,
+        acceptRate,
+        rejectRate,
+        withdrawRate,
+        acceptGivenReview,
+      },
+      applicantSkills,
+      perInternship: {
+        items: perInternshipItems,
+        meta: {
+          page,
+          limit,
+          total: totalInternships,
+          totalPages,
+        },
+        pagination: {
+          page,
+          limit,
+          total: totalInternships,
+          totalPages,
+        },
+      },
+    };
+  }
+
+  async getCompanyInternshipStats(userId: string, id: string) {
+    const company = await this.prisma.companyProfile.findUnique({
+      where: { userId },
+      select: { id: true, status: true },
+    });
+    if (!company) {
+      throw new NotFoundException({
+        code: 'COMPANY_PROFILE_NOT_FOUND',
+        message: 'Hồ sơ doanh nghiệp không tồn tại',
+      });
+    }
+
+    if (
+      company.status !== CompanyStatus.APPROVED &&
+      company.status !== CompanyStatus.SUSPENDED
+    ) {
+      throw new ForbiddenException({
+        code: 'COMPANY_STATS_FORBIDDEN',
+        message:
+          'Chỉ doanh nghiệp đã được phê duyệt hoặc đang tạm dừng mới có thể xem thống kê tuyển dụng',
+      });
+    }
+
+    const internship = await this.prisma.internship.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        companyId: true,
+        title: true,
+        status: true,
+        semesterId: true,
+        semester: { select: { name: true } },
+        department: true,
+        location: true,
+        workType: true,
+        slots: true,
+        filledSlots: true,
+        viewCount: true,
+        uniqueViewerCount: true,
+        createdAt: true,
+        skills: {
+          select: {
+            skillId: true,
+            isRequired: true,
+            skill: { select: { name: true } },
+          },
+          orderBy: { skill: { name: 'asc' } },
+        },
+      },
+    });
+
+    if (!internship || internship.companyId !== company.id) {
+      throw new NotFoundException({
+        code: 'INTERNSHIP_NOT_FOUND',
+        message: 'Bài đăng tuyển dụng không tìm thấy',
+      });
+    }
+
+    const applications = await this.prisma.application.findMany({
+      where: { internshipId: id },
+      select: {
+        id: true,
+        studentId: true,
+        status: true,
+        appliedAt: true,
+        acceptedAt: true,
+        rejectedAt: true,
+        withdrawnAt: true,
+        matchScore: true,
+        statusHistory: {
+          select: { toStatus: true },
+        },
+      },
+    });
+
+    const totalApplications = applications.length;
+    const applicationsByStatus: Record<ApplicationStatus, number> = {
+      PENDING: 0,
+      REVIEWING: 0,
+      ACCEPTED: 0,
+      REJECTED: 0,
+      WITHDRAWN: 0,
+    };
+
+    const hoursToAcceptList: number[] = [];
+    const hoursToDecisionList: number[] = [];
+    let everReviewingCount = 0;
+
+    for (const app of applications) {
+      applicationsByStatus[app.status]++;
+
+      const hasReviewHistory =
+        app.statusHistory.some(
+          (h) => h.toStatus === ApplicationStatus.REVIEWING,
+        ) ||
+        app.status === ApplicationStatus.REVIEWING ||
+        app.status === ApplicationStatus.ACCEPTED ||
+        app.status === ApplicationStatus.REJECTED;
+
+      if (hasReviewHistory) {
+        everReviewingCount++;
+      }
+
+      if (app.status === ApplicationStatus.ACCEPTED && app.acceptedAt) {
+        const diffHours =
+          (app.acceptedAt.getTime() - app.appliedAt.getTime()) / (3600 * 1000);
+        if (diffHours >= 0) {
+          hoursToAcceptList.push(diffHours);
+          hoursToDecisionList.push(diffHours);
+        }
+      } else if (app.status === ApplicationStatus.REJECTED && app.rejectedAt) {
+        const diffHours =
+          (app.rejectedAt.getTime() - app.appliedAt.getTime()) / (3600 * 1000);
+        if (diffHours >= 0) {
+          hoursToDecisionList.push(diffHours);
+        }
+      }
+    }
+
+    const avgHoursToAccept =
+      hoursToAcceptList.length > 0
+        ? Math.round(
+            (hoursToAcceptList.reduce((a, b) => a + b, 0) /
+              hoursToAcceptList.length) *
+              10,
+          ) / 10
+        : null;
+
+    const avgHoursToDecision =
+      hoursToDecisionList.length > 0
+        ? Math.round(
+            (hoursToDecisionList.reduce((a, b) => a + b, 0) /
+              hoursToDecisionList.length) *
+              10,
+          ) / 10
+        : null;
+
+    const applied = totalApplications;
+    const accepted = applicationsByStatus.ACCEPTED;
+    const rejected = applicationsByStatus.REJECTED;
+    const withdrawn = applicationsByStatus.WITHDRAWN;
+
+    const reviewRate =
+      applied > 0 ? Math.round((everReviewingCount / applied) * 1000) / 1000 : null;
+    const acceptRate =
+      applied > 0 ? Math.round((accepted / applied) * 1000) / 1000 : null;
+    const rejectRate =
+      applied > 0 ? Math.round((rejected / applied) * 1000) / 1000 : null;
+    const withdrawRate =
+      applied > 0 ? Math.round((withdrawn / applied) * 1000) / 1000 : null;
+    const acceptGivenReview =
+      everReviewingCount > 0
+        ? Math.round((accepted / everReviewingCount) * 1000) / 1000
+        : null;
+
+    // Student Skills Coverage & Top Skills
+    const distinctStudentIds = Array.from(
+      new Set(applications.map((a) => a.studentId)),
+    );
+
+    let studentSkills: Array<{
+      studentId: string;
+      skillId: string;
+      skill: { id: string; name: string };
+    }> = [];
+
+    if (distinctStudentIds.length > 0) {
+      studentSkills = await this.prisma.studentSkill.findMany({
+        where: { studentId: { in: distinctStudentIds } },
+        select: {
+          studentId: true,
+          skillId: true,
+          skill: { select: { id: true, name: true } },
+        },
+      });
+    }
+
+    const skillToStudentsMap = new Map<string, Set<string>>();
+    for (const ss of studentSkills) {
+      if (!skillToStudentsMap.has(ss.skillId)) {
+        skillToStudentsMap.set(ss.skillId, new Set());
+      }
+      skillToStudentsMap.get(ss.skillId)!.add(ss.studentId);
+    }
+
+    // Required Skill Coverage
+    const requiredSkillCoverage = internship.skills.map((s) => {
+      const applicantHaveCount = skillToStudentsMap.get(s.skillId)?.size || 0;
+      const applicantHaveRate =
+        totalApplications > 0
+          ? Math.round((applicantHaveCount / totalApplications) * 1000) / 1000
+          : null;
+
+      return {
+        skillId: s.skillId,
+        name: s.skill.name,
+        isRequired: s.isRequired,
+        applicantHaveCount,
+        applicantHaveRate,
+      };
+    });
+
+    // Top Applicant Skills (top 10)
+    const skillNameMap = new Map<string, string>();
+    for (const ss of studentSkills) {
+      skillNameMap.set(ss.skillId, ss.skill.name);
+    }
+
+    const topApplicantSkills = Array.from(skillToStudentsMap.entries())
+      .map(([skillId, studentSet]) => ({
+        skillId,
+        name: skillNameMap.get(skillId) || skillId,
+        applicantCount: studentSet.size,
+        share:
+          distinctStudentIds.length > 0
+            ? Math.round(
+                (studentSet.size / distinctStudentIds.length) * 1000,
+              ) / 1000
+            : 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.applicantCount - a.applicantCount ||
+          a.name.localeCompare(b.name),
+      )
+      .slice(0, 10);
+
+    // Match Score
+    const matchScores = applications
+      .map((a) => a.matchScore)
+      .filter((s): s is number => s !== null && s !== undefined);
+
+    const matchScore =
+      matchScores.length > 0
+        ? {
+            avg:
+              Math.round(
+                (matchScores.reduce((a, b) => a + b, 0) /
+                  matchScores.length) *
+                  10,
+              ) / 10,
+            min: Math.min(...matchScores),
+            max: Math.max(...matchScores),
+            counted: matchScores.length,
+          }
+        : { avg: null, min: null, max: null, counted: 0 };
+
+    const fillRate =
+      internship.slots > 0
+        ? Math.round((internship.filledSlots / internship.slots) * 100) / 100
+        : 0;
+
+    return {
+      internship: {
+        id: internship.id,
+        title: internship.title,
+        status: internship.status,
+        semesterId: internship.semesterId,
+        semesterName: internship.semester?.name,
+        department: internship.department,
+        location: internship.location,
+        workType: internship.workType,
+        slots: internship.slots,
+        filledSlots: internship.filledSlots,
+        fillRate,
+        viewCount: internship.viewCount,
+        uniqueViewerCount: internship.uniqueViewerCount,
+        createdAt: internship.createdAt,
+      },
+      kpis: {
+        totalSlots: internship.slots,
+        filledSlots: internship.filledSlots,
+        fillRate,
+        views: internship.viewCount,
+        uniqueViewers: internship.uniqueViewerCount,
+        totalApplications,
+        applicationsByStatus,
+        avgHoursToAccept,
+        avgHoursToDecision,
+      },
+      funnel: {
+        applied,
+        everReviewing: everReviewingCount,
+        accepted,
+        rejected,
+        withdrawn,
+        reviewRate,
+        acceptRate,
+        rejectRate,
+        withdrawRate,
+        acceptGivenReview,
+      },
+      requiredSkillCoverage,
+      topApplicantSkills,
+      matchScore,
+    };
   }
 }

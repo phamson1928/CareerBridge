@@ -1,8 +1,8 @@
 # Kế hoạch: Thống kê tuyển dụng cho doanh nghiệp
 
-> **Trạng thái:** Chưa triển khai — tài liệu hướng dẫn triển khai  
+> **Trạng thái:** Hoàn thành (Backend & Frontend đã triển khai và xác thực đầy đủ)  
 > **Phạm vi:** NestJS + Prisma + React hiện tại  
-> **Phụ thuộc:** Nên triển khai **sau** [`COMPANY_VERIFICATION_AND_INTERNSHIP_TEMPLATES_PLAN.md`](./COMPANY_VERIFICATION_AND_INTERNSHIP_TEMPLATES_PLAN.md)  
+> **Phụ thuộc:** Triển khai **sau** [`COMPANY_VERIFICATION_AND_INTERNSHIP_TEMPLATES_PLAN.md`](./COMPANY_VERIFICATION_AND_INTERNSHIP_TEMPLATES_PLAN.md)  
 > **Nguyên tắc:** Chỉ đọc + ghi view có kiểm soát; không PII sinh viên; không invent vòng phỏng vấn ngoài `ApplicationStatus` hiện có
 
 ---
