@@ -7,6 +7,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 export function AppRouter() {
   return (
@@ -23,7 +24,8 @@ export function AppRouter() {
           <Route path="/company/*" element={<ProtectedRoute><RoleRoute role="COMPANY"><App /></RoleRoute></ProtectedRoute>} />
           <Route path="/lecturer/*" element={<ProtectedRoute><RoleRoute role="LECTURER"><App /></RoleRoute></ProtectedRoute>} />
           <Route path="/admin/*" element={<ProtectedRoute><RoleRoute role="ADMIN"><App /></RoleRoute></ProtectedRoute>} />
-          <Route path="*" element={<AuthenticatedHome />} />
+          <Route path="/404" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

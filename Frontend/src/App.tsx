@@ -4,7 +4,7 @@
  */
 
 import React, { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   Application,
   ApplicationStatus,
@@ -168,7 +168,11 @@ export default function App() {
       navigate("/admin/dashboard", { replace: true });
       return;
     }
-    setActiveTab(adminTabByPath[path] ?? getDefaultTab(currentRole));
+    if (!adminTabByPath[path]) {
+      navigate("/404", { replace: true });
+      return;
+    }
+    setActiveTab(adminTabByPath[path]);
   }, [currentRole, location.pathname, navigate]);
 
   const handleTabChange = (tab: string) => {
