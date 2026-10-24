@@ -703,6 +703,41 @@
   transform: translateY(-2px);
 }
 
+.register-confirmation-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.register-confirmation-resend-button {
+  border: none;
+  background: transparent;
+  color: #00878a;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 200ms ease;
+}
+
+.register-confirmation-resend-button:hover:not(:disabled) {
+  color: #da1c2d;
+  text-decoration: underline;
+}
+
+.register-confirmation-resend-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.register-confirmation-resend-message {
+  margin: 0 !important;
+  font-size: 13px !important;
+  color: #4b5968 !important;
+}
+
 .register-submit-button {
   width: min(220px, 100%);
   height: 50px;

@@ -146,6 +146,9 @@ async function main() {
     where: { userId: company.id },
     update: {
       companyName: 'InternHub Demo Company',
+      businessRegistrationNumber: '0312345678',
+      contactPersonName: 'Lê Hoàng Nam',
+      contactPhone: '0901234567',
       tagline: 'Cơ hội thực tập cho sinh viên',
       description: 'Công ty mẫu dùng để kiểm thử các luồng tuyển thực tập.',
       industry: 'Công nghệ phần mềm',
@@ -160,6 +163,9 @@ async function main() {
     create: {
       userId: company.id,
       companyName: 'InternHub Demo Company',
+      businessRegistrationNumber: '0312345678',
+      contactPersonName: 'Lê Hoàng Nam',
+      contactPhone: '0901234567',
       tagline: 'Cơ hội thực tập cho sinh viên',
       description: 'Công ty mẫu dùng để kiểm thử các luồng tuyển thực tập.',
       industry: 'Công nghệ phần mềm',
