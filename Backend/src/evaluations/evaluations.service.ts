@@ -165,7 +165,7 @@ export class EvaluationsService {
       ...(query.type ? { type: query.type } : {}),
       ...this.scope(user),
     };
-    const [items, total] = await this.prisma.$transaction([
+    const [items, total] = await Promise.all([
       this.prisma.evaluation.findMany({
         where,
         select,

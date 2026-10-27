@@ -14,7 +14,8 @@ export type NotificationAction =
   | 'OPEN_SUPERVISION'
   | 'OPEN_PLACEMENT'
   | 'OPEN_COMPANY_PROFILE'
-  | 'OPEN_EVALUATION';
+  | 'OPEN_EVALUATION'
+  | 'OPEN_SUPPORT_REQUEST';
 
 export interface AppNotification {
   id: string;

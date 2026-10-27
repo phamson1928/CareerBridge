@@ -23,7 +23,6 @@
 .notification-hover-card::before { content: ""; position: absolute; right: 12px; top: -6px; height: 12px; width: 12px; transform: rotate(45deg); border-left: 1px solid #c7e5e5; border-top: 1px solid #c7e5e5; background: #f6ffff; }
 .notification-hover-card > div:first-child { position: relative; z-index: 1; }
 .notification-hover-card button { position: relative; z-index: 1; }
-.notification-hover-card button:hover { transform: translateX(2px); }
 
 .student-hero, .teacher-hero, .company-hero { background: linear-gradient(108deg, #00767b 0%, #009da0 56%, #007c82 100%) !important; box-shadow: 0 16px 32px rgb(0 112 116 / .18); }
 .student-hero::after, .teacher-hero::after, .company-hero::after { content: ""; position: absolute; width: 260px; height: 260px; border: 36px solid rgb(255 255 255 / .08); border-radius: 999px; right: -65px; top: -138px; pointer-events: none; }

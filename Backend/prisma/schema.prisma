@@ -133,6 +133,11 @@ enum SkillLevel {
   EXPERT
 }
 
+enum SupportRequestStatus {
+  PENDING
+  RESOLVED
+}
+
 enum NotificationType {
   APPLICATION
   REPORT
@@ -151,6 +156,7 @@ enum NotificationAction {
   OPEN_PLACEMENT
   OPEN_COMPANY_PROFILE
   OPEN_EVALUATION
+  OPEN_SUPPORT_REQUEST
 }
 
 model User {
@@ -163,19 +169,20 @@ model User {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  studentProfile       StudentProfile?
-  lecturerProfile      LecturerProfile?
-  companyProfile       CompanyProfile?
-  refreshTokens        RefreshToken[]
-  files                File[]               @relation("FileOwner")
-  sentMessages         Message[]            @relation("SentMessages")
-  notifications        Notification[]
-  auditLogs            AuditLog[]
-  companyReviews       CompanyProfile[]     @relation("CompanyReviewedBy")
-  supervisedPlacements Supervision[]        @relation("AssignedBy")
-  evaluations          Evaluation[]         @relation("EvaluationAuthor")
-  verificationTokens   VerificationToken[]
-  passwordResetTokens  PasswordResetToken[]
+  studentProfile         StudentProfile?
+  lecturerProfile        LecturerProfile?
+  companyProfile         CompanyProfile?
+  refreshTokens          RefreshToken[]
+  files                  File[]               @relation("FileOwner")
+  sentMessages           Message[]            @relation("SentMessages")
+  notifications          Notification[]
+  auditLogs              AuditLog[]
+  companyReviews         CompanyProfile[]     @relation("CompanyReviewedBy")
+  supervisedPlacements   Supervision[]        @relation("AssignedBy")
+  evaluations            Evaluation[]         @relation("EvaluationAuthor")
+  verificationTokens     VerificationToken[]
+  passwordResetTokens    PasswordResetToken[]
+  repliedSupportRequests SupportRequest[]     @relation("SupportRepliedBy")
 }
 
 model VerificationToken {
@@ -245,6 +252,7 @@ model StudentProfile {
   conversations       Conversation[]
   jobPreference       StudentJobPreference?
   recommendationCache InternshipRecommendationCache?
+  supportRequests     SupportRequest[]
 }
 
 model StudentJobPreference {
@@ -688,4 +696,23 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([entity, entityId])
   @@index([action, createdAt])
+}
+
+model SupportRequest {
+  id          String               @id @default(cuid())
+  studentId   String
+  title       String
+  content     String
+  status      SupportRequestStatus @default(PENDING)
+  adminReply  String?
+  repliedById String?
+  repliedAt   DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  repliedBy User?          @relation("SupportRepliedBy", fields: [repliedById], references: [id], onDelete: SetNull)
+
+  @@index([studentId, createdAt])
+  @@index([status, createdAt])
 }
