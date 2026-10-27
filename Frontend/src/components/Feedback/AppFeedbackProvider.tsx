@@ -157,12 +157,20 @@ export const AppFeedbackProvider: React.FC<{ children: React.ReactNode }> = ({ c
               </label>
             )}
 
-            <div className="mt-6 flex items-center justify-center">
+            <div className="mt-6 flex items-center justify-center gap-3">
               <button
-                className={`h-[50px] min-w-[240px] rounded-[14px] border-2 px-7 text-sm font-black uppercase tracking-[0.8px] text-white transition-all duration-200 hover:-translate-y-0.5 ${
+                type="button"
+                onClick={() => closeDialog(null)}
+                className="h-[46px] min-w-[130px] rounded-[14px] border-2 border-[#f4b9c0] bg-[#fff0f2] px-5 text-sm font-black uppercase tracking-[0.6px] text-[#da1c2d] transition-colors duration-150 hover:border-[#da1c2d] hover:bg-[#ffdce1]"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className={`h-[46px] min-w-[160px] rounded-[14px] border-2 px-6 text-sm font-black uppercase tracking-[0.6px] text-white transition-colors duration-150 ${
                   isDanger
-                    ? "border-[#da1c2d] bg-[#da1c2d] hover:border-[#bd1425] hover:bg-[#bd1425] hover:shadow-[0_14px_24px_rgba(218,28,45,0.20)]"
-                    : "border-[#00878a] bg-[#00878a] hover:border-[#006d72] hover:bg-[#006d72] hover:shadow-[0_14px_24px_rgba(0,135,138,0.22)]"
+                    ? "border-[#da1c2d] bg-[#da1c2d] hover:border-[#7a0913] hover:bg-[#b51221]"
+                    : "border-[#00878a] bg-[#00878a] hover:border-[#004244] hover:bg-[#006669]"
                 }`}
               >
                 {dialog.kind === "confirm"
