@@ -477,12 +477,12 @@ export class PlacementsService {
           action: NotificationAction.OPEN_PLACEMENT,
           title:
             dto.status === PublicPlacementStatus.COMPLETED
-              ? 'Placement đã hoàn thành'
-              : 'Placement đã bị hủy',
+              ? 'Kỳ thực tập đã hoàn thành'
+              : 'Hồ sơ thực tập đã bị hủy',
           content:
             dto.status === PublicPlacementStatus.COMPLETED
-              ? 'Placement của bạn đã được đánh dấu hoàn thành.'
-              : 'Placement của bạn đã bị hủy.',
+              ? `Hồ sơ thực tập vị trí "${placement.internship.title}" của sinh viên ${placement.student.fullName} tại ${placement.company.companyName} đã được xác nhận hoàn thành.`
+              : `Hồ sơ thực tập vị trí "${placement.internship.title}" của sinh viên ${placement.student.fullName} tại ${placement.company.companyName} đã bị hủy.`,
           resourceId: id,
           metadata: { status: dto.status },
         });

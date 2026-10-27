@@ -49,9 +49,35 @@ enum InternshipStatus {
 enum ApplicationStatus {
   PENDING
   REVIEWING
+  INTERVIEWING
+  OFFERED
   ACCEPTED
+  DECLINED
+  EXPIRED
   REJECTED
   WITHDRAWN
+}
+
+enum InterviewMode {
+  ONLINE
+  OFFLINE
+}
+
+enum EmailLogType {
+  INTERVIEW_INVITATION
+  OFFER_SENT
+  OFFER_REMINDER
+  OFFER_ACCEPTED_COMPANY
+  OFFER_DECLINED_COMPANY
+  OFFER_EXPIRED
+  APPLICATION_REJECTED
+  APPLICATION_WITHDRAWN_BY_PLACEMENT
+  APPLICATION_CAMPAIGN_EXPIRED
+}
+
+enum EmailLogStatus {
+  SENT
+  FAILED
 }
 
 enum PlacementStatus {
@@ -397,30 +423,77 @@ model Internship {
 }
 
 model Application {
-  id              String            @id @default(cuid())
-  studentId       String
-  internshipId    String
-  coverLetter     String?
-  cvFileId        String?
-  matchScore      Float?
-  status          ApplicationStatus @default(PENDING)
-  companyFeedback String?
-  appliedAt       DateTime          @default(now())
-  acceptedAt      DateTime?
-  rejectedAt      DateTime?
-  withdrawnAt     DateTime?
-  updatedAt       DateTime          @updatedAt
+  id                     String            @id @default(cuid())
+  studentId              String
+  internshipId           String
+  coverLetter            String?
+  cvFileId               String?
+  matchScore             Float?
+  status                 ApplicationStatus @default(PENDING)
+  companyFeedback        String?
+  rejectionReason        String?
+  offeredAt              DateTime?
+  offerExpiresAt         DateTime?
+  offerMessage           String?
+  offerReminderSentAt    DateTime?
+  respondedAt            DateTime?
+  appliedAt              DateTime          @default(now())
+  acceptedAt             DateTime?
+  rejectedAt             DateTime?
+  withdrawnAt            DateTime?
+  hiddenByStudentAt      DateTime?
+  hiddenByCompanyAt      DateTime?
+  updatedAt              DateTime          @updatedAt
 
   student       StudentProfile             @relation(fields: [studentId], references: [id], onDelete: Cascade)
   internship    Internship                 @relation(fields: [internshipId], references: [id], onDelete: Cascade)
   cvFile        File?                      @relation("ApplicationCv", fields: [cvFileId], references: [id], onDelete: SetNull)
   statusHistory ApplicationStatusHistory[]
+  interview     ApplicationInterview?
+  emailLogs     EmailLog[]
   placement     InternshipPlacement?
   conversation  Conversation?
 
   @@unique([studentId, internshipId])
   @@index([internshipId, status])
   @@index([studentId, status])
+  @@index([status, offerExpiresAt])
+}
+
+model ApplicationInterview {
+  id            String        @id @default(cuid())
+  applicationId String        @unique
+  scheduledAt   DateTime
+  mode          InterviewMode
+  meetingLink   String?
+  location      String?
+  contactName   String
+  contactEmail  String
+  contactPhone  String?
+  note          String?
+  createdById   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model EmailLog {
+  id            String         @id @default(cuid())
+  applicationId String
+  type          EmailLogType
+  to            String
+  replyTo       String?
+  subject       String
+  html          String
+  icsContent    String?
+  status        EmailLogStatus
+  error         String?
+  sentAt        DateTime       @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, sentAt])
 }
 
 model ApplicationStatusHistory {

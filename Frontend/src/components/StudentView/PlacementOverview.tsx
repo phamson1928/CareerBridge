@@ -153,6 +153,34 @@ export const PlacementOverview: React.FC = () => {
                       : "Hình thức chưa cập nhật"}
                   </div>
                 </div>
+                {(() => {
+                  if (
+                    placement.academicStatus !== "ACTIVE" ||
+                    !placement.endDate
+                  )
+                    return null;
+                  const daysLeft = Math.ceil(
+                    (new Date(placement.endDate).getTime() - Date.now()) /
+                      (24 * 60 * 60 * 1000),
+                  );
+                  if (daysLeft < 0 || daysLeft > 7) return null;
+                  return (
+                    <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-950">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                      <div>
+                        <p className="font-bold">
+                          Sắp hết thời gian theo dõi thực tập (còn {daysLeft}{" "}
+                          ngày)
+                        </p>
+                        <p className="mt-0.5 text-amber-800">
+                          Hãy kiểm tra và hoàn tất nộp đầy đủ các báo cáo tuần
+                          trước ngày {formatDate(placement.endDate)} để giảng
+                          viên và doanh nghiệp tổng kết đánh giá.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   {placement.supervision ? (
                     <>

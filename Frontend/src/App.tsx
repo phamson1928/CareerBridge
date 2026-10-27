@@ -85,15 +85,28 @@ function toLegacyApplication(record: ApplicationRecord): Application {
     studentSkills: [],
     internshipId: record.internshipId,
     internshipTitle: record.internship.title,
+    internshipStartDate: record.internship.startDate ?? null,
+    internshipEndDate: record.internship.endDate ?? null,
     companyId: record.internship.company.id,
     companyName: record.internship.company.companyName,
+    companyContactEmail: record.internship.company.contactEmail ?? null,
+    companyAddress: record.internship.company.address ?? null,
     cvUrl: "",
     cvFileId: record.cvFileId ?? undefined,
     coverLetter: record.coverLetter ?? undefined,
     matchScore: record.matchScore,
     status: record.status,
     companyFeedback: record.companyFeedback ?? undefined,
+    rejectionReason: record.rejectionReason ?? null,
+    offeredAt: record.offeredAt ?? null,
+    offerExpiresAt: record.offerExpiresAt ?? null,
+    offerMessage: record.offerMessage ?? null,
+    respondedAt: record.respondedAt ?? null,
+    interview: record.interview ?? null,
+    emailLogs: record.emailLogs ?? [],
     appliedAt: record.appliedAt,
+    hiddenByStudentAt: record.hiddenByStudentAt ?? null,
+    hiddenByCompanyAt: record.hiddenByCompanyAt ?? null,
     updatedAt: record.updatedAt,
   };
 }
@@ -369,7 +382,13 @@ export default function App() {
       coverLetter,
       cvFileId,
     });
-    setApplications((previous) => [toLegacyApplication(created), ...previous]);
+    setApplications((previous) => {
+      const mapped = toLegacyApplication(created);
+      const exists = previous.some((app) => app.id === mapped.id);
+      return exists
+        ? previous.map((app) => (app.id === mapped.id ? mapped : app))
+        : [mapped, ...previous];
+    });
 
     feedback.notify({ title: "Ứng tuyển thành công", message: `Đã gửi hồ sơ cho vị trí "${internshipTitle}".`, tone: "success" });
   };
@@ -497,6 +516,7 @@ export default function App() {
                 isLoading={isWorkflowLoading}
                 onOpenChat={() => setIsChatOpen(true)}
                 onWithdraw={handleWithdrawApplication}
+                onReload={() => setWorkflowReloadKey((value) => value + 1)}
               />
             )}
             {activeTab === "reports" && (
@@ -528,6 +548,7 @@ export default function App() {
                   applications={applications}
                   onUpdateStatus={handleUpdateApplicationStatus}
                   onOpenChat={() => setIsChatOpen(true)}
+                  onReload={() => setWorkflowReloadKey((value) => value + 1)}
                 />
               ) : (
                 <ProfileRequiredNotice

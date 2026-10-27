@@ -114,15 +114,13 @@ export class CompaniesService {
     const identityFields = [
       'companyName',
       'businessRegistrationNumber',
-      'address',
-      'contactPersonName',
-      'contactPhone',
-      'contactEmail',
       'registrationDocumentFileId',
     ] as const;
     if (
       existing.status === CompanyStatus.APPROVED &&
-      identityFields.some((field) => dto[field] !== undefined)
+      identityFields.some(
+        (field) => dto[field] !== undefined && dto[field] !== existing[field],
+      )
     ) {
       throw new BadRequestException({
         code: 'COMPANY_VERIFIED_IDENTITY_LOCKED',
@@ -362,8 +360,8 @@ export class CompaniesService {
         eventKey: `company:${profile.id}:suspended`,
         type: NotificationType.COMPANY,
         action: NotificationAction.OPEN_COMPANY_PROFILE,
-        title: 'Quyền doanh nghiệp đã bị tạm đình chỉ',
-        content: normalizedReason,
+        title: 'Tài khoản doanh nghiệp tạm thời bị đình chỉ',
+        content: `Quyền hoạt động của ${profile.companyName} trên hệ thống đã bị tạm ngưng. Lý do: ${normalizedReason}.`,
         resourceId: profile.id,
         metadata: { status: CompanyStatus.SUSPENDED },
       });
@@ -424,12 +422,12 @@ export class CompaniesService {
         action: NotificationAction.OPEN_COMPANY_PROFILE,
         title:
           status === CompanyStatus.APPROVED
-            ? 'Hồ sơ công ty đã được duyệt'
-            : 'Hồ sơ công ty cần được bổ sung',
+            ? 'Hồ sơ doanh nghiệp đã được phê duyệt'
+            : 'Hồ sơ doanh nghiệp cần bổ sung thông tin',
         content:
           status === CompanyStatus.APPROVED
-            ? 'Hồ sơ công ty của bạn đã được duyệt và có thể tiếp tục sử dụng hệ thống.'
-            : `Hồ sơ công ty cần được cập nhật: ${rejectionReason}`,
+            ? `Chúc mừng! Hồ sơ pháp lý của ${profile.companyName} đã được nhà trường xác thực. Quý công ty hiện có thể đăng tin tuyển dụng và tiếp nhận sinh viên thực tập.`
+            : `Hồ sơ xác thực của ${profile.companyName} chưa được duyệt. Lý do: ${rejectionReason}. Vui lòng cập nhật và gửi duyệt lại.`,
         resourceId: profile.id,
         metadata: { status },
       });

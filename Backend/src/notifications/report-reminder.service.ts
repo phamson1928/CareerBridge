@@ -10,7 +10,9 @@ import {
   NotificationType,
   PlacementStatus,
   Prisma,
+  Role,
   SupervisionStatus,
+  UserStatus,
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
@@ -18,8 +20,9 @@ import { NotificationsService } from './notifications.service';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RUN_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const REMINDER_DAYS_BEFORE_DUE = 2;
+const PLACEMENT_WARNING_DAYS = 7;
 
-/** Sends one pre-deadline and one overdue reminder for each required report week. */
+/** Sends report deadline reminders and placement lifecycle alerts (unassigned lecturer & monitoring ending soon). */
 @Injectable()
 export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ReportReminderService.name);
@@ -69,7 +72,14 @@ export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
         id: true,
         startDate: true,
         endDate: true,
-        student: { select: { userId: true } },
+        student: { select: { userId: true, fullName: true } },
+        company: { select: { userId: true, companyName: true } },
+        internship: { select: { title: true } },
+        supervision: {
+          select: {
+            lecturer: { select: { userId: true } },
+          },
+        },
         reports: { select: { week: true, status: true } },
       },
     });
@@ -95,8 +105,8 @@ export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
           await this.createOnce({
             userId: placement.student.userId,
             eventKey: `report-reminder:${placement.id}:week:${week}:before-due`,
-            title: `Sắp đến hạn nộp báo cáo tuần ${week}`,
-            content: `Báo cáo tuần ${week} sẽ đến hạn sau ${Math.max(0, Math.ceil((dueDate.getTime() - today.getTime()) / DAY_MS))} ngày. Hãy hoàn tất và nộp báo cáo đúng hạn.`,
+            title: `Sắp đến hạn nộp báo cáo thực tập tuần ${week}`,
+            content: `Báo cáo thực tập tuần ${week} sẽ đến hạn sau ${Math.max(0, Math.ceil((dueDate.getTime() - today.getTime()) / DAY_MS))} ngày nữa. Bạn vui lòng hoàn tất và nộp báo cáo đúng thời gian quy định.`,
             placementId: placement.id,
             week,
             kind: 'before-due',
@@ -106,13 +116,100 @@ export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
           await this.createOnce({
             userId: placement.student.userId,
             eventKey: `report-reminder:${placement.id}:week:${week}:overdue`,
-            title: `Báo cáo tuần ${week} đã quá hạn`,
-            content: `Bạn chưa nộp báo cáo tuần ${week}. Báo cáo hiện đã trễ ${daysLate} ngày; vui lòng nộp sớm nhất có thể.`,
+            title: `Báo cáo thực tập tuần ${week} đã quá hạn`,
+            content: `Bạn chưa nộp báo cáo thực tập tuần ${week} (đã trễ ${daysLate} ngày). Vui lòng hoàn thiện và nộp bổ sung sớm nhất có thể.`,
             placementId: placement.id,
             week,
             kind: 'overdue',
           });
         }
+      }
+
+      // Check if placement monitoring is ending within 7 days
+      const daysUntilEnd = Math.ceil((end.getTime() - today.getTime()) / DAY_MS);
+      if (daysUntilEnd >= 0 && daysUntilEnd <= PLACEMENT_WARNING_DAYS) {
+        await this.createPlacementAlertOnce({
+          userId: placement.student.userId,
+          eventKey: `placement-ending:${placement.id}:student`,
+          title: 'Thực tập sắp hết thời gian theo dõi',
+          content: `Kỳ thực tập "${placement.internship.title}" tại ${placement.company.companyName} sẽ kết thúc thời gian theo dõi sau ${daysUntilEnd} ngày. Hãy hoàn tất và nộp đầy đủ các báo cáo tuần trước khi hệ thống đóng theo dõi.`,
+          placementId: placement.id,
+          action: NotificationAction.OPEN_PLACEMENT,
+        });
+
+        await this.createPlacementAlertOnce({
+          userId: placement.company.userId,
+          eventKey: `placement-ending:${placement.id}:company`,
+          title: 'Thực tập sinh sắp hết thời gian theo dõi',
+          content: `Thực tập sinh ${placement.student.fullName} (${placement.internship.title}) sẽ kết thúc thời gian theo dõi sau ${daysUntilEnd} ngày. Vui lòng hoàn tất đánh giá thực tập cho sinh viên.`,
+          placementId: placement.id,
+          action: NotificationAction.OPEN_EVALUATION,
+        });
+
+        if (placement.supervision?.lecturer?.userId) {
+          await this.createPlacementAlertOnce({
+            userId: placement.supervision.lecturer.userId,
+            eventKey: `placement-ending:${placement.id}:lecturer`,
+            title: 'Sinh viên hướng dẫn sắp hết thời gian theo dõi',
+            content: `Sinh viên ${placement.student.fullName} thực tập tại ${placement.company.companyName} sẽ kết thúc thời gian theo dõi sau ${daysUntilEnd} ngày. Vui lòng rà soát báo cáo tuần và hoàn tất chấm điểm hướng dẫn.`,
+            placementId: placement.id,
+            action: NotificationAction.OPEN_EVALUATION,
+          });
+        }
+      }
+    }
+
+    // Check unassigned placements starting within 7 days (or already past startDate)
+    await this.checkUnassignedPlacementsStartingSoon(today);
+  }
+
+  private async checkUnassignedPlacementsStartingSoon(today: Date) {
+    if (!this.prisma.user?.findMany) return;
+
+    const threshold = new Date(today.getTime() + PLACEMENT_WARNING_DAYS * DAY_MS);
+    const unassignedPlacements = await this.prisma.internshipPlacement.findMany({
+      where: {
+        status: PlacementStatus.PENDING,
+        startDate: { not: null, lte: threshold },
+        OR: [
+          { supervision: { is: null } },
+          { supervision: { isNot: { status: SupervisionStatus.ACTIVE } } },
+        ],
+      },
+      select: {
+        id: true,
+        startDate: true,
+        student: { select: { fullName: true } },
+        company: { select: { companyName: true } },
+        internship: { select: { title: true } },
+      },
+    });
+
+    if (unassignedPlacements.length === 0) return;
+
+    const admins = await this.prisma.user.findMany({
+      where: { role: Role.ADMIN, status: UserStatus.ACTIVE },
+      select: { id: true },
+    });
+
+    for (const placement of unassignedPlacements) {
+      if (!placement.startDate) continue;
+      const start = this.day(placement.startDate);
+      const daysLeft = Math.ceil((start.getTime() - today.getTime()) / DAY_MS);
+      const timeDesc =
+        daysLeft > 0
+          ? `sẽ bắt đầu sau ${daysLeft} ngày`
+          : 'đã đến ngày bắt đầu thực tập';
+
+      for (const admin of admins) {
+        await this.createPlacementAlertOnce({
+          userId: admin.id,
+          eventKey: `placement-unassigned:${placement.id}:admin:${admin.id}`,
+          title: 'Cần phân công giảng viên hướng dẫn',
+          content: `Sinh viên ${placement.student.fullName} (${placement.internship.title} - ${placement.company.companyName}) ${timeDesc} nhưng chưa được phân công giảng viên hướng dẫn.`,
+          placementId: placement.id,
+          action: NotificationAction.OPEN_PLACEMENT,
+        });
       }
     }
   }
@@ -152,9 +249,42 @@ export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private async createPlacementAlertOnce(input: {
+    userId: string;
+    eventKey: string;
+    title: string;
+    content: string;
+    placementId: string;
+    action: NotificationAction;
+  }) {
+    try {
+      await this.notifications.create({
+        userId: input.userId,
+        eventKey: input.eventKey,
+        type: NotificationType.SYSTEM,
+        action: input.action,
+        title: input.title,
+        content: input.content,
+        resourceId: input.placementId,
+        metadata: {
+          placementId: input.placementId,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        return;
+      }
+      throw error;
+    }
+  }
+
   private day(value: Date) {
     return new Date(
       Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
     );
   }
 }
+

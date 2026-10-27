@@ -84,7 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         return [
           {
             id: "company-profile",
-            label: "Đăng ký doanh nghiệp",
+            label: companyVerificationStatus === "APPROVED" ? "Hồ sơ doanh nghiệp" : "Đăng ký doanh nghiệp",
             icon: <Building className="w-4 h-4" />,
           },
           ...(companyVerificationStatus === "APPROVED" ? [{

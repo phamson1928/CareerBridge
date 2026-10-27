@@ -291,10 +291,10 @@ export class SupervisionsService {
         eventKey: `supervision:${result.id}:assigned:${userId}`,
         type: NotificationType.SUPERVISION,
         action: NotificationAction.OPEN_SUPERVISION,
-        title: 'Đã phân công giảng viên hướng dẫn',
+        title: 'Phân công giảng viên hướng dẫn thực tập',
         content: isLecturer
-          ? `Bạn được phân công hướng dẫn sinh viên ${result.placement.student.fullName}.`
-          : `Bạn đã được phân công giảng viên hướng dẫn (${result.lecturer.fullName}) cho vị trí thực tập.`,
+          ? `Nhà trường đã phân công bạn hướng dẫn sinh viên ${result.placement.student.fullName} thực tập tại ${result.placement.company.companyName}.`
+          : `Giảng viên ${result.lecturer.fullName} đã được phân công hướng dẫn kỳ thực tập của bạn tại ${result.placement.company.companyName}.`,
         resourceId: result.id,
         metadata: { placementId: result.placementId },
       });
@@ -460,8 +460,8 @@ export class SupervisionsService {
         eventKey: `supervision:${result.id}:cancelled:${userId}`,
         type: NotificationType.SUPERVISION,
         action: NotificationAction.OPEN_SUPERVISION,
-        title: 'Supervision đã bị hủy',
-        content: 'Phân công hướng dẫn thực tập của placement đã được hủy.',
+        title: 'Hủy phân công giảng viên hướng dẫn',
+        content: `Phân công hướng dẫn thực tập cho sinh viên ${result.placement.student.fullName} đã được hủy để chờ điều chỉnh lại.`,
         resourceId: result.id,
         metadata: { placementId: result.placementId },
       });

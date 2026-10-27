@@ -118,6 +118,8 @@ export class InternshipsService {
     this.ensureCanOpen(
       dto.status ?? InternshipStatus.DRAFT,
       dto.deadline,
+      dto.startDate,
+      dto.endDate,
       semester,
     );
     const record = await this.prisma.$transaction(async (tx) => {
@@ -186,7 +188,13 @@ export class InternshipsService {
       endDate: dto.endDate === undefined ? current.endDate : dto.endDate,
     };
     this.validateDates(merged, semester);
-    this.ensureCanOpen(dto.status ?? current.status, merged.deadline, semester);
+    this.ensureCanOpen(
+      dto.status ?? current.status,
+      merged.deadline,
+      merged.startDate,
+      merged.endDate,
+      semester,
+    );
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const internship = await tx.internship.update({
@@ -447,6 +455,8 @@ export class InternshipsService {
   private ensureCanOpen(
     status: InternshipStatus,
     deadline: Date | null | undefined,
+    startDate: Date | null | undefined,
+    endDate: Date | null | undefined,
     semester: {
       id: string;
       status: SemesterStatus;
@@ -454,6 +464,13 @@ export class InternshipsService {
       endDate: Date;
     },
   ) {
+    if (status === InternshipStatus.OPEN && (!startDate || !endDate)) {
+      throw new BadRequestException({
+        code: 'INTERNSHIP_DATES_REQUIRED',
+        message:
+          'Both startDate and endDate are required when opening an internship',
+      });
+    }
     if (
       status === InternshipStatus.OPEN &&
       deadline &&
