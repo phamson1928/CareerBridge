@@ -25,6 +25,15 @@ const semesterSelect = {
       placements: true,
     },
   },
+  internships: {
+    select: {
+      _count: {
+        select: {
+          applications: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.SemesterSelect;
 
 type SemesterRecord = Prisma.SemesterGetPayload<{
@@ -132,19 +141,11 @@ export class SemestersService {
 
     const current = await this.getForMutation(id);
     const phase = this.lifecycle.phaseOf(current);
-    if (phase === 'COMPLETED' || phase === 'CANCELLED') {
+    if (phase !== 'UPCOMING') {
       throw new ConflictException({
         code: 'SEMESTER_IMMUTABLE',
-        message: 'Completed or cancelled semesters cannot be edited',
-      });
-    }
-    if (
-      (dto.startDate !== undefined || dto.endDate !== undefined) &&
-      phase !== 'UPCOMING'
-    ) {
-      throw new ConflictException({
-        code: 'SEMESTER_IMMUTABLE',
-        message: 'Campaign dates cannot be changed after recruitment begins',
+        message:
+          'Chỉ có thể chỉnh sửa đợt thực tập khi đang ở trạng thái Sắp diễn ra.',
       });
     }
 
@@ -209,13 +210,31 @@ export class SemestersService {
           'Campaign status is determined automatically from its dates. Only cancellation is manual.',
       });
     }
+    const phase = this.lifecycle.phaseOf(current);
     if (
-      this.lifecycle.phaseOf(current) === 'COMPLETED' ||
+      phase === 'COMPLETED' ||
+      phase === 'MONITORING' ||
       current.status === SemesterStatus.CANCELLED
     ) {
       throw new ConflictException({
         code: 'INVALID_SEMESTER_TRANSITION',
-        message: `Cannot cancel campaign from ${current.status}`,
+        message:
+          'Không thể hủy kỳ thực tập đã hoàn thành, đã hủy hoặc đang trong giai đoạn theo dõi học vụ.',
+      });
+    }
+    const applicationCount = current.internships.reduce(
+      (sum, item) => sum + item._count.applications,
+      0,
+    );
+    if (
+      current._count.internships > 0 ||
+      current._count.placements > 0 ||
+      applicationCount > 0
+    ) {
+      throw new ConflictException({
+        code: 'SEMESTER_IN_USE',
+        message:
+          'Không thể hủy kỳ thực tập khi đã có vị trí tuyển dụng, đơn ứng tuyển hoặc hồ sơ thực tập.',
       });
     }
 
@@ -356,6 +375,10 @@ export class SemestersService {
   }
 
   private toRecord(item: SemesterRecord) {
+    const applicationCount = item.internships.reduce(
+      (sum, internship) => sum + internship._count.applications,
+      0,
+    );
     return {
       id: item.id,
       name: item.name,
@@ -365,6 +388,7 @@ export class SemestersService {
       recruitmentStart: this.lifecycle.recruitmentStart(item.startDate),
       phase: this.lifecycle.phaseOf(item),
       internshipCount: item._count.internships,
+      applicationCount,
       placementCount: item._count.placements,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,

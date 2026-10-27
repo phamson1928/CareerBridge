@@ -22,6 +22,7 @@ export interface SemesterRecord {
   recruitmentStart: string;
   phase: InternshipCampaignPhase;
   internshipCount: number;
+  applicationCount?: number;
   placementCount: number;
   createdAt: string;
   updatedAt: string;

@@ -315,38 +315,54 @@ export const SemesterManagement: React.FC = () => {
                     {semester.placementCount}
                   </td>
                   <td className="px-3 py-4">
-                    <div className="flex justify-end gap-1.5">
-                      {semester.phase !== "COMPLETED" &&
-                        semester.phase !== "CANCELLED" && (
-                          <button
-                            onClick={() => openEdit(semester)}
-                            title="Chỉnh sửa"
-                            className="rounded-lg p-2 text-indigo-600 hover:bg-indigo-50"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                        )}
-                      {semester.phase !== "COMPLETED" &&
-                        semester.phase !== "CANCELLED" && (
-                          <button
-                            onClick={() => void cancelSemester(semester)}
-                            title="Hủy đợt"
-                            className="rounded-lg p-2 text-rose-600 hover:bg-rose-50"
-                          >
-                            <CircleX className="h-4 w-4" />
-                          </button>
-                        )}
-                      {(semester.phase === "UPCOMING" ||
-                        semester.phase === "CANCELLED") && (
-                        <button
-                          onClick={() => void remove(semester)}
-                          title="Xóa"
-                          className="rounded-lg p-2 text-rose-600 hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
+                    {(() => {
+                      const hasRelatedData =
+                        semester.internshipCount > 0 ||
+                        semester.placementCount > 0 ||
+                        (semester.applicationCount ?? 0) > 0;
+                      const canEdit = semester.phase === "UPCOMING";
+                      const canCancel =
+                        semester.phase !== "COMPLETED" &&
+                        semester.phase !== "CANCELLED" &&
+                        semester.phase !== "MONITORING" &&
+                        !hasRelatedData;
+                      const canDelete =
+                        (semester.phase === "UPCOMING" ||
+                          semester.phase === "CANCELLED") &&
+                        !hasRelatedData;
+
+                      return (
+                        <div className="flex justify-end gap-1.5">
+                          {canEdit && (
+                            <button
+                              onClick={() => openEdit(semester)}
+                              title="Chỉnh sửa"
+                              className="rounded-lg p-2 text-indigo-600 hover:bg-indigo-50"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                          )}
+                          {canCancel && (
+                            <button
+                              onClick={() => void cancelSemester(semester)}
+                              title="Hủy đợt"
+                              className="rounded-lg p-2 text-rose-600 hover:bg-rose-50"
+                            >
+                              <CircleX className="h-4 w-4" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => void remove(semester)}
+                              title="Xóa"
+                              className="rounded-lg p-2 text-rose-600 hover:bg-rose-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}
