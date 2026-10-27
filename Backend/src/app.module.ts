@@ -11,6 +11,7 @@ import { StudentsModule } from './students/students.module';
 import { LecturersModule } from './lecturers/lecturers.module';
 import { CompaniesModule } from './companies/companies.module';
 import { InternshipsModule } from './internships/internships.module';
+import { InternshipTemplatesModule } from './internship-templates/internship-templates.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { PlacementsModule } from './placements/placements.module';
 import { SemestersModule } from './semesters/semesters.module';
@@ -52,6 +53,7 @@ import { SupportRequestsModule } from './support-requests/support-requests.modul
     LecturersModule,
     CompaniesModule,
     InternshipsModule,
+    InternshipTemplatesModule,
     ApplicationsModule,
     PlacementsModule,
     SemestersModule,

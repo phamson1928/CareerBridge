@@ -19,6 +19,8 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
 import { CreateInternshipDto } from './dto/create-internship.dto';
 import { ListInternshipsQueryDto } from './dto/list-internships-query.dto';
+import { RepostInternshipDto } from './dto/repost-internship.dto';
+import { SaveAsTemplateDto } from './dto/save-as-template.dto';
 import { UpdateInternshipDto } from './dto/update-internship.dto';
 import { InternshipsService } from './internships.service';
 
@@ -67,5 +69,25 @@ export class InternshipsController {
   @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.internshipsService.remove(id, user.id);
+  }
+
+  @Post(':id/save-as-template')
+  @Roles(Role.COMPANY)
+  saveAsTemplate(
+    @Param('id') id: string,
+    @Body() dto: SaveAsTemplateDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.internshipsService.saveAsTemplate(id, user.id, dto);
+  }
+
+  @Post(':id/repost')
+  @Roles(Role.COMPANY)
+  repost(
+    @Param('id') id: string,
+    @Body() dto: RepostInternshipDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.internshipsService.repost(id, user.id, dto);
   }
 }

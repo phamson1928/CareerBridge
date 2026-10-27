@@ -20,7 +20,7 @@ Hệ thống phục vụ bốn nhóm người dùng:
 | Authentication    | Đăng ký và xác thực email, đăng nhập, refresh token, quên/đặt lại mật khẩu, đăng xuất và RBAC.                            |
 | Hồ sơ             | Hồ sơ sinh viên, dự án cá nhân, kỹ năng, CV; hồ sơ giảng viên và doanh nghiệp.                                              |
 | Đợt thực tập      | Quản lý cửa sổ tuyển dụng và khoảng theo dõi học vụ của từng đợt.                                                           |
-| Vị trí thực tập   | Doanh nghiệp đăng vị trí theo kỳ, số lượng tuyển, hạn nộp và kỹ năng yêu cầu.                                               |
+| Vị trí & mẫu tin | Doanh nghiệp đăng vị trí theo kỳ, lưu mẫu tin (tối đa 20), đăng lại sang đợt mới có kiểm soát. |
 | AI gợi ý thực tập | Sinh viên lưu mong muốn công việc và chủ động tạo tối đa 10 gợi ý do backend xếp hạng; AI chỉ diễn giải tối đa 3 gợi ý đầu. |
 | Ứng tuyển         | Sinh viên nộp đơn, doanh nghiệp xem xét và lưu lịch sử thay đổi trạng thái.                                                 |
 | Placement         | Ghi nhận một đợt thực tập đã được xác nhận từ đơn được chấp nhận.                                                           |
@@ -61,9 +61,15 @@ flowchart TD
 ### 4.2. Doanh nghiệp và vị trí thực tập
 
 - Tài khoản doanh nghiệp phải xác thực email trước. Hồ sơ doanh nghiệp mới bắt đầu ở `DRAFT`; doanh nghiệp phải bổ sung tên pháp lý, mã số doanh nghiệp, địa chỉ, người liên hệ, số điện thoại, email liên hệ và giấy đăng ký doanh nghiệp rồi gọi `POST /companies/me/submit-verification` để gửi xác minh.
-- Chỉ hồ sơ `DRAFT` hoặc `REJECTED` được gửi; khi gửi thành công hồ sơ chuyển `PENDING` và xóa metadata của lần review trước. Trong `PENDING`, doanh nghiệp không được sửa hồ sơ; trong `SUSPENDED`, doanh nghiệp cũng không được sửa.
-- Admin chỉ duyệt hoặc từ chối hồ sơ `PENDING`. Từ chối và đình chỉ bắt buộc có lý do tối thiểu 3 ký tự; mỗi quyết định lưu người thực hiện, thời điểm, audit log và gửi notification cho doanh nghiệp. Hồ sơ `APPROVED` mới có thể chuyển `SUSPENDED`.
+- Khi submit thành công, hồ sơ chuyển `PENDING`, thiết lập hạn xử lý `reviewDueAt` theo SLA cấu hình (mặc định 72 giờ), đồng thời xóa lý do từ chối và checklist của lần trước. Trong `PENDING` và `SUSPENDED`, doanh nghiệp không được sửa hồ sơ.
+- Admin kiểm tra hồ sơ `PENDING`:
+  - Phê duyệt: Bắt buộc hoàn thành đủ 6 tiêu chí checklist đối chiếu tài liệu và backend kiểm tra email tài khoản đã xác thực (`emailVerifiedAt != null`).
+  - Từ chối: Bắt buộc chọn mã chuẩn `CompanyRejectionReasonCode` và giải thích chi tiết ≥10 ký tự.
+  - Tạm dừng (`SUSPENDED`): Áp dụng cho hồ sơ `APPROVED`, bắt buộc chọn mã vi phạm `CompanySuspensionReasonCode` và giải thích chi tiết ≥10 ký tự. Hệ thống tự động đóng toàn bộ các bài đăng `OPEN` của doanh nghiệp trong cùng transaction.
+  - Khôi phục (`UNSUSPENDED`): Chuyển `SUSPENDED` trở lại `APPROVED` có lưu lý do; các tin đã đóng không tự động mở lại.
 - Sau khi duyệt, các trường nhận diện pháp lý—tên, mã số, địa chỉ, người liên hệ, điện thoại, email liên hệ và giấy đăng ký—bị khóa để tránh việc một hồ sơ đã được xác minh bị đổi danh tính mà không qua xét duyệt lại. Chỉ `APPROVED` mới được mở bài đăng; trạng thái tài khoản và trạng thái hồ sơ là hai lớp khác nhau.
+- Mẫu tin tuyển dụng (`InternshipTemplate`): Doanh nghiệp `APPROVED` được lưu tối đa 20 mẫu tin, tên mẫu không trùng lặp trong cùng doanh nghiệp. Mẫu tin lưu độc lập không gắn với đợt, deadline hay số liệu ứng viên.
+- Đăng lại (`repost`) hoặc tạo từ mẫu: Bắt buộc chọn đợt thực tập đang trong pha `RECRUITING`, validate đầy đủ ngày dự kiến và deadline tương lai nếu tin ở trạng thái `OPEN`. Kỹ năng không còn trong danh mục chuẩn sẽ được bỏ qua và trả cảnh báo `warnings[]`. Tin mới bắt đầu với `filledSlots = 0`, `viewCount = 0`, không sao chép lượt xem hay đơn ứng tuyển từ tin cũ.
 - Internship luôn thuộc một `Semester` (tên kỹ thuật); trên nghiệp vụ/UI gọi là **Đợt thực tập**.
 - Cửa sổ tuyển bắt đầu đúng một tháng dương lịch trước `startDate` và kết thúc khi đợt bắt đầu. Chỉ trong cửa sổ này được đăng/mở tin, nộp đơn hoặc chấp nhận ứng viên.
 - Khi đợt bắt đầu, hệ thống đóng các tin `OPEN` còn lại. Không có tuyển mới trong khoảng theo dõi học vụ.

@@ -7,6 +7,7 @@ const integerSettings = {
   SIGNED_URL_EXPIRES_IN_SECONDS: 300,
   AI_RECOMMENDATION_TIMEOUT_MS: 8000,
   AI_RECOMMENDATION_CACHE_TTL_MINUTES: 360,
+  COMPANY_REVIEW_SLA_HOURS: 72,
 } as const;
 
 const allowedNodeEnvironments = new Set(['development', 'test', 'production']);
