@@ -232,7 +232,7 @@ export function JobRecommendations({
                 key={recommendation.internshipId}
                 recommendation={recommendation}
                 internship={internship}
-                isApplied={applications.some((item) => item.internshipId === internship.id)}
+                isApplied={applications.some((item) => item.internshipId === internship.id && item.status !== 'WITHDRAWN')}
                 onOpenDetail={onOpenDetail}
                 onApply={onApply}
               />

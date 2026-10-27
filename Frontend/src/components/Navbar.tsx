@@ -15,6 +15,7 @@ import {
   CalendarDays,
   LogOut,
   ShieldCheck,
+  LifeBuoy,
 } from "lucide-react";
 import { ProfileAvatarPreview } from "./ProfileAvatarUpload";
 import type { AppNotification } from "../notifications/types";
@@ -75,6 +76,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             icon: <CheckSquare className="w-4 h-4" />,
           },
           {
+            id: "support",
+            label: "Hỗ trợ",
+            icon: <LifeBuoy className="w-4 h-4" />,
+          },
+          {
             id: "profile",
             label: "Hồ sơ cá nhân",
             icon: <User className="w-4 h-4" />,
@@ -84,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         return [
           {
             id: "company-profile",
-            label: "Đăng ký doanh nghiệp",
+            label: companyVerificationStatus === "APPROVED" ? "Hồ sơ doanh nghiệp" : "Đăng ký doanh nghiệp",
             icon: <Building className="w-4 h-4" />,
           },
           ...(companyVerificationStatus === "APPROVED" ? [{
@@ -170,6 +176,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             label: "Kỳ thực tập",
             icon: <CalendarDays className="w-4 h-4" />,
           },
+          {
+            id: "support-requests",
+            label: "Hỗ trợ sinh viên",
+            icon: <LifeBuoy className="w-4 h-4" />,
+          },
         ];
       default:
         return [];
@@ -213,24 +224,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           Xem tất cả
         </button>
       </div>
-      <div className="max-h-80 space-y-1 overflow-y-auto pt-1">
+      <div className="max-h-80 space-y-1 overflow-x-hidden overflow-y-auto pt-1">
         {unreadNotifications.length ? (
           unreadNotifications.map((notification) => (
             <button
               key={notification.id}
               type="button"
               onClick={() => onNotificationClick(notification)}
-              className={`w-full rounded-xl px-3 py-2.5 text-left transition hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none ${notification.isRead ? "" : "bg-indigo-50/60"}`}
+              className={`w-full overflow-hidden rounded-xl px-3 py-2.5 text-left transition hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none ${notification.isRead ? "" : "bg-indigo-50/60"}`}
             >
-              <div className="flex items-start gap-2">
+              <div className="flex min-w-0 items-start gap-2">
                 <span
                   className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${notification.isRead ? "bg-slate-300" : "bg-indigo-600"}`}
                 />
-                <span className="min-w-0 flex-1">
+                <span className="min-w-0 flex-1 overflow-hidden">
                   <span className="block truncate text-xs font-bold text-slate-800">
                     {notification.title}
                   </span>
-                  <span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-slate-500">
+                  <span className="mt-0.5 block truncate text-[11px] leading-4 text-slate-500">
                     {notification.content}
                   </span>
                 </span>

@@ -23,7 +23,6 @@
 .notification-hover-card::before { content: ""; position: absolute; right: 12px; top: -6px; height: 12px; width: 12px; transform: rotate(45deg); border-left: 1px solid #c7e5e5; border-top: 1px solid #c7e5e5; background: #f6ffff; }
 .notification-hover-card > div:first-child { position: relative; z-index: 1; }
 .notification-hover-card button { position: relative; z-index: 1; }
-.notification-hover-card button:hover { transform: translateX(2px); }
 
 .student-hero, .teacher-hero, .company-hero { background: linear-gradient(108deg, #00767b 0%, #009da0 56%, #007c82 100%) !important; box-shadow: 0 16px 32px rgb(0 112 116 / .18); }
 .student-hero::after, .teacher-hero::after, .company-hero::after { content: ""; position: absolute; width: 260px; height: 260px; border: 36px solid rgb(255 255 255 / .08); border-radius: 999px; right: -65px; top: -138px; pointer-events: none; }
@@ -121,18 +120,85 @@
 /* Shared visual language for every Admin module.  The selectors intentionally
    scope Tailwind utility overrides to the Admin shell so other roles keep their
    existing visual identity. */
-.admin-theme :is([class*="bg-indigo-600"], [class*="bg-indigo-700"], [class*="bg-emerald-600"], [class*="bg-emerald-700"]) { background-color: #00878a !important; }
-.admin-theme :is([class*="hover:bg-indigo-700"], [class*="hover:bg-emerald-700"]) { background-color: #006f72 !important; }
-.admin-theme :is([class*="bg-indigo-50"], [class*="bg-indigo-100"], [class*="bg-emerald-50"]) { background-color: #e6f6f6 !important; }
-.admin-theme :is([class*="text-indigo-"], [class*="text-emerald-"]) { color: #00878a !important; }
-.admin-theme :is([class*="border-indigo-"], [class*="border-emerald-"]) { border-color: #9bd8d9 !important; }
-.admin-theme :is([class*="ring-indigo-"]) { --tw-ring-color: rgb(0 135 138 / .22) !important; }
-.admin-theme :is([class*="bg-rose-600"], [class*="bg-rose-700"]) { background-color: #da1c2d !important; }
-.admin-theme :is([class*="hover:bg-rose-700"]) { background-color: #bd1425 !important; }
-.admin-theme :is([class*="bg-rose-50"], [class*="bg-rose-100"]) { background-color: #fff0f2 !important; }
-.admin-theme :is([class*="text-rose-"]) { color: #da1c2d !important; }
-.admin-theme :is([class*="border-rose-"]) { border-color: #f4b9c0 !important; }
-.admin-theme :is([class*="from-indigo-"], [class*="to-indigo-"]) { --tw-gradient-from: #006f72 var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(0 135 138 / 0) var(--tw-gradient-to-position) !important; }
+.admin-theme :is(.bg-indigo-600, .bg-indigo-700, .bg-emerald-600, .bg-emerald-700) {
+  background-color: #00878a !important;
+  border-color: #00878a !important;
+}
+.admin-theme :is(.bg-indigo-50, .bg-indigo-100, .bg-emerald-50) {
+  background-color: #e6f6f6 !important;
+}
+.admin-theme :is([class*="text-indigo-"], [class*="text-emerald-"]) {
+  color: #00878a !important;
+}
+.admin-theme :is([class*="border-indigo-"], [class*="border-emerald-"]) {
+  border-color: #9bd8d9 !important;
+}
+.admin-theme :is([class*="ring-indigo-"]) {
+  --tw-ring-color: rgb(0 135 138 / .22) !important;
+}
+.admin-theme :is(.bg-rose-600, .bg-rose-700) {
+  background-color: #da1c2d !important;
+  border-color: #da1c2d !important;
+}
+.admin-theme :is(.bg-rose-50, .bg-rose-100) {
+  background-color: #fff0f2 !important;
+}
+.admin-theme :is([class*="text-rose-"]) {
+  color: #da1c2d !important;
+}
+.admin-theme :is([class*="border-rose-"]) {
+  border-color: #f4b9c0 !important;
+}
+.admin-theme :is([class*="from-indigo-"], [class*="to-indigo-"]) {
+  --tw-gradient-from: #006f72 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(0 135 138 / 0) var(--tw-gradient-to-position) !important;
+}
+
+/* Unified hover effects (border + background transition) for Admin buttons */
+.admin-theme .admin-page button {
+  border-width: 1px;
+  border-style: solid;
+  border-color: transparent;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+.admin-theme .admin-page button:is(.border-slate-200, .border-slate-300, .bg-white, .bg-slate-50, .bg-slate-100) {
+  border-color: #cbd5e1;
+}
+.admin-theme .admin-page button:is(.bg-indigo-600, .bg-indigo-700, .bg-emerald-600, .bg-emerald-700):hover:not(:disabled) {
+  background-color: #006669 !important;
+  border-color: #004244 !important;
+}
+.admin-theme .admin-page button:is(.bg-indigo-50, .bg-indigo-100, .bg-emerald-50):hover:not(:disabled) {
+  background-color: #cbe9ea !important;
+  border-color: #00878a !important;
+  color: #005456 !important;
+}
+.admin-theme .admin-page button:is(.bg-rose-600, .bg-rose-700):hover:not(:disabled) {
+  background-color: #b51221 !important;
+  border-color: #7a0913 !important;
+}
+.admin-theme .admin-page button:is(.bg-rose-50, .bg-rose-100):hover:not(:disabled) {
+  background-color: #ffdce1 !important;
+  border-color: #da1c2d !important;
+  color: #a80f1e !important;
+}
+.admin-theme .admin-page button.bg-amber-50:hover:not(:disabled) {
+  background-color: #fde68a !important;
+  border-color: #d97706 !important;
+}
+.admin-theme .admin-page button:is(.bg-white, .bg-slate-50, .bg-slate-100, .bg-slate-200\/80, .border-slate-200, .border-slate-300):not(.bg-indigo-600):not(.bg-emerald-600):not(.bg-rose-600):not(.bg-rose-50):not(.bg-indigo-50):not(.bg-amber-50):hover:not(:disabled) {
+  background-color: #e6f6f6 !important;
+  border-color: #00878a !important;
+  color: #006669 !important;
+}
+.admin-theme .admin-page button:is(.text-indigo-600, .text-indigo-700):not([class*="bg-"]):hover:not(:disabled) {
+  background-color: #e6f6f6 !important;
+  border-color: #00878a !important;
+}
+.admin-theme .admin-page button:is(.text-rose-600, .text-rose-700):not([class*="bg-"]):hover:not(:disabled) {
+  background-color: #fff0f2 !important;
+  border-color: #da1c2d !important;
+}
 
 .admin-notification-drawer { height: min(42.5rem, calc(100vh - 2rem)); border-color: #b8e1e2; box-shadow: 0 24px 56px rgb(0 74 76 / .22); }
 .admin-notification-backdrop { animation: admin-notification-fade-in .22s ease-out both; }

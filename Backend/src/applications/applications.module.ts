@@ -5,6 +5,7 @@ import { ApplicationsService } from './applications.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { SkillsModule } from '../skills/skills.module';
 import { SemestersModule } from '../semesters/semesters.module';
+import { MailerModule } from '../mailer/mailer.module';
 
 /** Application submission and state-transition workflow. */
 @Module({
@@ -13,6 +14,7 @@ import { SemestersModule } from '../semesters/semesters.module';
     NotificationsModule,
     SkillsModule,
     SemestersModule,
+    MailerModule,
   ],
   controllers: [ApplicationsController],
   providers: [ApplicationsService],

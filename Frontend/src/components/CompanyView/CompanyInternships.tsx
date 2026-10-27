@@ -238,24 +238,34 @@ export function CompanyInternships() {
     setError(null);
     const hasStartDate = Boolean(form.startDate);
     const hasEndDate = Boolean(form.endDate);
+    if (form.status === "OPEN" && (!hasStartDate || !hasEndDate)) {
+      setError(
+        "Khi đăng tin công khai (OPEN), bắt buộc phải nhập đầy đủ ngày bắt đầu và ngày kết thúc thực tập.",
+      );
+      return;
+    }
     if (hasStartDate !== hasEndDate) {
-      setError("Hãy nhập đủ cả ngày bắt đầu và ngày kết thúc dự kiến, hoặc để trống cả hai.");
+      setError(
+        "Hãy nhập đủ cả ngày bắt đầu và ngày kết thúc thực tập, hoặc để trống cả hai (nếu lưu nháp).",
+      );
       return;
     }
     if (form.startDate && form.endDate && form.startDate >= form.endDate) {
-      setError("Ngày bắt đầu dự kiến phải trước ngày kết thúc.");
+      setError("Ngày bắt đầu thực tập phải trước ngày kết thúc.");
       return;
     }
     if (form.startDate && form.endDate && selectedPostingSemester) {
       const minimum = selectedPostingSemester.startDate.slice(0, 10);
       const maximum = selectedPostingSemester.endDate.slice(0, 10);
       if (form.startDate < minimum || form.endDate > maximum) {
-        setError(`Thời gian dự kiến phải nằm trong khung theo dõi ${minimum} – ${maximum}.`);
+        setError(
+          `Thời gian thực tập phải nằm trong khung theo dõi ${minimum} – ${maximum}.`,
+        );
         return;
       }
     }
     if (form.deadline && form.startDate && form.deadline >= form.startDate) {
-      setError("Hạn ứng tuyển phải trước ngày bắt đầu dự kiến.");
+      setError("Hạn ứng tuyển phải trước ngày bắt đầu thực tập.");
       return;
     }
     setSaving(true);
@@ -1097,21 +1107,37 @@ export function CompanyInternships() {
                 onChange={(value) => update("deadline", value)}
               />
               <Field
-                label="Bắt đầu theo dõi dự kiến"
+                label={
+                  form.status === "OPEN"
+                    ? "Bắt đầu thực tập *"
+                    : "Bắt đầu thực tập"
+                }
                 type="date"
+                required={form.status === "OPEN"}
                 min={selectedPostingSemester?.startDate.slice(0, 10)}
                 max={selectedPostingSemester?.endDate.slice(0, 10)}
                 value={form.startDate ?? ""}
                 onChange={(value) => update("startDate", value)}
               />
               <Field
-                label="Kết thúc theo dõi dự kiến"
+                label={
+                  form.status === "OPEN"
+                    ? "Kết thúc thực tập *"
+                    : "Kết thúc thực tập"
+                }
                 type="date"
+                required={form.status === "OPEN"}
                 min={selectedPostingSemester?.startDate.slice(0, 10)}
                 max={selectedPostingSemester?.endDate.slice(0, 10)}
                 value={form.endDate ?? ""}
                 onChange={(value) => update("endDate", value)}
               />
+              <p className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-blue-800 md:col-span-2">
+                Thời gian thực tập này bắt buộc khi công khai tin (OPEN), phải
+                nằm trong khung theo dõi của đợt thực tập và sẽ được áp dụng tự
+                động vào hồ sơ thực tập (Placement) khi sinh viên xác nhận nhận
+                việc.
+              </p>
               <label className="font-bold md:col-span-2">
                 Mô tả *
                 <textarea

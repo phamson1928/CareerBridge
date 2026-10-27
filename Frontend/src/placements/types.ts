@@ -6,7 +6,15 @@ export type AcademicMonitoringStatus =
   | "CANCELLED";
 export type ReportStatus = "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
 export type ApplicationStatus =
-  "PENDING" | "REVIEWING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
+  | "PENDING"
+  | "REVIEWING"
+  | "INTERVIEWING"
+  | "OFFERED"
+  | "ACCEPTED"
+  | "DECLINED"
+  | "EXPIRED"
+  | "REJECTED"
+  | "WITHDRAWN";
 export type PlacementAssignmentStatus = "ASSIGNED" | "UNASSIGNED";
 
 export interface PlacementProgress {

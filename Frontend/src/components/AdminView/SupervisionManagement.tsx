@@ -417,7 +417,7 @@ export const SupervisionManagement: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => void cancelSupervision(placement)}
-                              className="rounded-lg border border-slate-300 px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100"
+                              className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-700"
                             >
                               Bỏ phân công
                             </button>
@@ -431,23 +431,27 @@ export const SupervisionManagement: React.FC = () => {
             </table>
           </div>
         )}
-        {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-            <p className="text-xs text-slate-500">
-              Trang {page} / {totalPages}
-            </p>
-            <div className="flex gap-2">
+        {!loading && total > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-600">
+            <span className="font-medium text-slate-500">
+              Tổng: <strong className="text-slate-700">{total}</strong> hồ sơ
+              thực tập
+            </span>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                disabled={page <= 1}
+                disabled={page <= 1 || loading}
                 onClick={() => setPage((current) => current - 1)}
                 className="rounded-lg border border-slate-200 p-2 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
+              <span>
+                Trang {page}/{totalPages}
+              </span>
               <button
                 type="button"
-                disabled={page >= totalPages}
+                disabled={page >= totalPages || loading}
                 onClick={() => setPage((current) => current + 1)}
                 className="rounded-lg border border-slate-200 p-2 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -518,7 +522,7 @@ export const SupervisionManagement: React.FC = () => {
               <button
                 type="button"
                 onClick={closeModal}
-                className="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700"
               >
                 Hủy
               </button>
@@ -526,7 +530,7 @@ export const SupervisionManagement: React.FC = () => {
                 type="button"
                 disabled={!selectedLecturer || saving}
                 onClick={() => void saveAssignment()}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving && <LoaderCircle className="h-4 w-4 animate-spin" />}Lưu
                 phân công

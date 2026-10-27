@@ -120,7 +120,7 @@ export const AuditLogManagement: React.FC = () => {
   };
 
   return (
-    <section className="space-y-6">
+    <section className="admin-page space-y-6">
       <header className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
         <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-5 py-6 text-white sm:px-7">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -214,14 +214,14 @@ export const AuditLogManagement: React.FC = () => {
           <div className="flex items-end gap-2 lg:col-span-5">
             <button
               onClick={resetFilters}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-bold text-rose-700"
             >
               <Filter className="h-3.5 w-3.5" /> Xóa bộ lọc
             </button>
             <button
               onClick={() => void loadLogs()}
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-3 py-2.5 text-xs font-bold text-white disabled:opacity-60"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
@@ -330,30 +330,36 @@ export const AuditLogManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <footer className="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span className="text-slate-500">
-            {new Intl.NumberFormat("vi-VN").format(total)} bản ghi
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              disabled={loading || page <= 1}
-              onClick={() => setPage((value) => value - 1)}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-bold text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" /> Trước
-            </button>
-            <span className="min-w-24 text-center font-semibold text-slate-600">
-              Trang {page} / {totalPages}
+        {!loading && total > 0 && (
+          <footer className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-600">
+            <span className="font-medium text-slate-500">
+              Tổng:{" "}
+              <strong className="text-slate-700">
+                {new Intl.NumberFormat("vi-VN").format(total)}
+              </strong>{" "}
+              bản ghi
             </span>
-            <button
-              disabled={loading || page >= totalPages}
-              onClick={() => setPage((value) => value + 1)}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-bold text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Sau <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </footer>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={loading || page <= 1}
+                onClick={() => setPage((value) => value - 1)}
+                className="rounded-lg border border-slate-200 p-2 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span>
+                Trang {page}/{totalPages}
+              </span>
+              <button
+                disabled={loading || page >= totalPages}
+                onClick={() => setPage((value) => value + 1)}
+                className="rounded-lg border border-slate-200 p-2 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </footer>
+        )}
       </div>
 
       {selectedLog && (

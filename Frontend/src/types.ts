@@ -1,7 +1,15 @@
 export type UserRole = "STUDENT" | "COMPANY" | "TEACHER" | "ADMIN";
 
 export type ApplicationStatus =
-  "PENDING" | "REVIEWING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
+  | "PENDING"
+  | "REVIEWING"
+  | "INTERVIEWING"
+  | "OFFERED"
+  | "ACCEPTED"
+  | "DECLINED"
+  | "EXPIRED"
+  | "REJECTED"
+  | "WITHDRAWN";
 
 export type ReportStatus =
   "DRAFT" | "SUBMITTED" | "APPROVED" | "NEEDS_REVISION";
@@ -84,6 +92,8 @@ export interface Internship {
   slots: number;
   filledSlots: number;
   deadline: string;
+  startDate?: string | null;
+  endDate?: string | null;
   createdAt: string;
   status: "ACTIVE" | "CLOSED";
 }
@@ -96,15 +106,48 @@ export interface Application {
   studentSkills: string[];
   internshipId: string;
   internshipTitle: string;
+  internshipStartDate?: string | null;
+  internshipEndDate?: string | null;
   companyId: string;
   companyName: string;
+  companyContactEmail?: string | null;
+  companyAddress?: string | null;
   cvUrl: string;
   cvFileId?: string;
   coverLetter?: string;
   matchScore: number | null;
   status: ApplicationStatus;
   companyFeedback?: string;
+  rejectionReason?: string | null;
+  offeredAt?: string | null;
+  offerExpiresAt?: string | null;
+  offerMessage?: string | null;
+  respondedAt?: string | null;
+  interview?: {
+    id: string;
+    scheduledAt: string;
+    mode: "ONLINE" | "OFFLINE";
+    meetingLink?: string | null;
+    location?: string | null;
+    contactName: string;
+    contactEmail: string;
+    contactPhone?: string | null;
+    note?: string | null;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+  emailLogs?: {
+    id: string;
+    type: string;
+    to: string;
+    subject: string;
+    status: "SENT" | "FAILED";
+    error?: string | null;
+    sentAt: string;
+  }[];
   appliedAt: string;
+  hiddenByStudentAt?: string | null;
+  hiddenByCompanyAt?: string | null;
   updatedAt: string;
 }
 

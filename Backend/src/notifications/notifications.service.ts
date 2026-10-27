@@ -97,6 +97,12 @@ export class NotificationsService {
   }
 
   async create(input: CreateNotificationInput): Promise<NotificationPublic> {
+    const existing = await this.prisma.notification.findUnique({
+      where: { eventKey: input.eventKey },
+    });
+    if (existing) {
+      return toPublicNotification(existing);
+    }
     const notification = await this.prisma.notification.create({ data: input });
     const publicNotification = toPublicNotification(notification);
     this.publishCreated(notification);
@@ -107,6 +113,12 @@ export class NotificationsService {
     tx: Prisma.TransactionClient,
     input: CreateNotificationInput,
   ): Promise<Notification> {
+    const existing = await tx.notification.findUnique({
+      where: { eventKey: input.eventKey },
+    });
+    if (existing) {
+      return existing;
+    }
     return tx.notification.create({ data: input });
   }
 

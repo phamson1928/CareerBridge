@@ -198,8 +198,8 @@ export class ReportsService {
             eventKey: `report:${id}:submitted:${report.submittedAt?.toISOString()}`,
             type: NotificationType.REPORT,
             action: NotificationAction.OPEN_REPORT,
-            title: 'Có báo cáo mới cần duyệt',
-            content: `Báo cáo tuần ${report.week} đang chờ bạn xem xét.`,
+            title: 'Sinh viên nộp báo cáo thực tập mới',
+            content: `Sinh viên ${report.placement.student.fullName} vừa nộp báo cáo thực tập tuần ${report.week} và đang chờ bạn nhận xét, phê duyệt.`,
             resourceId: id,
             metadata: { placementId: report.placementId, week: report.week },
           })
@@ -251,12 +251,12 @@ export class ReportsService {
         action: NotificationAction.OPEN_REPORT,
         title:
           report.status === ReportStatus.APPROVED
-            ? 'Báo cáo đã được duyệt'
-            : 'Báo cáo cần chỉnh sửa',
+            ? `Báo cáo tuần ${report.week} đã được phê duyệt`
+            : `Báo cáo tuần ${report.week} cần chỉnh sửa`,
         content:
           report.status === ReportStatus.APPROVED
-            ? 'Báo cáo của bạn đã được giảng viên duyệt.'
-            : 'Báo cáo của bạn cần được chỉnh sửa theo phản hồi của giảng viên.',
+            ? `Giảng viên hướng dẫn đã phê duyệt báo cáo thực tập tuần ${report.week} của bạn.`
+            : `Giảng viên hướng dẫn đã gửi nhận xét và yêu cầu bạn bổ sung, chỉnh sửa lại báo cáo thực tập tuần ${report.week}.`,
         resourceId: id,
         metadata: { placementId: report.placementId, status: report.status },
       });

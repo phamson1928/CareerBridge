@@ -167,11 +167,13 @@ export const companiesApi = {
   list: async (
     status?: CompanyProfileStatus,
     search?: string,
+    page = 1,
+    limit = 10,
   ) => {
     const response = await api.get<ApiSuccess<CompanyProfilesPage>>(
       "/companies",
       {
-        params: { status, search: search || undefined, page: 1, limit: 50 },
+        params: { status, search: search || undefined, page, limit },
       },
     );
     return response.data.data;

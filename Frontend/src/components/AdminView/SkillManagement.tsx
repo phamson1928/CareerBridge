@@ -1,5 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { Edit3, LoaderCircle, Plus, Search, Trash2 } from "lucide-react";
+import React, { FormEvent, useEffect, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
+  LoaderCircle,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
 import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 import { skillsApi } from "../../skills/api";
@@ -10,9 +19,17 @@ export const SkillManagement: React.FC = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { confirm, notify, prompt } = useAppFeedback();
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingSkill, setEditingSkill] = useState<SkillRecord | null>(null);
+  const [skillName, setSkillName] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const { confirm, notify } = useAppFeedback();
 
   const load = async () => {
     setLoading(true);
@@ -24,7 +41,8 @@ export const SkillManagement: React.FC = () => {
         search: search || undefined,
       });
       setItems(result.items);
-      setTotalPages(result.pagination.totalPages);
+      setTotal(result.pagination.total);
+      setTotalPages(Math.max(result.pagination.totalPages, 1));
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -37,49 +55,60 @@ export const SkillManagement: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [page, search]);
 
-  const create = async () => {
-    const name = (
-      await prompt({
-        title: "Thêm kỹ năng",
-        label: "Tên kỹ năng",
-        confirmLabel: "Thêm",
-      })
-    )?.trim();
-    if (!name) return;
-    try {
-      await skillsApi.create(name);
-      setPage(1);
-      await load();
-      notify({ title: "Đã thêm kỹ năng", tone: "success" });
-    } catch (requestError) {
-      notify({
-        title: "Không thể thêm kỹ năng",
-        message: getApiErrorMessage(requestError),
-        tone: "error",
-      });
-    }
+  const openCreate = () => {
+    setEditingSkill(null);
+    setSkillName("");
+    setFormError(null);
+    setModalOpen(true);
   };
 
-  const edit = async (skill: SkillRecord) => {
-    const name = (
-      await prompt({
-        title: "Cập nhật kỹ năng",
-        label: "Tên kỹ năng",
-        defaultValue: skill.name,
-        confirmLabel: "Lưu",
-      })
-    )?.trim();
-    if (!name || name === skill.name) return;
+  const openEdit = (skill: SkillRecord) => {
+    setEditingSkill(skill);
+    setSkillName(skill.name);
+    setFormError(null);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    if (saving) return;
+    setModalOpen(false);
+    setEditingSkill(null);
+    setSkillName("");
+    setFormError(null);
+  };
+
+  const submitSkill = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = skillName.trim();
+    if (!trimmed) {
+      setFormError("Vui lòng nhập tên kỹ năng.");
+      return;
+    }
+    if (editingSkill && trimmed === editingSkill.name) {
+      closeModal();
+      return;
+    }
+
+    setSaving(true);
+    setFormError(null);
     try {
-      await skillsApi.update(skill.id, name);
-      await load();
-      notify({ title: "Đã cập nhật kỹ năng", tone: "success" });
+      if (editingSkill) {
+        await skillsApi.update(editingSkill.id, trimmed);
+        await load();
+        notify({ title: "Đã cập nhật kỹ năng", tone: "success" });
+      } else {
+        await skillsApi.create(trimmed);
+        setPage(1);
+        await load();
+        notify({ title: "Đã thêm kỹ năng", tone: "success" });
+      }
+      setModalOpen(false);
+      setEditingSkill(null);
+      setSkillName("");
     } catch (requestError) {
-      notify({
-        title: "Không thể cập nhật kỹ năng",
-        message: getApiErrorMessage(requestError),
-        tone: "error",
-      });
+      setFormError(getApiErrorMessage(requestError));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -116,8 +145,9 @@ export const SkillManagement: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => void create()}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white"
+          type="button"
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-4 py-2 text-xs font-bold text-white"
         >
           <Plus className="h-4 w-4" />
           Thêm kỹ năng
@@ -132,7 +162,7 @@ export const SkillManagement: React.FC = () => {
             setSearch(event.target.value);
           }}
           placeholder="Tìm kỹ năng..."
-          className="w-full rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-sm"
+          className="w-full rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
         />
       </div>
       {error && <p className="mb-3 text-sm text-rose-600">{error}</p>}
@@ -167,15 +197,17 @@ export const SkillManagement: React.FC = () => {
                   </td>
                   <td className="p-3 text-right">
                     <button
-                      onClick={() => void edit(skill)}
-                      className="mr-2 text-indigo-600"
+                      type="button"
+                      onClick={() => openEdit(skill)}
+                      className="mr-1.5 rounded-lg p-2 text-indigo-600"
                       aria-label={`Sửa ${skill.name}`}
                     >
                       <Edit3 className="h-4 w-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => void remove(skill)}
-                      className="text-rose-600"
+                      className="rounded-lg p-2 text-rose-600"
                       aria-label={`Xóa ${skill.name}`}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -187,25 +219,104 @@ export const SkillManagement: React.FC = () => {
           </table>
         </div>
       )}
-      <div className="mt-4 flex items-center justify-end gap-2 text-xs">
-        <button
-          disabled={page <= 1}
-          onClick={() => setPage((value) => value - 1)}
-          className="rounded-lg bg-slate-100 px-3 py-1 disabled:opacity-40"
+      {!loading && total > 0 && (
+        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-600">
+          <span className="font-medium text-slate-500">
+            Tổng: <strong className="text-slate-700">{total}</strong> kỹ năng
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((value) => value - 1)}
+              className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span>
+              Trang {page}/{totalPages}
+            </span>
+            <button
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage((value) => value + 1)}
+              className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+          onClick={closeModal}
         >
-          Trước
-        </button>
-        <span>
-          {page}/{totalPages}
-        </span>
-        <button
-          disabled={page >= totalPages}
-          onClick={() => setPage((value) => value + 1)}
-          className="rounded-lg bg-slate-100 px-3 py-1 disabled:opacity-40"
-        >
-          Sau
-        </button>
-      </div>
+          <form
+            onSubmit={(event) => void submitSkill(event)}
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+          >
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900">
+                  {editingSkill ? "Chỉnh sửa kỹ năng" : "Thêm kỹ năng"}
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Kỹ năng sẽ xuất hiện trong danh mục chọn của sinh viên và tin
+                  tuyển dụng.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-800">
+                  Tên kỹ năng *
+                </label>
+                <input
+                  required
+                  autoFocus
+                  maxLength={80}
+                  value={skillName}
+                  onChange={(event) => setSkillName(event.target.value)}
+                  placeholder="Ví dụ: React, Node.js, Docker..."
+                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              {formError && (
+                <p className="text-xs text-rose-600">{formError}</p>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {saving && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                {editingSkill ? "Lưu thay đổi" : "Thêm kỹ năng"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   );
 };

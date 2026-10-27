@@ -69,6 +69,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
   const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -96,12 +97,19 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
     };
   }, []);
 
-  const update = (key: keyof CompanyProfileInput, value: string) =>
+  const update = (key: keyof CompanyProfileInput, value: string) => {
+    setSuccessMessage(null);
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const isLocked = profile?.status === "PENDING" || profile?.status === "SUSPENDED";
+  const identityLocked = profile?.status === "APPROVED";
+  const legalLocked = isLocked || identityLocked;
 
   const saveProfile = async (): Promise<CompanyProfileRecord | null> => {
     setSaving(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       let documentId = form.registrationDocumentFileId || null;
       if (selectedDocument) {
@@ -122,6 +130,14 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
         ),
       ) as unknown as CompanyProfileInput;
       payload.companyName = form.companyName.trim();
+
+      if (profile && identityLocked) {
+        const mutablePayload = payload as Partial<CompanyProfileInput>;
+        delete mutablePayload.companyName;
+        delete mutablePayload.businessRegistrationNumber;
+        delete mutablePayload.registrationDocumentFileId;
+      }
+
       const result = profile
         ? await companiesApi.updateMine(payload)
         : await companiesApi.createMine(payload);
@@ -141,12 +157,16 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await saveProfile();
+    const saved = await saveProfile();
+    if (saved) {
+      setSuccessMessage("Đã lưu thông tin hồ sơ doanh nghiệp.");
+    }
   };
 
   const submitForVerification = async () => {
     setSubmitting(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       const saved = await saveProfile();
       if (!saved) return;
@@ -154,15 +174,13 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
       setProfile(result);
       setForm(toForm(result));
       onProfileChange?.(result);
+      setSuccessMessage("Đã gửi hồ sơ xác minh cho nhà trường.");
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
       setSubmitting(false);
     }
   };
-
-  const isLocked = profile?.status === "PENDING" || profile?.status === "SUSPENDED";
-  const identityLocked = profile?.status === "APPROVED";
 
   if (loading) return <LoadingState />;
 
@@ -175,10 +193,12 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
           </div>
           <div>
             <h2 className="text-xl font-extrabold text-slate-900">
-              Đăng ký doanh nghiệp
+              {identityLocked ? "Hồ sơ doanh nghiệp" : "Đăng ký doanh nghiệp"}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Hoàn thiện thông tin để gửi hồ sơ cho hệ thống xác minh.
+              {identityLocked
+                ? "Cập nhật thông tin liên hệ và giới thiệu doanh nghiệp của bạn."
+                : "Hoàn thiện thông tin để gửi hồ sơ cho hệ thống xác minh."}
             </p>
           </div>
         </div>
@@ -188,6 +208,11 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
             {error}
           </p>
         )}
+        {successMessage && (
+          <p className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
+            {successMessage}
+          </p>
+        )}
         <form
           onSubmit={(event) => void submit(event)}
           className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2"
@@ -195,14 +220,20 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
           <TextField
             label="Tên doanh nghiệp"
             required
-            disabled={isLocked || identityLocked}
+            disabled={legalLocked}
+            helperText={
+              identityLocked ? "Đã khóa sau khi xác minh pháp lý" : undefined
+            }
             value={form.companyName}
             onChange={(value) => update("companyName", value)}
           />
           <TextField
             label="Mã số doanh nghiệp"
-            required
-            disabled={isLocked || identityLocked}
+            required={!identityLocked}
+            disabled={legalLocked}
+            helperText={
+              identityLocked ? "Đã khóa sau khi xác minh pháp lý" : undefined
+            }
             value={form.businessRegistrationNumber ?? ""}
             onChange={(value) => update("businessRegistrationNumber", value)}
             placeholder="Ví dụ: 0123456789"
@@ -211,21 +242,21 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
             label="Email liên hệ"
             type="email"
             required
-            disabled={isLocked || identityLocked}
+            disabled={isLocked}
             value={form.contactEmail ?? ""}
             onChange={(value) => update("contactEmail", value)}
           />
           <TextField
             label="Người liên hệ"
             required
-            disabled={isLocked || identityLocked}
+            disabled={isLocked}
             value={form.contactPersonName ?? ""}
             onChange={(value) => update("contactPersonName", value)}
           />
           <TextField
             label="Số điện thoại liên hệ"
             required
-            disabled={isLocked || identityLocked}
+            disabled={isLocked}
             value={form.contactPhone ?? ""}
             onChange={(value) => update("contactPhone", value)}
           />
@@ -252,7 +283,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
           <TextField
             label="Địa chỉ"
             required
-            disabled={isLocked || identityLocked}
+            disabled={isLocked}
             value={form.address ?? ""}
             onChange={(value) => update("address", value)}
           />
@@ -275,7 +306,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
               disabled={isLocked}
               value={form.description ?? ""}
               onChange={(event) => update("description", event.target.value)}
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm"
+              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
             />
           </div>
           <div className="md:col-span-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
@@ -301,12 +332,16 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
             <input
               type="file"
               accept="application/pdf,image/jpeg,image/png"
-              disabled={isLocked || identityLocked || uploadingDocument}
-              onChange={(event) => setSelectedDocument(event.target.files?.[0] ?? null)}
-              className="mt-3 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-700"
+              disabled={legalLocked || uploadingDocument}
+              onChange={(event) => {
+                setSuccessMessage(null);
+                setSelectedDocument(event.target.files?.[0] ?? null);
+              }}
+              className="mt-3 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
             />
             <p className="mt-2 text-xs text-slate-500">
               {selectedDocument?.name || profile?.registrationDocument?.originalName || "Chưa chọn tài liệu"}
+              {identityLocked ? " (Đã khóa sau khi xác minh pháp lý)" : ""}
             </p>
           </div>
           <div className="md:col-span-2">
@@ -467,6 +502,7 @@ function TextField({
   type = "text",
   placeholder,
   disabled,
+  helperText,
 }: {
   label: string;
   value: string;
@@ -475,6 +511,7 @@ function TextField({
   type?: string;
   placeholder?: string;
   disabled?: boolean;
+  helperText?: string;
 }) {
   return (
     <label className="block text-xs font-bold text-slate-800">
@@ -487,8 +524,13 @@ function TextField({
         placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 text-sm font-normal disabled:bg-slate-100 disabled:text-slate-500"
+        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 text-sm font-normal disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
       />
+      {helperText && (
+        <span className="mt-1 block text-[11px] font-normal text-slate-500">
+          {helperText}
+        </span>
+      )}
     </label>
   );
 }

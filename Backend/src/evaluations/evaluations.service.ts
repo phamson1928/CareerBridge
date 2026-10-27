@@ -145,8 +145,8 @@ export class EvaluationsService {
           eventKey: `evaluation:${evaluation.id}:created:${evaluation.placement.student.userId}`,
           type: NotificationType.EVALUATION,
           action: NotificationAction.OPEN_EVALUATION,
-          title: 'Bạn có đánh giá mới',
-          content: 'Một đánh giá mới đã được cập nhật cho kỳ thực tập của bạn.',
+          title: 'Kết quả đánh giá thực tập mới',
+          content: `${type === EvaluationType.COMPANY ? 'Doanh nghiệp thực tập' : 'Giảng viên hướng dẫn'} vừa cập nhật kết quả đánh giá cho kỳ thực tập của bạn.`,
           resourceId: evaluation.id,
           metadata: { placementId: dto.placementId, type },
         });
@@ -165,7 +165,7 @@ export class EvaluationsService {
       ...(query.type ? { type: query.type } : {}),
       ...this.scope(user),
     };
-    const [items, total] = await this.prisma.$transaction([
+    const [items, total] = await Promise.all([
       this.prisma.evaluation.findMany({
         where,
         select,

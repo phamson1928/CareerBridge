@@ -528,7 +528,11 @@ export class DashboardService {
     const applicationsByStatus: Record<ApplicationStatus, number> = {
       PENDING: 0,
       REVIEWING: 0,
+      INTERVIEWING: 0,
+      OFFERED: 0,
       ACCEPTED: 0,
+      DECLINED: 0,
+      EXPIRED: 0,
       REJECTED: 0,
       WITHDRAWN: 0,
     };
@@ -833,7 +837,11 @@ export class DashboardService {
     const applicationsByStatus: Record<ApplicationStatus, number> = {
       PENDING: 0,
       REVIEWING: 0,
+      INTERVIEWING: 0,
+      OFFERED: 0,
       ACCEPTED: 0,
+      DECLINED: 0,
+      EXPIRED: 0,
       REJECTED: 0,
       WITHDRAWN: 0,
     };

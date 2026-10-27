@@ -407,7 +407,7 @@ export const PlacementManagement: React.FC<{
           </select>
           <button
             onClick={resetFilters}
-            className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+            className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-700 transition"
           >
             Xóa bộ lọc
           </button>
@@ -638,21 +638,25 @@ export const PlacementManagement: React.FC<{
             </table>
           </div>
         )}
-        {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-            <p className="text-xs text-slate-500">
-              {total} hồ sơ thực tập · Trang {page}/{totalPages}
-            </p>
-            <div className="flex gap-2">
+        {!loading && total > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-600">
+            <span className="font-medium text-slate-500">
+              Tổng: <strong className="text-slate-700">{total}</strong> hồ sơ
+              thực tập
+            </span>
+            <div className="flex items-center gap-2">
               <button
-                disabled={page <= 1}
+                disabled={page <= 1 || loading}
                 onClick={() => setPage((value) => value - 1)}
                 className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
+              <span>
+                Trang {page}/{totalPages}
+              </span>
               <button
-                disabled={page >= totalPages}
+                disabled={page >= totalPages || loading}
                 onClick={() => setPage((value) => value + 1)}
                 className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -802,14 +806,14 @@ export const PlacementManagement: React.FC<{
                       <button
                         disabled={saving}
                         onClick={() => setEditingSchedule(false)}
-                        className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold text-slate-600"
+                        className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700"
                       >
                         Hủy
                       </button>
                       <button
                         disabled={saving}
                         onClick={() => void saveSchedule()}
-                        className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
                       >
                         {saving && (
                           <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -961,9 +965,9 @@ export const PlacementManagement: React.FC<{
                     <button
                       disabled={saving}
                       onClick={() => setAction(null)}
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-600"
+                      className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700"
                     >
-                      Quay lại
+                      Hủy
                     </button>
                     <button
                       disabled={

@@ -27,6 +27,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 import { MailerModule } from './mailer/mailer.module';
+import { SupportRequestsModule } from './support-requests/support-requests.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { MailerModule } from './mailer/mailer.module';
     RealtimeModule,
     RecommendationsModule,
     MailerModule,
+    SupportRequestsModule,
   ],
   providers: [
     {

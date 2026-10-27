@@ -315,7 +315,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                     Xem chi tiết công việc →
                   </button>
 
-                  {appStatus ? (
+                  {appStatus && appStatus !== 'WITHDRAWN' ? (
                     <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 flex items-center gap-1 border border-emerald-200">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Đã Ứng Tuyển
                     </span>
@@ -325,7 +325,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                       onClick={() => setApplyModalInternship(job)}
                       className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
                     >
-                      <Send className="w-3.5 h-3.5" /> Ứng Tuyển Ngay
+                      <Send className="w-3.5 h-3.5" />{' '}
+                      {appStatus === 'WITHDRAWN' ? 'Ứng Tuyển Lại' : 'Ứng Tuyển Ngay'}
                     </button>
                   )}
                 </div>

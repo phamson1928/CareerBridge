@@ -52,6 +52,8 @@ export function RegisterPage() {
       const errorMessage = getApiErrorMessage(requestError);
       if (/already registered|already exists|đã được đăng ký/i.test(errorMessage)) {
         setError('');
+        setRegisteredEmail(email.trim().toLowerCase());
+        setResendMessage('');
         setShowRegisterConfirmation(true);
         return;
       }
@@ -147,26 +149,28 @@ export function RegisterPage() {
                 Một email xác thực đã được gửi đến <strong>{registeredEmail}</strong>. Hãy kiểm tra hộp thư và làm theo hướng dẫn trong email để kích hoạt tài khoản.
               </p>
 
-              <button
-                type="button"
-                className="mt-4 text-sm font-bold text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => void resendVerification()}
-                disabled={isResending || resendCooldown > 0}
-              >
-                {isResending
-                  ? 'Đang gửi lại...'
-                  : resendCooldown > 0
-                    ? `Gửi lại sau ${resendCooldown}s`
-                    : 'Gửi lại email xác thực'}
-              </button>
-              {resendMessage && <p className="mt-2 text-xs text-slate-500">{resendMessage}</p>}
+              <div className="register-confirmation-actions">
+                <button type="button" className="register-confirmation-login-button" onClick={() => {
+                  setShowRegisterConfirmation(false);
+                  navigate('/login', { replace: true });
+                }}>
+                  Đi đến đăng nhập
+                </button>
 
-              <button type="button" className="register-confirmation-login-button" onClick={() => {
-                setShowRegisterConfirmation(false);
-                navigate('/login', { replace: true });
-              }}>
-                Đi đến đăng nhập
-              </button>
+                <button
+                  type="button"
+                  className="register-confirmation-resend-button"
+                  onClick={() => void resendVerification()}
+                  disabled={isResending || resendCooldown > 0}
+                >
+                  {isResending
+                    ? 'Đang gửi lại...'
+                    : resendCooldown > 0
+                      ? `Gửi lại sau ${resendCooldown}s`
+                      : 'Gửi lại email xác thực'}
+                </button>
+                {resendMessage && <p className="register-confirmation-resend-message">{resendMessage}</p>}
+              </div>
             </div>
           </div>
         </div>,

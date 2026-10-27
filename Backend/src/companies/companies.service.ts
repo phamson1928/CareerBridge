@@ -89,7 +89,10 @@ export class CompaniesService {
 
   async create(userId: string, dto: CreateCompanyProfileDto) {
     if (dto.registrationDocumentFileId) {
-      await this.assertRegistrationDocument(userId, dto.registrationDocumentFileId);
+      await this.assertRegistrationDocument(
+        userId,
+        dto.registrationDocumentFileId,
+      );
     }
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -131,15 +134,13 @@ export class CompaniesService {
     const identityFields = [
       'companyName',
       'businessRegistrationNumber',
-      'address',
-      'contactPersonName',
-      'contactPhone',
-      'contactEmail',
       'registrationDocumentFileId',
     ] as const;
     if (
       existing.status === CompanyStatus.APPROVED &&
-      identityFields.some((field) => dto[field] !== undefined)
+      identityFields.some(
+        (field) => dto[field] !== undefined && dto[field] !== existing[field],
+      )
     ) {
       throw new BadRequestException({
         code: 'COMPANY_VERIFIED_IDENTITY_LOCKED',
@@ -148,7 +149,10 @@ export class CompaniesService {
       });
     }
     if (dto.registrationDocumentFileId) {
-      await this.assertRegistrationDocument(userId, dto.registrationDocumentFileId);
+      await this.assertRegistrationDocument(
+        userId,
+        dto.registrationDocumentFileId,
+      );
     }
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -241,7 +245,9 @@ export class CompaniesService {
       72,
     );
     const submittedAt = new Date();
-    const reviewDueAt = new Date(submittedAt.getTime() + slaHours * 3600 * 1000);
+    const reviewDueAt = new Date(
+      submittedAt.getTime() + slaHours * 3600 * 1000,
+    );
 
     const result = await this.prisma.$transaction(async (tx) => {
       const changed = await tx.companyProfile.updateMany({
@@ -296,7 +302,12 @@ export class CompaniesService {
       ...(normalizedSearch
         ? {
             OR: [
-              { companyName: { contains: normalizedSearch, mode: 'insensitive' } },
+              {
+                companyName: {
+                  contains: normalizedSearch,
+                  mode: 'insensitive',
+                },
+              },
               {
                 businessRegistrationNumber: {
                   contains: normalizedSearch,
@@ -344,7 +355,8 @@ export class CompaniesService {
     if (missingOrUnchecked.length > 0) {
       throw new BadRequestException({
         code: 'COMPANY_VERIFICATION_CHECKLIST_INCOMPLETE',
-        message: 'All verification checklist items must be checked before approval',
+        message:
+          'All verification checklist items must be checked before approval',
         details: { missingOrUnchecked },
       });
     }
@@ -575,7 +587,8 @@ export class CompaniesService {
     if (normalizedDetail.length < 10) {
       throw new BadRequestException({
         code: 'COMPANY_UNSUSPENSION_REASON_INVALID',
-        message: 'Unsuspend reason details (minimum 10 characters) are required',
+        message:
+          'Unsuspend reason details (minimum 10 characters) are required',
       });
     }
 

@@ -4,7 +4,7 @@
  */
 
 import React, { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   Application,
   ApplicationStatus,
@@ -58,8 +58,10 @@ const PlacementManagement = lazy(() => import("./components/AdminView/PlacementM
 const SkillManagement = lazy(() => import("./components/AdminView/SkillManagement").then(({ SkillManagement }) => ({ default: SkillManagement })));
 const SemesterManagement = lazy(() => import("./components/AdminView/SemesterManagement").then(({ SemesterManagement }) => ({ default: SemesterManagement })));
 const AuditLogManagement = lazy(() => import("./components/AdminView/AuditLogManagement").then(({ AuditLogManagement }) => ({ default: AuditLogManagement })));
+const SupportRequestManagement = lazy(() => import("./components/AdminView/SupportRequestManagement").then(({ SupportRequestManagement }) => ({ default: SupportRequestManagement })));
 const PlacementOverview = lazy(() => import("./components/StudentView/PlacementOverview").then(({ PlacementOverview }) => ({ default: PlacementOverview })));
 const StudentEvaluations = lazy(() => import("./components/StudentView/StudentEvaluations").then(({ StudentEvaluations }) => ({ default: StudentEvaluations })));
+const StudentSupportRequests = lazy(() => import("./components/StudentView/StudentSupportRequests").then(({ StudentSupportRequests }) => ({ default: StudentSupportRequests })));
 
 const adminPathByTab: Record<string, string> = {
   "stats-dashboard": "dashboard",
@@ -70,6 +72,7 @@ const adminPathByTab: Record<string, string> = {
   "skill-management": "skills",
   "semester-management": "semesters",
   "audit-logs": "audit-logs",
+  "support-requests": "support-requests",
 };
 
 const adminTabByPath = Object.fromEntries(
@@ -85,15 +88,28 @@ function toLegacyApplication(record: ApplicationRecord): Application {
     studentSkills: [],
     internshipId: record.internshipId,
     internshipTitle: record.internship.title,
+    internshipStartDate: record.internship.startDate ?? null,
+    internshipEndDate: record.internship.endDate ?? null,
     companyId: record.internship.company.id,
     companyName: record.internship.company.companyName,
+    companyContactEmail: record.internship.company.contactEmail ?? null,
+    companyAddress: record.internship.company.address ?? null,
     cvUrl: "",
     cvFileId: record.cvFileId ?? undefined,
     coverLetter: record.coverLetter ?? undefined,
     matchScore: record.matchScore,
     status: record.status,
     companyFeedback: record.companyFeedback ?? undefined,
+    rejectionReason: record.rejectionReason ?? null,
+    offeredAt: record.offeredAt ?? null,
+    offerExpiresAt: record.offerExpiresAt ?? null,
+    offerMessage: record.offerMessage ?? null,
+    respondedAt: record.respondedAt ?? null,
+    interview: record.interview ?? null,
+    emailLogs: record.emailLogs ?? [],
     appliedAt: record.appliedAt,
+    hiddenByStudentAt: record.hiddenByStudentAt ?? null,
+    hiddenByCompanyAt: record.hiddenByCompanyAt ?? null,
     updatedAt: record.updatedAt,
   };
 }
@@ -168,7 +184,11 @@ export default function App() {
       navigate("/admin/dashboard", { replace: true });
       return;
     }
-    setActiveTab(adminTabByPath[path] ?? getDefaultTab(currentRole));
+    if (!adminTabByPath[path]) {
+      navigate("/404", { replace: true });
+      return;
+    }
+    setActiveTab(adminTabByPath[path]);
   }, [currentRole, location.pathname, navigate]);
 
   const handleTabChange = (tab: string) => {
@@ -365,7 +385,13 @@ export default function App() {
       coverLetter,
       cvFileId,
     });
-    setApplications((previous) => [toLegacyApplication(created), ...previous]);
+    setApplications((previous) => {
+      const mapped = toLegacyApplication(created);
+      const exists = previous.some((app) => app.id === mapped.id);
+      return exists
+        ? previous.map((app) => (app.id === mapped.id ? mapped : app))
+        : [mapped, ...previous];
+    });
 
     feedback.notify({ title: "Ứng tuyển thành công", message: `Đã gửi hồ sơ cho vị trí "${internshipTitle}".`, tone: "success" });
   };
@@ -430,6 +456,7 @@ export default function App() {
       OPEN_PLACEMENT: currentRole === "COMPANY" ? "placement-management" : currentRole === "TEACHER" ? "supervised-placements" : currentRole === "ADMIN" ? "placement-management" : "placement",
       OPEN_COMPANY_PROFILE: currentRole === "ADMIN" ? "company-approval" : "company-profile",
       OPEN_EVALUATION: currentRole === "COMPANY" ? "interns-evaluation" : currentRole === "TEACHER" ? "evaluation-list" : "evaluations",
+      OPEN_SUPPORT_REQUEST: currentRole === "ADMIN" ? "support-requests" : "support",
     };
     const tab = tabByAction[action];
     if (tab) handleTabChange(tab);
@@ -493,6 +520,7 @@ export default function App() {
                 isLoading={isWorkflowLoading}
                 onOpenChat={() => setIsChatOpen(true)}
                 onWithdraw={handleWithdrawApplication}
+                onReload={() => setWorkflowReloadKey((value) => value + 1)}
               />
             )}
             {activeTab === "reports" && (
@@ -500,6 +528,7 @@ export default function App() {
             )}
             {activeTab === "placement" && <PlacementOverview />}
             {activeTab === "evaluations" && <StudentEvaluations evaluations={evaluationRecords} />}
+            {activeTab === "support" && <StudentSupportRequests />}
             {activeTab === "profile" && <StudentProfileView onProfileChange={handleStudentProfileChange} />}
           </>
         )}
@@ -524,6 +553,7 @@ export default function App() {
                   applications={applications}
                   onUpdateStatus={handleUpdateApplicationStatus}
                   onOpenChat={() => setIsChatOpen(true)}
+                  onReload={() => setWorkflowReloadKey((value) => value + 1)}
                 />
               ) : (
                 <ProfileRequiredNotice
@@ -588,6 +618,7 @@ export default function App() {
             {activeTab === "company-approval" && <CompanyModeration />}
             {activeTab === "skill-management" && <SkillManagement />}
             {activeTab === "semester-management" && <SemesterManagement />}
+            {activeTab === "support-requests" && <SupportRequestManagement />}
             {activeTab === "audit-logs" && <AuditLogManagement />}
           </>
         )}

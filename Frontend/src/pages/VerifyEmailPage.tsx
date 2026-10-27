@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, Eye, LockKeyhole, Loader2, Mail, XCircle } from 'lucide-react';
 import { authApi } from '../auth/api';
 import { AuthLayout } from './AuthLayout';
 import { useAuth } from '../auth/AuthContext';
@@ -45,49 +46,110 @@ export function VerifyEmailPage() {
 
   return (
     <AuthLayout>
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/60 sm:p-12">
-        {status === 'loading' && (
-          <div className="flex flex-col items-center">
-            <Loader2 className="mb-4 h-12 w-12 animate-spin text-indigo-500" />
-            <h2 className="text-2xl font-black text-slate-900">Đang xác thực email...</h2>
-            <p className="mt-2 text-slate-500">Vui lòng đợi trong giây lát.</p>
+      <div className="login-form-panel" aria-hidden="true">
+        <div className="login-title-wrap">
+          <h1>Đăng nhập</h1>
+        </div>
+        <p className="login-account-copy">Đăng nhập vào tài khoản của bạn</p>
+        <div className="login-form">
+          <div className="login-label">
+            <span className="relative mt-2 block">
+              <Mail className="login-input-icon" />
+              <input type="email" disabled className="login-input" placeholder="customer@eyewear.com" />
+            </span>
           </div>
-        )}
-
-        {status === 'success' && (
-          <div className="flex flex-col items-center">
-            <CheckCircle2 className="mb-4 h-16 w-16 text-emerald-500" />
-            <h2 className="text-2xl font-black text-slate-900">Xác thực thành công!</h2>
-            <p className="mt-2 text-slate-500 mb-6">Tài khoản của bạn đã được kích hoạt.</p>
-            <button
-              onClick={() => {
-                if (user) {
-                  navigate(roleHomePath(user.role as AuthRole), { replace: true });
-                } else {
-                  navigate('/login', { replace: true });
-                }
-              }}
-              className="rounded-xl bg-indigo-600 px-6 py-3 font-bold text-white transition hover:bg-indigo-700"
-            >
-              Tiếp tục
+          <div className="login-label">
+            <span className="relative mt-2 block">
+              <LockKeyhole className="login-input-icon" />
+              <input type="password" disabled className="login-input password-input" placeholder="••••••••" />
+              <span className="password-toggle">
+                <Eye />
+              </span>
+            </span>
+          </div>
+          <div className="login-submit-row">
+            <button type="button" disabled className="login-submit-button">
+              Đăng nhập
             </button>
           </div>
-        )}
-
-        {status === 'error' && (
-          <div className="flex flex-col items-center">
-            <XCircle className="mb-4 h-16 w-16 text-rose-500" />
-            <h2 className="text-2xl font-black text-slate-900">Xác thực thất bại</h2>
-            <p className="mt-2 text-rose-600 font-medium mb-6">{errorMessage}</p>
-            <button
-              onClick={() => navigate('/login')}
-              className="rounded-xl bg-slate-100 px-6 py-3 font-bold text-slate-700 transition hover:bg-slate-200"
-            >
-              Quay lại Đăng nhập
-            </button>
-          </div>
-        )}
+        </div>
       </div>
+
+      {createPortal(
+        <div
+          className="register-confirmation-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="verify-email-title"
+        >
+          <div className="register-confirmation-modal">
+            <div className="register-confirmation-icon-wrap">
+              <span className="register-confirmation-icon">
+                {status === 'loading' && (
+                  <Loader2 className="register-confirmation-icon-mail animate-spin" />
+                )}
+                {status === 'success' && (
+                  <>
+                    <Mail className="register-confirmation-icon-mail" />
+                    <CheckCircle2 className="register-confirmation-icon-check" />
+                  </>
+                )}
+                {status === 'error' && (
+                  <XCircle className="h-9 w-9 text-rose-600" />
+                )}
+              </span>
+            </div>
+
+            <div className="register-confirmation-content">
+              {status === 'loading' && (
+                <>
+                  <h2 id="verify-email-title">Đang xác thực email...</h2>
+                  <p>Vui lòng đợi trong giây lát.</p>
+                </>
+              )}
+
+              {status === 'success' && (
+                <>
+                  <h2 id="verify-email-title">Xác thực thành công!</h2>
+                  <p>Tài khoản của bạn đã được kích hoạt.</p>
+                  <div className="register-confirmation-actions">
+                    <button
+                      type="button"
+                      className="register-confirmation-login-button"
+                      onClick={() => {
+                        if (user) {
+                          navigate(roleHomePath(user.role as AuthRole), { replace: true });
+                        } else {
+                          navigate('/login', { replace: true });
+                        }
+                      }}
+                    >
+                      Đi đến đăng nhập
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {status === 'error' && (
+                <>
+                  <h2 id="verify-email-title">Xác thực thất bại</h2>
+                  <p className="text-rose-600 font-medium">{errorMessage}</p>
+                  <div className="register-confirmation-actions">
+                    <button
+                      type="button"
+                      className="register-confirmation-login-button"
+                      onClick={() => navigate('/login', { replace: true })}
+                    >
+                      Quay lại đăng nhập
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </AuthLayout>
   );
 }
