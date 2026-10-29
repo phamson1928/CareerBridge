@@ -41,6 +41,17 @@ export class FilesService {
         message: 'Only company accounts can upload company registration files',
       });
     }
+    if (
+      dto.type === FileType.CERTIFICATE &&
+      user.role !== 'COMPANY' &&
+      user.role !== 'ADMIN'
+    ) {
+      throw new ForbiddenException({
+        code: 'CERTIFICATE_UPLOAD_FORBIDDEN',
+        message:
+          'Only company or admin accounts can upload internship completion certificates',
+      });
+    }
     this.validateUpload(dto);
     const storageKey = this.createStorageKey(user.id, dto.originalName);
     const file = await this.prisma.file.create({
@@ -88,6 +99,20 @@ export class FilesService {
             placement: {
               select: {
                 student: { select: { userId: true } },
+                company: { select: { userId: true } },
+                supervision: {
+                  select: { lecturer: { select: { userId: true } } },
+                },
+              },
+            },
+          },
+        },
+        evaluationCertificates: {
+          select: {
+            placement: {
+              select: {
+                student: { select: { userId: true } },
+                company: { select: { userId: true } },
                 supervision: {
                   select: { lecturer: { select: { userId: true } } },
                 },
@@ -146,12 +171,13 @@ export class FilesService {
       });
     }
     if (
-      dto.type === FileType.COMPANY_REGISTRATION &&
+      (dto.type === FileType.COMPANY_REGISTRATION ||
+        dto.type === FileType.CERTIFICATE) &&
       dto.sizeBytes > 10 * 1024 * 1024
     ) {
       throw new BadRequestException({
         code: 'COMPANY_REGISTRATION_FILE_TOO_LARGE',
-        message: 'Company registration file must not exceed 10 MB',
+        message: 'Document file must not exceed 10 MB',
       });
     }
   }
@@ -173,6 +199,14 @@ export class FilesService {
       reportFiles: {
         placement: {
           student: { userId: string };
+          company: { userId: string };
+          supervision: { lecturer: { userId: string } } | null;
+        };
+      }[];
+      evaluationCertificates?: {
+        placement: {
+          student: { userId: string };
+          company: { userId: string };
           supervision: { lecturer: { userId: string } } | null;
         };
       }[];
@@ -194,9 +228,19 @@ export class FilesService {
       )
     )
       return true;
+    if (
+      file.evaluationCertificates?.some(
+        (evaluation) =>
+          evaluation.placement.student.userId === user.id ||
+          evaluation.placement.company.userId === user.id ||
+          evaluation.placement.supervision?.lecturer.userId === user.id,
+      )
+    )
+      return true;
     return file.reportFiles.some(
       (report) =>
         report.placement.student.userId === user.id ||
+        report.placement.company.userId === user.id ||
         report.placement.supervision?.lecturer.userId === user.id,
     );
   }

@@ -88,7 +88,10 @@ export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
       if (!placement.startDate || !placement.endDate) continue;
       const start = this.day(placement.startDate);
       const end = this.day(placement.endDate);
-      const totalWeeks = Math.ceil((end.getTime() - start.getTime() + DAY_MS) / (7 * DAY_MS));
+      const totalWeeks = Math.min(
+        10,
+        Math.ceil((end.getTime() - start.getTime() + DAY_MS) / (7 * DAY_MS)),
+      );
       const submittedWeeks = new Set(
         placement.reports
           .filter((report) => report.status !== 'DRAFT')

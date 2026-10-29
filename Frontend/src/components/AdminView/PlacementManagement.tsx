@@ -840,41 +840,66 @@ export const PlacementManagement: React.FC<{
                 )}
               </div>
               <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-sm font-black text-slate-900">Tiến độ</p>
+                <p className="text-sm font-black text-slate-900">
+                  Tiến độ & Điều kiện nghiệm thu học vụ
+                </p>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="rounded-xl bg-slate-50 p-3">
                     <p className="text-[10px] font-bold uppercase text-slate-500">
-                      Báo cáo
+                      Báo cáo đã duyệt
                     </p>
-                    <p className="mt-1 text-xl font-black">
+                    <p className="mt-1 text-xl font-black text-emerald-600">
+                      {selected.progress.approvedReports ?? 0}/
                       {selected.progress.reportCount}
                     </p>
                   </div>
                   <div className="rounded-xl bg-slate-50 p-3">
                     <p className="text-[10px] font-bold uppercase text-slate-500">
-                      Chờ duyệt
+                      BC Tổng kết
                     </p>
-                    <p className="mt-1 text-xl font-black text-rose-600">
-                      {selected.progress.reportsAwaitingReview}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-slate-50 p-3">
-                    <p className="text-[10px] font-bold uppercase text-slate-500">
-                      Đã duyệt
-                    </p>
-                    <p className="mt-1 text-xl font-black text-emerald-600">
-                      {selected.progress.approvedReports ?? 0}
+                    <p className="mt-1 text-xs font-black text-slate-900">
+                      {selected.progress.finalReportStatus
+                        ? reportLabel[selected.progress.finalReportStatus]
+                        : "Chưa nộp"}
                     </p>
                   </div>
                   <div className="rounded-xl bg-slate-50 p-3">
                     <p className="text-[10px] font-bold uppercase text-slate-500">
-                      Đánh giá
+                      Điểm Doanh nghiệp
                     </p>
-                    <p className="mt-1 text-xl font-black">
-                      {selected.progress.evaluationCount}
+                    <p className="mt-1 text-base font-black text-emerald-700">
+                      {selected.progress.companyScore !== null &&
+                      selected.progress.companyScore !== undefined
+                        ? `${selected.progress.companyScore}/10`
+                        : "Chưa chấm"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-[10px] font-bold uppercase text-slate-500">
+                      Điểm Giảng viên
+                    </p>
+                    <p className="mt-1 text-base font-black text-violet-700">
+                      {selected.progress.lecturerScore !== null &&
+                      selected.progress.lecturerScore !== undefined
+                        ? `${selected.progress.lecturerScore}/10`
+                        : "Chưa chấm"}
                     </p>
                   </div>
                 </div>
+                {selected.progress.finalScore !== null &&
+                  selected.progress.finalScore !== undefined && (
+                    <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/70 px-3.5 py-2.5 text-xs">
+                      <span className="font-bold text-indigo-900">
+                        Điểm tổng kết học phần (50% DN + 50% GVHD):
+                      </span>
+                      <span className="font-black text-indigo-700">
+                        {selected.progress.finalScore.toFixed(2)}/10{" "}
+                        {selected.progress.hasCompanyCertificate
+                          ? "· Đã có Chứng nhận DN"
+                          : ""}
+                      </span>
+                    </div>
+                  )}
                 {selected.progress.lastReportAt && (
                   <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
                     <Clock3 className="h-3.5 w-3.5" /> Báo cáo gần nhất:{" "}
@@ -895,7 +920,13 @@ export const PlacementManagement: React.FC<{
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {selected.status === "ACTIVE" &&
-                    selected.academicStatus === "CLOSED" && (
+                    (selected.academicStatus === "CLOSED" ||
+                      Boolean(
+                        selected.progress.hasCompanyEvaluation &&
+                          selected.progress.hasLecturerEvaluation &&
+                          (selected.progress.approvedReports ?? 0) > 0 &&
+                          selected.progress.reportsAwaitingReview === 0,
+                      )) && (
                       <button
                         onClick={() => {
                           setAction("COMPLETED");
@@ -903,8 +934,8 @@ export const PlacementManagement: React.FC<{
                         }}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700"
                       >
-                        <CheckCircle2 className="h-4 w-4" /> Hoàn tất hồ sơ thực
-                        tập
+                        <CheckCircle2 className="h-4 w-4" /> Nghiệm thu & Hoàn
+                        tất hồ sơ thực tập
                       </button>
                     )}
                   {(selected.status === "PENDING" ||
@@ -927,10 +958,13 @@ export const PlacementManagement: React.FC<{
                     </p>
                   )}
                   {selected.status === "ACTIVE" &&
-                    selected.academicStatus !== "CLOSED" && (
+                    (!selected.progress.hasCompanyEvaluation ||
+                      !selected.progress.hasLecturerEvaluation ||
+                      (selected.progress.approvedReports ?? 0) === 0) && (
                       <p className="text-xs leading-5 text-slate-500">
-                        Chỉ có thể xác nhận công việc thực tế hoàn tất sau khi
-                        thời gian theo dõi học vụ đã đóng.
+                        Để nghiệm thu hoàn tất hồ sơ thực tập, sinh viên cần có
+                        báo cáo đã được duyệt và đủ 2 bản đánh giá từ Doanh
+                        nghiệp & Giảng viên hướng dẫn.
                       </p>
                     )}
                 </div>

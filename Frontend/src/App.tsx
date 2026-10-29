@@ -29,7 +29,12 @@ import { studentsApi, type StudentProfileRecord } from "./students/api";
 import { lecturersApi } from "./lecturers/api";
 import { skillsApi } from "./skills/api";
 import type { StudentSkillRecord } from "./skills/types";
-import { evaluationsApi, type EvaluationRecord } from "./evaluations/api";
+import {
+  evaluationsApi,
+  type CreateEvaluationInput,
+  type EvaluationRecord,
+  type UpdateEvaluationInput,
+} from "./evaluations/api";
 import { placementsApi } from "./placements/api";
 import type { PlacementRecord } from "./placements/types";
 import { getApiErrorMessage } from "./auth/api";
@@ -422,11 +427,7 @@ export default function App() {
     );
   };
 
-  const handleSubmitEvaluation = async (input: {
-    placementId: string;
-    score: number;
-    comment: string;
-  }) => {
+  const handleSubmitEvaluation = async (input: CreateEvaluationInput) => {
     try {
       const created = await evaluationsApi.create(input);
       setEvaluationRecords((previous) => [created, ...previous]);
@@ -437,7 +438,7 @@ export default function App() {
     }
   };
 
-  const handleUpdateEvaluation = async (id: string, input: { score: number; comment: string }) => {
+  const handleUpdateEvaluation = async (id: string, input: UpdateEvaluationInput) => {
     try {
       const updated = await evaluationsApi.update(id, input);
       setEvaluationRecords((previous) => previous.map((item) => item.id === id ? updated : item));

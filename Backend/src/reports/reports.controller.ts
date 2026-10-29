@@ -42,7 +42,13 @@ export class ReportsController {
   ) {
     return this.reports.listSupervised(query, user);
   }
-  @Get(':id') @Roles(Role.STUDENT, Role.LECTURER, Role.ADMIN) one(
+  @Get('company') @Roles(Role.COMPANY) company(
+    @Query() query: ListReportsQueryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.reports.listCompany(query, user);
+  }
+  @Get(':id') @Roles(Role.STUDENT, Role.LECTURER, Role.COMPANY, Role.ADMIN) one(
     @Param('id') id: string,
     @CurrentUser() user: AuthUser,
   ) {
