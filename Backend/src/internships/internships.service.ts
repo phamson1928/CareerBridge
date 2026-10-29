@@ -7,8 +7,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  ApplicationStatus,
   CompanyStatus,
+  InternshipModerationReasonCode,
+  InternshipReportReasonCode,
+  InternshipReportStatus,
   InternshipStatus,
+  NotificationAction,
+  NotificationType,
   Prisma,
   Role,
   SemesterStatus,
@@ -18,12 +24,20 @@ import {
   SemesterLifecycleService,
   type SemesterWindow,
 } from '../semesters/semester-lifecycle.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateInternshipDto } from './dto/create-internship.dto';
 import { ListInternshipsQueryDto } from './dto/list-internships-query.dto';
 import { RepostInternshipDto } from './dto/repost-internship.dto';
 import { SaveAsTemplateDto } from './dto/save-as-template.dto';
 import { UpdateInternshipDto } from './dto/update-internship.dto';
+import {
+  ModerateInternshipDto,
+  ModerationActionType,
+} from './dto/moderate-internship.dto';
+import { CreateInternshipReportDto } from './dto/create-internship-report.dto';
+import { ReviewInternshipReportDto } from './dto/review-internship-report.dto';
+import { ListInternshipReportsQueryDto } from './dto/list-internship-reports-query.dto';
 import type { CreateInternshipFromTemplateDto } from '../internship-templates/dto/create-internship-from-template.dto';
 
 const internshipSelect = {
@@ -47,6 +61,10 @@ const internshipSelect = {
   sourceInternshipId: true,
   viewCount: true,
   uniqueViewerCount: true,
+  moderationReasonCode: true,
+  moderationReason: true,
+  moderatedById: true,
+  moderatedAt: true,
   createdAt: true,
   updatedAt: true,
   company: {
@@ -70,6 +88,12 @@ const internshipSelect = {
     },
     orderBy: { skill: { name: 'asc' } },
   },
+  _count: {
+    select: {
+      applications: true,
+      reports: true,
+    },
+  },
 } satisfies Prisma.InternshipSelect;
 
 type InternshipRecord = Prisma.InternshipGetPayload<{
@@ -83,6 +107,7 @@ export class InternshipsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly lifecycle: SemesterLifecycleService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async list(query: ListInternshipsQueryDto, user: AuthUser) {
@@ -112,11 +137,13 @@ export class InternshipsService {
     if (user.role === Role.COMPANY) {
       const company = await this.getCompanyForUser(user.id);
       if (internship.companyId !== company.id) throw this.notFound();
-    } else if (
-      internship.status !== InternshipStatus.OPEN ||
-      internship.company.status !== CompanyStatus.APPROVED
-    ) {
-      throw this.notFound();
+    } else if (user.role !== Role.ADMIN) {
+      if (
+        internship.status !== InternshipStatus.OPEN ||
+        internship.company.status !== CompanyStatus.APPROVED
+      ) {
+        throw this.notFound();
+      }
     }
 
     if (user.role === Role.STUDENT) {
@@ -199,6 +226,12 @@ export class InternshipsService {
   }
 
   async create(dto: CreateInternshipDto, userId: string) {
+    if (dto.status === InternshipStatus.REJECTED) {
+      throw new BadRequestException({
+        code: 'INVALID_STATUS',
+        message: 'Doanh nghiệp không thể đặt trạng thái tin là REJECTED',
+      });
+    }
     const company = await this.getApprovedCompanyForUser(userId);
     const semester = await this.resolvePostingSemester(dto.semesterId);
     this.validateDates(dto, semester);
@@ -258,6 +291,18 @@ export class InternshipsService {
       throw new BadRequestException({
         code: 'INTERNSHIP_CANCELLED',
         message: 'A cancelled internship cannot be edited',
+      });
+    }
+    if (current.status === InternshipStatus.REJECTED) {
+      throw new BadRequestException({
+        code: 'INTERNSHIP_REJECTED',
+        message: 'Tin tuyển dụng đã bị Ban quản trị gỡ bỏ do vi phạm quy định',
+      });
+    }
+    if (dto.status === InternshipStatus.REJECTED) {
+      throw new BadRequestException({
+        code: 'INVALID_STATUS',
+        message: 'Doanh nghiệp không thể đặt trạng thái tin là REJECTED',
       });
     }
     const semester = await this.ensureSemesterAvailable(
@@ -768,6 +813,7 @@ export class InternshipsService {
     onlyApprovedCompany = false,
   ): Prisma.InternshipWhereInput {
     const status = enforcedStatus ?? query.status;
+    const targetCompanyId = companyId ?? query.companyId;
     const skillIds = [
       ...(query.skillIds ?? []),
       ...(query.skillId ? [query.skillId] : []),
@@ -775,6 +821,18 @@ export class InternshipsService {
     const and: Prisma.InternshipWhereInput[] = skillIds.map((skillId) => ({
       skills: { some: { skillId } },
     }));
+
+    if (query.hasReports) {
+      and.push({
+        reports: { some: { status: InternshipReportStatus.PENDING } },
+      });
+    }
+
+    if (query.moderationReasonCode) {
+      and.push({
+        moderationReasonCode: query.moderationReasonCode as any,
+      });
+    }
 
     if (query.search) {
       and.push({
@@ -799,7 +857,7 @@ export class InternshipsService {
     }
 
     return {
-      ...(companyId ? { companyId } : {}),
+      ...(targetCompanyId ? { companyId: targetCompanyId } : {}),
       ...(onlyApprovedCompany
         ? { company: { status: CompanyStatus.APPROVED } }
         : {}),
@@ -972,6 +1030,380 @@ export class InternshipsService {
         name: skill.name,
       })),
     };
+  }
+
+  async moderate(id: string, adminUserId: string, dto: ModerateInternshipDto) {
+    const current = await this.prisma.internship.findUnique({
+      where: { id },
+      include: {
+        company: { select: { id: true, userId: true, companyName: true } },
+      },
+    });
+    if (!current) throw this.notFound();
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const notificationsToPublish: any[] = [];
+      let updatedStatus: InternshipStatus;
+      let reasonCodeToSet: InternshipModerationReasonCode | null = null;
+      let reasonDetailToSet: string | null = null;
+
+      if (dto.action === ModerationActionType.REJECT) {
+        updatedStatus = InternshipStatus.REJECTED;
+        reasonCodeToSet =
+          dto.reasonCode ?? InternshipModerationReasonCode.OTHER;
+        reasonDetailToSet = dto.reasonDetail.trim();
+
+        // Gửi thông báo cho doanh nghiệp
+        const companyNotif = await this.notifications.createInTransaction(tx, {
+          userId: current.company.userId,
+          eventKey: `internship:${id}:rejected:${Date.now()}`,
+          type: NotificationType.INTERNSHIP,
+          action: NotificationAction.OPEN_INTERNSHIP,
+          title: 'Tin tuyển dụng đã bị gỡ bỏ do vi phạm quy định',
+          content: `Tin "${current.title}" đã bị gỡ bỏ. Lý do: ${reasonDetailToSet}`,
+          resourceId: id,
+          metadata: {
+            internshipId: id,
+            status: updatedStatus,
+            reasonCode: reasonCodeToSet,
+            reasonDetail: reasonDetailToSet,
+          },
+        });
+        notificationsToPublish.push(companyNotif);
+
+        // Bảo vệ ứng viên đã nộp đơn
+        if (dto.notifyApplicants !== false) {
+          const activeApplications = await tx.application.findMany({
+            where: {
+              internshipId: id,
+              status: {
+                in: [
+                  ApplicationStatus.PENDING,
+                  ApplicationStatus.REVIEWING,
+                  ApplicationStatus.INTERVIEWING,
+                ],
+              },
+            },
+            include: {
+              student: { select: { userId: true, fullName: true } },
+            },
+          });
+
+          if (activeApplications.length > 0) {
+            await tx.application.updateMany({
+              where: {
+                id: { in: activeApplications.map((a) => a.id) },
+              },
+              data: {
+                status: ApplicationStatus.WITHDRAWN,
+                withdrawnAt: new Date(),
+                rejectionReason: `Tin tuyển dụng đã bị gỡ bỏ bởi Ban quản trị: ${reasonDetailToSet}`,
+              },
+            });
+
+            for (const app of activeApplications) {
+              const studentNotif = await this.notifications.createInTransaction(
+                tx,
+                {
+                  userId: app.student.userId,
+                  eventKey: `application:${app.id}:internship_rejected:${Date.now()}`,
+                  type: NotificationType.APPLICATION,
+                  action: NotificationAction.OPEN_APPLICATION,
+                  title: 'Tin tuyển dụng bạn đã ứng tuyển bị gỡ bỏ',
+                  content: `Tin "${current.title}" tại ${current.company.companyName} đã bị Nhà trường gỡ bỏ do vi phạm quy định. Đơn ứng tuyển của bạn đã được hủy an toàn.`,
+                  resourceId: app.id,
+                  metadata: {
+                    applicationId: app.id,
+                    internshipId: id,
+                    reason: reasonDetailToSet,
+                  },
+                },
+              );
+              notificationsToPublish.push(studentNotif);
+            }
+          }
+        }
+      } else if (dto.action === ModerationActionType.REQUEST_REVISION) {
+        updatedStatus = InternshipStatus.DRAFT;
+        reasonCodeToSet = dto.reasonCode ?? null;
+        reasonDetailToSet = dto.reasonDetail.trim();
+
+        const companyNotif = await this.notifications.createInTransaction(tx, {
+          userId: current.company.userId,
+          eventKey: `internship:${id}:revision_requested:${Date.now()}`,
+          type: NotificationType.INTERNSHIP,
+          action: NotificationAction.OPEN_INTERNSHIP,
+          title: 'Yêu cầu điều chỉnh nội dung tin tuyển dụng',
+          content: `Ban quản trị yêu cầu điều chỉnh tin "${current.title}": ${reasonDetailToSet}. Tin đã được chuyển về bản nháp.`,
+          resourceId: id,
+          metadata: {
+            internshipId: id,
+            status: updatedStatus,
+            reasonCode: reasonCodeToSet,
+            reasonDetail: reasonDetailToSet,
+          },
+        });
+        notificationsToPublish.push(companyNotif);
+      } else if (dto.action === ModerationActionType.RESTORE) {
+        updatedStatus = InternshipStatus.DRAFT;
+        reasonCodeToSet = null;
+        reasonDetailToSet = null;
+
+        const companyNotif = await this.notifications.createInTransaction(tx, {
+          userId: current.company.userId,
+          eventKey: `internship:${id}:restored:${Date.now()}`,
+          type: NotificationType.INTERNSHIP,
+          action: NotificationAction.OPEN_INTERNSHIP,
+          title: 'Tin tuyển dụng đã được khôi phục',
+          content: `Tin "${current.title}" đã được Ban quản trị khôi phục về trạng thái nháp. Bạn có thể kiểm tra và công khai lại tin.`,
+          resourceId: id,
+          metadata: {
+            internshipId: id,
+            status: updatedStatus,
+          },
+        });
+        notificationsToPublish.push(companyNotif);
+      } else {
+        throw new BadRequestException({
+          code: 'INVALID_MODERATION_ACTION',
+          message: 'Invalid moderation action',
+        });
+      }
+
+      const updated = await tx.internship.update({
+        where: { id },
+        data: {
+          status: updatedStatus,
+          moderationReasonCode: reasonCodeToSet,
+          moderationReason: reasonDetailToSet,
+          moderatedById: adminUserId,
+          moderatedAt: new Date(),
+        },
+        select: internshipSelect,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: adminUserId,
+          action: 'INTERNSHIP_MODERATED',
+          entity: 'Internship',
+          entityId: id,
+          metadata: {
+            action: dto.action,
+            fromStatus: current.status,
+            toStatus: updatedStatus,
+            reasonCode: reasonCodeToSet,
+            reasonDetail: reasonDetailToSet,
+            companyId: current.companyId,
+          },
+        },
+      });
+
+      return { updated, notifications: notificationsToPublish };
+    });
+
+    if (result.notifications.length > 0) {
+      this.notifications.publishMany(result.notifications);
+    }
+
+    return this.toResponse(result.updated);
+  }
+
+  async report(
+    internshipId: string,
+    studentUserId: string,
+    dto: CreateInternshipReportDto,
+  ) {
+    const student = await this.prisma.studentProfile.findUnique({
+      where: { userId: studentUserId },
+      select: { id: true, fullName: true },
+    });
+    if (!student) {
+      throw new NotFoundException({
+        code: 'STUDENT_NOT_FOUND',
+        message: 'Student profile not found',
+      });
+    }
+
+    const internship = await this.prisma.internship.findUnique({
+      where: { id: internshipId },
+      select: { id: true, title: true, companyId: true },
+    });
+    if (!internship) throw this.notFound();
+
+    const existingPendingReport = await this.prisma.internshipReport.findFirst({
+      where: {
+        internshipId,
+        studentId: student.id,
+        status: {
+          in: [
+            InternshipReportStatus.PENDING,
+            InternshipReportStatus.INVESTIGATING,
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    if (existingPendingReport) {
+      throw new ConflictException({
+        code: 'ALREADY_REPORTED',
+        message:
+          'Bạn đã gửi báo cáo cho tin tuyển dụng này và đang chờ Ban quản trị xử lý',
+      });
+    }
+
+    const report = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.internshipReport.create({
+        data: {
+          internshipId,
+          studentId: student.id,
+          reasonCode: dto.reasonCode,
+          reasonDetail: dto.reasonDetail?.trim() || null,
+          status: InternshipReportStatus.PENDING,
+        },
+        include: {
+          student: {
+            select: { id: true, fullName: true, studentCode: true },
+          },
+          internship: {
+            select: {
+              id: true,
+              title: true,
+              company: { select: { id: true, companyName: true } },
+            },
+          },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: studentUserId,
+          action: 'INTERNSHIP_REPORTED',
+          entity: 'InternshipReport',
+          entityId: created.id,
+          metadata: {
+            internshipId,
+            reasonCode: dto.reasonCode,
+            companyId: internship.companyId,
+          },
+        },
+      });
+
+      return created;
+    });
+
+    return report;
+  }
+
+  async listReports(query: ListInternshipReportsQueryDto) {
+    const where: Prisma.InternshipReportWhereInput = {
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.internshipId ? { internshipId: query.internshipId } : {}),
+    };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.internshipReport.findMany({
+        where,
+        include: {
+          student: {
+            select: {
+              id: true,
+              fullName: true,
+              studentCode: true,
+              major: true,
+            },
+          },
+          internship: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              company: { select: { id: true, companyName: true, logo: true } },
+            },
+          },
+          reviewedBy: {
+            select: { id: true, email: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.internshipReport.count({ where }),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: Math.ceil(total / query.limit),
+      },
+    };
+  }
+
+  async reviewReport(
+    reportId: string,
+    adminUserId: string,
+    dto: ReviewInternshipReportDto,
+  ) {
+    const current = await this.prisma.internshipReport.findUnique({
+      where: { id: reportId },
+      select: { id: true, internshipId: true, status: true },
+    });
+    if (!current) {
+      throw new NotFoundException({
+        code: 'REPORT_NOT_FOUND',
+        message: 'Báo cáo vi phạm không tìm thấy',
+      });
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const record = await tx.internshipReport.update({
+        where: { id: reportId },
+        data: {
+          status: dto.status,
+          adminNotes: dto.adminNotes?.trim() || null,
+          reviewedById: adminUserId,
+          reviewedAt: new Date(),
+        },
+        include: {
+          student: {
+            select: { id: true, fullName: true, studentCode: true },
+          },
+          internship: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              company: { select: { id: true, companyName: true } },
+            },
+          },
+          reviewedBy: {
+            select: { id: true, email: true },
+          },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: adminUserId,
+          action: 'INTERNSHIP_REPORT_REVIEWED',
+          entity: 'InternshipReport',
+          entityId: reportId,
+          metadata: {
+            fromStatus: current.status,
+            toStatus: dto.status,
+            internshipId: current.internshipId,
+          },
+        },
+      });
+
+      return record;
+    });
+
+    return updated;
   }
 
   private notFound() {

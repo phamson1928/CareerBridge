@@ -62,6 +62,46 @@ enum InternshipStatus {
   OPEN
   CLOSED
   CANCELLED
+  REJECTED
+}
+
+enum InternshipModerationReasonCode {
+  POLICY_VIOLATION
+  MISLEADING_INFO
+  UNAUTHORIZED_FEE
+  INAPPROPRIATE_CONTENT
+  OUTSIDE_MAJOR_SCOPE
+  OTHER
+}
+
+enum InternshipReportReasonCode {
+  FRAUD_SCAM
+  FEE_CHARGED
+  MISLEADING_DESCRIPTION
+  UNPROFESSIONAL_BEHAVIOR
+  OTHER
+}
+
+enum InternshipReportStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+enum AiScanStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum AiCandidateRecommendation {
+  STRONG_HIRE
+  HIRE
+  POTENTIAL
+  NOT_RECOMMENDED
 }
 
 enum ApplicationStatus {
@@ -164,6 +204,7 @@ enum NotificationType {
   COMPANY
   EVALUATION
   SYSTEM
+  INTERNSHIP
 }
 
 enum NotificationAction {
@@ -175,6 +216,7 @@ enum NotificationAction {
   OPEN_COMPANY_PROFILE
   OPEN_EVALUATION
   OPEN_SUPPORT_REQUEST
+  OPEN_INTERNSHIP
 }
 
 model User {
@@ -202,6 +244,8 @@ model User {
   passwordResetTokens    PasswordResetToken[]
   repliedSupportRequests SupportRequest[]     @relation("SupportRepliedBy")
   internshipViews        InternshipView[]
+  moderatedInternships   Internship[]         @relation("InternshipModeratedBy")
+  reviewedInternshipReports InternshipReport[] @relation("InternshipReportReviewedBy")
 }
 
 model VerificationToken {
@@ -272,6 +316,7 @@ model StudentProfile {
   jobPreference       StudentJobPreference?
   recommendationCache InternshipRecommendationCache?
   supportRequests     SupportRequest[]
+  internshipReports   InternshipReport[]
 }
 
 model StudentJobPreference {
@@ -361,6 +406,7 @@ model CompanyProfile {
   suspensionReason           String?
   suspensionReasonCode       CompanySuspensionReasonCode?
   suspendedAt                DateTime?
+  autoAiScanEnabled          Boolean                      @default(false)
   createdAt                  DateTime                     @default(now())
   updatedAt                  DateTime                     @updatedAt
 
@@ -371,6 +417,8 @@ model CompanyProfile {
   templates            InternshipTemplate[]
   placements           InternshipPlacement[]
   conversations        Conversation[]
+  aiScanJobs           AiScanJob[]
+  aiWorkers            CompanyAiWorker[]
 
   @@index([status])
   @@index([status, reviewDueAt])
@@ -447,11 +495,16 @@ model Internship {
   sourceInternshipId String?
   viewCount          Int                  @default(0)
   uniqueViewerCount  Int                  @default(0)
+  moderationReasonCode InternshipModerationReasonCode?
+  moderationReason     String?
+  moderatedById        String?
+  moderatedAt          DateTime?
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
   company             CompanyProfile        @relation(fields: [companyId], references: [id], onDelete: Restrict)
   semester            Semester              @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  moderatedBy         User?                 @relation("InternshipModeratedBy", fields: [moderatedById], references: [id], onDelete: SetNull)
   sourceTemplate      InternshipTemplate?   @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
   sourceInternship    Internship?           @relation("InternshipRepostSource", fields: [sourceInternshipId], references: [id], onDelete: SetNull)
   repostedInternships Internship[]          @relation("InternshipRepostSource")
@@ -459,12 +512,86 @@ model Internship {
   applications        Application[]
   placements          InternshipPlacement[]
   views               InternshipView[]
+  reports             InternshipReport[]
 
   @@index([companyId, status])
   @@index([semesterId, status])
   @@index([deadline])
   @@index([sourceTemplateId])
   @@index([sourceInternshipId])
+  @@index([moderationReasonCode])
+}
+
+model InternshipReport {
+  id           String                     @id @default(cuid())
+  internshipId String
+  studentId    String
+  reasonCode   InternshipReportReasonCode
+  reasonDetail String?                    @db.Text
+  status       InternshipReportStatus     @default(PENDING)
+  reviewedById String?
+  reviewedAt   DateTime?
+  adminNotes   String?                    @db.Text
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  internship   Internship     @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reviewedBy   User?          @relation("InternshipReportReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([internshipId])
+  @@index([studentId])
+  @@index([status])
+  @@index([status, createdAt])
+}
+
+model AiScanJob {
+  id                String                     @id @default(cuid())
+  applicationId     String                     @unique
+  companyId         String
+  status            AiScanStatus               @default(PENDING)
+  attempts          Int                        @default(0)
+  maxAttempts       Int                        @default(3)
+  lockedUntil       DateTime?
+  lockedByWorkerId  String?
+  errorDetails      String?
+
+  aiScore           Float?
+  recommendation    AiCandidateRecommendation?
+  experienceYears   Float?
+  extractedSkills   String[]                   @default([])
+  matchedSkills     String[]                   @default([])
+  missingSkills     String[]                   @default([])
+  strengths         String[]                   @default([])
+  weaknesses        String[]                   @default([])
+  summary           String?
+  rawAnalysis       Json?
+
+  completedAt       DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  application       Application                @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  company           CompanyProfile             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status])
+  @@index([status, lockedUntil])
+}
+
+model CompanyAiWorker {
+  id              String         @id @default(cuid())
+  companyId       String
+  name            String
+  tokenHash       String         @unique
+  lastSeenAt      DateTime?
+  isActive        Boolean        @default(true)
+  modelName       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  company         CompanyProfile @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
 }
 
 model InternshipTemplate {
@@ -524,6 +651,7 @@ model Application {
   coverLetter            String?
   cvFileId               String?
   matchScore             Float?
+  aiScore                Float?
   status                 ApplicationStatus @default(PENDING)
   companyFeedback        String?
   rejectionReason        String?
@@ -548,6 +676,7 @@ model Application {
   emailLogs     EmailLog[]
   placement     InternshipPlacement?
   conversation  Conversation?
+  aiScanJob     AiScanJob?
 
   @@unique([studentId, internshipId])
   @@index([internshipId, status])

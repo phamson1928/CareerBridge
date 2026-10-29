@@ -18,8 +18,12 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
 import { CreateInternshipDto } from './dto/create-internship.dto';
+import { CreateInternshipReportDto } from './dto/create-internship-report.dto';
+import { ListInternshipReportsQueryDto } from './dto/list-internship-reports-query.dto';
 import { ListInternshipsQueryDto } from './dto/list-internships-query.dto';
+import { ModerateInternshipDto } from './dto/moderate-internship.dto';
 import { RepostInternshipDto } from './dto/repost-internship.dto';
+import { ReviewInternshipReportDto } from './dto/review-internship-report.dto';
 import { SaveAsTemplateDto } from './dto/save-as-template.dto';
 import { UpdateInternshipDto } from './dto/update-internship.dto';
 import { InternshipsService } from './internships.service';
@@ -43,6 +47,22 @@ export class InternshipsController {
     return this.internshipsService.listMine(query, user.id);
   }
 
+  @Get('reports/admin')
+  @Roles(Role.ADMIN)
+  listReports(@Query() query: ListInternshipReportsQueryDto) {
+    return this.internshipsService.listReports(query);
+  }
+
+  @Patch('reports/:reportId/review')
+  @Roles(Role.ADMIN)
+  reviewReport(
+    @Param('reportId') reportId: string,
+    @Body() dto: ReviewInternshipReportDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.internshipsService.reviewReport(reportId, user.id, dto);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.internshipsService.findOne(id, user);
@@ -62,6 +82,26 @@ export class InternshipsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.internshipsService.update(id, dto, user.id);
+  }
+
+  @Patch(':id/moderate')
+  @Roles(Role.ADMIN)
+  moderate(
+    @Param('id') id: string,
+    @Body() dto: ModerateInternshipDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.internshipsService.moderate(id, user.id, dto);
+  }
+
+  @Post(':id/report')
+  @Roles(Role.STUDENT)
+  report(
+    @Param('id') id: string,
+    @Body() dto: CreateInternshipReportDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.internshipsService.report(id, user.id, dto);
   }
 
   @Delete(':id')
