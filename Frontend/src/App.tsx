@@ -60,6 +60,7 @@ const UserManagement = lazy(() => import("./components/AdminView/UserManagement"
 const CompanyModeration = lazy(() => import("./components/AdminView/CompanyModeration").then(({ CompanyModeration }) => ({ default: CompanyModeration })));
 const SupervisionManagement = lazy(() => import("./components/AdminView/SupervisionManagement").then(({ SupervisionManagement }) => ({ default: SupervisionManagement })));
 const PlacementManagement = lazy(() => import("./components/AdminView/PlacementManagement").then(({ PlacementManagement }) => ({ default: PlacementManagement })));
+const InternshipManagement = lazy(() => import("./components/AdminView/InternshipManagement").then(({ InternshipManagement }) => ({ default: InternshipManagement })));
 const SkillManagement = lazy(() => import("./components/AdminView/SkillManagement").then(({ SkillManagement }) => ({ default: SkillManagement })));
 const SemesterManagement = lazy(() => import("./components/AdminView/SemesterManagement").then(({ SemesterManagement }) => ({ default: SemesterManagement })));
 const AuditLogManagement = lazy(() => import("./components/AdminView/AuditLogManagement").then(({ AuditLogManagement }) => ({ default: AuditLogManagement })));
@@ -72,6 +73,7 @@ const adminPathByTab: Record<string, string> = {
   "stats-dashboard": "dashboard",
   "teacher-assignment": "supervisions",
   "placement-management": "placements",
+  "internship-management": "internships",
   "user-management": "users",
   "company-approval": "companies",
   "skill-management": "skills",
@@ -469,6 +471,7 @@ export default function App() {
       OPEN_COMPANY_PROFILE: currentRole === "ADMIN" ? "company-approval" : "company-profile",
       OPEN_EVALUATION: currentRole === "COMPANY" ? "interns-evaluation" : currentRole === "TEACHER" ? "evaluation-list" : "evaluations",
       OPEN_SUPPORT_REQUEST: currentRole === "ADMIN" ? "support-requests" : "support",
+      OPEN_INTERNSHIP: currentRole === "ADMIN" ? "internship-management" : currentRole === "COMPANY" ? "postings" : "internships",
     };
     const tab = tabByAction[action];
     if (tab) handleTabChange(tab);
@@ -642,6 +645,7 @@ export default function App() {
                 onOpenAssignment={() => handleTabChange("teacher-assignment")}
               />
             )}
+            {activeTab === "internship-management" && <InternshipManagement />}
             {activeTab === "user-management" && <UserManagement />}
             {activeTab === "company-approval" && <CompanyModeration />}
             {activeTab === "skill-management" && <SkillManagement />}

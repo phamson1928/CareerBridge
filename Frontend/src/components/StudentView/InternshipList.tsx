@@ -15,7 +15,9 @@ import {
   FileText,
   X,
   Loader2,
+  Flag,
 } from 'lucide-react';
+import { ReportJobModal } from '../Internships/ReportJobModal';
 
 type InternshipPage = {
   items: Internship[];
@@ -64,6 +66,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
   const [internshipsError, setInternshipsError] = useState<string | null>(null);
   const [activeModalInternship, setActiveModalInternship] = useState<Internship | null>(null);
   const [applyModalInternship, setApplyModalInternship] = useState<Internship | null>(null);
+  const [reportingInternship, setReportingInternship] = useState<Internship | null>(null);
   const [coverLetter, setCoverLetter] = useState('');
   const [selectedCvName, setSelectedCvName] = useState(studentProfile.cvName || 'Chưa tải CV lên hồ sơ');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -415,10 +418,18 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setReportingInternship(activeModalInternship)}
+                className="px-3.5 py-2 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="Báo cáo bài đăng nếu có dấu hiệu lừa đảo, thu phí hoặc sai sự thật"
+              >
+                <Flag className="w-3.5 h-3.5" /> Báo cáo tin vi phạm
+              </button>
               <button
                 onClick={() => setActiveModalInternship(null)}
-                className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
                 Đóng
               </button>
@@ -494,6 +505,16 @@ export const InternshipList: React.FC<InternshipListProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Report Modal */}
+      {reportingInternship && (
+        <ReportJobModal
+          internshipId={reportingInternship.id}
+          internshipTitle={reportingInternship.title}
+          companyName={reportingInternship.companyName}
+          onClose={() => setReportingInternship(null)}
+        />
       )}
     </div>
   );

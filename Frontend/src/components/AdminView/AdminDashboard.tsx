@@ -69,15 +69,22 @@ function MetricCard({
   detail,
   icon: Icon,
   tone,
+  onClick,
 }: {
   label: string;
   value: string | number;
   detail: string;
   icon: React.ElementType;
   tone: string;
+  onClick?: () => void;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-shadow hover:shadow-md sm:p-5">
+    <article
+      onClick={onClick}
+      className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all sm:p-5 ${
+        onClick ? "cursor-pointer hover:border-slate-300 hover:shadow-md" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -291,6 +298,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           detail={`${number.format(global.pendingCompanies)} hồ sơ đang chờ duyệt`}
           icon={Building2}
           tone="bg-[#e6f6f6] text-[#00878a]"
+          onClick={() => onNavigate?.("company-approval")}
         />
         <MetricCard
           label="Tin thực tập"
@@ -298,6 +306,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           detail={`${number.format(kpis.totalInternships)} tin trong phạm vi`}
           icon={BriefcaseBusiness}
           tone="bg-[#fff0f2] text-[#da1c2d]"
+          onClick={() => onNavigate?.("internship-management")}
         />
         <MetricCard
           label="Ứng tuyển"

@@ -5,6 +5,7 @@ export type NotificationType =
   | 'PLACEMENT'
   | 'COMPANY'
   | 'EVALUATION'
+  | 'INTERNSHIP'
   | 'SYSTEM';
 
 export type NotificationAction =
@@ -15,7 +16,8 @@ export type NotificationAction =
   | 'OPEN_PLACEMENT'
   | 'OPEN_COMPANY_PROFILE'
   | 'OPEN_EVALUATION'
-  | 'OPEN_SUPPORT_REQUEST';
+  | 'OPEN_SUPPORT_REQUEST'
+  | 'OPEN_INTERNSHIP';
 
 export interface AppNotification {
   id: string;

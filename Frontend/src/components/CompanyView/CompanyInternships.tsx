@@ -24,6 +24,7 @@ import {
   InternshipInput,
   InternshipRecord,
   RepostInternshipInput,
+  MODERATION_REASON_LABELS,
 } from "../../internships/api";
 import {
   internshipTemplatesApi,
@@ -67,6 +68,7 @@ const internshipStatusLabel: Record<InternshipRecord["status"], string> = {
   OPEN: "Đang mở",
   CLOSED: "Đã đóng",
   CANCELLED: "Đã hủy",
+  REJECTED: "Bị gỡ vi phạm",
 };
 
 const workTypeLabels: Record<string, string> = {
@@ -739,6 +741,7 @@ export function CompanyInternships() {
               <option value="OPEN">Đang mở</option>
               <option value="CLOSED">Đã đóng</option>
               <option value="CANCELLED">Đã hủy</option>
+              <option value="REJECTED">Bị gỡ vi phạm</option>
             </select>
             <div className="flex gap-2 md:col-span-5">
               <button className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition">
@@ -764,7 +767,11 @@ export function CompanyInternships() {
               {items.map((job) => (
                 <article
                   key={job.id}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-slate-300 transition"
+                  className={`flex flex-col justify-between rounded-2xl border bg-white p-5 shadow-xs transition ${
+                    job.status === "REJECTED"
+                      ? "border-rose-200 ring-1 ring-rose-200/50"
+                      : "border-slate-200 hover:border-slate-300"
+                  }`}
                 >
                   <div>
                     <div className="flex justify-between items-start gap-3">
@@ -774,10 +781,59 @@ export function CompanyInternships() {
                           {job.semester.name} · {job.department || "Chưa phân phòng ban"}
                         </p>
                       </div>
-                      <span className="shrink-0 h-fit rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
-                        {internshipStatusLabel[job.status]}
+                      <span
+                        className={`shrink-0 h-fit rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                          job.status === "OPEN"
+                            ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                            : job.status === "REJECTED"
+                            ? "bg-rose-100 text-rose-800 border border-rose-200"
+                            : job.status === "DRAFT"
+                            ? "bg-amber-100 text-amber-800 border border-amber-200"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {internshipStatusLabel[job.status] || job.status}
                       </span>
                     </div>
+
+                    {job.status === "REJECTED" && (
+                      <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/90 p-3.5 text-xs text-rose-900 shadow-xs">
+                        <div className="flex items-start gap-2.5">
+                          <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-rose-900">Tin đã bị Ban quản trị gỡ vi phạm:</span>
+                              {job.moderationReasonCode && (
+                                <span className="inline-block rounded-md bg-rose-200/80 px-2 py-0.5 text-[10px] font-bold text-rose-900">
+                                  {MODERATION_REASON_LABELS[job.moderationReasonCode] || job.moderationReasonCode}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-rose-800 leading-relaxed">
+                              {job.moderationReason || "Bài đăng vi phạm quy chuẩn tuyển dụng của nhà trường hoặc nhận nhiều phản ánh tiêu cực từ sinh viên."}
+                            </p>
+                            <p className="text-[11px] text-rose-700 italic">
+                              * Đơn ứng tuyển đang chờ/phỏng vấn đã được hoàn trả lại cho sinh viên. Vui lòng liên hệ Quản trị viên để được hướng dẫn.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {job.status === "DRAFT" && job.moderationReason && (
+                      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-900 shadow-xs">
+                        <div className="flex items-start gap-2.5">
+                          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <span className="font-bold text-amber-900">Yêu cầu điều chỉnh từ Ban quản trị:</span>
+                            <p className="text-amber-800 leading-relaxed">{job.moderationReason}</p>
+                            <p className="text-[11px] text-amber-700 italic">
+                              * Vui lòng cập nhật nội dung bài đăng theo đúng yêu cầu trước khi xuất bản lại.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <p className="mt-3 text-xs text-slate-600">
                       {job.location || "Chưa có địa điểm"} · Hạn nộp:{" "}
