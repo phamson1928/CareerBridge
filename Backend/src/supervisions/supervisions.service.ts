@@ -320,6 +320,7 @@ export class SupervisionsService {
                 semesterId: true,
                 startDate: true,
                 endDate: true,
+                _count: { select: { reports: true, evaluations: true } },
               },
             },
           },
@@ -327,12 +328,25 @@ export class SupervisionsService {
         if (!current) throw this.notFound();
         if (
           current.placement.status === PlacementStatus.CANCELLED ||
+          current.placement.status === PlacementStatus.COMPLETED ||
           current.placement.academicStatus === 'CLOSED' ||
           current.placement.academicStatus === 'CANCELLED'
         ) {
           throw new ConflictException({
             code: 'INVALID_SUPERVISION_TRANSITION',
             message: 'Terminal placements cannot be reassigned',
+          });
+        }
+        if (
+          current.status === SupervisionStatus.ACTIVE &&
+          (current.placement.academicStatus === 'ACTIVE' ||
+            current.placement._count.reports > 0 ||
+            current.placement._count.evaluations > 0)
+        ) {
+          throw new ConflictException({
+            code: 'SUPERVISION_LOCKED_DURING_INTERNSHIP',
+            message:
+              'Không thể đổi giảng viên khi sinh viên đã bước vào kỳ thực tập hoặc đã có báo cáo/đánh giá',
           });
         }
         this.assertPlacementSchedule(current.placement);
@@ -399,6 +413,7 @@ export class SupervisionsService {
               select: {
                 id: true,
                 status: true,
+                academicStatus: true,
                 _count: { select: { reports: true, evaluations: true } },
               },
             },
@@ -415,13 +430,14 @@ export class SupervisionsService {
           });
         }
         if (
+          current.placement.academicStatus === 'ACTIVE' ||
           current.placement._count.reports > 0 ||
           current.placement._count.evaluations > 0
         ) {
           throw new ConflictException({
             code: 'SUPERVISION_HAS_PROGRESS',
             message:
-              'Supervision cannot be cancelled after reports or evaluations exist',
+              'Không thể bỏ phân công khi sinh viên đã bước vào kỳ thực tập hoặc đã có báo cáo/đánh giá',
           });
         }
         const supervision = await tx.supervision.update({

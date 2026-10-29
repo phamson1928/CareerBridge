@@ -115,12 +115,20 @@ export type PlacementRecord = Prisma.InternshipPlacementGetPayload<{
 
 export interface PlacementProgress {
   reportCount: number;
+  weeklyReportCount: number;
+  finalReportStatus: ReportStatus | null;
   draftReports: number;
   submittedReports: number;
   reportsAwaitingReview: number;
   approvedReports: number;
   rejectedReports: number;
   evaluationCount: number;
+  hasCompanyEvaluation: boolean;
+  hasLecturerEvaluation: boolean;
+  companyScore: number | null;
+  lecturerScore: number | null;
+  finalScore: number | null;
+  hasCompanyCertificate: boolean;
   lastReportAt: Date | null;
 }
 
@@ -362,25 +370,46 @@ export class PlacementsService {
             message: `Cannot change placement status from ${current.status} to ${dto.status}`,
           });
         }
-        if (
-          dto.status === PublicPlacementStatus.COMPLETED &&
-          current.academicStatus !== 'CLOSED'
-        ) {
-          throw new ConflictException({
-            code: 'ACADEMIC_MONITORING_STILL_ACTIVE',
-            message:
-              'The actual placement cannot be completed before academic monitoring closes.',
-          });
-        }
         if (dto.status === PublicPlacementStatus.COMPLETED) {
-          const submittedReports = await tx.report.count({
-            where: { placementId: id, status: ReportStatus.SUBMITTED },
-          });
-          if (submittedReports > 0) {
+          const [reports, evaluations] = await Promise.all([
+            tx.report.findMany({
+              where: { placementId: id },
+              select: { status: true, week: true },
+            }),
+            tx.evaluation.findMany({
+              where: { placementId: id },
+              select: { type: true },
+            }),
+          ]);
+          const pendingOrRejected = reports.filter(
+            (r) =>
+              r.status === ReportStatus.SUBMITTED ||
+              r.status === ReportStatus.REJECTED,
+          ).length;
+          if (pendingOrRejected > 0) {
             throw new ConflictException({
               code: 'PLACEMENT_HAS_PENDING_REPORTS',
               message:
-                'Review all submitted reports before completing placement',
+                'Cần giảng viên duyệt hết các báo cáo đang chờ hoặc cần chỉnh sửa trước khi hoàn tất hồ sơ thực tập.',
+            });
+          }
+          const approvedCount = reports.filter(
+            (r) => r.status === ReportStatus.APPROVED,
+          ).length;
+          if (approvedCount === 0) {
+            throw new ConflictException({
+              code: 'PLACEMENT_MISSING_APPROVED_REPORTS',
+              message:
+                'Sinh viên cần có ít nhất 1 báo cáo thực tập đã được giảng viên phê duyệt trước khi nghiệm thu hoàn tất.',
+            });
+          }
+          const hasCompany = evaluations.some((e) => e.type === 'COMPANY');
+          const hasLecturer = evaluations.some((e) => e.type === 'LECTURER');
+          if (!hasCompany || !hasLecturer) {
+            throw new ConflictException({
+              code: 'PLACEMENT_MISSING_EVALUATIONS',
+              message:
+                'Cần có đầy đủ đánh giá của cả Doanh nghiệp và Giảng viên hướng dẫn trước khi xác nhận hoàn tất hồ sơ thực tập.',
             });
           }
         }
@@ -391,7 +420,10 @@ export class PlacementsService {
             status: dto.status,
             ...(dto.status === PublicPlacementStatus.CANCELLED
               ? { academicStatus: 'CANCELLED', academicClosedAt: new Date() }
-              : {}),
+              : dto.status === PublicPlacementStatus.COMPLETED &&
+                  current.academicStatus !== 'CLOSED'
+                ? { academicStatus: 'CLOSED', academicClosedAt: new Date() }
+                : {}),
           },
         });
         if (statusUpdate.count !== 1) {
@@ -646,28 +678,46 @@ export class PlacementsService {
     const [reports, evaluations] = await this.prisma.$transaction([
       this.prisma.report.findMany({
         where: { placementId: { in: ids } },
-        select: { placementId: true, status: true, updatedAt: true },
+        select: { placementId: true, week: true, status: true, updatedAt: true },
       }),
       this.prisma.evaluation.findMany({
         where: { placementId: { in: ids } },
-        select: { placementId: true },
+        select: {
+          placementId: true,
+          type: true,
+          score: true,
+          certificateFileId: true,
+        },
       }),
     ]);
     for (const id of ids) {
       progress.set(id, {
         reportCount: 0,
+        weeklyReportCount: 0,
+        finalReportStatus: null,
         draftReports: 0,
         submittedReports: 0,
         reportsAwaitingReview: 0,
         approvedReports: 0,
         rejectedReports: 0,
         evaluationCount: 0,
+        hasCompanyEvaluation: false,
+        hasLecturerEvaluation: false,
+        companyScore: null,
+        lecturerScore: null,
+        finalScore: null,
+        hasCompanyCertificate: false,
         lastReportAt: null,
       });
     }
     for (const row of reports) {
       const item = progress.get(row.placementId)!;
       item.reportCount += 1;
+      if (row.week === 0) {
+        item.finalReportStatus = row.status;
+      } else {
+        item.weeklyReportCount += 1;
+      }
       if (row.status === ReportStatus.DRAFT) item.draftReports += 1;
       if (row.status === ReportStatus.SUBMITTED) item.submittedReports += 1;
       if (row.status === ReportStatus.APPROVED) item.approvedReports += 1;
@@ -676,26 +726,49 @@ export class PlacementsService {
         item.lastReportAt = row.updatedAt;
     }
     for (const row of evaluations) {
-      progress.get(row.placementId)!.evaluationCount += 1;
+      const item = progress.get(row.placementId)!;
+      item.evaluationCount += 1;
+      if (row.type === 'COMPANY') {
+        item.hasCompanyEvaluation = true;
+        item.companyScore = row.score;
+        item.hasCompanyCertificate = Boolean(row.certificateFileId);
+      }
+      if (row.type === 'LECTURER') {
+        item.hasLecturerEvaluation = true;
+        item.lecturerScore = row.score;
+      }
     }
-    for (const item of progress.values())
+    for (const item of progress.values()) {
       item.reportsAwaitingReview = item.submittedReports;
+      if (item.companyScore !== null && item.lecturerScore !== null) {
+        item.finalScore =
+          Math.round(((item.companyScore + item.lecturerScore) / 2) * 100) / 100;
+      }
+    }
     return progress;
   }
 
   private toRecord(
     item: PlacementRecord,
     progress?: PlacementProgress,
-    includeDetailedProgress = false,
+    _includeDetailedProgress = false,
   ) {
-    const summary = progress ?? {
+    const summary: PlacementProgress = progress ?? {
       reportCount: 0,
+      weeklyReportCount: 0,
+      finalReportStatus: null,
       draftReports: 0,
       submittedReports: 0,
       reportsAwaitingReview: 0,
       approvedReports: 0,
       rejectedReports: 0,
       evaluationCount: 0,
+      hasCompanyEvaluation: false,
+      hasLecturerEvaluation: false,
+      companyScore: null,
+      lecturerScore: null,
+      finalScore: null,
+      hasCompanyCertificate: false,
       lastReportAt: null,
     };
     return {
@@ -704,13 +777,7 @@ export class PlacementsService {
         item.supervision?.status === SupervisionStatus.ACTIVE
           ? PlacementAssignmentStatus.ASSIGNED
           : PlacementAssignmentStatus.UNASSIGNED,
-      progress: includeDetailedProgress
-        ? summary
-        : {
-            reportCount: summary.reportCount,
-            evaluationCount: summary.evaluationCount,
-            reportsAwaitingReview: summary.reportsAwaitingReview,
-          },
+      progress: summary,
     };
   }
 

@@ -674,20 +674,24 @@ model Report {
 }
 
 model Evaluation {
-  id          String         @id @default(cuid())
-  placementId String
-  evaluatorId String
-  type        EvaluationType
-  score       Float
-  comment     String?
-  submittedAt DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                String         @id @default(cuid())
+  placementId       String
+  evaluatorId       String
+  type              EvaluationType
+  score             Float
+  criteria          Json?
+  comment           String?
+  certificateFileId String?
+  submittedAt       DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-  placement InternshipPlacement @relation(fields: [placementId], references: [id], onDelete: Cascade)
-  evaluator User                @relation("EvaluationAuthor", fields: [evaluatorId], references: [id], onDelete: Restrict)
+  placement       InternshipPlacement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+  evaluator       User                @relation("EvaluationAuthor", fields: [evaluatorId], references: [id], onDelete: Restrict)
+  certificateFile File?               @relation("EvaluationCertificateFile", fields: [certificateFileId], references: [id], onDelete: SetNull)
 
   @@unique([placementId, type])
   @@index([evaluatorId])
+  @@index([certificateFileId])
 }
 
 model File {
@@ -706,6 +710,7 @@ model File {
   lecturerAvatar              LecturerProfile? @relation("LecturerAvatar")
   applicationCvs              Application[]    @relation("ApplicationCv")
   reportFiles                 Report[]         @relation("ReportFile")
+  evaluationCertificates      Evaluation[]     @relation("EvaluationCertificateFile")
   companyRegistrationDocument CompanyProfile?  @relation("CompanyRegistrationDocument")
 
   @@index([ownerId, type])

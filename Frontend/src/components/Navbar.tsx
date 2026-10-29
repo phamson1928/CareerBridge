@@ -16,6 +16,8 @@ import {
   LogOut,
   ShieldCheck,
   LifeBuoy,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { ProfileAvatarPreview } from "./ProfileAvatarUpload";
 import type { AppNotification } from "../notifications/types";
@@ -34,6 +36,8 @@ interface NavbarProps {
   avatarFileId?: string | null;
   companyLogo?: string | null;
   companyVerificationStatus?: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED" | null;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -50,6 +54,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   avatarFileId,
   companyLogo,
   companyVerificationStatus,
+  isSidebarCollapsed = false,
+  onToggleSidebar,
 }) => {
   const getNavItems = () => {
     switch (currentRole) {
@@ -258,12 +264,45 @@ export const Navbar: React.FC<NavbarProps> = ({
   ) : null;
 
   if (currentRole === "ADMIN") {
+    const labelTransitionClass = `whitespace-nowrap overflow-hidden transition-[opacity,transform,max-width] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+      isSidebarCollapsed
+        ? "max-w-0 opacity-0 -translate-x-1.5 pointer-events-none"
+        : "max-w-0 opacity-0 lg:max-w-[180px] lg:opacity-100 lg:translate-x-0"
+    }`;
+
     return (
-      <aside className="fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-[#006f72] bg-[#00878a] text-white shadow-2xl lg:w-72">
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-[#006f72] bg-[#00878a] text-white shadow-2xl will-change-[width] transition-[width] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          isSidebarCollapsed ? "lg:w-20" : "lg:w-72"
+        }`}
+      >
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            title={
+              isSidebarCollapsed
+                ? "Mở rộng thanh điều hướng"
+                : "Thu gọn thanh điều hướng"
+            }
+            aria-label={
+              isSidebarCollapsed
+                ? "Mở rộng thanh điều hướng"
+                : "Thu gọn thanh điều hướng"
+            }
+            className="absolute -right-3.5 top-9 z-50 hidden h-7 w-7 items-center justify-center rounded-full border border-[#006f72]/30 bg-white text-[#00777a] shadow-md transition-transform duration-200 hover:scale-105 hover:bg-[#e6f6f6] lg:flex"
+          >
+            <ChevronLeft
+              className={`h-4 w-4 transition-transform duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                isSidebarCollapsed ? "rotate-180" : "rotate-0"
+              }`}
+            />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setActiveTab(navItems[0]?.id || "")}
-          className="flex h-24 items-center justify-center gap-3 border-b border-white/15 px-3 text-left lg:justify-start lg:px-7"
+          className="flex h-24 items-center justify-start gap-3 overflow-hidden border-b border-white/15 px-3 text-left"
         >
           <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1 shadow-lg">
             <img
@@ -272,7 +311,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="h-full w-full -translate-x-[14%] scale-[1.35] object-contain"
             />
           </span>
-          <span className="hidden lg:block">
+          <span className={labelTransitionClass}>
             <span className="block text-base font-black tracking-tight">
               CareerBridge
             </span>
@@ -281,10 +320,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </span>
         </button>
-        <div className="hidden px-4 pt-6 text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 lg:block">
+        <div
+          className={`overflow-hidden whitespace-nowrap px-5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 transition-[opacity,max-height,padding] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            isSidebarCollapsed
+              ? "max-h-0 pt-0 opacity-0"
+              : "max-h-0 pt-0 opacity-0 lg:max-h-10 lg:pt-6 lg:opacity-100"
+          }`}
+        >
           Điều hướng
         </div>
-        <nav className="mt-3 flex-1 space-y-1 overflow-y-auto px-3">
+        <nav className="mt-3 flex-1 space-y-1 overflow-x-hidden overflow-y-auto px-3">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -293,10 +338,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id={`nav-tab-${item.id}`}
                 title={item.label}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition lg:justify-start ${isActive ? "bg-white text-[#00777a] shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+                className={`flex w-full items-center justify-start gap-3 overflow-hidden rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors duration-150 ${
+                  isActive
+                    ? "bg-white text-[#00777a] shadow-lg"
+                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                }`}
               >
-                {item.icon}
-                <span className="hidden lg:block">{item.label}</span>
+                <span className="flex h-5 w-6 shrink-0 items-center justify-center">
+                  {item.icon}
+                </span>
+                <span className={labelTransitionClass}>{item.label}</span>
               </button>
             );
           })}
@@ -306,12 +357,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             id="btn-notifs-toggle"
             title="Thông báo"
             onClick={onOpenNotifs}
-            className="relative flex w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white/85 transition hover:bg-white/10 hover:text-white lg:justify-start"
+            className="relative flex w-full items-center justify-start gap-3 overflow-hidden rounded-xl px-4 py-3 text-sm font-semibold text-white/85 transition-colors duration-150 hover:bg-white/10 hover:text-white"
           >
-            <Bell className="h-5 w-5" />
-            <span className="hidden lg:block">Thông báo</span>
+            <span className="flex h-5 w-6 shrink-0 items-center justify-center">
+              <Bell className="h-5 w-5 shrink-0" />
+            </span>
+            <span className={labelTransitionClass}>Thông báo</span>
             {unreadNotifsCount > 0 && (
-              <span className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#da1c2d] px-1 text-[10px] font-bold text-white lg:static lg:ml-auto">
+              <span
+                className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-[#da1c2d] px-1 text-[10px] font-bold text-white transition-all duration-200 ${
+                  isSidebarCollapsed
+                    ? "absolute right-1.5 top-1.5"
+                    : "absolute right-1.5 top-1.5 lg:static lg:ml-auto"
+                }`}
+              >
                 {unreadNotifsCount}
               </span>
             )}
@@ -321,10 +380,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             title="Đăng xuất"
             type="button"
             onClick={onLogout}
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#da1c2d] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#da1c2d]/20 transition hover:bg-[#bd1425] lg:justify-start"
+            className="flex w-full items-center justify-start gap-3 overflow-hidden rounded-xl bg-[#da1c2d] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#da1c2d]/20 transition-colors duration-150 hover:bg-[#bd1425]"
           >
-            <LogOut className="h-5 w-5" />
-            <span className="hidden lg:block">Đăng xuất</span>
+            <span className="flex h-5 w-6 shrink-0 items-center justify-center">
+              <LogOut className="h-5 w-5 shrink-0" />
+            </span>
+            <span className={labelTransitionClass}>Đăng xuất</span>
           </button>
         </div>
       </aside>

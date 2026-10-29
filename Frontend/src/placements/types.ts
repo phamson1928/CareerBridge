@@ -19,12 +19,20 @@ export type PlacementAssignmentStatus = "ASSIGNED" | "UNASSIGNED";
 
 export interface PlacementProgress {
   reportCount: number;
+  weeklyReportCount?: number;
+  finalReportStatus?: ReportStatus | null;
   evaluationCount: number;
   reportsAwaitingReview: number;
   draftReports?: number;
   submittedReports?: number;
   approvedReports?: number;
   rejectedReports?: number;
+  hasCompanyEvaluation?: boolean;
+  hasLecturerEvaluation?: boolean;
+  companyScore?: number | null;
+  lecturerScore?: number | null;
+  finalScore?: number | null;
+  hasCompanyCertificate?: boolean;
   lastReportAt?: string | null;
 }
 

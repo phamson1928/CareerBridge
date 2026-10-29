@@ -20,10 +20,10 @@ function getProgress(supervision: SupervisionRecord, reports: ReportRecord[]): S
   const start = startOfDay(new Date(placement.startDate));
   const end = startOfDay(new Date(placement.endDate));
   if (today < start || today > end) return null;
-  const totalWeeks = Math.ceil((end.getTime() - start.getTime() + DAY_MS) / (7 * DAY_MS));
+  const totalWeeks = Math.min(10, Math.ceil((end.getTime() - start.getTime() + DAY_MS) / (7 * DAY_MS)));
   // A report only becomes late after its entire monitoring week has ended.
   const expectedWeeks = Math.min(totalWeeks, Math.floor((today.getTime() - start.getTime()) / (7 * DAY_MS)));
-  const submitted = new Set(reports.filter((report) => report.placementId === placement.id && report.status !== "DRAFT").map((report) => report.week));
+  const submitted = new Set(reports.filter((report) => report.placementId === placement.id && report.status !== "DRAFT" && report.week > 0).map((report) => report.week));
   const missingWeeks = Array.from({ length: expectedWeeks }, (_, index) => index + 1).filter((week) => !submitted.has(week));
   const maxDaysLate = missingWeeks.length ? Math.max(...missingWeeks.map((week) => Math.max(1, Math.floor((today.getTime() - (start.getTime() + week * 7 * DAY_MS)) / DAY_MS) + 1))) : 0;
   return { supervision, expectedWeeks, submittedWeeks: Array.from(submitted).filter((week) => week <= expectedWeeks).length, missingWeeks, maxDaysLate };

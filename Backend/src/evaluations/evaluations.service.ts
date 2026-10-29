@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -8,8 +9,10 @@ import {
   EvaluationType,
   AcademicMonitoringStatus,
   CompanyStatus,
+  FileType,
   NotificationAction,
   NotificationType,
+  PlacementStatus,
   Prisma,
   Role,
   SemesterStatus,
@@ -29,9 +32,20 @@ const select = {
   evaluatorId: true,
   type: true,
   score: true,
+  criteria: true,
   comment: true,
+  certificateFileId: true,
   submittedAt: true,
   updatedAt: true,
+  certificateFile: {
+    select: {
+      id: true,
+      originalName: true,
+      mimeType: true,
+      sizeBytes: true,
+      createdAt: true,
+    },
+  },
   evaluator: { select: { id: true, email: true, role: true } },
   placement: {
     select: {
@@ -41,7 +55,13 @@ const select = {
       startDate: true,
       endDate: true,
       semester: {
-        select: { id: true, status: true, startDate: true, endDate: true },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+        },
       },
       student: {
         select: {
@@ -52,12 +72,30 @@ const select = {
           major: true,
         },
       },
-      company: { select: { id: true, userId: true, companyName: true } },
-      internship: { select: { id: true, title: true } },
+      company: {
+        select: {
+          id: true,
+          userId: true,
+          companyName: true,
+          address: true,
+          contactPersonName: true,
+        },
+      },
+      internship: {
+        select: { id: true, title: true, department: true, location: true },
+      },
       supervision: {
         select: {
           status: true,
-          lecturer: { select: { id: true, userId: true, fullName: true } },
+          lecturer: {
+            select: {
+              id: true,
+              userId: true,
+              fullName: true,
+              department: true,
+              title: true,
+            },
+          },
         },
       },
     },
@@ -77,6 +115,15 @@ export class EvaluationsService {
   async create(dto: CreateEvaluationDto, user: AuthUser) {
     await this.lifecycle.reconcile();
     const type = this.typeFor(user);
+    if (dto.certificateFileId && type !== EvaluationType.COMPANY) {
+      throw new ForbiddenException({
+        code: 'CERTIFICATE_ONLY_FOR_COMPANY_EVALUATION',
+        message:
+          'Only company evaluations can attach an internship completion certificate',
+      });
+    }
+    await this.validateCertificateFile(dto.certificateFileId, user.id);
+
     try {
       const result = await this.prisma.$transaction(async (tx) => {
         const placement = await tx.internshipPlacement.findUnique({
@@ -127,7 +174,9 @@ export class EvaluationsService {
             evaluatorId: user.id,
             type,
             score: dto.score,
+            criteria: dto.criteria ?? Prisma.DbNull,
             comment: dto.comment?.trim() || null,
+            certificateFileId: dto.certificateFileId ?? null,
           },
           select,
         });
@@ -137,7 +186,12 @@ export class EvaluationsService {
             action: 'EVALUATION_CREATED',
             entity: 'Evaluation',
             entityId: evaluation.id,
-            metadata: { placementId: dto.placementId, type, score: dto.score },
+            metadata: {
+              placementId: dto.placementId,
+              type,
+              score: dto.score,
+              hasCertificate: Boolean(dto.certificateFileId),
+            },
           },
         });
         const notification = await this.notifications.createInTransaction(tx, {
@@ -145,8 +199,11 @@ export class EvaluationsService {
           eventKey: `evaluation:${evaluation.id}:created:${evaluation.placement.student.userId}`,
           type: NotificationType.EVALUATION,
           action: NotificationAction.OPEN_EVALUATION,
-          title: 'Kết quả đánh giá thực tập mới',
-          content: `${type === EvaluationType.COMPANY ? 'Doanh nghiệp thực tập' : 'Giảng viên hướng dẫn'} vừa cập nhật kết quả đánh giá cho kỳ thực tập của bạn.`,
+          title:
+            type === EvaluationType.COMPANY && dto.certificateFileId
+              ? 'Doanh nghiệp đã đánh giá và cấp Chứng nhận thực tập'
+              : 'Kết quả đánh giá thực tập mới',
+          content: `${type === EvaluationType.COMPANY ? 'Doanh nghiệp thực tập' : 'Giảng viên hướng dẫn'} vừa cập nhật kết quả đánh giá${type === EvaluationType.COMPANY && dto.certificateFileId ? ' kèm Chứng nhận hoàn thành thực tập' : ''} cho kỳ thực tập của bạn.`,
           resourceId: evaluation.id,
           metadata: { placementId: dto.placementId, type },
         });
@@ -200,12 +257,30 @@ export class EvaluationsService {
     await this.lifecycle.reconcile();
     const current = await this.findOne(id, user);
     if (current.evaluatorId !== user.id) throw this.denied();
-    this.assertMonitoringOpen(current.placement);
-    if (dto.score === undefined && dto.comment === undefined) {
+    this.assertEvaluationWindowOpen(current.placement);
+    if (
+      dto.score === undefined &&
+      dto.comment === undefined &&
+      dto.criteria === undefined &&
+      dto.certificateFileId === undefined
+    ) {
       throw this.conflict(
         'EVALUATION_UPDATE_EMPTY',
-        'Provide score or comment',
+        'Provide score, criteria, comment, or certificateFileId',
       );
+    }
+    if (
+      dto.certificateFileId &&
+      current.type !== EvaluationType.COMPANY
+    ) {
+      throw new ForbiddenException({
+        code: 'CERTIFICATE_ONLY_FOR_COMPANY_EVALUATION',
+        message:
+          'Only company evaluations can attach an internship completion certificate',
+      });
+    }
+    if (dto.certificateFileId) {
+      await this.validateCertificateFile(dto.certificateFileId, user.id);
     }
 
     try {
@@ -214,9 +289,15 @@ export class EvaluationsService {
           where: { id },
           data: {
             ...(dto.score === undefined ? {} : { score: dto.score }),
+            ...(dto.criteria === undefined
+              ? {}
+              : { criteria: dto.criteria ?? Prisma.DbNull }),
             ...(dto.comment === undefined
               ? {}
               : { comment: dto.comment?.trim() || null }),
+            ...(dto.certificateFileId === undefined
+              ? {}
+              : { certificateFileId: dto.certificateFileId }),
           },
           select,
         });
@@ -226,7 +307,12 @@ export class EvaluationsService {
             action: 'EVALUATION_UPDATED',
             entity: 'Evaluation',
             entityId: id,
-            metadata: { placementId: updated.placementId, type: updated.type },
+            metadata: {
+              placementId: updated.placementId,
+              type: updated.type,
+              score: updated.score,
+              hasCertificate: Boolean(updated.certificateFileId),
+            },
           },
         });
         return updated;
@@ -240,7 +326,7 @@ export class EvaluationsService {
     await this.lifecycle.reconcile();
     const current = await this.findOne(id, user);
     if (current.evaluatorId !== user.id) throw this.denied();
-    this.assertMonitoringOpen(current.placement);
+    this.assertEvaluationWindowOpen(current.placement);
 
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -272,6 +358,7 @@ export class EvaluationsService {
 
   private assertCanEvaluate(
     placement: {
+      status: string;
       academicStatus: AcademicMonitoringStatus;
       startDate: Date | null;
       endDate: Date | null;
@@ -290,7 +377,7 @@ export class EvaluationsService {
     user: AuthUser,
     type: EvaluationType,
   ) {
-    this.assertMonitoringOpen(placement);
+    this.assertEvaluationWindowOpen(placement);
     if (
       type === EvaluationType.COMPANY &&
       placement.company.userId === user.id
@@ -314,35 +401,51 @@ export class EvaluationsService {
     throw this.denied();
   }
 
-  private assertMonitoringOpen(placement: {
+  /**
+   * Allows evaluating during the active monitoring period AND after the
+   * monitoring endDate (`academicStatus = CLOSED`) so companies and lecturers
+   * can grade interns after the internship finishes, until the placement is
+   * officially finalized (`COMPLETED`) or `CANCELLED`.
+   */
+  private assertEvaluationWindowOpen(placement: {
+    status: string;
     academicStatus: AcademicMonitoringStatus;
     startDate: Date | null;
     endDate: Date | null;
-    semester: {
-      id: string;
-      status: SemesterStatus;
-      startDate: Date;
-      endDate: Date;
-    };
   }) {
-    if (placement.academicStatus !== AcademicMonitoringStatus.ACTIVE) {
-      throw this.conflict(
-        'ACADEMIC_MONITORING_CLOSED',
-        'Academic monitoring for this placement is closed',
-      );
-    }
-    this.lifecycle.assertMonitoringOpen(placement.semester);
-    const now = new Date();
     if (
-      !placement.startDate ||
-      !placement.endDate ||
-      now < placement.startDate ||
-      now > placement.endDate
+      placement.status !== PlacementStatus.ACTIVE ||
+      (placement.academicStatus !== AcademicMonitoringStatus.ACTIVE &&
+        placement.academicStatus !== AcademicMonitoringStatus.CLOSED)
     ) {
       throw this.conflict(
         'ACADEMIC_MONITORING_CLOSED',
-        'Evaluations are only available during this placement monitoring window',
+        'Chỉ có thể đánh giá khi hồ sơ thực tập đang hoạt động và chưa chốt nghiệm thu hoàn tất.',
       );
+    }
+    const now = new Date();
+    if (!placement.startDate || !placement.endDate || now < placement.startDate) {
+      throw this.conflict(
+        'ACADEMIC_MONITORING_CLOSED',
+        'Kỳ thực tập của sinh viên chưa bắt đầu nên chưa thể đánh giá.',
+      );
+    }
+  }
+
+  private async validateCertificateFile(
+    fileId: string | undefined,
+    userId: string,
+  ) {
+    if (!fileId) return;
+    const file = await this.prisma.file.findFirst({
+      where: { id: fileId, ownerId: userId, type: FileType.CERTIFICATE },
+      select: { id: true },
+    });
+    if (!file) {
+      throw new BadRequestException({
+        code: 'CERTIFICATE_FILE_NOT_FOUND',
+        message: 'Tệp chứng nhận thực tập không hợp lệ hoặc không thuộc quyền sở hữu của doanh nghiệp.',
+      });
     }
   }
 

@@ -29,7 +29,12 @@ import { studentsApi, type StudentProfileRecord } from "./students/api";
 import { lecturersApi } from "./lecturers/api";
 import { skillsApi } from "./skills/api";
 import type { StudentSkillRecord } from "./skills/types";
-import { evaluationsApi, type EvaluationRecord } from "./evaluations/api";
+import {
+  evaluationsApi,
+  type CreateEvaluationInput,
+  type EvaluationRecord,
+  type UpdateEvaluationInput,
+} from "./evaluations/api";
 import { placementsApi } from "./placements/api";
 import type { PlacementRecord } from "./placements/types";
 import { getApiErrorMessage } from "./auth/api";
@@ -218,6 +223,17 @@ export default function App() {
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatPlacementId, setChatPlacementId] = useState<string | null>(null);
+  const [isAdminSidebarCollapsed, setIsAdminSidebarCollapsed] = useState<boolean>(
+    () => localStorage.getItem("cb.adminSidebarCollapsed") === "true",
+  );
+
+  const toggleAdminSidebar = () => {
+    setIsAdminSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("cb.adminSidebarCollapsed", String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -422,11 +438,7 @@ export default function App() {
     );
   };
 
-  const handleSubmitEvaluation = async (input: {
-    placementId: string;
-    score: number;
-    comment: string;
-  }) => {
+  const handleSubmitEvaluation = async (input: CreateEvaluationInput) => {
     try {
       const created = await evaluationsApi.create(input);
       setEvaluationRecords((previous) => [created, ...previous]);
@@ -437,7 +449,7 @@ export default function App() {
     }
   };
 
-  const handleUpdateEvaluation = async (id: string, input: { score: number; comment: string }) => {
+  const handleUpdateEvaluation = async (id: string, input: UpdateEvaluationInput) => {
     try {
       const updated = await evaluationsApi.update(id, input);
       setEvaluationRecords((previous) => previous.map((item) => item.id === id ? updated : item));
@@ -463,7 +475,15 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen overflow-x-clip bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${currentRole === "ADMIN" ? "admin-theme pl-20 lg:pl-72" : ""}`}>
+    <div
+      className={`min-h-screen overflow-x-clip bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${
+        currentRole === "ADMIN"
+          ? `admin-theme pl-20 will-change-[padding-left] transition-[padding-left] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              isAdminSidebarCollapsed ? "lg:pl-20" : "lg:pl-72"
+            }`
+          : ""
+      }`}
+    >
       {/* Main Navbar */}
       <Navbar
         currentRole={currentRole}
@@ -482,10 +502,18 @@ export default function App() {
         avatarFileId={avatarFileId}
         companyLogo={companyProfile?.logo}
         companyVerificationStatus={companyVerificationStatus}
+        isSidebarCollapsed={isAdminSidebarCollapsed}
+        onToggleSidebar={toggleAdminSidebar}
       />
 
       {/* Main Page Body Container */}
-      <main className={`flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 ${currentRole === "ADMIN" ? "lg:px-8 lg:py-10" : ""}`}>
+      <main
+        className={`flex-1 w-full mx-auto px-4 sm:px-6 py-8 ${
+          currentRole === "ADMIN"
+            ? "max-w-none lg:px-7 lg:py-8"
+            : "max-w-7xl lg:px-8"
+        }`}
+      >
         {workflowError && (
           <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 sm:flex-row sm:items-center sm:justify-between">
             <span>Không thể tải đầy đủ dữ liệu: {workflowError}</span>

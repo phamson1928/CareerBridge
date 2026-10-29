@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -9,6 +10,7 @@ import {
   AcademicMonitoringStatus,
   NotificationAction,
   NotificationType,
+  PlacementStatus,
   Prisma,
   ReportStatus,
   Role,
@@ -25,6 +27,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { SemesterLifecycleService } from '../semesters/semester-lifecycle.service';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_INTERNSHIP_WEEKS = 10;
 
 const select = {
   id: true,
@@ -58,7 +61,7 @@ const select = {
       student: {
         select: { id: true, userId: true, studentCode: true, fullName: true },
       },
-      company: { select: { companyName: true } },
+      company: { select: { id: true, userId: true, companyName: true } },
       internship: { select: { title: true } },
       semester: {
         select: {
@@ -91,14 +94,18 @@ export class ReportsService {
   async create(dto: CreateReportDto, user: AuthUser) {
     await this.lifecycle.reconcile();
     const placement = await this.studentPlacement(dto.placementId, user.id);
-    this.assertReportWeekAvailable(placement, dto.week);
+    this.assertCanCreateOrSubmit(placement, dto.week);
     await this.validateFile(dto.fileId, user.id);
     try {
+      const defaultTitle =
+        dto.week === 0
+          ? 'Báo cáo tổng kết thực tập cuối kỳ'
+          : `Báo cáo thực tập tuần ${dto.week}`;
       const report = await this.prisma.report.create({
         data: {
           placementId: dto.placementId,
           week: dto.week,
-          title: dto.title?.trim(),
+          title: dto.title?.trim() || defaultTitle,
           content: dto.content.trim(),
           fileId: dto.fileId,
         },
@@ -109,9 +116,11 @@ export class ReportsService {
       this.known(e);
     }
   }
+
   async listStudent(query: ListReportsQueryDto, user: AuthUser) {
     return this.list(query, { placement: { student: { userId: user.id } } });
   }
+
   async listSupervised(query: ListReportsQueryDto, user: AuthUser) {
     return this.list(query, {
       placement: {
@@ -126,6 +135,20 @@ export class ReportsService {
       },
     });
   }
+
+  async listCompany(query: ListReportsQueryDto, user: AuthUser) {
+    return this.list(query, {
+      placement: { company: { userId: user.id } },
+      status: {
+        in: [
+          ReportStatus.SUBMITTED,
+          ReportStatus.APPROVED,
+          ReportStatus.REJECTED,
+        ],
+      },
+    });
+  }
+
   async findOne(id: string, user: AuthUser) {
     const report = await this.prisma.report.findUnique({
       where: { id },
@@ -135,6 +158,7 @@ export class ReportsService {
     this.access(report, user);
     return report;
   }
+
   async update(id: string, dto: UpdateReportDto, user: AuthUser) {
     const current = await this.findOne(id, user);
     if (current.placement.student.userId !== user.id) throw this.denied();
@@ -158,11 +182,12 @@ export class ReportsService {
       select,
     });
   }
+
   async submit(id: string, user: AuthUser) {
     await this.lifecycle.reconcile();
     const current = await this.findOne(id, user);
     if (current.placement.student.userId !== user.id) throw this.denied();
-    this.assertReportWeekAvailable(current.placement, current.week);
+    this.assertCanCreateOrSubmit(current.placement, current.week);
     if (
       current.status !== ReportStatus.DRAFT &&
       current.status !== ReportStatus.REJECTED
@@ -171,6 +196,17 @@ export class ReportsService {
         'INVALID_REPORT_TRANSITION',
         'Only draft or rejected reports can be submitted',
       );
+    if (current.week === 0 && !current.fileId) {
+      throw new BadRequestException({
+        code: 'FINAL_REPORT_FILE_REQUIRED',
+        message:
+          'Báo cáo tổng kết thực tập cuối kỳ bắt buộc phải đính kèm tệp báo cáo hoàn chỉnh (PDF/DOCX).',
+      });
+    }
+    const reportLabel =
+      current.week === 0
+        ? 'Báo cáo tổng kết thực tập'
+        : `báo cáo thực tập tuần ${current.week}`;
     const result = await this.prisma.$transaction(async (tx) => {
       const report = await tx.report.update({
         where: { id },
@@ -198,8 +234,11 @@ export class ReportsService {
             eventKey: `report:${id}:submitted:${report.submittedAt?.toISOString()}`,
             type: NotificationType.REPORT,
             action: NotificationAction.OPEN_REPORT,
-            title: 'Sinh viên nộp báo cáo thực tập mới',
-            content: `Sinh viên ${report.placement.student.fullName} vừa nộp báo cáo thực tập tuần ${report.week} và đang chờ bạn nhận xét, phê duyệt.`,
+            title:
+              report.week === 0
+                ? 'Sinh viên nộp Báo cáo tổng kết thực tập'
+                : 'Sinh viên nộp báo cáo thực tập mới',
+            content: `Sinh viên ${report.placement.student.fullName} vừa nộp ${reportLabel} và đang chờ bạn nhận xét, phê duyệt.`,
             resourceId: id,
             metadata: { placementId: report.placementId, week: report.week },
           })
@@ -209,6 +248,7 @@ export class ReportsService {
     this.notifications.publishMany(result.notifications);
     return result.report;
   }
+
   async review(id: string, dto: ReviewReportDto, user: AuthUser) {
     const current = await this.findOne(id, user);
     if (
@@ -222,6 +262,20 @@ export class ReportsService {
         'INVALID_REPORT_TRANSITION',
         'Only submitted reports can be reviewed',
       );
+    if (
+      dto.status === ReviewReportStatus.REJECTED &&
+      (!dto.feedback || !dto.feedback.trim())
+    ) {
+      throw new BadRequestException({
+        code: 'REPORT_FEEDBACK_REQUIRED',
+        message:
+          'Vui lòng nhập nhận xét chi tiết khi yêu cầu sinh viên chỉnh sửa lại báo cáo.',
+      });
+    }
+    const reportTitleText =
+      current.week === 0
+        ? 'Báo cáo tổng kết thực tập'
+        : `Báo cáo tuần ${current.week}`;
     const result = await this.prisma.$transaction(async (tx) => {
       const report = await tx.report.update({
         where: { id },
@@ -241,7 +295,7 @@ export class ReportsService {
               : 'REPORT_REJECTED',
           entity: 'Report',
           entityId: id,
-          metadata: { placementId: report.placementId },
+          metadata: { placementId: report.placementId, week: report.week },
         },
       });
       const notification = await this.notifications.createInTransaction(tx, {
@@ -251,12 +305,12 @@ export class ReportsService {
         action: NotificationAction.OPEN_REPORT,
         title:
           report.status === ReportStatus.APPROVED
-            ? `Báo cáo tuần ${report.week} đã được phê duyệt`
-            : `Báo cáo tuần ${report.week} cần chỉnh sửa`,
+            ? `${reportTitleText} đã được phê duyệt`
+            : `${reportTitleText} cần chỉnh sửa`,
         content:
           report.status === ReportStatus.APPROVED
-            ? `Giảng viên hướng dẫn đã phê duyệt báo cáo thực tập tuần ${report.week} của bạn.`
-            : `Giảng viên hướng dẫn đã gửi nhận xét và yêu cầu bạn bổ sung, chỉnh sửa lại báo cáo thực tập tuần ${report.week}.`,
+            ? `Giảng viên hướng dẫn đã phê duyệt ${reportTitleText.toLowerCase()} của bạn.`
+            : `Giảng viên hướng dẫn đã gửi nhận xét và yêu cầu bạn bổ sung, chỉnh sửa lại ${reportTitleText.toLowerCase()}.`,
         resourceId: id,
         metadata: { placementId: report.placementId, status: report.status },
       });
@@ -279,7 +333,7 @@ export class ReportsService {
       this.prisma.report.findMany({
         where,
         select,
-        orderBy: [{ submittedAt: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [{ week: 'asc' }, { submittedAt: 'desc' }, { createdAt: 'desc' }],
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
@@ -295,6 +349,7 @@ export class ReportsService {
       },
     };
   }
+
   private async studentPlacement(placementId: string, userId: string) {
     const p = await this.prisma.internshipPlacement.findFirst({
       where: { id: placementId, student: { userId } },
@@ -309,14 +364,19 @@ export class ReportsService {
       },
     });
     if (!p) throw this.denied();
-    if (p.academicStatus !== AcademicMonitoringStatus.ACTIVE)
+    if (
+      p.status !== PlacementStatus.ACTIVE ||
+      (p.academicStatus !== AcademicMonitoringStatus.ACTIVE &&
+        p.academicStatus !== AcademicMonitoringStatus.CLOSED)
+    ) {
       throw this.conflict(
         'PLACEMENT_NOT_ACTIVE',
-        'Reports require active academic monitoring',
+        'Hồ sơ thực tập chưa bắt đầu theo dõi hoặc đã hoàn tất nghiệm thu.',
       );
-    this.lifecycle.assertMonitoringOpen(p.semester);
+    }
     return p;
   }
+
   private assertMonitoringOpen(placement: {
     academicStatus: AcademicMonitoringStatus;
     semester: {
@@ -334,6 +394,10 @@ export class ReportsService {
     }
     this.lifecycle.assertMonitoringOpen(placement.semester);
   }
+
+  /**
+   * Kept for strict monitoring window checks and unit tests.
+   */
   private assertReportWeekAvailable(
     placement: {
       academicStatus: AcademicMonitoringStatus;
@@ -362,9 +426,13 @@ export class ReportsService {
         'Reports can only be submitted during this placement monitoring window',
       );
     }
-    const totalWeeks = Math.ceil(
-      (placement.endDate.getTime() - placement.startDate.getTime() + 1) /
-        WEEK_MS,
+    if (week === 0) return;
+    const totalWeeks = Math.min(
+      MAX_INTERNSHIP_WEEKS,
+      Math.ceil(
+        (placement.endDate.getTime() - placement.startDate.getTime() + 1) /
+          WEEK_MS,
+      ),
     );
     if (week > totalWeeks) {
       throw this.conflict(
@@ -372,8 +440,10 @@ export class ReportsService {
         `This placement has only ${totalWeeks} academic monitoring week(s)`,
       );
     }
-    const currentWeek =
-      Math.floor((now.getTime() - placement.startDate.getTime()) / WEEK_MS) + 1;
+    const currentWeek = Math.min(
+      MAX_INTERNSHIP_WEEKS,
+      Math.floor((now.getTime() - placement.startDate.getTime()) / WEEK_MS) + 1,
+    );
     if (week > currentWeek) {
       throw this.conflict(
         'REPORT_WEEK_IN_FUTURE',
@@ -381,6 +451,73 @@ export class ReportsService {
       );
     }
   }
+
+  /**
+   * Allows weekly reports (1..totalWeeks, max 10 weeks) once their week has started AND
+   * allows Final Report (week = 0) or late/revised submissions while the
+   * placement is still ACTIVE (not yet marked COMPLETED or CANCELLED).
+   */
+  private assertCanCreateOrSubmit(
+    placement: {
+      status: string;
+      academicStatus: AcademicMonitoringStatus;
+      startDate: Date | null;
+      endDate: Date | null;
+    },
+    week: number,
+    now = new Date(),
+  ) {
+    if (
+      placement.status !== PlacementStatus.ACTIVE ||
+      (placement.academicStatus !== AcademicMonitoringStatus.ACTIVE &&
+        placement.academicStatus !== AcademicMonitoringStatus.CLOSED)
+    ) {
+      throw this.conflict(
+        'ACADEMIC_MONITORING_CLOSED',
+        'Hồ sơ thực tập chưa mở theo dõi hoặc đã hoàn tất nghiệm thu.',
+      );
+    }
+    if (!placement.startDate || !placement.endDate) {
+      throw this.conflict(
+        'PLACEMENT_SCHEDULE_REQUIRED',
+        'Academic monitoring dates have not been configured',
+      );
+    }
+    if (now < placement.startDate) {
+      throw this.conflict(
+        'REPORT_OUTSIDE_MONITORING_WINDOW',
+        'Đợt thực tập chưa đến ngày bắt đầu.',
+      );
+    }
+    if (week === 0) {
+      return;
+    }
+    const totalWeeks = Math.min(
+      MAX_INTERNSHIP_WEEKS,
+      Math.ceil(
+        (placement.endDate.getTime() - placement.startDate.getTime() + 1) /
+          WEEK_MS,
+      ),
+    );
+    if (week > totalWeeks) {
+      throw this.conflict(
+        'REPORT_WEEK_OUT_OF_RANGE',
+        `Đợt thực tập này chỉ có tối đa ${totalWeeks} tuần theo dõi (chuẩn tối đa 10 tuần).`,
+      );
+    }
+    const effectiveNow = Math.min(now.getTime(), placement.endDate.getTime());
+    const currentWeek = Math.min(
+      totalWeeks,
+      Math.floor((effectiveNow - placement.startDate.getTime()) / WEEK_MS) + 1,
+    );
+    if (week > currentWeek) {
+      throw this.conflict(
+        'REPORT_WEEK_IN_FUTURE',
+        `Tuần ${week} chưa bắt đầu, chưa thể tạo hoặc nộp báo cáo.`,
+      );
+    }
+  }
+
   private async validateFile(fileId: string | undefined, userId: string) {
     if (!fileId) return;
     const f = await this.prisma.file.findFirst({
@@ -393,45 +530,41 @@ export class ReportsService {
         message: 'Report file not found or not owned by student',
       });
   }
+
   private access(r: ReportRecord, u: AuthUser) {
     if (
       u.role === Role.ADMIN ||
       r.placement.student.userId === u.id ||
+      r.placement.company.userId === u.id ||
       r.placement.supervision?.lecturer.userId === u.id
     )
       return;
     throw this.denied();
   }
-  private async audit(
-    userId: string,
-    action: string,
-    entityId: string,
-    metadata: Prisma.InputJsonValue,
-  ) {
-    await this.prisma.auditLog.create({
-      data: { userId, action, entity: 'Report', entityId, metadata },
-    });
-  }
+
   private notFound() {
     return new NotFoundException({
       code: 'REPORT_NOT_FOUND',
       message: 'Report not found',
     });
   }
+
   private denied() {
     return new ForbiddenException({
       code: 'REPORT_NOT_ACCESSIBLE',
       message: 'Report is not accessible',
     });
   }
+
   private conflict(code: string, message: string) {
     return new ConflictException({ code, message });
   }
+
   private known(e: unknown): never {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')
       throw this.conflict(
         'REPORT_WEEK_ALREADY_EXISTS',
-        'A report already exists for this placement and week',
+        'Báo cáo của mục này đã tồn tại trong hồ sơ thực tập.',
       );
     throw e;
   }
