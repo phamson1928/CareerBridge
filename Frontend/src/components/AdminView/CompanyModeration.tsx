@@ -265,20 +265,15 @@ export const CompanyModeration: React.FC = () => {
       {/* Search & Header Section */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex gap-3">
-            <div className="rounded-xl bg-indigo-600 p-2.5 text-white">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="admin-page-title text-xl font-bold text-slate-900">
-                Xác minh doanh nghiệp
-              </h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Kiểm tra thông tin pháp lý, đối chiếu giấy phép và xác thực
-                email trước khi cho phép hoạt động. Nhấn vào từng dòng để xem hồ
-                sơ chi tiết.
-              </p>
-            </div>
+          <div>
+            <h2 className="admin-page-title text-xl font-bold text-slate-900">
+              Xác minh doanh nghiệp
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Kiểm tra thông tin pháp lý, đối chiếu giấy phép và xác thực
+              email trước khi cho phép hoạt động. Nhấn vào từng dòng để xem hồ
+              sơ chi tiết.
+            </p>
           </div>
           <button
             type="button"
@@ -535,7 +530,7 @@ export const CompanyModeration: React.FC = () => {
                   Hồ sơ xác minh doanh nghiệp
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  {selected.companyName} · Mã hồ sơ: {selected.id}
+                  {selected.companyName}
                 </p>
               </div>
               <button

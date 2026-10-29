@@ -18,7 +18,6 @@ import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 import { ProfileAvatarPreview } from "../ProfileAvatarUpload";
 import { placementsApi } from "../../placements/api";
 import type {
-  AcademicMonitoringStatus,
   PlacementRecord,
   PlacementStatus,
 } from "../../placements/types";
@@ -38,12 +37,31 @@ const statusClass: Record<PlacementStatus, string> = {
   COMPLETED: "border-slate-200 bg-slate-100 text-slate-600",
   CANCELLED: "border-rose-200 bg-rose-50 text-rose-700",
 };
-const academicStatusLabel: Record<AcademicMonitoringStatus, string> = {
-  PENDING: "Chờ theo dõi",
-  ACTIVE: "Đang theo dõi",
-  CLOSED: "Đã đóng học vụ",
-  CANCELLED: "Đã hủy học vụ",
-};
+
+function hasInternshipStartedOrProgress(placement: PlacementRecord): boolean {
+  return (
+    placement.academicStatus === "ACTIVE" ||
+    placement.academicStatus === "CLOSED" ||
+    (placement.progress?.reportCount ?? 0) > 0 ||
+    (placement.progress?.evaluationCount ?? 0) > 0
+  );
+}
+
+function getPlacementBadge(placement: PlacementRecord): {
+  label: string;
+  className: string;
+} {
+  if (placement.status === "ACTIVE" && !hasInternshipStartedOrProgress(placement)) {
+    return {
+      label: "Đã phân công · Chờ bắt đầu",
+      className: "border-blue-200 bg-blue-50 text-blue-700",
+    };
+  }
+  return {
+    label: statusLabel[placement.status],
+    className: statusClass[placement.status],
+  };
+}
 
 export const SupervisionManagement: React.FC = () => {
   const { confirm } = useAppFeedback();
@@ -58,7 +76,7 @@ export const SupervisionManagement: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null as string | null);
   const [modalPlacement, setModalPlacement] = useState<PlacementRecord | null>(
     null,
   );
@@ -98,7 +116,10 @@ export const SupervisionManagement: React.FC = () => {
   const metrics = useMemo(
     () => ({
       pending: items.filter((item) => item.status === "PENDING").length,
-      active: items.filter((item) => item.status === "ACTIVE").length,
+      active: items.filter(
+        (item) =>
+          item.status === "ACTIVE" && hasInternshipStartedOrProgress(item),
+      ).length,
     }),
     [items],
   );
@@ -268,159 +289,133 @@ export const SupervisionManagement: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-[1250px] w-full text-left text-xs">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-slate-500">
-                  <th className="px-5 py-3 font-bold">Sinh viên</th>
-                  <th className="px-5 py-3 font-bold">Vị trí / doanh nghiệp</th>
-                  <th className="px-5 py-3 font-bold">Kỳ</th>
-                  <th className="px-5 py-3 font-bold">Trạng thái</th>
-                  <th className="px-5 py-3 font-bold">Giảng viên hướng dẫn</th>
-                  <th className="px-5 py-3 font-bold">Lịch sử phân công</th>
-                  <th className="px-5 py-3 text-right font-bold">Thao tác</th>
+                <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="px-5 py-3.5">Sinh viên</th>
+                  <th className="px-5 py-3.5">Vị trí / Doanh nghiệp</th>
+                  <th className="px-5 py-3.5">Học kỳ &amp; Lịch</th>
+                  <th className="px-5 py-3.5">Trạng thái</th>
+                  <th className="px-5 py-3.5">Giảng viên hướng dẫn</th>
+                  <th className="px-5 py-3.5 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {items.map((placement) => {
                   const supervision = placement.supervision;
+                  const badge = getPlacementBadge(placement);
+                  const isLocked = hasInternshipStartedOrProgress(placement);
+                  const canModifySupervision =
+                    Boolean(placement.startDate && placement.endDate) &&
+                    placement.status !== "COMPLETED" &&
+                    placement.status !== "CANCELLED" &&
+                    placement.academicStatus !== "CLOSED" &&
+                    placement.academicStatus !== "CANCELLED" &&
+                    !isLocked;
+
                   return (
                     <tr
                       key={placement.id}
-                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80"
+                      className="transition hover:bg-slate-50/80"
                     >
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 align-middle">
                         <div className="flex items-center gap-3">
                           <ProfileAvatarPreview
                             fileId={placement.student.avatarFileId}
                             fallback={placement.student.fullName.charAt(0)}
-                            className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-black text-indigo-700"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-black text-indigo-700"
                             imageClassName="h-full w-full object-cover"
                           />
-                          <div>
-                            <p className="font-bold text-slate-900">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-slate-900">
                               {placement.student.fullName}
                             </p>
-                            <p className="mt-0.5 font-mono text-[10px] text-slate-500">
-                              {placement.student.studentCode} ·{" "}
-                              {placement.student.major}
+                            <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                              <span className="font-mono font-semibold text-slate-600">
+                                {placement.student.studentCode}
+                              </span>{" "}
+                              · {placement.student.major}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 align-middle">
                         <p className="font-bold text-slate-800">
                           {placement.internship.title}
                         </p>
-                        <p className="mt-1 text-slate-500">
-                          {placement.company.companyName} ·{" "}
-                          {placement.internship.location ?? "Chưa cập nhật"}
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          {placement.company.companyName}
+                          {placement.internship.location
+                            ? ` · ${placement.internship.location}`
+                            : ""}
                         </p>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="whitespace-nowrap px-5 py-4 align-middle">
                         <p className="font-semibold text-slate-700">
                           {placement.semester.name}
                         </p>
-                        <p className="mt-1 text-[10px] text-slate-400">
+                        <p className="mt-0.5 text-[11px] text-slate-500">
                           {formatDate(placement.startDate)} —{" "}
                           {formatDate(placement.endDate)}
                         </p>
                       </td>
-                      <td className="px-5 py-4">
-                        <div className="space-y-1.5">
-                          <span
-                            className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusClass[placement.status]}`}
-                          >
-                            Công việc: {statusLabel[placement.status]}
-                          </span>
-                          <p className="text-[10px] font-semibold text-slate-500">
-                            Học vụ:{" "}
-                            {academicStatusLabel[placement.academicStatus]}
-                          </p>
-                        </div>
+                      <td className="whitespace-nowrap px-5 py-4 align-middle">
+                        <span
+                          className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="whitespace-nowrap px-5 py-4 align-middle">
                         {supervision ? (
                           <div>
                             <p className="font-bold text-slate-800">
                               {supervision.lecturer.fullName}
                             </p>
-                            <p className="mt-1 text-[10px] text-slate-500">
+                            <p className="mt-0.5 text-[11px] text-slate-500">
                               {supervision.lecturer.department}
                             </p>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700">
-                            <AlertCircle className="h-3 w-3" /> Chưa phân công
+                          <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" /> Chưa
+                            phân công
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4">
-                        {supervision ? (
-                          <div className="space-y-1 text-[10px] text-slate-500">
-                            <p>
-                              Phân công:{" "}
-                              <span className="font-semibold text-slate-700">
-                                {formatDateTime(supervision.assignedAt)}
-                              </span>
-                            </p>
-                            <p>
-                              Người phân công:{" "}
-                              <span className="font-semibold text-slate-700">
-                                {supervision.assignedBy?.email ??
-                                  "Tài khoản đã bị xóa"}
-                              </span>
-                            </p>
-                            <p
-                              className="max-w-44 truncate font-mono"
-                              title={supervision.assignedById ?? undefined}
+                      <td className="whitespace-nowrap px-5 py-4 text-right align-middle">
+                        <div className="flex items-center justify-end gap-2">
+                          {canModifySupervision && (
+                            <button
+                              type="button"
+                              onClick={() => openAssign(placement)}
+                              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-indigo-700"
                             >
-                              Mã người phân công:{" "}
-                              {supervision.assignedById ?? "—"}
-                            </p>
-                            <p>
-                              Hoàn tất:{" "}
-                              <span className="font-semibold text-slate-700">
-                                {formatDateTime(
-                                  supervision.completedAt,
-                                  "Chưa hoàn tất",
-                                )}
-                              </span>
-                            </p>
-                          </div>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          {placement.startDate &&
-                            placement.endDate &&
-                            placement.status !== "COMPLETED" &&
-                            placement.status !== "CANCELLED" &&
-                            placement.academicStatus !== "CLOSED" &&
-                            placement.academicStatus !== "CANCELLED" && (
-                              <button
-                                type="button"
-                                onClick={() => openAssign(placement)}
-                                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-indigo-700"
-                              >
-                                <GraduationCap className="h-3.5 w-3.5" />{" "}
-                                {supervision ? "Đổi GV" : "Phân công"}
-                              </button>
-                            )}
+                              <GraduationCap className="h-3.5 w-3.5" />{" "}
+                              {supervision ? "Đổi GV" : "Phân công"}
+                            </button>
+                          )}
                           {!placement.startDate || !placement.endDate ? (
-                            <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700">
+                            <span className="whitespace-nowrap rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-700">
                               Cần đặt lịch trước
                             </span>
                           ) : null}
-                          {supervision?.status === "ACTIVE" && (
-                            <button
-                              type="button"
-                              onClick={() => void cancelSupervision(placement)}
-                              className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-700"
-                            >
-                              Bỏ phân công
-                            </button>
+                          {canModifySupervision &&
+                            supervision?.status === "ACTIVE" && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void cancelSupervision(placement)
+                                }
+                                className="whitespace-nowrap rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-bold text-rose-700"
+                              >
+                                Bỏ phân công
+                              </button>
+                            )}
+                          {supervision?.status === "ACTIVE" && isLocked && (
+                            <span className="whitespace-nowrap text-[11px] font-semibold text-slate-400">
+                              Đã khóa phân công
+                            </span>
                           )}
                         </div>
                       </td>
