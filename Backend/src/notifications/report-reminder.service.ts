@@ -115,7 +115,9 @@ export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
             kind: 'before-due',
           });
         } else if (today > dueDate) {
-          const daysLate = Math.ceil((today.getTime() - dueDate.getTime()) / DAY_MS);
+          const daysLate = Math.ceil(
+            (today.getTime() - dueDate.getTime()) / DAY_MS,
+          );
           await this.createOnce({
             userId: placement.student.userId,
             eventKey: `report-reminder:${placement.id}:week:${week}:overdue`,
@@ -129,7 +131,9 @@ export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
       }
 
       // Check if placement monitoring is ending within 7 days
-      const daysUntilEnd = Math.ceil((end.getTime() - today.getTime()) / DAY_MS);
+      const daysUntilEnd = Math.ceil(
+        (end.getTime() - today.getTime()) / DAY_MS,
+      );
       if (daysUntilEnd >= 0 && daysUntilEnd <= PLACEMENT_WARNING_DAYS) {
         await this.createPlacementAlertOnce({
           userId: placement.student.userId,
@@ -169,24 +173,28 @@ export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
   private async checkUnassignedPlacementsStartingSoon(today: Date) {
     if (!this.prisma.user?.findMany) return;
 
-    const threshold = new Date(today.getTime() + PLACEMENT_WARNING_DAYS * DAY_MS);
-    const unassignedPlacements = await this.prisma.internshipPlacement.findMany({
-      where: {
-        status: PlacementStatus.PENDING,
-        startDate: { not: null, lte: threshold },
-        OR: [
-          { supervision: { is: null } },
-          { supervision: { isNot: { status: SupervisionStatus.ACTIVE } } },
-        ],
+    const threshold = new Date(
+      today.getTime() + PLACEMENT_WARNING_DAYS * DAY_MS,
+    );
+    const unassignedPlacements = await this.prisma.internshipPlacement.findMany(
+      {
+        where: {
+          status: PlacementStatus.PENDING,
+          startDate: { not: null, lte: threshold },
+          OR: [
+            { supervision: { is: null } },
+            { supervision: { isNot: { status: SupervisionStatus.ACTIVE } } },
+          ],
+        },
+        select: {
+          id: true,
+          startDate: true,
+          student: { select: { fullName: true } },
+          company: { select: { companyName: true } },
+          internship: { select: { title: true } },
+        },
       },
-      select: {
-        id: true,
-        startDate: true,
-        student: { select: { fullName: true } },
-        company: { select: { companyName: true } },
-        internship: { select: { title: true } },
-      },
-    });
+    );
 
     if (unassignedPlacements.length === 0) return;
 
@@ -290,4 +298,3 @@ export class ReportReminderService implements OnModuleInit, OnModuleDestroy {
     );
   }
 }
-

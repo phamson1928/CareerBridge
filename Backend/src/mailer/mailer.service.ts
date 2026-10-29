@@ -468,7 +468,9 @@ export class MailerService {
     const isOfferExpired =
       params.reasonText.toLowerCase().includes('lời mời') ||
       params.reasonText.toLowerCase().includes('offer');
-    const cleanReason = params.reasonText.replace(/\s*\(Offer\)\s*/gi, '').trim();
+    const cleanReason = params.reasonText
+      .replace(/\s*\(Offer\)\s*/gi, '')
+      .trim();
 
     const subject = isOfferExpired
       ? `[CareerBridge] Lời mời thực tập đã hết thời hạn xác nhận — Vị trí "${params.internshipTitle}"`
@@ -494,7 +496,9 @@ export class MailerService {
     `;
 
     const html = this.wrapEmailLayout({
-      badge: isOfferExpired ? 'Hết thời hạn xác nhận' : 'Kết thúc đợt tuyển dụng',
+      badge: isOfferExpired
+        ? 'Hết thời hạn xác nhận'
+        : 'Kết thúc đợt tuyển dụng',
       badgeColor: '#f1f5f9',
       ctaColor: '#334155',
       heading: isOfferExpired

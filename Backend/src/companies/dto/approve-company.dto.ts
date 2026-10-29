@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsBoolean, IsEnum, ValidateNested } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  ValidateNested,
+} from 'class-validator';
 import { CompanyChecklistCode } from '../constants/company-verification.constants';
 
 export class CompanyChecklistItemDto {

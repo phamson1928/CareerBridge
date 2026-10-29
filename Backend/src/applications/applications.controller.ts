@@ -143,4 +143,3 @@ export class ApplicationsController {
     return this.applicationsService.remove(id, user);
   }
 }
-

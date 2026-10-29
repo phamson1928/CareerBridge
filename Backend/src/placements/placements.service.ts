@@ -678,7 +678,12 @@ export class PlacementsService {
     const [reports, evaluations] = await this.prisma.$transaction([
       this.prisma.report.findMany({
         where: { placementId: { in: ids } },
-        select: { placementId: true, week: true, status: true, updatedAt: true },
+        select: {
+          placementId: true,
+          week: true,
+          status: true,
+          updatedAt: true,
+        },
       }),
       this.prisma.evaluation.findMany({
         where: { placementId: { in: ids } },
@@ -742,7 +747,8 @@ export class PlacementsService {
       item.reportsAwaitingReview = item.submittedReports;
       if (item.companyScore !== null && item.lecturerScore !== null) {
         item.finalScore =
-          Math.round(((item.companyScore + item.lecturerScore) / 2) * 100) / 100;
+          Math.round(((item.companyScore + item.lecturerScore) / 2) * 100) /
+          100;
       }
     }
     return progress;

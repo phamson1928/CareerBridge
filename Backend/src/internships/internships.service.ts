@@ -571,10 +571,8 @@ export class InternshipsService {
           title: dto.title ?? source.title,
           department:
             dto.department !== undefined ? dto.department : source.department,
-          location:
-            dto.location !== undefined ? dto.location : source.location,
-          workType:
-            dto.workType !== undefined ? dto.workType : source.workType,
+          location: dto.location !== undefined ? dto.location : source.location,
+          workType: dto.workType !== undefined ? dto.workType : source.workType,
           stipend: dto.stipend !== undefined ? dto.stipend : source.stipend,
           description: dto.description ?? source.description,
           requirements:
@@ -721,15 +719,12 @@ export class InternshipsService {
           semesterId: semester.id,
           title: dto.title ?? template.title,
           department:
-            dto.department !== undefined
-              ? dto.department
-              : template.department,
+            dto.department !== undefined ? dto.department : template.department,
           location:
             dto.location !== undefined ? dto.location : template.location,
           workType:
             dto.workType !== undefined ? dto.workType : template.workType,
-          stipend:
-            dto.stipend !== undefined ? dto.stipend : template.stipend,
+          stipend: dto.stipend !== undefined ? dto.stipend : template.stipend,
           description: dto.description ?? template.description,
           requirements:
             dto.requirements !== undefined

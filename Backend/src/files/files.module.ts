@@ -9,6 +9,6 @@ import { SupabaseStorageService } from './supabase-storage.service';
   imports: [PrismaModule],
   controllers: [FilesController],
   providers: [FilesService, SupabaseStorageService],
-  exports: [FilesService],
+  exports: [FilesService, SupabaseStorageService],
 })
 export class FilesModule {}

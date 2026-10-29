@@ -257,12 +257,13 @@ export class SemesterLifecycleService implements OnModuleInit, OnModuleDestroy {
       });
 
       if (this.mailer) {
-        const studentTemplate = this.mailer.renderCampaignExpiredStudentTemplate({
-          studentName: app.student.fullName,
-          companyName: app.internship.company.companyName,
-          internshipTitle: app.internship.title,
-          reasonText: 'Quá thời hạn xác nhận lời mời thực tập',
-        });
+        const studentTemplate =
+          this.mailer.renderCampaignExpiredStudentTemplate({
+            studentName: app.student.fullName,
+            companyName: app.internship.company.companyName,
+            internshipTitle: app.internship.title,
+            reasonText: 'Quá thời hạn xác nhận lời mời thực tập',
+          });
         await this.mailer.sendAndLogApplicationEmail({
           applicationId: app.id,
           type: EmailLogType.OFFER_EXPIRED,
@@ -399,4 +400,3 @@ export class SemesterLifecycleService implements OnModuleInit, OnModuleDestroy {
     }
   }
 }
-

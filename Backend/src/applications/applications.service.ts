@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   Prisma,
+  AiScanStatus,
   ApplicationStatus,
   CompanyStatus,
   EmailLogStatus,
@@ -47,7 +48,16 @@ const applicationSelect = {
   internshipId: true,
   coverLetter: true,
   cvFileId: true,
+  cvFile: {
+    select: {
+      id: true,
+      originalName: true,
+      mimeType: true,
+      sizeBytes: true,
+    },
+  },
   matchScore: true,
+  aiScore: true,
   status: true,
   companyFeedback: true,
   rejectionReason: true,
@@ -139,6 +149,26 @@ const applicationSelect = {
       status: true,
       createdAt: true,
       updatedAt: true,
+    },
+  },
+  aiScanJob: {
+    select: {
+      id: true,
+      status: true,
+      aiScore: true,
+      recommendation: true,
+      experienceYears: true,
+      extractedSkills: true,
+      matchedSkills: true,
+      missingSkills: true,
+      strengths: true,
+      weaknesses: true,
+      summary: true,
+      attempts: true,
+      maxAttempts: true,
+      errorDetails: true,
+      completedAt: true,
+      createdAt: true,
     },
   },
 } satisfies Prisma.ApplicationSelect;
@@ -233,10 +263,7 @@ export class ApplicationsService {
           select: { id: true, status: true },
         });
 
-        if (
-          existingApp &&
-          existingApp.status !== ApplicationStatus.WITHDRAWN
-        ) {
+        if (existingApp && existingApp.status !== ApplicationStatus.WITHDRAWN) {
           throw new ConflictException({
             code: 'APPLICATION_ALREADY_EXISTS',
             message: 'You have already applied for this internship',
@@ -254,6 +281,7 @@ export class ApplicationsService {
               coverLetter: dto.coverLetter.trim(),
               cvFileId: dto.cvFileId,
               matchScore: skillMatch.percentage,
+              aiScore: null,
               status: ApplicationStatus.PENDING,
               appliedAt: new Date(),
               withdrawnAt: null,
@@ -271,6 +299,34 @@ export class ApplicationsService {
             },
             select: applicationSelect,
           });
+
+          if (internship.company.autoAiScanEnabled && dto.cvFileId) {
+            await tx.aiScanJob.upsert({
+              where: { applicationId: created.id },
+              create: {
+                applicationId: created.id,
+                companyId: internship.company.id,
+                status: AiScanStatus.PENDING,
+              },
+              update: {
+                status: AiScanStatus.PENDING,
+                attempts: 0,
+                lockedUntil: null,
+                lockedByWorkerId: null,
+                errorDetails: null,
+                aiScore: null,
+                recommendation: null,
+                experienceYears: null,
+                extractedSkills: [],
+                matchedSkills: [],
+                missingSkills: [],
+                strengths: [],
+                weaknesses: [],
+                summary: null,
+                completedAt: null,
+              },
+            });
+          }
         } else {
           created = await tx.application.create({
             data: {
@@ -283,6 +339,16 @@ export class ApplicationsService {
             },
             select: applicationSelect,
           });
+
+          if (internship.company.autoAiScanEnabled && dto.cvFileId) {
+            await tx.aiScanJob.create({
+              data: {
+                applicationId: created.id,
+                companyId: internship.company.id,
+                status: AiScanStatus.PENDING,
+              },
+            });
+          }
         }
 
         await tx.applicationStatusHistory.create({
@@ -788,7 +854,8 @@ export class ApplicationsService {
       ) {
         throw new BadRequestException({
           code: 'INVALID_APPLICATION_TRANSITION',
-          message: 'Chỉ có thể từ chối đơn đang chờ duyệt, đang xem hoặc đang phỏng vấn',
+          message:
+            'Chỉ có thể từ chối đơn đang chờ duyệt, đang xem hoặc đang phỏng vấn',
         });
       }
 
@@ -947,7 +1014,8 @@ export class ApplicationsService {
         if (current.status !== ApplicationStatus.OFFERED) {
           throw new BadRequestException({
             code: 'OFFER_NOT_AVAILABLE',
-            message: 'Chỉ có thể nhận lời mời đang ở trạng thái chờ phản hồi (OFFERED)',
+            message:
+              'Chỉ có thể nhận lời mời đang ở trạng thái chờ phản hồi (OFFERED)',
           });
         }
 
@@ -1186,7 +1254,8 @@ export class ApplicationsService {
       if (current.status !== ApplicationStatus.OFFERED) {
         throw new BadRequestException({
           code: 'OFFER_NOT_AVAILABLE',
-          message: 'Chỉ có thể từ chối lời mời đang ở trạng thái chờ phản hồi (OFFERED)',
+          message:
+            'Chỉ có thể từ chối lời mời đang ở trạng thái chờ phản hồi (OFFERED)',
         });
       }
 
@@ -1261,11 +1330,7 @@ export class ApplicationsService {
     return this.toResponse(refreshed);
   }
 
-  async previewEmail(
-    id: string,
-    query: EmailPreviewQueryDto,
-    user: AuthUser,
-  ) {
+  async previewEmail(id: string, query: EmailPreviewQueryDto, user: AuthUser) {
     const application = await this.prisma.application.findUnique({
       where: { id },
       select: applicationSelect,
@@ -1821,7 +1886,14 @@ export class ApplicationsService {
         semester: {
           select: { id: true, status: true, startDate: true, endDate: true },
         },
-        company: { select: { status: true, userId: true } },
+        company: {
+          select: {
+            id: true,
+            status: true,
+            userId: true,
+            autoAiScanEnabled: true,
+          },
+        },
       },
     });
     if (!internship) {

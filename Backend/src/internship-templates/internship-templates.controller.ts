@@ -24,9 +24,7 @@ import { InternshipTemplatesService } from './internship-templates.service';
 @Controller('internship-templates')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class InternshipTemplatesController {
-  constructor(
-    private readonly templatesService: InternshipTemplatesService,
-  ) {}
+  constructor(private readonly templatesService: InternshipTemplatesService) {}
 
   @Get('me')
   @Roles(Role.COMPANY)

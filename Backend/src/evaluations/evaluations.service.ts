@@ -269,10 +269,7 @@ export class EvaluationsService {
         'Provide score, criteria, comment, or certificateFileId',
       );
     }
-    if (
-      dto.certificateFileId &&
-      current.type !== EvaluationType.COMPANY
-    ) {
+    if (dto.certificateFileId && current.type !== EvaluationType.COMPANY) {
       throw new ForbiddenException({
         code: 'CERTIFICATE_ONLY_FOR_COMPANY_EVALUATION',
         message:
@@ -424,7 +421,11 @@ export class EvaluationsService {
       );
     }
     const now = new Date();
-    if (!placement.startDate || !placement.endDate || now < placement.startDate) {
+    if (
+      !placement.startDate ||
+      !placement.endDate ||
+      now < placement.startDate
+    ) {
       throw this.conflict(
         'ACADEMIC_MONITORING_CLOSED',
         'Kỳ thực tập của sinh viên chưa bắt đầu nên chưa thể đánh giá.',
@@ -444,7 +445,8 @@ export class EvaluationsService {
     if (!file) {
       throw new BadRequestException({
         code: 'CERTIFICATE_FILE_NOT_FOUND',
-        message: 'Tệp chứng nhận thực tập không hợp lệ hoặc không thuộc quyền sở hữu của doanh nghiệp.',
+        message:
+          'Tệp chứng nhận thực tập không hợp lệ hoặc không thuộc quyền sở hữu của doanh nghiệp.',
       });
     }
   }

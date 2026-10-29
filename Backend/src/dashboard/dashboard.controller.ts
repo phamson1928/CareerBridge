@@ -38,4 +38,3 @@ export class DashboardController {
     return this.dashboardService.getCompanyInternshipStats(user.id, id);
   }
 }
-

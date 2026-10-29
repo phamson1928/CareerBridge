@@ -333,7 +333,11 @@ export class ReportsService {
       this.prisma.report.findMany({
         where,
         select,
-        orderBy: [{ week: 'asc' }, { submittedAt: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [
+          { week: 'asc' },
+          { submittedAt: 'desc' },
+          { createdAt: 'desc' },
+        ],
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),

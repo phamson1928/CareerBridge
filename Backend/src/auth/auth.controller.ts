@@ -37,10 +37,7 @@ export class AuthController {
 
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  async register(
-    @Body() dto: RegisterDto,
-    @Req() request: Request,
-  ) {
+  async register(@Body() dto: RegisterDto, @Req() request: Request) {
     const result = await this.authService.register(
       dto,
       this.getRequestMetadata(request),
