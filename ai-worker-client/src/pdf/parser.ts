@@ -1,0 +1,37 @@
+import fs from 'fs';
+import pdfParse from 'pdf-parse';
+
+export class CvParser {
+  /**
+   * Trích xuất văn bản từ tệp PDF và BẮT BUỘC xóa ngay tệp tạm trong khối finally
+   * @param filePath Đường dẫn tệp PDF tạm
+   * @returns Nội dung văn bản đã được làm sạch
+   */
+  static async extractTextAndCleanup(filePath: string): Promise<string> {
+    try {
+      const dataBuffer = await fs.promises.readFile(filePath);
+      const parsed = await pdfParse(dataBuffer);
+      const rawText = parsed.text || '';
+
+      // Chuẩn hóa văn bản: xóa ký tự vô hình, khoảng trắng thừa
+      const cleanedText = rawText
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+      return cleanedText;
+    } finally {
+      // ĐẢM BẢO XÓA FILE TẠM NGAY LẬP TỨC KHÔNG ĐỂ LẠI DẤU VẾT TRÊN Ổ CỨNG
+      try {
+        if (fs.existsSync(filePath)) {
+          await fs.promises.unlink(filePath);
+        }
+      } catch (unlinkError) {
+        // Ghi log cảnh báo nếu không xóa được file tạm
+        console.warn(`[CvParser] Không thể xóa file tạm ${filePath}:`, unlinkError);
+      }
+    }
+  }
+}

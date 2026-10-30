@@ -1,3 +1,5 @@
+import type { AiScanJobRecord } from './ai-worker/types';
+
 export type UserRole = "STUDENT" | "COMPANY" | "TEACHER" | "ADMIN";
 
 export type ApplicationStatus =
@@ -116,6 +118,8 @@ export interface Application {
   cvFileId?: string;
   coverLetter?: string;
   matchScore: number | null;
+  aiScore?: number | null;
+  aiScanJob?: AiScanJobRecord | null;
   status: ApplicationStatus;
   companyFeedback?: string;
   rejectionReason?: string | null;

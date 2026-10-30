@@ -105,6 +105,8 @@ function toLegacyApplication(record: ApplicationRecord): Application {
     cvFileId: record.cvFileId ?? undefined,
     coverLetter: record.coverLetter ?? undefined,
     matchScore: record.matchScore,
+    aiScore: record.aiScore ?? null,
+    aiScanJob: record.aiScanJob ?? null,
     status: record.status,
     companyFeedback: record.companyFeedback ?? undefined,
     rejectionReason: record.rejectionReason ?? null,

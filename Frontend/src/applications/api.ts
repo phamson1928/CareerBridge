@@ -1,5 +1,6 @@
 import { api } from '../auth/api';
 import type { ApiSuccess } from '../auth/auth.types';
+import type { AiScanJobRecord } from '../ai-worker/types';
 
 export type ApplicationStatus =
   | 'PENDING'
@@ -45,6 +46,8 @@ export interface ApplicationRecord {
   coverLetter: string | null;
   cvFileId: string | null;
   matchScore: number | null;
+  aiScore: number | null;
+  aiScanJob?: AiScanJobRecord | null;
   status: ApplicationStatus;
   companyFeedback: string | null;
   rejectionReason: string | null;

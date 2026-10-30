@@ -26,7 +26,14 @@ import {
   Video,
   Trash2,
   Lock,
+  Bot,
+  AlertCircle,
+  Star,
+  SlidersHorizontal,
 } from 'lucide-react';
+import { CompanyAiWorkerModal } from './CompanyAiWorkerModal';
+import { AiScanDetailModal } from './AiScanDetailModal';
+import { aiWorkerApi } from '../../ai-worker/api';
 
 interface ManageApplicantsProps {
   companyProfile: CompanyProfile;
@@ -97,18 +104,75 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingCvId, setOpeningCvId] = useState<string | null>(null);
 
+  // AI Worker & Scan state
+  const [isAiWorkerModalOpen, setIsAiWorkerModalOpen] = useState(false);
+  const [aiDetailApp, setAiDetailApp] = useState<Application | null>(null);
+  const [aiFilterRec, setAiFilterRec] = useState<string>('ALL');
+  const [aiFilterScore, setAiFilterScore] = useState<string>('ALL');
+  const [sortBy, setSortBy] = useState<'DATE_DESC' | 'AI_SCORE_DESC' | 'MATCH_SCORE_DESC'>('DATE_DESC');
+  const [rescanningAppId, setRescanningAppId] = useState<string | null>(null);
+
+  const handleRescanCv = async (applicationId: string) => {
+    setRescanningAppId(applicationId);
+    try {
+      await aiWorkerApi.rescanApplication(applicationId);
+      feedback.notify({
+        title: 'Đã đưa CV vào hàng đợi quét lại',
+        message: 'AI Worker nội bộ sẽ nhận tác vụ và cập nhật kết quả trong giây lát.',
+        tone: 'success',
+      });
+      onReload?.();
+    } catch (err) {
+      feedback.notify({
+        title: 'Không thể quét lại CV',
+        message: getApiErrorMessage(err),
+        tone: 'error',
+      });
+    } finally {
+      setRescanningAppId(null);
+    }
+  };
+
   const companyApps = applications.filter(
     (a) => a.companyId === companyProfile.id && !a.hiddenByCompanyAt,
   );
 
-  const filteredApps = companyApps.filter((a) => {
-    const matchesStatus = filterStatus === 'ALL' || a.status === filterStatus;
-    const matchesSearch =
-      a.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.internshipTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.studentMajor.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const filteredApps = companyApps
+    .filter((a) => {
+      const matchesStatus = filterStatus === 'ALL' || a.status === filterStatus;
+      const matchesSearch =
+        a.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.internshipTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.studentMajor.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const rec = a.aiScanJob?.recommendation || null;
+      const matchesAiRec =
+        aiFilterRec === 'ALL' ||
+        (aiFilterRec === 'NONE' && !rec) ||
+        rec === aiFilterRec;
+
+      const score = a.aiScore ?? a.aiScanJob?.aiScore ?? null;
+      let matchesAiScore = true;
+      if (aiFilterScore === '80_PLUS') matchesAiScore = score !== null && score >= 80;
+      else if (aiFilterScore === '60_TO_79') matchesAiScore = score !== null && score >= 60 && score < 80;
+      else if (aiFilterScore === 'UNDER_60') matchesAiScore = score !== null && score < 60;
+      else if (aiFilterScore === 'NOT_SCANNED') matchesAiScore = score === null;
+
+      return matchesStatus && matchesSearch && matchesAiRec && matchesAiScore;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'AI_SCORE_DESC') {
+        const scoreA = a.aiScore ?? a.aiScanJob?.aiScore ?? -1;
+        const scoreB = b.aiScore ?? b.aiScanJob?.aiScore ?? -1;
+        return scoreB - scoreA;
+      }
+      if (sortBy === 'MATCH_SCORE_DESC') {
+        const scoreA = a.matchScore ?? -1;
+        const scoreB = b.matchScore ?? -1;
+        return scoreB - scoreA;
+      }
+      return new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime();
+    });
 
   const openInterviewModal = (app: Application) => {
     setSelectedApp(app);
@@ -310,21 +374,32 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3 py-1.5 text-xs text-slate-700">
+          {/* AI Worker Settings Button */}
+          <button
+            type="button"
+            onClick={() => setIsAiWorkerModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-900 text-xs font-bold flex items-center gap-2 transition-all shadow-2xs hover:scale-[1.02]"
+            title="Quản lý kết nối AI Worker và cấu hình tự động quét CV"
+          >
+            <Bot className="w-4 h-4 text-indigo-600" />
+            <span>AI Worker & Quét CV</span>
+          </button>
+
+          <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3 py-2 text-xs text-slate-700">
             <Search className="w-3.5 h-3.5 text-slate-400" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Tìm theo tên/ngành sinh viên..."
-              className="bg-transparent focus:outline-none w-36 sm:w-48"
+              className="bg-transparent focus:outline-hidden w-36 sm:w-48 text-xs"
             />
           </div>
 
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-semibold"
+            className="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
           >
             <option value="ALL">Tất cả trạng thái</option>
             <option value="PENDING">Chờ duyệt</option>
@@ -336,6 +411,31 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
             <option value="EXPIRED">Hết hạn</option>
             <option value="REJECTED">Từ chối</option>
             <option value="WITHDRAWN">Đã rút đơn</option>
+          </select>
+
+          {/* AI Recommendation Filter */}
+          <select
+            value={aiFilterRec}
+            onChange={(e) => setAiFilterRec(e.target.value)}
+            className="p-2 border border-purple-200 rounded-xl text-xs bg-purple-50/60 font-semibold text-purple-900 focus:ring-2 focus:ring-purple-500 focus:outline-hidden"
+          >
+            <option value="ALL">Khuyến nghị AI: Tất cả</option>
+            <option value="STRONG_HIRE">⭐ Rất phù hợp (Strong Hire)</option>
+            <option value="HIRE">👍 Phù hợp (Hire)</option>
+            <option value="POTENTIAL">💡 Tiềm năng (Potential)</option>
+            <option value="NOT_RECOMMENDED">⚠️ Cần cân nhắc</option>
+            <option value="NONE">Chưa có kết quả AI</option>
+          </select>
+
+          {/* Sort By Dropdown */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+          >
+            <option value="DATE_DESC">Sắp xếp: Mới nhất</option>
+            <option value="AI_SCORE_DESC">Sắp xếp: Điểm AI cao nhất</option>
+            <option value="MATCH_SCORE_DESC">Sắp xếp: Match kỹ năng cao nhất</option>
           </select>
         </div>
       </div>
@@ -412,9 +512,79 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* AI Scan Evaluation Badge */}
+                    {rescanningAppId === app.id ||
+                    app.aiScanJob?.status === 'PENDING' ||
+                    app.aiScanJob?.status === 'PROCESSING' ? (
+                      <span className="text-xs font-bold px-3 py-1 bg-purple-50 text-purple-700 rounded-full border border-purple-200 flex items-center gap-1.5 animate-pulse">
+                        <RefreshCw className="w-3 h-3 animate-spin text-purple-600" />
+                        Đang quét AI...
+                      </span>
+                    ) : app.aiScanJob?.status === 'COMPLETED' ||
+                      (app.aiScore !== null && app.aiScore !== undefined) ? (
+                      <button
+                        type="button"
+                        onClick={() => setAiDetailApp(app)}
+                        className={`text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 transition-all hover:scale-105 shadow-2xs cursor-pointer ${
+                          (app.aiScore ?? 0) >= 80
+                            ? 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-800 border-emerald-300 hover:border-emerald-400'
+                            : (app.aiScore ?? 0) >= 60
+                              ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-indigo-800 border-indigo-300 hover:border-indigo-400'
+                              : 'bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 border-amber-300 hover:border-amber-400'
+                        }`}
+                        title="Bấm để xem báo cáo phân tích AI chuyên sâu"
+                      >
+                        <Bot className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{app.aiScore ?? app.aiScanJob?.aiScore}/100 AI</span>
+                        {app.aiScanJob?.recommendation && (
+                          <span className="text-[10px] font-extrabold opacity-85 border-l border-current pl-1.5">
+                            {app.aiScanJob.recommendation === 'STRONG_HIRE'
+                              ? 'Rất phù hợp'
+                              : app.aiScanJob.recommendation === 'HIRE'
+                                ? 'Phù hợp'
+                                : app.aiScanJob.recommendation === 'POTENTIAL'
+                                  ? 'Tiềm năng'
+                                  : 'Cân nhắc'}
+                          </span>
+                        )}
+                      </button>
+                    ) : app.aiScanJob?.status === 'FAILED' ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold px-2.5 py-1 bg-rose-50 text-rose-700 rounded-full border border-rose-200 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3 text-rose-500" /> Lỗi quét AI
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleRescanCv(app.id)}
+                          disabled={rescanningAppId === app.id}
+                          className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Thử quét lại"
+                        >
+                          <RefreshCw
+                            className={`w-3.5 h-3.5 ${
+                              rescanningAppId === app.id ? 'animate-spin' : ''
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    ) : app.cvFileId ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleRescanCv(app.id)}
+                        disabled={rescanningAppId === app.id}
+                        className="text-xs font-semibold px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 rounded-full border border-slate-200 hover:border-indigo-200 flex items-center gap-1 transition-all"
+                        title="Kích hoạt phân tích CV bằng AI Worker"
+                      >
+                        <Sparkles className="w-3 h-3 text-indigo-500" /> Quét AI
+                      </button>
+                    ) : null}
+
                     {app.matchScore !== null && (
-                      <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> {app.matchScore}% Match
+                      <span
+                        className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-700 rounded-full border border-slate-200 flex items-center gap-1"
+                        title="Tỷ lệ khớp dựa trên kỹ năng sinh viên tự tick khai báo"
+                      >
+                        <Sparkles className="w-3 h-3 text-emerald-600" /> {app.matchScore}% Khai báo
                       </span>
                     )}
 
@@ -627,6 +797,17 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                       <span className="inline-flex items-center gap-1 text-slate-400 font-medium">
                         <Lock className="w-3.5 h-3.5" /> Hồ sơ đã đóng thao tác
                       </span>
+                    )}
+
+                    {(app.aiScore !== null || app.aiScanJob) && (
+                      <button
+                        type="button"
+                        onClick={() => setAiDetailApp(app)}
+                        className="text-purple-700 font-bold hover:underline flex items-center gap-1 hover:text-purple-800"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Xem đánh giá AI
+                      </button>
                     )}
                   </div>
 
@@ -964,6 +1145,21 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
           </form>
         </div>
       )}
+
+      {/* AI Worker & Quét CV Modals */}
+      <CompanyAiWorkerModal
+        isOpen={isAiWorkerModalOpen}
+        onClose={() => setIsAiWorkerModalOpen(false)}
+        onSettingsUpdated={onReload}
+      />
+
+      <AiScanDetailModal
+        isOpen={Boolean(aiDetailApp)}
+        onClose={() => setAiDetailApp(null)}
+        application={aiDetailApp}
+        onRescan={handleRescanCv}
+        onOpenCv={openCv}
+      />
     </div>
   );
 };
