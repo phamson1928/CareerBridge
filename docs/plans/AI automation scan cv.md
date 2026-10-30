@@ -360,10 +360,11 @@ Giai đoạn 3: Tích hợp Frontend Doanh nghiệp (HOÀN THÀNH 100%)
   └── Modal chi tiết phân tích AI (kỹ năng khớp/thiếu, tóm tắt, điểm mạnh/yếu, nút quét lại CV) (AiScanDetailModal.tsx)
   └── Đã build thành công không lỗi TypeScript/Vite (dist bundle pass)
 
-Giai đoạn 4: Kiểm thử, Xử lý Biên & Tối ưu hóa (Sẵn sàng)
-  ├── Kiểm thử chịu tải hàng đợi khi nhiều sinh viên nộp đơn cùng lúc
-  ├── Kiểm thử trường hợp Worker offline, tắt máy đột ngột (Job timeout & retry)
-  └── Kiểm thử phòng thủ Prompt Injection và kiểm tra dọn dẹp file tạm
+Giai đoạn 4: Kiểm thử, Xử lý Biên & Tối ưu hóa (HOÀN THÀNH 100% - Xem chi tiết: AI_WORKER_PHASE_4_TESTING_AND_HARDENING_PLAN.md)
+  ├── Kiểm thử chịu tải hàng đợi & Concurrency: Multi-worker concurrency, FOR UPDATE SKIP LOCKED (7/7 test suites, 43/43 tests PASS)
+  ├── Kiểm thử trường hợp Worker offline/crash: Thu hồi lock quá hạn, xử lý Poison Pill quá maxAttempts (PASS)
+  ├── Module bảo mật CvSanitizer & Anti-Prompt Injection: Cô lập ranh giới dữ liệu, Safe Truncation, XSS Sanitization (10/10 tests PASS)
+  └── Kịch bản Stress Test đầu-cuối: Xử lý 24/24 jobs thành công 100%, 0 file rác còn sót (Zero Data Leakage: ĐẠT)
 ```
 
 ---

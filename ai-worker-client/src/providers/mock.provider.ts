@@ -3,6 +3,7 @@ import {
   InternshipJobInfo,
 } from '../api/types';
 import { AiAnalysisResult, AiProvider } from './base.provider';
+import { CvSanitizer } from '../security/sanitizer';
 
 export class MockAiProvider implements AiProvider {
   readonly name = 'Mock-Heuristic-AI';
@@ -27,7 +28,8 @@ export class MockAiProvider implements AiProvider {
     // Giả lập độ trễ suy nghĩ của mô hình AI (1.2s)
     await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    const lowerCv = cvText.toLowerCase();
+    const sanitization = CvSanitizer.sanitize(cvText);
+    const lowerCv = sanitization.cleanedText.toLowerCase();
 
     // 1. Bóc tách kỹ năng xuất hiện trong CV
     const extractedSkillsSet = new Set<string>();
@@ -116,6 +118,9 @@ export class MockAiProvider implements AiProvider {
 
     // 7. Điểm cần lưu ý
     const weaknesses: string[] = [];
+    if (sanitization.hasSuspiciousContent) {
+      weaknesses.push('Lưu ý HR: Phát hiện dấu hiệu văn bản CV có chứa câu lệnh can thiệp chấm điểm (Prompt Injection).');
+    }
     if (missingSkills.length > 0) {
       weaknesses.push(`Chưa thể hiện rõ kinh nghiệm đối với: ${missingSkills.slice(0, 3).join(', ')}.`);
     }
@@ -128,7 +133,7 @@ export class MockAiProvider implements AiProvider {
 
     // 8. Tóm tắt tổng quan
     const extractedSkillsList = Array.from(extractedSkillsSet);
-    const summary = `Ứng viên đáp ứng ${Math.round((matchedSkills.length / Math.max(1, jobInfo.requiredSkills.length)) * 100)}% yêu cầu kỹ thuật của vị trí "${jobInfo.title}". Nền tảng chuyên môn nổi bật với ${matchedSkills.slice(0, 3).join(', ') || 'các kỹ năng cơ bản'}. ${
+    const rawSummary = `Ứng viên đáp ứng ${Math.round((matchedSkills.length / Math.max(1, jobInfo.requiredSkills.length)) * 100)}% yêu cầu kỹ thuật của vị trí "${jobInfo.title}". Nền tảng chuyên môn nổi bật với ${matchedSkills.slice(0, 3).join(', ') || 'các kỹ năng cơ bản'}. ${
       recommendation === 'STRONG_HIRE' || recommendation === 'HIRE'
         ? 'Phù hợp để mời tham gia vòng phỏng vấn chuyên môn.'
         : 'Cần cân nhắc thêm dựa trên nhu cầu đào tạo của dự án.'
@@ -138,18 +143,22 @@ export class MockAiProvider implements AiProvider {
       aiScore,
       recommendation,
       experienceYears,
-      extractedSkills: extractedSkillsList.slice(0, 20),
-      matchedSkills,
-      missingSkills,
-      strengths,
-      weaknesses,
-      summary,
+      extractedSkills: CvSanitizer.sanitizeOutputArray(extractedSkillsList.slice(0, 20)),
+      matchedSkills: CvSanitizer.sanitizeOutputArray(matchedSkills),
+      missingSkills: CvSanitizer.sanitizeOutputArray(missingSkills),
+      strengths: CvSanitizer.sanitizeOutputArray(strengths),
+      weaknesses: CvSanitizer.sanitizeOutputArray(weaknesses),
+      summary: CvSanitizer.sanitizeOutputText(rawSummary),
       modelUsed: this.modelName,
       rawAnalysis: {
         mode: 'mock_heuristic',
         analyzedAt: new Date().toISOString(),
         earnedWeight,
         totalWeight,
+        sanitization: {
+          hasSuspiciousContent: sanitization.hasSuspiciousContent,
+          detectedPatterns: sanitization.detectedPatterns,
+        },
       },
     };
   }

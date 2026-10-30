@@ -85,7 +85,22 @@ async function runTests(): Promise<void> {
   assert(parsedOllama.recommendation === 'STRONG_HIRE', 'Ollama parser bóc tách đúng STRONG_HIRE');
   assert(parsedOllama.matchedSkills.length === 2, 'Ollama parser bóc tách đúng 2 kỹ năng khớp');
 
-  // TEST 3: CvParser guaranteed cleanup
+  // TEST 3: OpenAiCompatibleProvider (vLLM, LocalAI, llama.cpp, etc.)
+  const { OpenAiCompatibleProvider } = await import('./providers/openai-compatible.provider');
+  const openAiProvider = new OpenAiCompatibleProvider('http://localhost:8000', 'vllm-qwen');
+  const endpoint1 = (openAiProvider as any).getChatEndpoint();
+  assert(endpoint1 === 'http://localhost:8000/v1/chat/completions', 'OpenAI provider tự động chuẩn hóa endpoint có /v1');
+
+  const openAiProviderV1 = new OpenAiCompatibleProvider('http://192.168.1.50:8080/v1', 'llamacpp-model');
+  const endpoint2 = (openAiProviderV1 as any).getChatEndpoint();
+  assert(endpoint2 === 'http://192.168.1.50:8080/v1/chat/completions', 'OpenAI provider giữ nguyên endpoint nếu đã có /v1');
+
+  const parseOpenAi = (openAiProvider as any).parseAndValidateResponse.bind(openAiProvider);
+  const parsedOpenAiResult = parseOpenAi(mockOllamaOutput);
+  assert(parsedOpenAiResult.aiScore === 88, 'OpenAI compatible provider bóc tách đúng điểm số');
+  assert(parsedOpenAiResult.modelUsed === 'vllm-qwen', 'OpenAI compatible provider gán đúng model name');
+
+  // TEST 4: CvParser guaranteed cleanup
   const tempTestFile = path.join(os.tmpdir(), `test_cleanup_${Date.now()}.txt`);
   await fs.promises.writeFile(tempTestFile, 'dummy content');
   assert(fs.existsSync(tempTestFile), 'Tạo file tạm thành công');

@@ -1,11 +1,12 @@
 import fs from 'fs';
 import pdfParse from 'pdf-parse';
+import { CvSanitizer } from '../security/sanitizer';
 
 export class CvParser {
   /**
    * Trích xuất văn bản từ tệp PDF và BẮT BUỘC xóa ngay tệp tạm trong khối finally
    * @param filePath Đường dẫn tệp PDF tạm
-   * @returns Nội dung văn bản đã được làm sạch
+   * @returns Nội dung văn bản đã được làm sạch và khử ký tự nguy hiểm
    */
   static async extractTextAndCleanup(filePath: string): Promise<string> {
     try {
@@ -13,15 +14,9 @@ export class CvParser {
       const parsed = await pdfParse(dataBuffer);
       const rawText = parsed.text || '';
 
-      // Chuẩn hóa văn bản: xóa ký tự vô hình, khoảng trắng thừa
-      const cleanedText = rawText
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-        .replace(/\r\n/g, '\n')
-        .replace(/[ \t]+/g, ' ')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-
-      return cleanedText;
+      // Làm sạch văn bản, chuẩn hóa khoảng trắng và khử ký tự điều khiển bằng CvSanitizer
+      const sanitized = CvSanitizer.sanitize(rawText);
+      return sanitized.cleanedText;
     } finally {
       // ĐẢM BẢO XÓA FILE TẠM NGAY LẬP TỨC KHÔNG ĐỂ LẠI DẤU VẾT TRÊN Ổ CỨNG
       try {

@@ -7,7 +7,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "test": "ts-node src/test-client.ts"
+    "test": "ts-node src/security/sanitizer.spec.ts && ts-node src/test-client.ts && ts-node src/web/server.spec.ts",
+    "test:security": "ts-node src/security/sanitizer.spec.ts",
+    "test:stress": "ts-node src/stress-test.ts",
+    "test:web": "ts-node src/web/server.spec.ts"
   },
   "dependencies": {
     "axios": "^1.7.9",

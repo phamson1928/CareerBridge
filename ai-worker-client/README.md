@@ -46,3 +46,19 @@ npm install
   docker build -t careerbridge-ai-worker .
   docker run -d --name ai-worker --env-file .env careerbridge-ai-worker
   ```
+
+---
+
+## 3. Kiểm thử & Đánh giá Hiệu năng
+* **Chạy kiểm thử chức năng & bảo mật (24 tests):**
+  ```bash
+  npm test
+  ```
+* **Chạy kiểm thử phòng thủ Prompt Injection:**
+  ```bash
+  npm run test:security
+  ```
+* **Chạy kiểm thử tải đồng thời & cam kết không rò rỉ dữ liệu (Stress & Privacy Test):**
+  ```bash
+  npm run test:stress
+  ```
