@@ -209,6 +209,17 @@ export function getDashboardHtml(): string {
       animation: pulse-dot 1s infinite;
     }
 
+    .status-badge.disconnected {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .status-badge.disconnected .status-dot {
+      background: #ef4444;
+      box-shadow: 0 0 10px #ef4444;
+      animation: pulse-dot 1s infinite;
+    }
+
     @keyframes pulse-dot {
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.5; transform: scale(1.2); }
@@ -982,7 +993,7 @@ export function getDashboardHtml(): string {
               <input type="password" id="cfgWorkerToken" class="form-input" placeholder="cwb_sec_..." style="padding-right:70px;">
               <button type="button" class="input-addon-btn" onclick="toggleTokenVisibility()">👁 Hiện</button>
             </div>
-            <div class="input-hint">Token bảo mật do Doanh nghiệp tạo (bắt đầu bằng cwb_...)</div>
+            <div id="cfgWorkerTokenHint" class="input-hint">Token bảo mật do Doanh nghiệp tạo (bắt đầu bằng cwb_...)</div>
           </div>
 
           <div class="form-group">
@@ -1196,6 +1207,7 @@ export function getDashboardHtml(): string {
     let selectedProvider = 'mock';
     let currentJobs = [];
     let isPausedState = false;
+    let isFormInitialized = false;
 
     // Toast helper
     function showToast(message, type = 'success') {
@@ -1226,6 +1238,14 @@ export function getDashboardHtml(): string {
       document.getElementById('cardOllama').classList.toggle('selected', provider === 'ollama');
       document.getElementById('cardOpenAi').classList.toggle('selected', provider === 'openai-compatible');
 
+      // Xóa thông báo lỗi kiểm tra cũ khi đổi thẻ
+      const testChip = document.getElementById('aiTestResult');
+      if (testChip) {
+        testChip.style.display = 'none';
+        testChip.className = 'test-result-chip';
+        testChip.textContent = '';
+      }
+
       const urlInput = document.getElementById('cfgAiBaseUrl');
       const modelInput = document.getElementById('cfgAiModel');
       const apiKeyGroup = document.getElementById('groupApiKey');
@@ -1241,23 +1261,15 @@ export function getDashboardHtml(): string {
       } else if (provider === 'ollama') {
         urlInput.disabled = false;
         modelInput.disabled = false;
-        if (!urlInput.value || urlInput.value.includes('8000') || urlInput.value === 'http://localhost') {
-          urlInput.value = 'http://localhost:11434';
-        }
-        if (!modelInput.value || modelInput.value.includes('heuristic')) {
-          modelInput.value = 'qwen2.5:7b';
-        }
+        urlInput.value = 'http://localhost:11434';
+        modelInput.value = 'qwen2.5:7b';
         apiKeyGroup.style.display = 'none';
         urlHint.textContent = 'Cổng mặc định của Ollama là 11434';
       } else if (provider === 'openai-compatible') {
         urlInput.disabled = false;
         modelInput.disabled = false;
-        if (!urlInput.value || urlInput.value.includes('11434') || urlInput.value === 'http://localhost') {
-          urlInput.value = 'http://localhost:8000/v1';
-        }
-        if (!modelInput.value || modelInput.value.includes('heuristic')) {
-          modelInput.value = 'qwen2.5:7b';
-        }
+        urlInput.value = 'http://localhost:8000/v1';
+        modelInput.value = 'qwen2.5:7b';
         apiKeyGroup.style.display = 'flex';
         urlHint.textContent = 'Điền URL vLLM, LocalAI hoặc IP máy chủ mạng LAN (vd: http://192.168.1.50:8000/v1)';
       }
@@ -1298,10 +1310,17 @@ export function getDashboardHtml(): string {
 
       badge.className = 'status-badge';
       if (data.state === 'RUNNING') {
-        badge.classList.add('running');
-        badgeText.textContent = 'ĐANG CHẠY (ONLINE)';
-        stateText.textContent = 'HOẠT ĐỘNG';
-        stateText.style.color = '#34d399';
+        if (data.backendConnected === false) {
+          badge.classList.add('disconnected');
+          badgeText.textContent = 'MẤT KẾT NỐI BACKEND';
+          stateText.textContent = 'LỖI BACKEND';
+          stateText.style.color = '#f87171';
+        } else {
+          badge.classList.add('running');
+          badgeText.textContent = 'ĐANG CHẠY (ONLINE)';
+          stateText.textContent = 'HOẠT ĐỘNG';
+          stateText.style.color = '#34d399';
+        }
       } else if (data.state === 'PAUSED') {
         badge.classList.add('paused');
         badgeText.textContent = 'TẠM DỪNG (PAUSED)';
@@ -1333,7 +1352,13 @@ export function getDashboardHtml(): string {
       }
 
       // Stats
-      document.getElementById('statUptime').textContent = 'Thời gian chạy: ' + formatUptime(data.uptimeSec);
+      if (data.state === 'RUNNING' && data.backendConnected === false) {
+        document.getElementById('statUptime').textContent = '⚠️ Mất kết nối (' + (data.lastBackendError || 'Lỗi Backend') + ')';
+        document.getElementById('statUptime').style.color = '#fca5a5';
+      } else {
+        document.getElementById('statUptime').textContent = 'Thời gian chạy: ' + formatUptime(data.uptimeSec);
+        document.getElementById('statUptime').style.color = '';
+      }
       document.getElementById('statTotalScanned').textContent = data.stats.totalProcessed || 0;
       document.getElementById('statSuccessRate').textContent = 'Thành công: ' + data.stats.successful + ' | Thất bại: ' + data.stats.failed;
       document.getElementById('statAvgDuration').textContent = (data.stats.avgDurationSec || 0) + 's';
@@ -1344,33 +1369,27 @@ export function getDashboardHtml(): string {
       document.getElementById('statAiProvider').textContent = provLabel;
       document.getElementById('statAiModel').textContent = 'Model: ' + (currentConfig.aiModel || 'N/A');
 
-      // Populate config inputs only if not actively editing
-      if (!document.getElementById('cfgBackendUrl').matches(':focus')) {
-        document.getElementById('cfgBackendUrl').value = currentConfig.backendUrl || '';
-      }
-      if (!document.getElementById('cfgWorkerToken').matches(':focus') && currentConfig.workerTokenMasked) {
-        if (!document.getElementById('cfgWorkerToken').value) {
+      // CHỈ NẠP DỮ LIỆU VÀO FORM Ở LẦN TẢI ĐẦU TIÊN (Tránh bị timer 3s ghi đè lựa chọn của người dùng)
+      if (!isFormInitialized) {
+        isFormInitialized = true;
+        if (currentConfig.backendUrl) document.getElementById('cfgBackendUrl').value = currentConfig.backendUrl;
+        if (currentConfig.workerTokenMasked && !document.getElementById('cfgWorkerToken').value) {
           document.getElementById('cfgWorkerToken').placeholder = currentConfig.workerTokenMasked;
+          const hint = document.getElementById('cfgWorkerTokenHint');
+          if (hint) {
+            hint.innerHTML = '<span style="color:#34d399; font-weight:600;">✔ Đã lưu token an toàn trong .env</span> &bull; <span style="color:#94a3b8;">Không cần nhập lại (chỉ nhập nếu muốn đổi token mới).</span>';
+          }
         }
-      }
-      if (!document.getElementById('cfgWorkerName').matches(':focus')) {
-        document.getElementById('cfgWorkerName').value = currentConfig.workerName || '';
-      }
-      if (!document.getElementById('cfgPollInterval').matches(':focus')) {
-        document.getElementById('cfgPollInterval').value = currentConfig.pollIntervalSec || 5;
-      }
-      if (!document.getElementById('cfgHeartbeatInterval').matches(':focus')) {
-        document.getElementById('cfgHeartbeatInterval').value = currentConfig.heartbeatIntervalSec || 25;
-      }
-      if (!document.getElementById('cfgWebPort').matches(':focus')) {
-        document.getElementById('cfgWebPort').value = currentConfig.webPort || 5050;
-      }
+        if (currentConfig.workerName) document.getElementById('cfgWorkerName').value = currentConfig.workerName;
+        if (currentConfig.pollIntervalSec) document.getElementById('cfgPollInterval').value = currentConfig.pollIntervalSec;
+        if (currentConfig.heartbeatIntervalSec) document.getElementById('cfgHeartbeatInterval').value = currentConfig.heartbeatIntervalSec;
+        if (currentConfig.webPort) document.getElementById('cfgWebPort').value = currentConfig.webPort;
 
-      // Select active provider
-      if (currentConfig.provider && selectedProvider !== currentConfig.provider) {
-        selectProvider(currentConfig.provider);
-        if (currentConfig.aiBaseUrl) document.getElementById('cfgAiBaseUrl').value = currentConfig.aiBaseUrl;
-        if (currentConfig.aiModel) document.getElementById('cfgAiModel').value = currentConfig.aiModel;
+        if (currentConfig.provider) {
+          selectProvider(currentConfig.provider);
+          if (currentConfig.aiBaseUrl) document.getElementById('cfgAiBaseUrl').value = currentConfig.aiBaseUrl;
+          if (currentConfig.aiModel) document.getElementById('cfgAiModel').value = currentConfig.aiModel;
+        }
       }
 
       // Render Job History
@@ -1505,6 +1524,14 @@ export function getDashboardHtml(): string {
       const backendUrl = document.getElementById('cfgBackendUrl').value.trim() || currentConfig.backendUrl;
       const workerToken = document.getElementById('cfgWorkerToken').value.trim() || currentConfig.workerToken;
 
+      if (backendUrl.includes(':5173')) {
+        chip.className = 'test-result-chip error';
+        chip.innerHTML = '✖ Cổng 5173 là cổng Web Frontend! Cổng Backend CareerBridge là <b>http://localhost:3000</b>. Vui lòng đổi cổng thành 3000.';
+        chip.style.display = 'flex';
+        showToast('Cổng 5173 là giao diện Web. Vui lòng đổi thành http://localhost:3000!', 'error');
+        return;
+      }
+
       chip.className = 'test-result-chip';
       chip.textContent = 'Đang kiểm tra kết nối tới Backend...';
       chip.style.display = 'flex';
@@ -1520,6 +1547,7 @@ export function getDashboardHtml(): string {
           chip.className = 'test-result-chip success';
           chip.innerHTML = '✔ ' + result.message + ' (' + result.latencyMs + 'ms)';
           showToast('Kết nối CareerBridge Backend thành công!');
+          refreshData();
         } else {
           chip.className = 'test-result-chip error';
           chip.innerHTML = '✖ ' + result.message;
@@ -1583,6 +1611,14 @@ export function getDashboardHtml(): string {
         heartbeatIntervalSec: parseInt(document.getElementById('cfgHeartbeatInterval').value, 10),
         webPort: parseInt(document.getElementById('cfgWebPort').value, 10),
       };
+
+      if (payload.backendUrl && payload.backendUrl.includes(':5173')) {
+        const confirmed = confirm('CẢNH BÁO: Cổng 5173 là cổng của giao diện Web Frontend. Cổng của Backend CareerBridge mặc định là http://localhost:3000.\n\nBạn có muốn tự động sửa thành http://localhost:3000 không?');
+        if (confirmed) {
+          payload.backendUrl = 'http://localhost:3000';
+          document.getElementById('cfgBackendUrl').value = 'http://localhost:3000';
+        }
+      }
 
       try {
         const res = await fetch('/api/config', {

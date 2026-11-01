@@ -23,8 +23,15 @@ export class BackendApiClient {
   }
 
   async pollJob(): Promise<PollJobResponse> {
-    const response = await this.client.get<PollJobResponse>('/jobs/poll');
-    return response.data;
+    const response = await this.client.get<any>('/jobs/poll');
+    const raw = response.data;
+    if (raw && typeof raw.hasJob === 'boolean') {
+      return raw;
+    }
+    if (raw && raw.data && typeof raw.data.hasJob === 'boolean') {
+      return raw.data;
+    }
+    return raw;
   }
 
   async completeJob(jobId: string, payload: CompleteJobPayload): Promise<void> {

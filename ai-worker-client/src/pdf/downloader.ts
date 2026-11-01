@@ -18,9 +18,10 @@ export class CvDownloader {
    * @param jobId ID tác vụ quét CV
    * @returns Đường dẫn tệp tạm thời trên đĩa
    */
-  static async downloadToTemp(downloadUrl: string, jobId: string): Promise<string> {
+  static async downloadToTemp(downloadUrl: string, jobId: string, originalFileName?: string): Promise<string> {
     this.ensureTempDir();
-    const tempFilePath = path.join(this.tempDir, `cv_${jobId}_${Date.now()}.pdf`);
+    const ext = originalFileName ? path.extname(originalFileName) : '.pdf';
+    const tempFilePath = path.join(this.tempDir, `cv_${jobId}_${Date.now()}${ext || '.pdf'}`);
 
     const response = await axios({
       method: 'GET',

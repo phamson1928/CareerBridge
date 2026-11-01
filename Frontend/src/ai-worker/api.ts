@@ -49,4 +49,33 @@ export const aiWorkerApi = {
         }>
       >(`/ai-worker/applications/${applicationId}/rescan`)
     ).data.data,
+
+  // Tải gói cài đặt AI Worker Client (.zip) kèm cấu hình (.env)
+  downloadClientPackage: async (params?: {
+    token?: string;
+    workerName?: string;
+    modelName?: string;
+    engine?: 'OLLAMA' | 'MOCK';
+  }) => {
+    const response = await api.get('/ai-worker/download-client', {
+      params,
+      responseType: 'blob',
+    });
+
+    const blob = new Blob([response.data], { type: 'application/zip' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const safeName = (params?.workerName || 'CareerBridge-AI-Worker')
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, '_');
+    link.setAttribute(
+      'download',
+      params?.token ? `CareerBridge-Worker-${safeName}.zip` : 'CareerBridge-AI-Worker.zip',
+    );
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };

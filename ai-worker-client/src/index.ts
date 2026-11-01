@@ -40,8 +40,8 @@ async function main(): Promise<void> {
     // 1. Khởi chạy Web Server nội bộ (mặc định port 5050)
     const activePort = await webServer.start(config.webPort);
 
-    // Tự động mở trình duyệt nếu bật cờ (hoặc khi chưa cấu hình token để hỗ trợ HR ngay lập tức)
-    if (!config.isConfigured || process.env.AUTO_OPEN_BROWSER === 'true') {
+    // Tự động mở đúng 1 tab trình duyệt tới cổng đang hoạt động
+    if (process.env.AUTO_OPEN_BROWSER !== 'false') {
       void openBrowser(`http://localhost:${activePort}`);
     }
 

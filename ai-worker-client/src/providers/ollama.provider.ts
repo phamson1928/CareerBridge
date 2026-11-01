@@ -34,10 +34,11 @@ export class OllamaAiProvider implements AiProvider {
         options: {
           temperature: 0.2,
           top_p: 0.9,
+          num_predict: 600,
         },
       },
       {
-        timeout: 120000, // 2 phút cho mô hình local suy nghĩ
+        timeout: 240000, // 4 phút cho mô hình local suy nghĩ
       }
     );
 

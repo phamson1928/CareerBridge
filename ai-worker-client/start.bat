@@ -10,6 +10,24 @@ echo.
 
 cd /d "%~dp0"
 
+where node >nul 2>nul
+if errorlevel 1 (
+    echo ======================================================================
+    echo [ERROR] May tinh cua ban chua cai dat Node.js!
+    echo Vui long tai va cai dat Node.js tai: https://nodejs.org (Ban LTS)
+    echo Sau khi cai xong, hay nhap dup lai file start.bat nay.
+    echo ======================================================================
+    pause
+    exit /b 1
+)
+
+if not exist .env (
+    if exist .env.example (
+        echo [INFO] Khoi tao file .env tu mau .env.example...
+        copy .env.example .env >nul
+    )
+)
+
 if not exist node_modules (
     echo [INFO] Phat hien chua cai dat thu vien. Dang tu dong chay npm install...
     call npm install
@@ -20,9 +38,7 @@ if not exist node_modules (
     )
 )
 
-echo [INFO] Dang khoi dong Web Dashboard tai http://localhost:5050 ...
-start http://localhost:5050
-
+echo [INFO] Dang khoi dong Web Dashboard va AI Worker...
 call npm run dev
 if errorlevel 1 (
     echo.

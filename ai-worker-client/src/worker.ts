@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import axios from 'axios';
 import { BackendApiClient } from './api/client';
 import { AvailableJob } from './api/types';
@@ -43,6 +45,8 @@ export class AiWorkerDaemon {
   private isProcessingJob = false;
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private consecutiveErrors = 0;
+  private isBackendConnected = false;
+  private lastBackendError = '';
   private startedAt = 0;
 
   private recentJobs: ScannedJobRecord[] = [];
@@ -53,8 +57,10 @@ export class AiWorkerDaemon {
     avgDurationSec: 0,
   };
   private totalProcessingTimeSec = 0;
+  private historyFilePath = path.resolve(process.cwd(), 'data', 'history.json');
 
   constructor(private config: WorkerConfig) {
+    this.loadHistoryFromDisk();
     if (this.config.isConfigured) {
       this.client = new BackendApiClient(config);
       this.provider = ProviderFactory.create(config);
@@ -175,6 +181,8 @@ export class AiWorkerDaemon {
     const uptimeSec = this.startedAt ? Math.floor((Date.now() - this.startedAt) / 1000) : 0;
     return {
       state: this.state,
+      backendConnected: this.isBackendConnected,
+      lastBackendError: this.lastBackendError,
       isPaused: this.isPaused,
       isConfigured: this.config.isConfigured,
       uptimeSec,
@@ -317,9 +325,13 @@ export class AiWorkerDaemon {
     if (!this.client || !this.provider) return;
     try {
       await this.client.sendHeartbeat({ modelName: this.provider.modelName });
+      this.isBackendConnected = true;
+      this.lastBackendError = '';
       Logger.success('Gửi tín hiệu Heartbeat ban đầu thành công. Trạng thái: ONLINE');
     } catch (err: any) {
+      this.isBackendConnected = false;
       const msg = err.response?.data?.message || err.message || 'Lỗi không xác định';
+      this.lastBackendError = msg;
       Logger.error(`Không thể gửi Heartbeat ban đầu đến Backend: ${msg}`);
       if (err.response?.status === 401) {
         Logger.error('LƯU Ý: Mã WORKER_TOKEN không hợp lệ hoặc đã bị thu hồi!');
@@ -333,7 +345,11 @@ export class AiWorkerDaemon {
       if (this.isStopping || !this.client || !this.provider) return;
       try {
         await this.client.sendHeartbeat({ modelName: this.provider.modelName });
+        this.isBackendConnected = true;
+        this.lastBackendError = '';
       } catch (err: any) {
+        this.isBackendConnected = false;
+        this.lastBackendError = err.response?.data?.message || err.message || 'Lỗi heartbeat';
         Logger.warn(`Gửi heartbeat thất bại: ${err.message}`);
       }
     }, this.config.heartbeatIntervalMs);
@@ -352,6 +368,8 @@ export class AiWorkerDaemon {
       try {
         const response = await this.client.pollJob();
         this.consecutiveErrors = 0; // Reset lỗi khi kết nối thành công
+        this.isBackendConnected = true;
+        this.lastBackendError = '';
 
         if (response.hasJob) {
           this.isProcessingJob = true;
@@ -365,8 +383,10 @@ export class AiWorkerDaemon {
         await this.sleep(this.config.pollIntervalMs);
       } catch (err: any) {
         this.consecutiveErrors++;
+        this.isBackendConnected = false;
         const status = err.response?.status;
         const msg = err.response?.data?.message || err.message || 'Lỗi kết nối';
+        this.lastBackendError = msg;
 
         if (status === 401) {
           Logger.error(`Xác thực thất bại (401): ${msg}. Vui lòng kiểm tra lại WORKER_TOKEN trong Web UI hoặc .env!`);
@@ -397,15 +417,15 @@ export class AiWorkerDaemon {
     try {
       // 1. Tải CV từ Signed URL vào file tạm
       Logger.info(`Đang tải tệp CV (${job.cvFileName || 'CV'})...`);
-      tempFilePath = await CvDownloader.downloadToTemp(job.cvDownloadUrl, job.jobId);
+      tempFilePath = await CvDownloader.downloadToTemp(job.cvDownloadUrl, job.jobId, job.cvFileName);
 
-      // 2. Trích xuất văn bản từ PDF và dọn dẹp file ngay lập tức
-      Logger.info('Đang bóc tách văn bản từ tệp PDF và tự động dọn dẹp file tạm...');
-      const cvText = await CvParser.extractTextAndCleanup(tempFilePath);
+      // 2. Trích xuất văn bản từ PDF / Word (.docx) và dọn dẹp file ngay lập tức
+      Logger.info(`Đang bóc tách văn bản từ tệp CV (${job.cvFileName || 'CV'})...`);
+      const cvText = await CvParser.extractTextAndCleanup(tempFilePath, job.cvFileName);
       tempFilePath = null; // Đã được xóa an toàn trong khối finally của parser
 
       if (!cvText || cvText.length < 50) {
-        throw new Error('Nội dung CV quá ngắn hoặc tệp PDF không chứa văn bản có thể đọc được');
+        throw new Error('Nội dung CV quá ngắn hoặc tệp CV (PDF/Word) không chứa văn bản có thể đọc được');
       }
 
       // 3. Phân tích nội dung CV bằng AI Provider
@@ -489,6 +509,50 @@ export class AiWorkerDaemon {
     this.stats.avgDurationSec = parseFloat(
       (this.totalProcessingTimeSec / this.stats.totalProcessed).toFixed(1)
     );
+
+    this.saveHistoryToDisk();
+  }
+
+  private loadHistoryFromDisk(): void {
+    try {
+      if (fs.existsSync(this.historyFilePath)) {
+        const raw = fs.readFileSync(this.historyFilePath, 'utf-8');
+        const data = JSON.parse(raw);
+        if (Array.isArray(data.recentJobs)) {
+          this.recentJobs = data.recentJobs;
+        }
+        if (data.stats) {
+          this.stats = data.stats;
+          this.totalProcessingTimeSec = data.totalProcessingTimeSec || 0;
+        }
+      }
+    } catch (e) {
+      // Bỏ qua lỗi nạp file lịch sử
+    }
+  }
+
+  private saveHistoryToDisk(): void {
+    try {
+      const dir = path.dirname(this.historyFilePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(
+        this.historyFilePath,
+        JSON.stringify(
+          {
+            recentJobs: this.recentJobs,
+            stats: this.stats,
+            totalProcessingTimeSec: this.totalProcessingTimeSec,
+          },
+          null,
+          2
+        ),
+        'utf-8'
+      );
+    } catch (e) {
+      // Bỏ qua lỗi lưu file lịch sử
+    }
   }
 
   private sleep(ms: number): Promise<void> {

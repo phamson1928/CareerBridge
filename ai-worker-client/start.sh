@@ -10,16 +10,15 @@ echo "   Khởi chạy ứng dụng và Giao diện Quản trị Nội bộ (Loc
 echo "======================================================================"
 echo ""
 
+if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+    echo "[INFO] Khởi tạo file .env từ mẫu .env.example..."
+    cp .env.example .env
+fi
+
 if [ ! -d "node_modules" ]; then
     echo "[INFO] Chưa cài đặt thư viện. Đang tự động chạy npm install..."
     npm install
 fi
 
-echo "[INFO] Đang khởi động Web Dashboard tại http://localhost:5050 ..."
-if which xdg-open > /dev/null; then
-    xdg-open http://localhost:5050 &
-elif which open > /dev/null; then
-    open http://localhost:5050 &
-fi
-
+echo "[INFO] Đang khởi động Web Dashboard và AI Worker..."
 npm run dev

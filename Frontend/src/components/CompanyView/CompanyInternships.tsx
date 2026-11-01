@@ -1017,19 +1017,6 @@ export function CompanyInternships() {
                     </span>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenFromTemplate(tpl)}
-                        disabled={!recruitingSemesters.length}
-                        title={
-                          recruitingSemesters.length
-                            ? "Khởi tạo tin tuyển dụng ngay vào đợt đang mở"
-                            : "Không có đợt tuyển nào đang mở"
-                        }
-                        className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition shadow-xs"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" /> Tạo tin từ mẫu
-                      </button>
 
                       <button
                         type="button"

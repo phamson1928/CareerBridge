@@ -18,6 +18,7 @@ import {
   Terminal,
   Zap,
   Globe,
+  Download,
 } from 'lucide-react';
 import { aiWorkerApi } from '../../ai-worker/api';
 import type { CompanyWorkerDashboardData, CompanyWorkerItem } from '../../ai-worker/types';
@@ -60,6 +61,32 @@ export const CompanyAiWorkerModal: React.FC<CompanyAiWorkerModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [copiedEnv, setCopiedEnv] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadWorkerZip = async (token?: string, workerName?: string) => {
+    setIsDownloading(true);
+    try {
+      await aiWorkerApi.downloadClientPackage({
+        token,
+        workerName,
+        modelName: createdTokenData?.modelName,
+        engine: createdTokenData?.engine,
+      });
+      feedback.notify({
+        title: 'Bắt đầu tải gói AI Worker',
+        message: 'File .zip đang được tải về máy của bạn. Hãy giải nén và nhấp đúp file start.bat để khởi chạy.',
+        tone: 'success',
+      });
+    } catch (err) {
+      feedback.notify({
+        title: 'Không thể tải gói AI Worker',
+        message: getApiErrorMessage(err),
+        tone: 'error',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -143,7 +170,6 @@ export const CompanyAiWorkerModal: React.FC<CompanyAiWorkerModalProps> = ({
         tone: 'success',
       });
       await loadData();
-      onSettingsUpdated?.();
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -257,100 +283,121 @@ AI_PROVIDER=mock`;
             </div>
           )}
 
-          {/* Token Generated Alert Banner */}
+          {/* Token Generated Dedicated Modal Overlay */}
           {createdTokenData && (
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-50 via-purple-50 to-emerald-50 border border-indigo-200 shadow-xs space-y-3.5 animate-in slide-in-from-top-3 duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-indigo-900 font-bold text-sm">
-                  <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                  Mã Token Kết Nối Worker ({createdTokenData.workerName})
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl p-6 shadow-2xl border-2 border-indigo-300 w-full max-w-xl space-y-4 animate-in zoom-in-95 duration-200 text-slate-800">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5 text-indigo-900 font-bold text-base">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4>Mã Token Của Bạn Đã Sẵn Sàng!</h4>
+                      <p className="text-xs text-slate-500 font-normal">Worker: <strong>{createdTokenData.workerName}</strong></p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setCreatedTokenData(null)}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm font-bold"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <button
-                  onClick={() => setCreatedTokenData(null)}
-                  className="text-xs text-slate-400 hover:text-slate-600"
-                >
-                  Đóng
-                </button>
-              </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
-                <strong className="text-rose-600">Lưu ý quan trọng:</strong> Vì lý do bảo mật, mã bí mật này <strong>chỉ hiển thị duy nhất 1 lần</strong>. Bạn có thể sao chép riêng mã Token hoặc bấm sao chép sẵn toàn bộ nội dung file <code>.env</code> bên dưới.
-              </p>
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Lưu ý:</strong> Mã này <strong>chỉ xuất hiện 1 lần duy nhất</strong>. Hãy sao chép mã ngay bây giờ để dán vào giao diện Web <code>http://localhost:5050</code>.
+                  </span>
+                </div>
 
-              {/* Token Box */}
-              <div className="flex items-center gap-2 bg-slate-900 rounded-xl p-3 text-emerald-400 font-mono text-xs select-all break-all shadow-inner">
-                <span className="flex-1 overflow-x-auto">{createdTokenData.token}</span>
-                <button
-                  type="button"
-                  onClick={handleCopyToken}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 transition-all shrink-0 ${
-                    copied
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
-                  }`}
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-3.5 h-3.5" /> Đã chép Token
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" /> Sao chép Token
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Full .env copy helper & Local Web UI Callout */}
-              <div className="p-3 bg-white/80 rounded-xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                {/* Token Box */}
                 <div>
-                  <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <Terminal className="w-4 h-4 text-indigo-600" />
-                    Chế độ đã chọn: {createdTokenData.engine === 'OLLAMA' ? 'Server AI Nội Bộ (vLLM / Ollama / LocalAI / llama.cpp...)' : 'Bộ lọc Kỹ năng (Heuristic)'}
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">MÃ TOKEN KẾT NỐI (WORKER_TOKEN)</label>
+                  <div className="flex items-center gap-2 bg-slate-900 rounded-2xl p-3.5 text-emerald-400 font-mono text-sm select-all break-all shadow-inner">
+                    <span className="flex-1 overflow-x-auto">{createdTokenData.token}</span>
+                    <button
+                      type="button"
+                      onClick={handleCopyToken}
+                      className={`px-4 py-2 rounded-xl text-xs font-sans font-bold flex items-center gap-1.5 transition-all shrink-0 ${
+                        copied
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 shadow-md font-extrabold'
+                      }`}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4" /> Đã chép Token
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" /> Sao chép Token
+                        </>
+                      )}
+                    </button>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    {createdTokenData.engine === 'OLLAMA'
-                      ? `URL Server: ${createdTokenData.ollamaBaseUrl} • Model: ${createdTokenData.modelName} (Chuẩn OpenAI API: tương thích 100% vLLM, Ollama, LocalAI, llama.cpp)`
-                      : 'Không yêu cầu GPU hay máy chủ AI riêng.'}
-                  </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleCopyEnvConfig}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 ${
-                    copiedEnv
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'
-                  }`}
-                >
-                  {copiedEnv ? (
-                    <>
-                      <Check className="w-3.5 h-3.5" /> Đã sao chép cấu hình .env
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" /> Sao chép toàn bộ file .env
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Local Web UI Tip */}
-              <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200/80 flex items-start gap-2.5 text-xs text-blue-900">
-                <Globe className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <div className="font-bold text-blue-950 flex items-center gap-2">
-                    <span>Cách dùng tiện lợi nhất: Khởi chạy Giao diện Web Nội bộ</span>
-                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-blue-200/60 font-semibold text-blue-800">1-Click</span>
+                {/* 1-Click Download Pre-configured Worker ZIP */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-2 border-emerald-300 space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h5 className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-emerald-600" />
+                        Tải Gói AI Worker Chạy Ngay (.ZIP) - Khuyên Dùng
+                      </h5>
+                      <p className="text-[11px] text-emerald-800 mt-0.5">
+                        Gói ZIP đã được <strong>cấu hình sẵn Token & Backend URL</strong>. Doanh nghiệp chỉ cần tải về, giải nén và nhấp đúp file <code>start.bat</code> là worker tự kết nối ngay!
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-blue-800/90 leading-relaxed">
-                    Trong thư mục <code>ai-worker-client</code>, chỉ cần nhấp đúp file <code>start.bat</code> (Windows) hoặc chạy <code>./start.sh</code> (Mac/Linux). Ứng dụng sẽ tự động mở giao diện Web tại <strong>http://localhost:5050</strong> để bạn dán Token, test kết nối AI và theo dõi quá trình duyệt CV trực tiếp mà không cần chạm vào dòng lệnh!
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadWorkerZip(createdTokenData.token, createdTokenData.workerName)}
+                    disabled={isDownloading}
+                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-60"
+                  >
+                    <Download className={`w-4 h-4 ${isDownloading ? 'animate-bounce' : ''}`} />
+                    {isDownloading ? 'Đang đóng gói file ZIP...' : 'Tải Gói Cài Đặt AI Worker (.ZIP) (Đã Kèm Token)'}
+                  </button>
+                </div>
+
+                {/* Local Web UI Tip */}
+                <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1.5">
+                  <div className="font-bold flex items-center gap-2 text-blue-950">
+                    <Globe className="w-4 h-4 text-blue-600" />
+                    <span>Hướng dẫn cài đặt & vận hành:</span>
+                  </div>
+                  <ol className="text-[11px] text-blue-800 list-decimal list-inside space-y-1 leading-relaxed">
+                    <li>Nhấn nút <strong>"Tải Gói Cài Đặt AI Worker (.ZIP)"</strong> ở trên và giải nén trên máy tính doanh nghiệp.</li>
+                    <li>Nhấp đúp file <strong>start.bat</strong> (hoặc chạy <code>./start.sh</code> trên Mac/Linux).</li>
+                    <li>Worker sẽ tự cài đặt thư viện cần thiết, tự động kết nối và mở Dashboard quản trị tại <strong>http://localhost:5050</strong>!</li>
+                  </ol>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyEnvConfig}
+                    className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    {copiedEnv ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    Sao chép toàn bộ .env
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreatedTokenData(null)}
+                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
+                  >
+                    Tôi đã sao chép xong &bull; Đóng
+                  </button>
                 </div>
               </div>
             </div>
           )}
+
+
 
           {/* Toggle Setting & Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -459,15 +506,28 @@ AI_PROVIDER=mock`;
                 </p>
               </div>
 
-              {!showCreateForm && (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowCreateForm(true)}
-                  disabled={(data?.workers.length || 0) >= 5}
-                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                  type="button"
+                  onClick={() => handleDownloadWorkerZip()}
+                  disabled={isDownloading}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Tải bộ mã nguồn Worker Client (.ZIP) để cài đặt trên máy trạm nội bộ"
                 >
-                  <Plus className="w-4 h-4" /> Kết Nối Worker Mới
+                  <Download className={`w-3.5 h-3.5 text-indigo-600 ${isDownloading ? 'animate-bounce' : ''}`} />
+                  Tải Gói AI Worker (.ZIP)
                 </button>
-              )}
+
+                {!showCreateForm && (
+                  <button
+                    onClick={() => setShowCreateForm(true)}
+                    disabled={(data?.workers.length || 0) >= 5}
+                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                  >
+                    <Plus className="w-4 h-4" /> Kết Nối Worker Mới
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Inline Create Form */}

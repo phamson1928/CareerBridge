@@ -252,15 +252,24 @@ export const AiScanDetailModal: React.FC<AiScanDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Quick compare vs matchScore */}
-            <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center shrink-0 shadow-xs w-full sm:w-auto">
-              <span className="text-[11px] font-medium text-slate-500 block">Kỹ năng tự khai báo</span>
-              <span className="text-lg font-black text-slate-700 flex items-center justify-center gap-1">
-                <Sparkles className="w-4 h-4 text-emerald-500" />
-                {application.matchScore !== null ? `${application.matchScore}%` : 'N/A'}
-              </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">So khớp hồ sơ khai báo</span>
-            </div>
+            {/* Skills Matched from CV */}
+            {job && (
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 text-center shrink-0 shadow-xs w-full sm:w-auto min-w-[150px]">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide block">
+                  Kỹ Năng Thực Tế (CV)
+                </span>
+                <div className="text-xl font-black text-slate-900 flex items-center justify-center gap-1.5 mt-1">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span>{job.matchedSkills?.length || 0}</span>
+                  <span className="text-xs font-semibold text-slate-400">
+                    / {(job.matchedSkills?.length || 0) + (job.missingSkills?.length || 0)} yêu cầu
+                  </span>
+                </div>
+                <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-0.5 rounded-full inline-block mt-1 border border-emerald-200/60">
+                  Trích xuất từ file CV
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Section 2: Skill Matrix */}

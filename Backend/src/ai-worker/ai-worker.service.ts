@@ -5,6 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
+import * as path from 'path';
+import * as fs from 'fs';
+import AdmZip from 'adm-zip';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseStorageService } from '../files/supabase-storage.service';
 import {
@@ -536,5 +539,76 @@ export class AiWorkerService {
       workerId: worker.id,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  async generateClientZipPackage(options?: {
+    token?: string;
+    workerName?: string;
+    modelName?: string;
+    engine?: string;
+    backendUrl?: string;
+  }): Promise<{ filename: string; buffer: Buffer }> {
+    const candidateDirs = [
+      path.resolve(process.cwd(), '../ai-worker-client'),
+      path.resolve(process.cwd(), 'ai-worker-client'),
+      path.resolve(__dirname, '../../../ai-worker-client'),
+      path.resolve(__dirname, '../../../../ai-worker-client'),
+    ];
+
+    const clientDir = candidateDirs.find((d) => fs.existsSync(d));
+    if (!clientDir) {
+      throw new NotFoundException('Source directory for ai-worker-client not found');
+    }
+
+    const zip = new AdmZip();
+
+    const addDirectoryRecursive = (dir: string, baseInZip: string) => {
+      const items = fs.readdirSync(dir);
+      for (const item of items) {
+        if (['node_modules', 'dist', '.git', 'data', '.env'].includes(item)) {
+          continue;
+        }
+        const fullPath = path.join(dir, item);
+        const zipPath = baseInZip ? path.join(baseInZip, item) : item;
+        const stat = fs.statSync(fullPath);
+        if (stat.isDirectory()) {
+          addDirectoryRecursive(fullPath, zipPath);
+        } else {
+          zip.addLocalFile(fullPath, baseInZip ? baseInZip.replace(/\\/g, '/') : '');
+        }
+      }
+    };
+
+    addDirectoryRecursive(clientDir, '');
+
+    const workerToken = options?.token?.trim() || '';
+    const workerName = options?.workerName?.trim() || 'CareerBridge-Worker';
+    const backendUrl = options?.backendUrl?.trim() || 'http://localhost:3000/api/v1';
+    const engine = options?.engine === 'MOCK' ? 'mock' : 'ollama';
+    const model = options?.modelName?.trim() || 'qwen2.5:7b';
+
+    const envContent = `# CareerBridge AI Worker Client Configuration
+# Duoc tao tu dong tu he thong CareerBridge
+BACKEND_URL=${backendUrl}
+WORKER_TOKEN=${workerToken}
+WORKER_NAME=${workerName}
+PORT=5050
+AI_PROVIDER=${engine}
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=${model}
+POLL_INTERVAL_MS=5000
+CONCURRENCY=1
+LOG_LEVEL=info
+`;
+
+    zip.addFile('.env', Buffer.from(envContent, 'utf8'));
+
+    const buffer = zip.toBuffer();
+    const safeWorkerName = workerName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = workerToken
+      ? `CareerBridge-AI-Worker-${safeWorkerName}.zip`
+      : `CareerBridge-AI-Worker.zip`;
+
+    return { filename, buffer };
   }
 }

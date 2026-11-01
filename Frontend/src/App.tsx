@@ -239,18 +239,25 @@ export default function App() {
     });
   };
 
+  const prevUserRef = React.useRef<string | null>(null);
+
   useEffect(() => {
     if (!user) return;
 
     let active = true;
-    setStudentProfile(null);
-    setAvatarFileId(null);
-    setCompanyProfile(null);
-    setCompanyVerificationStatus(null);
-    setInternships([]);
-    setApplications([]);
-    setEvaluationRecords([]);
-    setMyPlacements([]);
+    const isNewUser = prevUserRef.current !== user.id;
+    prevUserRef.current = user.id;
+
+    if (isNewUser) {
+      setStudentProfile(null);
+      setAvatarFileId(null);
+      setCompanyProfile(null);
+      setCompanyVerificationStatus(null);
+      setInternships([]);
+      setApplications([]);
+      setEvaluationRecords([]);
+      setMyPlacements([]);
+    }
     setWorkflowError(null);
 
     const applyApplications = (records: ApplicationRecord[]) => {

@@ -6,8 +6,11 @@ import {
   Param,
   Patch,
   Post,
+  Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AiWorkerService } from './ai-worker.service';
 import { AiWorkerAuthGuard } from './guards/ai-worker-auth.guard';
 import { CurrentAiWorker } from './decorators/current-ai-worker.decorator';
@@ -107,5 +110,30 @@ export class AiWorkerController {
   @Roles(Role.COMPANY)
   rescanApplication(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.aiWorkerService.rescanApplication(user.id, id);
+  }
+
+  @Get('download-client')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.COMPANY)
+  async downloadClient(
+    @Query('token') token: string,
+    @Query('workerName') workerName: string,
+    @Query('modelName') modelName: string,
+    @Query('engine') engine: string,
+    @Res() res: Response,
+  ) {
+    const result = await this.aiWorkerService.generateClientZipPackage({
+      token,
+      workerName,
+      modelName,
+      engine,
+    });
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.filename}"`,
+    );
+    res.send(result.buffer);
   }
 }
