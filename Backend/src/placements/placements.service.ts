@@ -130,6 +130,8 @@ export interface PlacementProgress {
   finalScore: number | null;
   hasCompanyCertificate: boolean;
   lastReportAt: Date | null;
+  statusNote: string | null;
+  statusChangedAt: Date | null;
 }
 
 @Injectable()
@@ -414,6 +416,35 @@ export class PlacementsService {
           }
         }
 
+        if (dto.status === PublicPlacementStatus.CANCELLED) {
+          if (!dto.note || !dto.note.trim()) {
+            throw new BadRequestException({
+              code: 'PLACEMENT_CANCELLATION_REASON_REQUIRED',
+              message: 'Vui lòng nhập lý do hủy hoặc dừng hồ sơ thực tập.',
+            });
+          }
+          const [finalReport, evaluationCount] = await Promise.all([
+            tx.report.findFirst({
+              where: {
+                placementId: id,
+                week: 0,
+                status: { not: ReportStatus.DRAFT },
+              },
+              select: { id: true },
+            }),
+            tx.evaluation.count({
+              where: { placementId: id },
+            }),
+          ]);
+          if (finalReport || evaluationCount > 0) {
+            throw new ConflictException({
+              code: 'PLACEMENT_ALREADY_EVALUATED_OR_FINALIZED',
+              message:
+                'Không thể hủy hoặc dừng hồ sơ thực tập khi sinh viên đã nộp báo cáo tổng kết hoặc đã có điểm đánh giá cuối kỳ.',
+            });
+          }
+        }
+
         const statusUpdate = await tx.internshipPlacement.updateMany({
           where: { id, status: current.status },
           data: {
@@ -514,7 +545,7 @@ export class PlacementsService {
           content:
             dto.status === PublicPlacementStatus.COMPLETED
               ? `Hồ sơ thực tập vị trí "${placement.internship.title}" của sinh viên ${placement.student.fullName} tại ${placement.company.companyName} đã được xác nhận hoàn thành.`
-              : `Hồ sơ thực tập vị trí "${placement.internship.title}" của sinh viên ${placement.student.fullName} tại ${placement.company.companyName} đã bị hủy.`,
+              : `Hồ sơ thực tập vị trí "${placement.internship.title}" của sinh viên ${placement.student.fullName} tại ${placement.company.companyName} đã bị hủy.${dto.note?.trim() ? ` Lý do: ${dto.note.trim()}` : ''}`,
           resourceId: id,
           metadata: { status: dto.status },
         });
@@ -675,7 +706,7 @@ export class PlacementsService {
   private async progressByPlacementIds(ids: string[]) {
     const progress = new Map<string, PlacementProgress>();
     if (ids.length === 0) return progress;
-    const [reports, evaluations] = await this.prisma.$transaction([
+    const [reports, evaluations, statusLogs] = await this.prisma.$transaction([
       this.prisma.report.findMany({
         where: { placementId: { in: ids } },
         select: { placementId: true, week: true, status: true, updatedAt: true },
@@ -687,6 +718,19 @@ export class PlacementsService {
           type: true,
           score: true,
           certificateFileId: true,
+        },
+      }),
+      this.prisma.auditLog.findMany({
+        where: {
+          entity: 'InternshipPlacement',
+          action: 'PLACEMENT_STATUS_CHANGED',
+          entityId: { in: ids },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          entityId: true,
+          metadata: true,
+          createdAt: true,
         },
       }),
     ]);
@@ -708,7 +752,25 @@ export class PlacementsService {
         finalScore: null,
         hasCompanyCertificate: false,
         lastReportAt: null,
+        statusNote: null,
+        statusChangedAt: null,
       });
+    }
+    for (const log of statusLogs) {
+      if (!log.entityId) continue;
+      const item = progress.get(log.entityId);
+      if (!item || item.statusChangedAt) continue;
+      item.statusChangedAt = log.createdAt;
+      if (
+        log.metadata &&
+        typeof log.metadata === 'object' &&
+        !Array.isArray(log.metadata)
+      ) {
+        const rawNote = (log.metadata as Record<string, unknown>).note;
+        if (typeof rawNote === 'string' && rawNote.trim()) {
+          item.statusNote = rawNote.trim();
+        }
+      }
     }
     for (const row of reports) {
       const item = progress.get(row.placementId)!;
@@ -770,6 +832,8 @@ export class PlacementsService {
       finalScore: null,
       hasCompanyCertificate: false,
       lastReportAt: null,
+      statusNote: null,
+      statusChangedAt: null,
     };
     return {
       ...item,

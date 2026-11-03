@@ -317,6 +317,16 @@ export class ReportsService {
       return { report, notifications: [notification] };
     });
     this.notifications.publishMany(result.notifications);
+    if (dto.status === ReviewReportStatus.APPROVED) {
+      const completed = await this.lifecycle.autoCompletePlacementIfEligible?.(
+        result.report.placementId,
+      );
+      if (completed) {
+        result.report.placement.status = PlacementStatus.COMPLETED;
+        result.report.placement.academicStatus =
+          AcademicMonitoringStatus.CLOSED;
+      }
+    }
     return result.report;
   }
 

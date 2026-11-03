@@ -92,6 +92,36 @@ function getPlacementBadge(placement: PlacementRecord): {
   };
 }
 
+function isMidInternship(placement: PlacementRecord): boolean {
+  return (
+    placement.status === "ACTIVE" && hasInternshipStartedOrProgress(placement)
+  );
+}
+
+function hasFinalReportOrEvaluations(placement: PlacementRecord): boolean {
+  return (
+    (placement.progress?.evaluationCount ?? 0) > 0 ||
+    Boolean(
+      placement.progress?.finalReportStatus &&
+        placement.progress.finalReportStatus !== "DRAFT",
+    )
+  );
+}
+
+const PRE_START_CANCEL_REASONS = [
+  "Sinh viên xin đổi đơn vị thực tập trước ngày bắt đầu",
+  "Doanh nghiệp ngừng tiếp nhận / điều chỉnh kế hoạch tuyển dụng",
+  "Thông tin tiếp nhận chưa hợp lệ",
+  "Lý do sức khỏe / cá nhân của sinh viên",
+];
+
+const MID_INTERNSHIP_STOP_REASONS = [
+  "Doanh nghiệp bị tạm dừng hoạt động / không đảm bảo hướng dẫn",
+  "Sinh viên tự ý nghỉ thực tập / vi phạm kỷ luật",
+  "Sinh viên xin dừng thực tập vì lý do sức khỏe / bất khả kháng",
+  "Thỏa thuận chấm dứt thực tập sớm giữa Sinh viên và Doanh nghiệp",
+];
+
 export const PlacementManagement: React.FC<{
   onOpenAssignment?: () => void;
 }> = ({ onOpenAssignment }) => {
@@ -696,6 +726,48 @@ export const PlacementManagement: React.FC<{
 
             {/* Modal Body */}
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+              {selected.status === "CANCELLED" && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3.5 text-xs text-rose-900">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-bold text-rose-800">
+                      Hồ sơ thực tập đã bị hủy
+                    </p>
+                    <span className="text-[11px] font-medium text-rose-600">
+                      {formatDateTime(
+                        selected.progress.statusChangedAt ??
+                          selected.academicClosedAt ??
+                          selected.updatedAt,
+                      )}
+                    </span>
+                  </div>
+                  <p className="mt-1 leading-relaxed text-rose-700">
+                    <span className="font-semibold">Lý do:</span>{" "}
+                    {selected.progress.statusNote ||
+                      "Không có ghi chú lý do hủy."}
+                  </p>
+                </div>
+              )}
+
+              {selected.status === "COMPLETED" &&
+                selected.progress.statusNote && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-xs text-emerald-900">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-bold text-emerald-800">
+                        Đã nghiệm thu &amp; hoàn tất thực tập
+                      </p>
+                      {selected.progress.statusChangedAt && (
+                        <span className="text-[11px] font-medium text-emerald-600">
+                          {formatDateTime(selected.progress.statusChangedAt)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 leading-relaxed text-emerald-700">
+                      <span className="font-semibold">Ghi chú:</span>{" "}
+                      {selected.progress.statusNote}
+                    </p>
+                  </div>
+                )}
+
               {/* Position, Company & Supervisor */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5">
@@ -926,41 +998,72 @@ export const PlacementManagement: React.FC<{
                   )
                 )}
               </div>
+            </div>
 
-              {/* Action Confirmation Form */}
-              {action && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-bold text-slate-900">
-                    {action === "COMPLETED"
-                      ? "Xác nhận nghiệm thu & hoàn tất thực tập"
+            {/* Action Confirmation Panel */}
+            {action && (
+              <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <p className="text-sm font-bold text-slate-900">
+                  {action === "COMPLETED"
+                    ? "Xác nhận nghiệm thu & hoàn tất thực tập"
+                    : isMidInternship(selected)
+                      ? "Xác nhận dừng thực tập giữa kỳ"
                       : "Xác nhận hủy hồ sơ thực tập"}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                    {action === "COMPLETED"
-                      ? "Xác nhận sinh viên đã hoàn thành kỳ thực tập tại doanh nghiệp và đủ điều kiện nghiệm thu."
-                      : "Lịch sử ứng tuyển, báo cáo và đánh giá vẫn được lưu trữ. Suất tuyển dụng sẽ được hoàn lại cho vị trí thực tập."}
-                  </p>
-                  <textarea
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    maxLength={500}
-                    rows={3}
-                    placeholder={
-                      action === "CANCELLED"
-                        ? "Nhập lý do hủy hồ sơ thực tập (bắt buộc)..."
-                        : "Ghi chú nghiệm thu (không bắt buộc)..."
-                    }
-                    className="mt-3 w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500"
-                  />
-                  <div className="mt-1 text-right text-[11px] text-slate-400">
-                    {note.length}/500
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                  {action === "COMPLETED"
+                    ? "Xác nhận sinh viên đã hoàn thành kỳ thực tập tại doanh nghiệp và đủ điều kiện nghiệm thu."
+                    : isMidInternship(selected)
+                      ? "Sinh viên đang trong kỳ thực tập. Việc dừng hồ sơ chỉ áp dụng khi doanh nghiệp bị tạm dừng, sinh viên tự ý bỏ thực tập hoặc sự cố bất khả kháng. Chỉ tiêu hướng dẫn của giảng viên và suất tuyển dụng của doanh nghiệp sẽ được hoàn lại."
+                      : "Hồ sơ chưa bắt đầu kỳ thực tập. Sau khi hủy, suất tuyển dụng sẽ được hoàn lại cho doanh nghiệp và sinh viên có thể ứng tuyển vị trí khác trong đợt này."}
+                </p>
+
+                {action === "CANCELLED" && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {(isMidInternship(selected)
+                      ? MID_INTERNSHIP_STOP_REASONS
+                      : PRE_START_CANCEL_REASONS
+                    ).map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setNote(preset)}
+                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition ${
+                          note === preset
+                            ? "border-rose-300 bg-rose-100 text-rose-800"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100"
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
                   </div>
-                  <div className="mt-2 flex justify-end gap-2">
+                )}
+
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  maxLength={500}
+                  rows={2}
+                  placeholder={
+                    action === "CANCELLED"
+                      ? isMidInternship(selected)
+                        ? "Nhập hoặc chọn lý do dừng thực tập giữa kỳ (bắt buộc)..."
+                        : "Nhập hoặc chọn lý do hủy hồ sơ thực tập (bắt buộc)..."
+                      : "Ghi chú nghiệm thu (không bắt buộc)..."
+                  }
+                  className="mt-2.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500"
+                />
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400">
+                    {note.length}/500
+                  </span>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       disabled={saving}
                       onClick={() => setAction(null)}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
                     >
                       Quay lại
                     </button>
@@ -972,8 +1075,8 @@ export const PlacementManagement: React.FC<{
                       onClick={() => void submitStatus()}
                       className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white disabled:opacity-50 ${
                         action === "COMPLETED"
-                          ? "bg-emerald-600"
-                          : "bg-rose-600"
+                          ? "bg-emerald-600 hover:bg-emerald-700"
+                          : "bg-rose-600 hover:bg-rose-700"
                       }`}
                     >
                       {saving && (
@@ -981,62 +1084,72 @@ export const PlacementManagement: React.FC<{
                       )}
                       {action === "COMPLETED"
                         ? "Xác nhận hoàn tất"
-                        : "Xác nhận hủy hồ sơ"}
+                        : isMidInternship(selected)
+                          ? "Xác nhận dừng thực tập"
+                          : "Xác nhận hủy hồ sơ"}
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Modal Footer */}
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-6 py-3.5">
-              <div>
-                {!action &&
-                  (selected.status === "PENDING" ||
-                    selected.status === "ACTIVE") && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAction("CANCELLED");
-                        setNote("");
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
-                    >
-                      <XCircle className="h-4 w-4" /> Hủy hồ sơ thực tập
-                    </button>
-                  )}
+            {!action && (
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-6 py-3.5">
+                <div>
+                  {(selected.status === "PENDING" ||
+                    selected.status === "ACTIVE") &&
+                    (hasFinalReportOrEvaluations(selected) ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                        Đã có báo cáo tổng kết / điểm đánh giá (Không thể hủy)
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAction("CANCELLED");
+                          setNote("");
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+                      >
+                        <XCircle className="h-4 w-4" />{" "}
+                        {isMidInternship(selected)
+                          ? "Dừng thực tập giữa kỳ"
+                          : "Hủy hồ sơ thực tập"}
+                      </button>
+                    ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={closeDetail}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                  >
+                    Đóng
+                  </button>
+                  {selected.status === "ACTIVE" &&
+                    (selected.academicStatus === "CLOSED" ||
+                      Boolean(
+                        selected.progress.hasCompanyEvaluation &&
+                          selected.progress.hasLecturerEvaluation &&
+                          (selected.progress.approvedReports ?? 0) > 0 &&
+                          selected.progress.reportsAwaitingReview === 0,
+                      )) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAction("COMPLETED");
+                          setNote("");
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
+                      >
+                        <CheckCircle2 className="h-4 w-4" /> Nghiệm thu &amp;
+                        Hoàn tất
+                      </button>
+                    )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={closeDetail}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
-                >
-                  Đóng
-                </button>
-                {!action &&
-                  selected.status === "ACTIVE" &&
-                  (selected.academicStatus === "CLOSED" ||
-                    Boolean(
-                      selected.progress.hasCompanyEvaluation &&
-                        selected.progress.hasLecturerEvaluation &&
-                        (selected.progress.approvedReports ?? 0) > 0 &&
-                        selected.progress.reportsAwaitingReview === 0,
-                    )) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAction("COMPLETED");
-                        setNote("");
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
-                    >
-                      <CheckCircle2 className="h-4 w-4" /> Nghiệm thu &amp; Hoàn
-                      tất
-                    </button>
-                  )}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}

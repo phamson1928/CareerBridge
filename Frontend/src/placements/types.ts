@@ -34,6 +34,8 @@ export interface PlacementProgress {
   finalScore?: number | null;
   hasCompanyCertificate?: boolean;
   lastReportAt?: string | null;
+  statusNote?: string | null;
+  statusChangedAt?: string | null;
 }
 
 export interface PlacementRecord {
