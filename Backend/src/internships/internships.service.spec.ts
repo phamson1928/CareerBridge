@@ -416,7 +416,9 @@ describe('InternshipsService moderation and reports', () => {
       title: 'Tuyển Dev',
       companyId: 'comp-1',
     });
-    prismaMock.internshipReport.findFirst.mockResolvedValue({ id: 'existing-report-1' });
+    prismaMock.internshipReport.findFirst.mockResolvedValue({
+      id: 'existing-report-1',
+    });
 
     await expect(
       service.report('internship-1', 'student-user-1', {

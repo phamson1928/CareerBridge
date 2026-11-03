@@ -14,4 +14,3 @@ import { SemestersService } from './semesters.service';
   exports: [SemestersService, SemesterLifecycleService],
 })
 export class SemestersModule {}
-

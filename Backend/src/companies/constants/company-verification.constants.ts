@@ -7,11 +7,15 @@ export enum CompanyChecklistCode {
   ACCOUNT_EMAIL_VERIFIED = 'ACCOUNT_EMAIL_VERIFIED',
 }
 
-export const COMPANY_CHECKLIST_DEFINITIONS: Record<CompanyChecklistCode, string> = {
+export const COMPANY_CHECKLIST_DEFINITIONS: Record<
+  CompanyChecklistCode,
+  string
+> = {
   [CompanyChecklistCode.LEGAL_NAME_MATCH]: 'Tên pháp lý khớp giấy ĐKDN',
   [CompanyChecklistCode.REGISTRATION_NUMBER_MATCH]: 'Mã số khớp giấy ĐKDN',
   [CompanyChecklistCode.ADDRESS_CONSISTENT]: 'Địa chỉ hợp lý / khớp tài liệu',
-  [CompanyChecklistCode.CONTACT_REACHABLE]: 'Người liên hệ / SĐT / email hợp lệ',
+  [CompanyChecklistCode.CONTACT_REACHABLE]:
+    'Người liên hệ / SĐT / email hợp lệ',
   [CompanyChecklistCode.DOCUMENT_READABLE]: 'Giấy ĐKDN đọc được, đúng loại',
   [CompanyChecklistCode.ACCOUNT_EMAIL_VERIFIED]: 'Email tài khoản đã xác thực',
 };

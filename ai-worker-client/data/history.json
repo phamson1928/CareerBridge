@@ -1,0 +1,78 @@
+{
+  "recentJobs": [
+    {
+      "jobId": "cmvv638di000254khwcyoqpvl",
+      "internshipTitle": "web",
+      "cvFileName": "CV_PhamHoangSon_BackendDeveloper.pdf",
+      "status": "SUCCESS",
+      "aiScore": 95,
+      "recommendation": "STRONG_HIRE",
+      "matchedSkills": [
+        "NestJS",
+        "TypeScript",
+        "PostgreSQL",
+        "Redis",
+        "Docker",
+        "Node.js",
+        "JavaScript"
+      ],
+      "missingSkills": [],
+      "strengths": [
+        "Kinh nghiệm xây dựng ứng dụng backend lớn",
+        "Nắm vững kỹ năng NestJS và TypeScript",
+        "Kỹ năng triển khai và tối ưu hóa hiệu suất"
+      ],
+      "weaknesses": [
+        "Kỹ năng tiếng Anh chỉ ở mức trung gian",
+        "Chưa có kinh nghiệm làm việc thực tế từ xa"
+      ],
+      "summary": "Phạm Hoàng Sơn là ứng viên có kinh nghiệm thực tế với các dự án lớn, đặc biệt là NestJS và TypeScript. Tuy nhiên, cần cải thiện kỹ năng tiếng Anh và kinh nghiệm làm việc từ xa.",
+      "durationSec": 61.7,
+      "timestamp": "15:40:02"
+    },
+    {
+      "jobId": "cmvv638di000254khwcyoqpvl",
+      "internshipTitle": "web",
+      "cvFileName": "CV_PhamHoangSon_BackendDeveloper.pdf",
+      "status": "SUCCESS",
+      "aiScore": 95,
+      "recommendation": "STRONG_HIRE",
+      "matchedSkills": [
+        "NestJS",
+        "TypeScript",
+        "PostgreSQL",
+        "Redis",
+        "Docker"
+      ],
+      "missingSkills": [],
+      "strengths": [
+        "Kinh nghiệm xây dựng ứng dụng backend lớn",
+        "Năng lực kỹ thuật vững chắc",
+        "Kỹ năng làm việc độc lập và từ xa"
+      ],
+      "weaknesses": [
+        "Kỹ năng tiếng Anh chỉ ở mức trung gian",
+        "Chưa có kinh nghiệm làm việc thực tế trong vai trò Backend Developer"
+      ],
+      "summary": "Ứng viên Phạm Hoàng Sơn có kinh nghiệm thực tế đáng kể với các công nghệ như NestJS, TypeScript và PostgreSQL. Anh ấy đã triển khai nhiều tính năng phức tạp và có thể thích nghi tốt với môi trường làm việc từ xa.",
+      "durationSec": 34.9,
+      "timestamp": "14:37:26"
+    },
+    {
+      "jobId": "cmvv638di000254khwcyoqpvl",
+      "internshipTitle": "web",
+      "cvFileName": "CV_PhamHoangSon_BackendDeveloper.pdf",
+      "status": "FAILED",
+      "errorMessage": "timeout of 120000ms exceeded",
+      "durationSec": 121,
+      "timestamp": "14:36:50"
+    }
+  ],
+  "stats": {
+    "totalProcessed": 3,
+    "successful": 2,
+    "failed": 1,
+    "avgDurationSec": 72.5
+  },
+  "totalProcessingTimeSec": 217.60000000000002
+}

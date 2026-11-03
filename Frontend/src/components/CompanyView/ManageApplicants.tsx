@@ -26,7 +26,14 @@ import {
   Video,
   Trash2,
   Lock,
+  Bot,
+  AlertCircle,
+  Star,
+  SlidersHorizontal,
 } from 'lucide-react';
+import { CompanyAiWorkerModal } from './CompanyAiWorkerModal';
+import { AiScanDetailModal } from './AiScanDetailModal';
+import { aiWorkerApi } from '../../ai-worker/api';
 
 interface ManageApplicantsProps {
   companyProfile: CompanyProfile;
@@ -97,18 +104,87 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingCvId, setOpeningCvId] = useState<string | null>(null);
 
+  // AI Worker & Scan state
+  const [isAiWorkerModalOpen, setIsAiWorkerModalOpen] = useState(false);
+  const [aiDetailApp, setAiDetailApp] = useState<Application | null>(null);
+  const [aiFilterRec, setAiFilterRec] = useState<string>('ALL');
+  const [aiFilterScore, setAiFilterScore] = useState<string>('ALL');
+  const [sortBy, setSortBy] = useState<'DATE_DESC' | 'AI_SCORE_DESC' | 'NAME_ASC'>('DATE_DESC');
+  const [rescanningAppId, setRescanningAppId] = useState<string | null>(null);
+
+  const handleRescanCv = async (applicationId: string) => {
+    setRescanningAppId(applicationId);
+    try {
+      await aiWorkerApi.rescanApplication(applicationId);
+      feedback.notify({
+        title: 'Đã đưa CV vào hàng đợi quét lại',
+        message: 'AI Worker nội bộ sẽ nhận tác vụ và cập nhật kết quả trong giây lát.',
+        tone: 'success',
+      });
+      onReload?.();
+    } catch (err) {
+      feedback.notify({
+        title: 'Không thể quét lại CV',
+        message: getApiErrorMessage(err),
+        tone: 'error',
+      });
+    } finally {
+      setRescanningAppId(null);
+    }
+  };
+
   const companyApps = applications.filter(
     (a) => a.companyId === companyProfile.id && !a.hiddenByCompanyAt,
   );
 
-  const filteredApps = companyApps.filter((a) => {
-    const matchesStatus = filterStatus === 'ALL' || a.status === filterStatus;
-    const matchesSearch =
-      a.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.internshipTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.studentMajor.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const totalAppsCount = companyApps.length;
+  const pendingCount = companyApps.filter(
+    (a) => a.status === 'PENDING' || a.status === 'REVIEWING',
+  ).length;
+  const interviewingCount = companyApps.filter(
+    (a) => a.status === 'INTERVIEWING' || a.status === 'OFFERED',
+  ).length;
+  const acceptedCount = companyApps.filter(
+    (a) => a.status === 'ACCEPTED',
+  ).length;
+  const aiScannedCount = companyApps.filter(
+    (a) => a.aiScanJob?.status === 'COMPLETED' || a.aiScore !== null,
+  ).length;
+
+  const filteredApps = companyApps
+    .filter((a) => {
+      const matchesStatus = filterStatus === 'ALL' || a.status === filterStatus;
+      const matchesSearch =
+        a.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.internshipTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.studentMajor.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const rec = a.aiScanJob?.recommendation || null;
+      const matchesAiRec =
+        aiFilterRec === 'ALL' ||
+        (aiFilterRec === 'NONE' && !rec) ||
+        rec === aiFilterRec;
+
+      const score = a.aiScore ?? a.aiScanJob?.aiScore ?? null;
+      let matchesAiScore = true;
+      if (aiFilterScore === '80_PLUS') matchesAiScore = score !== null && score >= 80;
+      else if (aiFilterScore === '60_TO_79') matchesAiScore = score !== null && score >= 60 && score < 80;
+      else if (aiFilterScore === 'UNDER_60') matchesAiScore = score !== null && score < 60;
+      else if (aiFilterScore === 'NOT_SCANNED') matchesAiScore = score === null;
+
+      return matchesStatus && matchesSearch && matchesAiRec && matchesAiScore;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'AI_SCORE_DESC') {
+        const scoreA = a.aiScore ?? a.aiScanJob?.aiScore ?? -1;
+        const scoreB = b.aiScore ?? b.aiScanJob?.aiScore ?? -1;
+        return scoreB - scoreA;
+      }
+      if (sortBy === 'NAME_ASC') {
+        return a.studentName.localeCompare(b.studentName, 'vi');
+      }
+      return new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime();
+    });
 
   const openInterviewModal = (app: Application) => {
     setSelectedApp(app);
@@ -297,46 +373,178 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header & Filter Controls */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* 1. Header Card with Title and Main Actions */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">
-            Quản Lý Ứng Viên & Phỏng Vấn / Offer
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Sàng lọc CV, đặt lịch mời phỏng vấn qua email (.ics) và gửi lời mời
-            thực tập (Offer).
+          <div className="flex items-center gap-2.5 mb-1">
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              Quản Lý Ứng Viên & Tuyển Dụng
+            </h2>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700">
+              {companyApps.length} hồ sơ
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            Sàng lọc CV bằng AI On-Premise, phỏng vấn ứng viên và phát hành lời mời thực tập (Offer).
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3 py-1.5 text-xs text-slate-700">
-            <Search className="w-3.5 h-3.5 text-slate-400" />
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => onReload?.()}
+            className="p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 transition-colors shadow-2xs cursor-pointer"
+            title="Làm mới danh sách ứng viên"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+
+          {/* AI Worker Settings Button */}
+          <button
+            type="button"
+            onClick={() => setIsAiWorkerModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg cursor-pointer hover:scale-[1.02] active:scale-[0.99]"
+            title="Quản lý kết nối AI Worker và cấu hình tự động quét CV"
+          >
+            <Bot className="w-4 h-4" />
+            <span>AI Worker & Quét CV</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white/50 animate-pulse" />
+          </button>
+        </div>
+      </div>
+
+      {/* 2. KPI Metrics Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold shrink-0">
+            <Users className="w-5 h-5 text-slate-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-slate-500 truncate">Tổng ứng viên</p>
+            <p className="text-lg font-black text-slate-900">{totalAppsCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 border border-amber-200/80 shadow-2xs flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold shrink-0">
+            <Clock className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-amber-800 truncate">Chờ xử lý</p>
+            <p className="text-lg font-black text-amber-900">{pendingCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 border border-blue-200/80 shadow-2xs flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold shrink-0">
+            <Calendar className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-blue-800 truncate">Phỏng vấn / Offer</p>
+            <p className="text-lg font-black text-blue-900">{interviewingCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 border border-purple-200/80 shadow-2xs flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold shrink-0">
+            <Sparkles className="w-5 h-5 text-purple-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-purple-800 truncate">Đã phân tích AI</p>
+            <p className="text-lg font-black text-purple-900">
+              {aiScannedCount} <span className="text-xs font-normal text-purple-600">/ {totalAppsCount}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Search & Filter Bar */}
+      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs space-y-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 flex items-center bg-slate-50 hover:bg-slate-100/70 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 rounded-xl border border-slate-200 transition-all px-3.5 py-2.5 text-xs">
+            <Search className="w-4 h-4 text-slate-400 shrink-0 mr-2.5" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm theo tên/ngành sinh viên..."
-              className="bg-transparent focus:outline-none w-36 sm:w-48"
+              placeholder="Tìm theo tên ứng viên, vị trí tuyển dụng, chuyên ngành..."
+              className="bg-transparent focus:outline-hidden w-full text-xs text-slate-800 placeholder:text-slate-400 font-medium"
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-md cursor-pointer"
+                title="Xóa từ khóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-semibold"
-          >
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ duyệt</option>
-            <option value="REVIEWING">Đang xem xét</option>
-            <option value="INTERVIEWING">Mời phỏng vấn</option>
-            <option value="OFFERED">Đã gửi Offer</option>
-            <option value="ACCEPTED">Đã nhận thực tập</option>
-            <option value="DECLINED">SV từ chối Offer</option>
-            <option value="EXPIRED">Hết hạn</option>
-            <option value="REJECTED">Từ chối</option>
-            <option value="WITHDRAWN">Đã rút đơn</option>
-          </select>
+          {/* Filters Cluster */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Status Filter */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 focus:outline-hidden transition-all cursor-pointer"
+            >
+              <option value="ALL">Tất cả trạng thái ({companyApps.length})</option>
+              <option value="PENDING">Chờ duyệt</option>
+              <option value="REVIEWING">Đang xem xét</option>
+              <option value="INTERVIEWING">Mời phỏng vấn</option>
+              <option value="OFFERED">Đã gửi Offer</option>
+              <option value="ACCEPTED">Đã nhận thực tập</option>
+              <option value="DECLINED">SV từ chối Offer</option>
+              <option value="EXPIRED">Hết hạn</option>
+              <option value="REJECTED">Từ chối</option>
+              <option value="WITHDRAWN">Đã rút đơn</option>
+            </select>
+
+            {/* AI Recommendation Filter */}
+            <select
+              value={aiFilterRec}
+              onChange={(e) => setAiFilterRec(e.target.value)}
+              className="px-3.5 py-2.5 rounded-xl border border-purple-200 text-xs bg-purple-50/70 hover:bg-purple-100/70 font-bold text-purple-900 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 focus:outline-hidden transition-all cursor-pointer"
+            >
+              <option value="ALL">Khuyến nghị AI: Tất cả</option>
+              <option value="STRONG_HIRE">⭐ Rất phù hợp (Strong Hire)</option>
+              <option value="HIRE">👍 Phù hợp (Hire)</option>
+              <option value="POTENTIAL">💡 Tiềm năng (Potential)</option>
+              <option value="NOT_RECOMMENDED">⚠️ Cần cân nhắc</option>
+              <option value="NONE">Chưa quét AI</option>
+            </select>
+
+            {/* Sort Filter */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 focus:outline-hidden transition-all cursor-pointer"
+            >
+              <option value="DATE_DESC">Sắp xếp: Mới nhất</option>
+              <option value="AI_SCORE_DESC">Sắp xếp: Điểm AI cao nhất</option>
+              <option value="NAME_ASC">Sắp xếp: Tên ứng viên (A-Z)</option>
+            </select>
+
+            {/* Reset Filters */}
+            {(filterStatus !== 'ALL' || aiFilterRec !== 'ALL' || searchTerm.trim() !== '') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterStatus('ALL');
+                  setAiFilterRec('ALL');
+                  setSearchTerm('');
+                }}
+                className="px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                title="Xóa tất cả bộ lọc"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Xóa lọc</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -383,44 +591,114 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                 key={app.id}
                 className={`rounded-2xl border p-5 shadow-xs transition-all space-y-4 ${
                   isInactive
-                    ? 'bg-slate-50/50 border-slate-200/90 opacity-90'
-                    : 'bg-white border-slate-200 hover:border-emerald-200'
+                    ? 'bg-slate-50/70 border-slate-200'
+                    : 'bg-white border-slate-200 hover:border-indigo-200 hover:shadow-md'
                 }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    {/* Modern Avatar Monogram */}
                     <div
-                      className={`w-12 h-12 rounded-2xl font-black text-lg flex items-center justify-center ${
+                      className={`w-12 h-12 rounded-2xl font-black text-lg flex items-center justify-center shrink-0 shadow-2xs ${
                         isInactive
                           ? 'bg-slate-200 text-slate-600'
-                          : 'bg-emerald-100 text-emerald-800'
+                          : 'bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 text-white shadow-indigo-100'
                       }`}
                     >
-                      {app.studentName.charAt(0)}
+                      {app.studentName.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-sm">
-                        {app.studentName}
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        {app.studentMajor} • Vị trí:{' '}
-                        <strong className="text-slate-800">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-slate-900 text-sm truncate">
+                          {app.studentName}
+                        </h3>
+                        <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                          {app.studentMajor}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 mt-1 flex items-center gap-1.5 flex-wrap">
+                        <span className="text-slate-500">Ứng tuyển:</span>
+                        <strong className="text-indigo-900 font-bold bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
                           {app.internshipTitle}
                         </strong>
+                        <span className="text-slate-400 text-[11px] font-medium">• Nộp {formatDate(app.appliedAt)}</span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    {app.matchScore !== null && (
-                      <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> {app.matchScore}% Match
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-center shrink-0">
+                    {/* AI Scan Evaluation Badge */}
+                    {rescanningAppId === app.id ||
+                    app.aiScanJob?.status === 'PENDING' ||
+                    app.aiScanJob?.status === 'PROCESSING' ? (
+                      <span className="text-xs font-bold px-3 py-1 bg-purple-50 text-purple-700 rounded-full border border-purple-200 flex items-center gap-1.5 animate-pulse">
+                        <RefreshCw className="w-3 h-3 animate-spin text-purple-600" />
+                        Đang quét AI...
                       </span>
-                    )}
+                    ) : app.aiScanJob?.status === 'COMPLETED' ||
+                      (app.aiScore !== null && app.aiScore !== undefined) ? (
+                      <button
+                        type="button"
+                        onClick={() => setAiDetailApp(app)}
+                        className={`text-xs font-bold px-3.5 py-1.5 rounded-full border flex items-center gap-1.5 transition-all hover:scale-105 shadow-2xs cursor-pointer ${
+                          (app.aiScore ?? 0) >= 80
+                            ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 text-emerald-900 border-emerald-300 hover:border-emerald-400 shadow-emerald-100'
+                            : (app.aiScore ?? 0) >= 60
+                              ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-indigo-900 border-indigo-300 hover:border-indigo-400 shadow-indigo-100'
+                              : 'bg-gradient-to-r from-amber-50 to-orange-50 text-amber-900 border-amber-300 hover:border-amber-400 shadow-amber-100'
+                        }`}
+                        title="Bấm để xem báo cáo phân tích AI chuyên sâu"
+                      >
+                        <Bot className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{app.aiScore ?? app.aiScanJob?.aiScore}/100 AI</span>
+                        {app.aiScanJob?.recommendation && (
+                          <span className="text-[10px] font-extrabold uppercase tracking-wide border-l border-current/30 pl-1.5">
+                            {app.aiScanJob.recommendation === 'STRONG_HIRE'
+                              ? 'Rất phù hợp'
+                              : app.aiScanJob.recommendation === 'HIRE'
+                                ? 'Phù hợp'
+                                : app.aiScanJob.recommendation === 'POTENTIAL'
+                                  ? 'Tiềm năng'
+                                  : 'Cân nhắc'}
+                          </span>
+                        )}
+                      </button>
+                    ) : app.aiScanJob?.status === 'FAILED' ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold px-2.5 py-1 bg-rose-50 text-rose-700 rounded-full border border-rose-200 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3 text-rose-500" /> Lỗi quét AI
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleRescanCv(app.id)}
+                          disabled={rescanningAppId === app.id}
+                          className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                          title="Thử quét lại"
+                        >
+                          <RefreshCw
+                            className={`w-3.5 h-3.5 ${
+                              rescanningAppId === app.id ? 'animate-spin' : ''
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    ) : app.cvFileId ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleRescanCv(app.id)}
+                        disabled={rescanningAppId === app.id}
+                        className="text-xs font-bold px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 hover:text-indigo-900 rounded-full border border-indigo-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                        title="Kích hoạt phân tích CV bằng AI Worker"
+                      >
+                        <Sparkles className="w-3 h-3 text-indigo-600" /> Quét AI ngay
+                      </button>
+                    ) : null}
 
+                    {/* Status Badge with colored dot */}
                     <span
-                      className={`text-xs font-bold px-3 py-1 rounded-full border ${badge.bg}`}
+                      className={`text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 shadow-2xs ${badge.bg}`}
                     >
+                      <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
                       {badge.label}
                     </span>
                   </div>
@@ -587,45 +865,56 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                 )}
 
                 {/* Action Row */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                  <div className="flex flex-wrap items-center gap-3 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
                     {app.cvFileId ? (
                       <button
                         type="button"
                         onClick={() => void openCv(app.cvFileId!)}
                         disabled={openingCvId === app.cvFileId}
-                        className="text-[#008b8f] font-bold hover:underline flex items-center gap-1 disabled:opacity-50"
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                       >
-                        <FileText className="w-3.5 h-3.5" />
-                        {openingCvId === app.cvFileId
-                          ? 'Đang mở CV...'
-                          : 'Xem CV đầy đủ'}
+                        <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                        {openingCvId === app.cvFileId ? 'Đang mở CV...' : 'Xem CV đầy đủ'}
                       </button>
                     ) : app.cvUrl ? (
                       <a
                         href={app.cvUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[#008b8f] font-bold hover:underline flex items-center gap-1"
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        <FileText className="w-3.5 h-3.5" /> Xem CV đầy đủ
+                        <FileText className="w-3.5 h-3.5 text-indigo-600" /> Xem CV đầy đủ
                       </a>
                     ) : (
-                      <span className="text-slate-500">
-                        CV được lưu riêng tư
+                      <span className="text-[11px] text-slate-400 italic">
+                        CV lưu riêng tư
                       </span>
                     )}
+
+                    {(app.aiScore !== null || app.aiScanJob) && (
+                      <button
+                        type="button"
+                        onClick={() => setAiDetailApp(app)}
+                        className="px-3.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200/80 text-purple-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Xem chi tiết phân tích điểm số & kỹ năng từ AI Worker"
+                      >
+                        <Bot className="w-3.5 h-3.5 text-purple-600" />
+                        Báo cáo AI
+                      </button>
+                    )}
+
                     {!isInactive ? (
                       <button
+                        type="button"
                         onClick={onOpenChat}
-                        className="text-slate-600 font-semibold hover:text-[#008b8f] flex items-center gap-1"
+                        className="px-3.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" /> Nhắn tin trực
-                        tiếp
+                        <MessageSquare className="w-3.5 h-3.5 text-slate-500" /> Nhắn tin
                       </button>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-slate-400 font-medium">
-                        <Lock className="w-3.5 h-3.5" /> Hồ sơ đã đóng thao tác
+                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium px-2.5 py-1 bg-slate-100 rounded-lg">
+                        <Lock className="w-3 h-3 text-slate-400" /> Hồ sơ đã kết thúc
                       </span>
                     )}
                   </div>
@@ -964,6 +1253,21 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
           </form>
         </div>
       )}
+
+      {/* AI Worker & Quét CV Modals */}
+      <CompanyAiWorkerModal
+        isOpen={isAiWorkerModalOpen}
+        onClose={() => setIsAiWorkerModalOpen(false)}
+        onSettingsUpdated={onReload}
+      />
+
+      <AiScanDetailModal
+        isOpen={Boolean(aiDetailApp)}
+        onClose={() => setAiDetailApp(null)}
+        application={aiDetailApp}
+        onRescan={handleRescanCv}
+        onOpenCv={openCv}
+      />
     </div>
   );
 };

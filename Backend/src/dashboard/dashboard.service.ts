@@ -490,7 +490,8 @@ export class DashboardService {
       if (job.status === InternshipStatus.OPEN) openInternships++;
       else if (job.status === InternshipStatus.CLOSED) closedInternships++;
       else if (job.status === InternshipStatus.DRAFT) draftInternships++;
-      else if (job.status === InternshipStatus.CANCELLED) cancelledInternships++;
+      else if (job.status === InternshipStatus.CANCELLED)
+        cancelledInternships++;
 
       totalSlots += job.slots;
       filledSlots += job.filledSlots;
@@ -596,7 +597,9 @@ export class DashboardService {
     const withdrawn = applicationsByStatus.WITHDRAWN;
 
     const reviewRate =
-      applied > 0 ? Math.round((everReviewingCount / applied) * 1000) / 1000 : null;
+      applied > 0
+        ? Math.round((everReviewingCount / applied) * 1000) / 1000
+        : null;
     const acceptRate =
       applied > 0 ? Math.round((accepted / applied) * 1000) / 1000 : null;
     const rejectRate =
@@ -650,14 +653,12 @@ export class DashboardService {
           name: s.name,
           applicantCount: s.studentIds.size,
           share:
-            Math.round(
-              (s.studentIds.size / distinctStudentIds.length) * 1000,
-            ) / 1000,
+            Math.round((s.studentIds.size / distinctStudentIds.length) * 1000) /
+            1000,
         }))
         .sort(
           (a, b) =>
-            b.applicantCount - a.applicantCount ||
-            a.name.localeCompare(b.name),
+            b.applicantCount - a.applicantCount || a.name.localeCompare(b.name),
         )
         .slice(0, 10);
     }
@@ -671,10 +672,7 @@ export class DashboardService {
       page * limit,
     );
 
-    const appByJobMap = new Map<
-      string,
-      { total: number; accepted: number }
-    >();
+    const appByJobMap = new Map<string, { total: number; accepted: number }>();
     for (const app of applications) {
       const current = appByJobMap.get(app.internshipId) || {
         total: 0,
@@ -688,7 +686,9 @@ export class DashboardService {
     const perInternshipItems = pagedInternships.map((job) => {
       const jobStats = appByJobMap.get(job.id) || { total: 0, accepted: 0 };
       const jobFillRate =
-        job.slots > 0 ? Math.round((job.filledSlots / job.slots) * 1000) / 1000 : 0;
+        job.slots > 0
+          ? Math.round((job.filledSlots / job.slots) * 1000) / 1000
+          : 0;
       const jobAcceptRate =
         jobStats.total > 0
           ? Math.round((jobStats.accepted / jobStats.total) * 1000) / 1000
@@ -905,7 +905,9 @@ export class DashboardService {
     const withdrawn = applicationsByStatus.WITHDRAWN;
 
     const reviewRate =
-      applied > 0 ? Math.round((everReviewingCount / applied) * 1000) / 1000 : null;
+      applied > 0
+        ? Math.round((everReviewingCount / applied) * 1000) / 1000
+        : null;
     const acceptRate =
       applied > 0 ? Math.round((accepted / applied) * 1000) / 1000 : null;
     const rejectRate =
@@ -977,15 +979,13 @@ export class DashboardService {
         applicantCount: studentSet.size,
         share:
           distinctStudentIds.length > 0
-            ? Math.round(
-                (studentSet.size / distinctStudentIds.length) * 1000,
-              ) / 1000
+            ? Math.round((studentSet.size / distinctStudentIds.length) * 1000) /
+              1000
             : 0,
       }))
       .sort(
         (a, b) =>
-          b.applicantCount - a.applicantCount ||
-          a.name.localeCompare(b.name),
+          b.applicantCount - a.applicantCount || a.name.localeCompare(b.name),
       )
       .slice(0, 10);
 
@@ -999,8 +999,7 @@ export class DashboardService {
         ? {
             avg:
               Math.round(
-                (matchScores.reduce((a, b) => a + b, 0) /
-                  matchScores.length) *
+                (matchScores.reduce((a, b) => a + b, 0) / matchScores.length) *
                   10,
               ) / 10,
             min: Math.min(...matchScores),

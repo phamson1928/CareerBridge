@@ -46,7 +46,9 @@ export class PrismaService
       keepAliveInitialDelayMillis: 10000,
     });
 
-    const rawQuery = pool.query.bind(pool) as (...args: unknown[]) => Promise<unknown>;
+    const rawQuery = pool.query.bind(pool) as (
+      ...args: unknown[]
+    ) => Promise<unknown>;
     pool.query = (async (...args: unknown[]) => {
       try {
         return await rawQuery(...args);

@@ -105,6 +105,8 @@ function toLegacyApplication(record: ApplicationRecord): Application {
     cvFileId: record.cvFileId ?? undefined,
     coverLetter: record.coverLetter ?? undefined,
     matchScore: record.matchScore,
+    aiScore: record.aiScore ?? null,
+    aiScanJob: record.aiScanJob ?? null,
     status: record.status,
     companyFeedback: record.companyFeedback ?? undefined,
     rejectionReason: record.rejectionReason ?? null,
@@ -237,18 +239,25 @@ export default function App() {
     });
   };
 
+  const prevUserRef = React.useRef<string | null>(null);
+
   useEffect(() => {
     if (!user) return;
 
     let active = true;
-    setStudentProfile(null);
-    setAvatarFileId(null);
-    setCompanyProfile(null);
-    setCompanyVerificationStatus(null);
-    setInternships([]);
-    setApplications([]);
-    setEvaluationRecords([]);
-    setMyPlacements([]);
+    const isNewUser = prevUserRef.current !== user.id;
+    prevUserRef.current = user.id;
+
+    if (isNewUser) {
+      setStudentProfile(null);
+      setAvatarFileId(null);
+      setCompanyProfile(null);
+      setCompanyVerificationStatus(null);
+      setInternships([]);
+      setApplications([]);
+      setEvaluationRecords([]);
+      setMyPlacements([]);
+    }
     setWorkflowError(null);
 
     const applyApplications = (records: ApplicationRecord[]) => {
