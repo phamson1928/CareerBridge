@@ -753,7 +753,7 @@ export const PlacementManagement: React.FC<{
                   <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-xs text-emerald-900">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="font-bold text-emerald-800">
-                        Đã nghiệm thu &amp; hoàn tất thực tập
+                        Đã hoàn tất thực tập
                       </p>
                       {selected.progress.statusChangedAt && (
                         <span className="text-[11px] font-medium text-emerald-600">
@@ -991,9 +991,9 @@ export const PlacementManagement: React.FC<{
                 ) : (
                   selected.status === "ACTIVE" && (
                     <p className="mt-3 rounded-xl bg-slate-50 px-3.5 py-2.5 text-xs leading-relaxed text-slate-500">
-                      Để nghiệm thu hoàn tất hồ sơ, sinh viên cần có báo cáo
-                      được duyệt và đủ 2 bản chấm điểm từ Doanh nghiệp &amp;
-                      Giảng viên hướng dẫn.
+                      Hồ sơ sẽ tự động chuyển sang <strong>Đã hoàn tất</strong>{" "}
+                      khi có báo cáo được giảng viên duyệt (không còn báo cáo
+                      chờ duyệt) và đủ điểm từ Doanh nghiệp &amp; Giảng viên.
                     </p>
                   )
                 )}
@@ -1127,26 +1127,6 @@ export const PlacementManagement: React.FC<{
                   >
                     Đóng
                   </button>
-                  {selected.status === "ACTIVE" &&
-                    (selected.academicStatus === "CLOSED" ||
-                      Boolean(
-                        selected.progress.hasCompanyEvaluation &&
-                          selected.progress.hasLecturerEvaluation &&
-                          (selected.progress.approvedReports ?? 0) > 0 &&
-                          selected.progress.reportsAwaitingReview === 0,
-                      )) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAction("COMPLETED");
-                          setNote("");
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
-                      >
-                        <CheckCircle2 className="h-4 w-4" /> Nghiệm thu &amp;
-                        Hoàn tất
-                      </button>
-                    )}
                 </div>
               </div>
             )}

@@ -82,6 +82,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             icon: <CheckSquare className="w-4 h-4" />,
           },
           {
+            id: "evaluations",
+            label: "Kết quả đánh giá",
+            icon: <GraduationCap className="w-4 h-4" />,
+          },
+          {
             id: "support",
             label: "Hỗ trợ",
             icon: <LifeBuoy className="w-4 h-4" />,

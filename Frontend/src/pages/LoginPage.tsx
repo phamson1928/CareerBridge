@@ -49,7 +49,7 @@ export function LoginPage() {
             <span className="sr-only">Email</span>
             <span className="relative mt-2 block">
               <Mail className="login-input-icon" />
-              <input id="login-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="login-input" placeholder="customer@eyewear.com" />
+              <input id="login-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="login-input" placeholder="email@careerbridge.vn" />
             </span>
           </label>
           <label className="login-label">

@@ -564,7 +564,7 @@ export default function App() {
               />
             )}
             {activeTab === "reports" && (
-              <StudentReports />
+              <StudentReports onNavigateTab={handleTabChange} />
             )}
             {activeTab === "placement" && <PlacementOverview />}
             {activeTab === "evaluations" && <StudentEvaluations evaluations={evaluationRecords} />}
