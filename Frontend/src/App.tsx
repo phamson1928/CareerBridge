@@ -718,7 +718,7 @@ export default function App() {
 
 
 function PageLoading() {
-  return <div className="rounded-2xl bg-white p-10 text-center text-sm text-slate-500">Đang tải nội dung...</div>;
+  return null;
 }function getDefaultTab(role: UserRole): string {
   switch (role) {
     case "STUDENT":

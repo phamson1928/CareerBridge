@@ -17,16 +17,7 @@ export function roleHomePath(role: AuthRole): string {
 }
 
 export function LoadingScreen() {
-  return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
-      <div className="text-center">
-        <div className="w-11 h-11 border-4 border-indigo-300/30 border-t-indigo-400 rounded-full animate-spin mx-auto" />
-        <p className="mt-4 text-sm font-semibold text-slate-300">
-          Đang khôi phục phiên đăng nhập...
-        </p>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -34,7 +25,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   if (isInitializing) {
-    return <LoadingScreen />;
+    return null;
   }
 
   if (!user) {
@@ -68,7 +59,7 @@ export function AuthenticatedHome() {
   const { user, isInitializing } = useAuth();
 
   if (isInitializing) {
-    return <LoadingScreen />;
+    return null;
   }
 
   return <Navigate to={user ? roleHomePath(user.role) : '/login'} replace />;
