@@ -1,12 +1,8 @@
-import {
-  NotFoundException,
-} from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { AiWorkerService } from './ai-worker.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseStorageService } from '../files/supabase-storage.service';
-import {
-  AiScanStatus,
-} from '../generated/prisma/client';
+import { AiScanStatus } from '../generated/prisma/client';
 import { AuthenticatedAiWorker } from './guards/ai-worker-auth.guard';
 
 describe('AiWorkerService Concurrency & Resilience Tests (Phase 4)', () => {
@@ -70,7 +66,9 @@ describe('AiWorkerService Concurrency & Resilience Tests (Phase 4)', () => {
     };
 
     mockStorage = {
-      createDownloadUrl: jest.fn().mockResolvedValue('https://storage.careerbridge.vn/cv.pdf'),
+      createDownloadUrl: jest
+        .fn()
+        .mockResolvedValue('https://storage.careerbridge.vn/cv.pdf'),
     };
 
     service = new AiWorkerService(
@@ -98,7 +96,9 @@ describe('AiWorkerService Concurrency & Resilience Tests (Phase 4)', () => {
             department: 'Engineering',
             description: 'Develop features',
             requirements: 'TypeScript',
-            skills: [{ skill: { name: 'TypeScript' }, isRequired: true, weight: 5 }],
+            skills: [
+              { skill: { name: 'TypeScript' }, isRequired: true, weight: 5 },
+            ],
           },
           cvFile: {
             id: `file-${id}`,

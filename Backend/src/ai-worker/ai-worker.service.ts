@@ -557,7 +557,9 @@ export class AiWorkerService {
 
     const clientDir = candidateDirs.find((d) => fs.existsSync(d));
     if (!clientDir) {
-      throw new NotFoundException('Source directory for ai-worker-client not found');
+      throw new NotFoundException(
+        'Source directory for ai-worker-client not found',
+      );
     }
 
     const zip = new AdmZip();
@@ -574,7 +576,10 @@ export class AiWorkerService {
         if (stat.isDirectory()) {
           addDirectoryRecursive(fullPath, zipPath);
         } else {
-          zip.addLocalFile(fullPath, baseInZip ? baseInZip.replace(/\\/g, '/') : '');
+          zip.addLocalFile(
+            fullPath,
+            baseInZip ? baseInZip.replace(/\\/g, '/') : '',
+          );
         }
       }
     };
@@ -583,7 +588,8 @@ export class AiWorkerService {
 
     const workerToken = options?.token?.trim() || '';
     const workerName = options?.workerName?.trim() || 'CareerBridge-Worker';
-    const backendUrl = options?.backendUrl?.trim() || 'http://localhost:3000/api/v1';
+    const backendUrl =
+      options?.backendUrl?.trim() || 'http://localhost:3000/api/v1';
     const engine = options?.engine === 'MOCK' ? 'mock' : 'ollama';
     const model = options?.modelName?.trim() || 'qwen2.5:7b';
 
