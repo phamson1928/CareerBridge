@@ -296,7 +296,10 @@ model StudentProfile {
   userId       String   @unique
   studentCode  String   @unique
   fullName     String
+  /// @deprecated Legacy free-text major. Thay bằng `majorId` (sẽ xóa ở Checkpoint 3).
   major        String
+  /// Ngành học chính thức (FK -> Major). Nullable tới Checkpoint 3 để code hiện tại vẫn chạy.
+  majorId      String?
   phone        String?
   summary      String?
   gpa          Float?
@@ -306,6 +309,7 @@ model StudentProfile {
   updatedAt    DateTime @updatedAt
 
   user                User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  majorRef            Major?                         @relation(fields: [majorId], references: [id], onDelete: Restrict)
   cvFile              File?                          @relation("StudentCv", fields: [cvFileId], references: [id], onDelete: SetNull)
   avatarFile          File?                          @relation("StudentAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
   skills              StudentSkill[]
@@ -317,6 +321,8 @@ model StudentProfile {
   recommendationCache InternshipRecommendationCache?
   supportRequests     SupportRequest[]
   internshipReports   InternshipReport[]
+
+  @@index([majorId])
 }
 
 model StudentJobPreference {
@@ -368,16 +374,22 @@ model LecturerProfile {
   id           String   @id @default(cuid())
   userId       String   @unique
   fullName     String
+  /// @deprecated Legacy free-text department. Thay bằng `facultyId` (sẽ xóa ở Checkpoint 3).
   department   String
+  /// Khoa cơ hữu (FK -> Faculty). Giảng viên vẫn có thể hướng dẫn sinh viên liên khoa.
+  facultyId    String?
   title        String?
   avatarFileId String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  faculty       Faculty?       @relation(fields: [facultyId], references: [id], onDelete: Restrict)
   avatarFile    File?          @relation("LecturerAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
   supervisions  Supervision[]
   conversations Conversation[]
+
+  @@index([facultyId])
 }
 
 model CompanyProfile {
@@ -436,6 +448,55 @@ model Semester {
 
   internships Internship[]
   placements  InternshipPlacement[]
+}
+
+/// Khoa trong trường. Không xóa cứng khi đã có dữ liệu tham chiếu – dùng `isActive = false` để ngừng sử dụng.
+model Faculty {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  majors    Major[]
+  lecturers LecturerProfile[]
+
+  @@index([isActive])
+}
+
+/// Ngành học thuộc một Khoa. Không xóa cứng khi đã có dữ liệu tham chiếu – dùng `isActive = false`.
+model Major {
+  id          String   @id @default(cuid())
+  facultyId   String
+  code        String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  faculty     Faculty           @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  students    StudentProfile[]
+  internships InternshipMajor[]
+
+  @@unique([facultyId, name])
+  @@index([facultyId, isActive])
+  @@index([isActive])
+}
+
+/// Ngành mục tiêu của tin tuyển dụng (nhiều-nhiều). Không có bản ghi nào = mở cho tất cả các ngành.
+model InternshipMajor {
+  internshipId String
+  majorId      String
+  createdAt    DateTime @default(now())
+
+  internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  major      Major      @relation(fields: [majorId], references: [id], onDelete: Restrict)
+
+  @@id([internshipId, majorId])
+  @@index([majorId])
 }
 
 model Skill {
@@ -509,6 +570,7 @@ model Internship {
   sourceInternship    Internship?           @relation("InternshipRepostSource", fields: [sourceInternshipId], references: [id], onDelete: SetNull)
   repostedInternships Internship[]          @relation("InternshipRepostSource")
   skills              InternshipSkill[]
+  majors              InternshipMajor[]
   applications        Application[]
   placements          InternshipPlacement[]
   views               InternshipView[]
