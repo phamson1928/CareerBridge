@@ -72,6 +72,8 @@ export interface ApplicationRecord {
   internship: {
     id: string;
     title: string;
+    semesterId?: string;
+    semester?: { id: string; name: string; status?: string };
     startDate?: string | null;
     endDate?: string | null;
     company: {

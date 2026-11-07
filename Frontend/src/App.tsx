@@ -112,6 +112,8 @@ function toLegacyApplication(record: ApplicationRecord): Application {
     studentSkills: [],
     internshipId: record.internshipId,
     internshipTitle: record.internship.title,
+    semesterId: record.internship.semester?.id ?? record.internship.semesterId ?? null,
+    semesterName: record.internship.semester?.name ?? null,
     internshipStartDate: record.internship.startDate ?? null,
     internshipEndDate: record.internship.endDate ?? null,
     companyId: record.internship.company.id,

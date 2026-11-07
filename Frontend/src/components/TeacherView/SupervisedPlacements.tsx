@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
 import { supervisionsApi } from "../../supervisions/api";
+import { semestersApi } from "../../semesters/api";
+import type { SemesterRecord } from "../../semesters/types";
+import { findDefaultSemester, toSemesterSlug } from "../../semesters/utils";
 import type { SupervisionRecord } from "../../supervisions/types";
 import { formatDate, formatDateTime } from "../../utils/format";
 import { downloadExcelWorkbook } from "../../utils/excelExport";
@@ -28,13 +31,22 @@ export const SupervisedPlacements: React.FC = () => {
   const [items, setItems] = useState<SupervisionRecord[]>([]);
   const [search, setSearch] = useState("");
   const [selectedMajor, setSelectedMajor] = useState("");
+  const [semesters, setSemesters] = useState<SemesterRecord[]>([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void supervisionsApi
-      .listMine()
-      .then((result) => setItems(result.items))
+    Promise.all([
+      supervisionsApi.listMine(),
+      semestersApi.list({ limit: 100 }),
+    ])
+      .then(([supRes, semRes]) => {
+        setItems(supRes.items);
+        setSemesters(semRes.items);
+        const def = findDefaultSemester(semRes.items, "LECTURER");
+        if (def) setSelectedSemesterId(def.id);
+      })
       .catch((requestError) => setError(getApiErrorMessage(requestError)))
       .finally(() => setLoading(false));
   }, []);
@@ -55,15 +67,22 @@ export const SupervisedPlacements: React.FC = () => {
       ].some((value) => value.toLowerCase().includes(keyword));
     const matchesMajor =
       !selectedMajor || item.placement.student.major === selectedMajor;
-    return matchesKeyword && matchesMajor;
+    const matchesSemester =
+      !selectedSemesterId ||
+      selectedSemesterId === "ALL" ||
+      item.placement.semester.id === selectedSemesterId;
+    return matchesKeyword && matchesMajor && matchesSemester;
   });
 
   const exportListExcel = () => {
-    downloadExcelWorkbook("danh-sach-sinh-vien-phu-trach", [
+    const currentSem = semesters.find((s) => s.id === selectedSemesterId);
+    const semLabel = currentSem ? currentSem.name : "Tất cả học kỳ";
+    const fileSlug = currentSem ? toSemesterSlug(currentSem.name) : "tat-ca-hoc-ky";
+    downloadExcelWorkbook(`danh-sach-sinh-vien-${fileSlug}`, [
       {
         name: "Sinh vien phu trach",
-        title: "DANH SÁCH SINH VIÊN THỰC TẬP ĐANG PHỤ TRÁCH",
-        subtitle: `Ngày xuất: ${new Date().toLocaleDateString("vi-VN")} — Tổng số: ${filtered.length} sinh viên`,
+        title: `DANH SÁCH SINH VIÊN THỰC TẬP — ${semLabel.toUpperCase()}`,
+        subtitle: `Học kỳ: ${semLabel} — Ngày xuất: ${new Date().toLocaleDateString("vi-VN")} — Tổng số: ${filtered.length} sinh viên`,
         columns: [
           { header: "STT", width: 45, value: (_, i) => i + 1 },
           { header: "MSSV", width: 105, value: (s) => s.placement.student.studentCode },
@@ -115,7 +134,7 @@ export const SupervisedPlacements: React.FC = () => {
           )}
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:grid-cols-[1fr_240px]">
+      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:grid-cols-[1fr_200px_220px]">
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
           <input
@@ -134,6 +153,18 @@ export const SupervisedPlacements: React.FC = () => {
           {distinctMajors.map((major) => (
             <option key={major} value={major}>
               {major}
+            </option>
+          ))}
+        </select>
+        <select
+          value={selectedSemesterId}
+          onChange={(event) => setSelectedSemesterId(event.target.value)}
+          className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+        >
+          <option value="ALL">Tất cả học kỳ</option>
+          {semesters.map((sem) => (
+            <option key={sem.id} value={sem.id}>
+              {sem.name} ({sem.status})
             </option>
           ))}
         </select>

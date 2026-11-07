@@ -136,6 +136,8 @@ export interface Application {
   studentSkills: string[];
   internshipId: string;
   internshipTitle: string;
+  semesterId?: string | null;
+  semesterName?: string | null;
   internshipStartDate?: string | null;
   internshipEndDate?: string | null;
   companyId: string;
