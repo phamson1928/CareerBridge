@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   Prisma,
+  CompanyStatus,
   PlacementStatus,
   ReportStatus,
   Role,
@@ -391,6 +392,7 @@ export class PlacementsService {
             status: true,
             academicStatus: true,
             supervision: { select: { id: true, status: true } },
+            company: { select: { id: true, status: true } },
           },
         });
         if (!current) throw this.notFound();
@@ -440,11 +442,15 @@ export class PlacementsService {
           }
           const hasCompany = evaluations.some((e) => e.type === 'COMPANY');
           const hasLecturer = evaluations.some((e) => e.type === 'LECTURER');
-          if (!hasCompany || !hasLecturer) {
+          const isCompanySuspended =
+            current.company?.status === CompanyStatus.SUSPENDED;
+
+          if (!hasLecturer || (!hasCompany && !isCompanySuspended)) {
             throw new ConflictException({
               code: 'PLACEMENT_MISSING_EVALUATIONS',
-              message:
-                'Cần có đầy đủ đánh giá của cả Doanh nghiệp và Giảng viên hướng dẫn trước khi xác nhận hoàn tất hồ sơ thực tập.',
+              message: isCompanySuspended
+                ? 'Doanh nghiệp đã bị tạm đình chỉ, nhưng vẫn cần có đánh giá của Giảng viên hướng dẫn trước khi xác nhận hoàn tất hồ sơ thực tập.'
+                : 'Cần có đầy đủ đánh giá của cả Doanh nghiệp và Giảng viên hướng dẫn trước khi xác nhận hoàn tất hồ sơ thực tập.',
             });
           }
         }

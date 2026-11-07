@@ -101,6 +101,7 @@ const applicationSelect = {
           contactPhone: true,
           address: true,
           userId: true,
+          status: true,
           user: { select: { email: true } },
         },
       },
@@ -1024,6 +1025,14 @@ export class ApplicationsService {
           throw new BadRequestException({
             code: 'OFFER_EXPIRED',
             message: 'Lời mời thực tập này đã quá hạn phản hồi',
+          });
+        }
+
+        if (current.internship.company.status !== CompanyStatus.APPROVED) {
+          throw new ForbiddenException({
+            code: 'COMPANY_NOT_APPROVED',
+            message:
+              'Doanh nghiệp hiện không ở trạng thái hoạt động hợp lệ để tiếp nhận thực tập.',
           });
         }
 

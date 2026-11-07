@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import {
   BadRequestException,
   ConflictException,
@@ -7,11 +8,15 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  ApplicationStatus,
   CompanyStatus,
   InternshipStatus,
+  Notification,
   NotificationAction,
   NotificationType,
+  PlacementStatus,
   Prisma,
+  SupervisionStatus,
 } from '../generated/prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -553,6 +558,207 @@ export class CompaniesService {
         where: { id },
         select: profileSelect,
       });
+
+      const notifications: Notification[] = [];
+
+      // 1. Expire all active in-progress applications (PENDING, REVIEWING, INTERVIEWING, OFFERED)
+      const activeApplications = await tx.application.findMany({
+        where: {
+          internship: { companyId: id },
+          status: {
+            in: [
+              ApplicationStatus.PENDING,
+              ApplicationStatus.REVIEWING,
+              ApplicationStatus.INTERVIEWING,
+              ApplicationStatus.OFFERED,
+            ],
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+          student: { select: { userId: true, fullName: true } },
+          internship: { select: { id: true, title: true } },
+        },
+      });
+
+      if (activeApplications.length > 0) {
+        await tx.application.updateMany({
+          where: { id: { in: activeApplications.map((a) => a.id) } },
+          data: {
+            status: ApplicationStatus.EXPIRED,
+            respondedAt: new Date(),
+          },
+        });
+
+        await tx.applicationStatusHistory.createMany({
+          data: activeApplications.map((app) => ({
+            applicationId: app.id,
+            fromStatus: app.status,
+            toStatus: ApplicationStatus.EXPIRED,
+            changedById: reviewerId,
+            note: `Đơn ứng tuyển tự động đóng do doanh nghiệp bị tạm đình chỉ hoạt động: ${formattedReason}`,
+          })),
+        });
+
+        for (const app of activeApplications) {
+          const studentNotif = await this.notifications.createInTransaction(
+            tx,
+            {
+              userId: app.student.userId,
+              eventKey: `application:${app.id}:company_suspended:${randomUUID()}`,
+              type: NotificationType.APPLICATION,
+              action: NotificationAction.OPEN_APPLICATION,
+              title: 'Đơn ứng tuyển thực tập đã bị đóng',
+              content: `Vị trí "${app.internship.title}" tại ${profile.companyName} đã bị hủy xử lý do doanh nghiệp bị tạm đình chỉ hoạt động. Bạn có thể tìm và nộp hồ sơ vào các vị trí khác.`,
+              resourceId: app.id,
+              metadata: {
+                status: ApplicationStatus.EXPIRED,
+                companyStatus: CompanyStatus.SUSPENDED,
+              },
+            },
+          );
+          notifications.push(studentNotif);
+        }
+      }
+
+      // 2. Cancel pending placements (accepted offer, awaiting start) and release student semester lock
+      const pendingPlacements = await tx.internshipPlacement.findMany({
+        where: {
+          companyId: id,
+          status: PlacementStatus.PENDING,
+        },
+        select: {
+          id: true,
+          internshipId: true,
+          student: { select: { userId: true, fullName: true } },
+          internship: { select: { id: true, title: true } },
+          supervision: {
+            select: {
+              id: true,
+              lecturer: { select: { userId: true, fullName: true } },
+            },
+          },
+        },
+      });
+
+      if (pendingPlacements.length > 0) {
+        await tx.internshipPlacement.updateMany({
+          where: { id: { in: pendingPlacements.map((p) => p.id) } },
+          data: {
+            status: PlacementStatus.CANCELLED,
+            academicStatus: 'CANCELLED',
+            academicClosedAt: new Date(),
+          },
+        });
+
+        for (const placement of pendingPlacements) {
+          await tx.internship.updateMany({
+            where: { id: placement.internshipId, filledSlots: { gt: 0 } },
+            data: { filledSlots: { decrement: 1 } },
+          });
+
+          if (placement.supervision) {
+            await tx.supervision.update({
+              where: { id: placement.supervision.id },
+              data: {
+                status: SupervisionStatus.CANCELLED,
+                completedAt: new Date(),
+              },
+            });
+
+            const lecturerNotif = await this.notifications.createInTransaction(
+              tx,
+              {
+                userId: placement.supervision.lecturer.userId,
+                eventKey: `placement:${placement.id}:lecturer_cancelled:${randomUUID()}`,
+                type: NotificationType.SUPERVISION,
+                action: NotificationAction.OPEN_SUPERVISION,
+                title: 'Hồ sơ hướng dẫn thực tập đã bị hủy',
+                content: `Vị trí tiếp nhận thực tập của sinh viên ${placement.student.fullName} tại ${profile.companyName} đã bị hủy do doanh nghiệp bị tạm đình chỉ.`,
+                resourceId: placement.id,
+                metadata: { status: PlacementStatus.CANCELLED },
+              },
+            );
+            notifications.push(lecturerNotif);
+          }
+
+          const studentNotif = await this.notifications.createInTransaction(
+            tx,
+            {
+              userId: placement.student.userId,
+              eventKey: `placement:${placement.id}:cancelled_suspension:${randomUUID()}`,
+              type: NotificationType.PLACEMENT,
+              action: NotificationAction.OPEN_PLACEMENT,
+              title: 'Vị trí tiếp nhận thực tập đã bị hủy',
+              content: `Vị trí tiếp nhận thực tập của bạn tại ${profile.companyName} đã bị hủy do doanh nghiệp bị tạm đình chỉ hoạt động. Bạn có thể tìm và ứng tuyển doanh nghiệp khác.`,
+              resourceId: placement.id,
+              metadata: { status: PlacementStatus.CANCELLED },
+            },
+          );
+          notifications.push(studentNotif);
+        }
+      }
+
+      // 3. Alert students and lecturers for ACTIVE placements (do not auto-cancel ongoing internship)
+      const activePlacements = await tx.internshipPlacement.findMany({
+        where: {
+          companyId: id,
+          status: PlacementStatus.ACTIVE,
+        },
+        select: {
+          id: true,
+          student: { select: { userId: true, fullName: true } },
+          internship: { select: { id: true, title: true } },
+          supervision: {
+            select: {
+              id: true,
+              lecturer: { select: { userId: true, fullName: true } },
+            },
+          },
+        },
+      });
+
+      for (const placement of activePlacements) {
+        const studentActiveNotif = await this.notifications.createInTransaction(
+          tx,
+          {
+            userId: placement.student.userId,
+            eventKey: `placement:${placement.id}:active_suspension_alert:${randomUUID()}`,
+            type: NotificationType.PLACEMENT,
+            action: NotificationAction.OPEN_PLACEMENT,
+            title: 'Cảnh báo: Doanh nghiệp thực tập bị tạm đình chỉ',
+            content: `Doanh nghiệp ${profile.companyName} nơi bạn đang thực tập đã bị tạm đình chỉ hoạt động. Vui lòng liên hệ Giảng viên hướng dẫn hoặc Khoa để được hướng dẫn xử lý học vụ.`,
+            resourceId: placement.id,
+            metadata: {
+              status: PlacementStatus.ACTIVE,
+              companyStatus: CompanyStatus.SUSPENDED,
+            },
+          },
+        );
+        notifications.push(studentActiveNotif);
+
+        if (placement.supervision) {
+          const lecturerActiveNotif =
+            await this.notifications.createInTransaction(tx, {
+              userId: placement.supervision.lecturer.userId,
+              eventKey: `placement:${placement.id}:lecturer_suspension_alert:${randomUUID()}`,
+              type: NotificationType.SUPERVISION,
+              action: NotificationAction.OPEN_SUPERVISION,
+              title:
+                'Cảnh báo: Doanh nghiệp thực tập của sinh viên bị tạm đình chỉ',
+              content: `Doanh nghiệp ${profile.companyName} nơi sinh viên ${placement.student.fullName} đang thực tập đã bị tạm đình chỉ hoạt động. Vui lòng kiểm tra và hỗ trợ phương án học vụ cho sinh viên.`,
+              resourceId: placement.id,
+              metadata: {
+                status: PlacementStatus.ACTIVE,
+                companyStatus: CompanyStatus.SUSPENDED,
+              },
+            });
+          notifications.push(lecturerActiveNotif);
+        }
+      }
+
+      // 4. Audit log
       await tx.auditLog.create({
         data: {
           userId: reviewerId,
@@ -563,9 +769,14 @@ export class CompaniesService {
             reasonCode: dto.reasonCode,
             reasonDetail: normalizedDetail,
             closedCount: closedInternships.count,
+            expiredApplicationsCount: activeApplications.length,
+            cancelledPendingPlacementsCount: pendingPlacements.length,
+            activePlacementsAlertedCount: activePlacements.length,
           },
         },
       });
+
+      // 5. Notification to company
       const notification = await this.notifications.createInTransaction(tx, {
         userId: profile.userId,
         eventKey: `company:${profile.id}:suspended:${Date.now()}`,
@@ -576,10 +787,60 @@ export class CompaniesService {
         resourceId: profile.id,
         metadata: { status: CompanyStatus.SUSPENDED },
       });
-      return { profile, notifications: [notification] };
+      notifications.push(notification);
+
+      return { profile, notifications };
     });
     this.notifications.publishMany(result.notifications);
     return this.enrichProfile(result.profile);
+  }
+
+  async getSuspensionImpact(id: string) {
+    const profile = await this.prisma.companyProfile.findUnique({
+      where: { id },
+      select: { id: true, companyName: true, status: true },
+    });
+    if (!profile) throw this.notFound();
+
+    const [
+      openInternshipsCount,
+      activeApplicationsCount,
+      pendingPlacementsCount,
+      activePlacementsCount,
+    ] = await Promise.all([
+      this.prisma.internship.count({
+        where: { companyId: id, status: InternshipStatus.OPEN },
+      }),
+      this.prisma.application.count({
+        where: {
+          internship: { companyId: id },
+          status: {
+            in: [
+              ApplicationStatus.PENDING,
+              ApplicationStatus.REVIEWING,
+              ApplicationStatus.INTERVIEWING,
+              ApplicationStatus.OFFERED,
+            ],
+          },
+        },
+      }),
+      this.prisma.internshipPlacement.count({
+        where: { companyId: id, status: PlacementStatus.PENDING },
+      }),
+      this.prisma.internshipPlacement.count({
+        where: { companyId: id, status: PlacementStatus.ACTIVE },
+      }),
+    ]);
+
+    return {
+      companyId: id,
+      companyName: profile.companyName,
+      status: profile.status,
+      openInternshipsCount,
+      activeApplicationsCount,
+      pendingPlacementsCount,
+      activePlacementsCount,
+    };
   }
 
   async unsuspend(id: string, reviewerId: string, dto: UnsuspendCompanyDto) {

@@ -100,6 +100,12 @@ export class CompaniesController {
     return this.companiesService.reject(id, user.id, dto);
   }
 
+  @Get(':id/suspension-impact')
+  @Roles(Role.ADMIN)
+  getSuspensionImpact(@Param('id') id: string) {
+    return this.companiesService.getSuspensionImpact(id);
+  }
+
   @Post(':id/suspend')
   @Roles(Role.ADMIN)
   suspend(

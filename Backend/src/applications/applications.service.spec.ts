@@ -1,5 +1,9 @@
-import { BadRequestException } from '@nestjs/common';
-import { ApplicationStatus, Role } from '../generated/prisma/client';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  ApplicationStatus,
+  CompanyStatus,
+  Role,
+} from '../generated/prisma/client';
 import { PlacementsService } from '../placements/placements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/types/auth-user.type';
@@ -187,5 +191,38 @@ describe('ApplicationsService interview & offer workflow', () => {
         }),
       }),
     );
+  });
+
+  it('rejects offer acceptance when company is not in APPROVED status (e.g. SUSPENDED)', async () => {
+    const mockPrisma = {
+      $transaction: jest.fn((cb) => cb(mockPrisma)),
+      application: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'application-id',
+          status: ApplicationStatus.OFFERED,
+          offerExpiresAt: new Date(Date.now() + 86400000),
+          studentId: 'student-id',
+          student: { userId: studentUser.id },
+          internshipId: 'internship-id',
+          internship: {
+            id: 'internship-id',
+            company: { id: 'company-id', status: CompanyStatus.SUSPENDED },
+            semester: { id: 'semester-id' },
+          },
+        }),
+      },
+    } as unknown as PrismaService;
+
+    const service = new ApplicationsService(
+      mockPrisma,
+      {} as PlacementsService,
+      {} as NotificationsService,
+      mockLifecycle,
+      {} as MailerService,
+    );
+
+    await expect(
+      service.acceptOffer('application-id', studentUser),
+    ).rejects.toThrow(ForbiddenException);
   });
 });
