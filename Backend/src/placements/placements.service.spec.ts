@@ -106,7 +106,7 @@ describe('PlacementsService - Evaluation Waiver on Suspended Company', () => {
     const result = await service.updateStatus(
       'place-1',
       { status: PublicPlacementStatus.COMPLETED },
-      adminUser,
+      adminUser.id,
     );
 
     expect(result).toBeDefined();
@@ -141,7 +141,7 @@ describe('PlacementsService - Evaluation Waiver on Suspended Company', () => {
       service.updateStatus(
         'place-1',
         { status: PublicPlacementStatus.COMPLETED },
-        adminUser,
+        adminUser.id,
       ),
     ).rejects.toThrow(ConflictException);
   });
