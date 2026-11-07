@@ -61,9 +61,9 @@ export class DashboardService {
     const internshipWhere: Prisma.InternshipWhereInput = {
       ...(semester ? { semesterId: semester.id } : {}),
       ...(majorId
-        ? { targetMajors: { some: { majorId } } }
+        ? { majors: { some: { majorId } } }
         : facultyId
-          ? { targetMajors: { some: { major: { facultyId } } } }
+          ? { majors: { some: { major: { facultyId } } } }
           : {}),
     };
     const nonCancelledInternshipWhere: Prisma.InternshipWhereInput = {

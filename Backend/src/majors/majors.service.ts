@@ -261,6 +261,13 @@ export class MajorsService {
           select: majorSelect,
         });
 
+        if (dto.name !== undefined && name !== current.name) {
+          await tx.studentProfile.updateMany({
+            where: { majorId: id },
+            data: { major: name },
+          });
+        }
+
         await tx.auditLog.create({
           data: {
             userId: actorId ?? null,
@@ -352,6 +359,7 @@ export class MajorsService {
     try {
       await this.prisma.$transaction(async (tx) => {
         await tx.major.delete({ where: { id } });
+
         await tx.auditLog.create({
           data: {
             userId: actorId ?? null,

@@ -296,9 +296,9 @@ model StudentProfile {
   userId       String   @unique
   studentCode  String   @unique
   fullName     String
-  /// @deprecated Legacy free-text major. Thay bằng `majorId` (sẽ xóa ở Checkpoint 3).
+  /// Tên ngành đào tạo hiển thị (được đồng bộ tự động từ Major.name thông qua majorId)
   major        String
-  /// Ngành học chính thức (FK -> Major). Nullable tới Checkpoint 3 để code hiện tại vẫn chạy.
+  /// Khóa ngoại trỏ tới ngành đào tạo chuẩn hóa (Major)
   majorId      String?
   phone        String?
   summary      String?
@@ -374,7 +374,7 @@ model LecturerProfile {
   id           String   @id @default(cuid())
   userId       String   @unique
   fullName     String
-  /// @deprecated Legacy free-text department. Thay bằng `facultyId` (sẽ xóa ở Checkpoint 3).
+  /// Tên Khoa hiển thị (được đồng bộ tự động từ Faculty.name thông qua facultyId)
   department   String
   /// Khoa cơ hữu (FK -> Faculty). Giảng viên vẫn có thể hướng dẫn sinh viên liên khoa.
   facultyId    String?
