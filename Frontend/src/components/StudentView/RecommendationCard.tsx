@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronRight, MapPin, Send, Sparkles } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ChevronRight, Clock, MapPin, Send, Sparkles } from 'lucide-react';
 import type { Internship } from '../../types';
 import type { RecommendationItem } from '../../recommendations/types';
 import { RecommendationExplanation } from './RecommendationExplanation';
@@ -44,6 +44,11 @@ export function RecommendationCard({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+        {internship.semester?.name && (
+          <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200">
+            <CalendarDays className="h-3 w-3 text-indigo-500" /> {internship.semester.name}
+          </span>
+        )}
         <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 ring-1 ring-slate-200">
           <MapPin className="h-3.5 w-3.5" /> {internship.location}
         </span>

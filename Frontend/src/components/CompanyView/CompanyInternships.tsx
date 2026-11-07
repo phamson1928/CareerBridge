@@ -33,6 +33,7 @@ import {
 } from "../../internship-templates/api";
 import { semestersApi } from "../../semesters/api";
 import type { SemesterRecord } from "../../semesters/types";
+import { SemesterCampaignBanner } from "../Semesters/SemesterCampaignBanner";
 import { skillsApi } from "../../skills/api";
 import { SkillPicker, type SkillOption } from "../Skills/SkillPicker";
 
@@ -584,6 +585,9 @@ export function CompanyInternships() {
 
   return (
     <div className="space-y-6">
+      {/* Tiến trình Đợt thực tập / Campaign Timeline Banner */}
+      <SemesterCampaignBanner role="COMPANY" />
+
       {/* Tab Switcher & Header */}
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <div>

@@ -1,4 +1,5 @@
 import type { AiScanJobRecord } from './ai-worker/types';
+import type { SemesterStatus, InternshipCampaignPhase } from './semesters/types';
 
 export type UserRole = "STUDENT" | "COMPANY" | "TEACHER" | "ADMIN";
 
@@ -94,10 +95,20 @@ export interface Internship {
   slots: number;
   filledSlots: number;
   deadline: string;
+  rawDeadline?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   createdAt: string;
   status: "ACTIVE" | "CLOSED";
+  semester?: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    status: SemesterStatus;
+  };
+  campaignPhase?: InternshipCampaignPhase;
+  recruitmentStart?: string;
 }
 
 export interface Application {

@@ -31,6 +31,7 @@ import type { CompanyDashboardData } from '../../dashboard/types';
 import { semestersApi } from '../../semesters/api';
 import type { SemesterRecord } from '../../semesters/types';
 import { CompanyInternshipStatsModal } from './CompanyInternshipStatsModal';
+import { SemesterCampaignBanner } from '../Semesters/SemesterCampaignBanner';
 
 interface CompanyDashboardProps {
   onNavigateTab: (tab: string) => void;
@@ -240,6 +241,9 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
       {/* Nếu được phép xem stats (APPROVED hoặc SUSPENDED) */}
       {!isPendingApproval && (
         <>
+          {/* Tiến trình Đợt thực tập / Campaign Timeline Banner */}
+          <SemesterCampaignBanner role="COMPANY" className="mb-4" />
+
           {/* Controls & Filter Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
             <div className="flex items-center gap-3">

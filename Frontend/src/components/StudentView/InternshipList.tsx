@@ -9,6 +9,9 @@ import {
   MapPin,
   DollarSign,
   Calendar,
+  CalendarDays,
+  Clock,
+  GraduationCap,
   Building2,
   CheckCircle2,
   Send,
@@ -18,6 +21,7 @@ import {
   Flag,
 } from 'lucide-react';
 import { ReportJobModal } from '../Internships/ReportJobModal';
+import { SemesterCampaignBanner } from '../Semesters/SemesterCampaignBanner';
 
 type InternshipPage = {
   items: Internship[];
@@ -46,6 +50,40 @@ const CompanyLogo: React.FC<{ src: string; name: string; className: string }> = 
       {name.charAt(0).toUpperCase()}
     </div>
   );
+
+const renderDeadlineBadge = (deadlineStr?: string | null) => {
+  if (!deadlineStr || deadlineStr === 'Không thời hạn') return null;
+  const d = new Date(deadlineStr);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  const diffDays = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200">
+        <Clock className="w-3 h-3 text-rose-500" /> Đã hết hạn nộp
+      </span>
+    );
+  }
+  if (diffDays === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200 animate-pulse">
+        <Clock className="w-3 h-3 text-amber-500" /> Hạn chốt: Hôm nay!
+      </span>
+    );
+  }
+  if (diffDays <= 5) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">
+        <Clock className="w-3 h-3 text-amber-500" /> Còn {diffDays} ngày
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+      <Clock className="w-3 h-3 text-emerald-500" /> Còn {diffDays} ngày
+    </span>
+  );
+};
 
 export const InternshipList: React.FC<InternshipListProps> = ({
   internships,
@@ -142,6 +180,17 @@ export const InternshipList: React.FC<InternshipListProps> = ({
           playsInline
         />
       </button>
+
+      {/* Tiến trình Đợt thực tập / Campaign Timeline Banner */}
+      <SemesterCampaignBanner
+        role="STUDENT"
+        onExploreJobs={() =>
+          document.getElementById('tin-tuyen-dung')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          })
+        }
+      />
 
       <JobRecommendations
         applications={applications}
@@ -254,8 +303,19 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 key={job.id}
                 className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden"
               >
-                {/* Top Row: Logo, Title, Match Badge */}
                 <div>
+                  {/* Top Badges: Semester & Deadline status */}
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    {job.semester?.name && (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700 border border-indigo-200">
+                        <CalendarDays className="w-3 h-3 text-indigo-500" />
+                        {job.semester.name}
+                      </span>
+                    )}
+                    {renderDeadlineBadge(job.rawDeadline || job.deadline)}
+                  </div>
+
+                  {/* Top Row: Logo, Title, Match Badge */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <CompanyLogo src={job.companyLogo} name={job.companyName} className="h-12 w-12 rounded-xl border border-slate-200 object-cover shadow-2xs" />
@@ -268,11 +328,10 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                         </p>
                       </div>
                     </div>
-
                   </div>
 
                   {/* Job Metadata tags */}
-                  <div className="flex flex-wrap items-center gap-3 mt-4 text-xs text-slate-600">
+                  <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-slate-600">
                     <span className="flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
                       <MapPin className="w-3.5 h-3.5 text-slate-400" /> {job.location}
                     </span>
@@ -282,6 +341,11 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                     <span className="flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
                       <Calendar className="w-3.5 h-3.5 text-slate-400" /> Hạn: {formatDate(job.deadline, "Không thời hạn")}
                     </span>
+                    {job.startDate && job.endDate && (
+                      <span className="flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
+                        <GraduationCap className="w-3.5 h-3.5 text-slate-400" /> Kỳ: {formatDate(job.startDate)} - {formatDate(job.endDate)}
+                      </span>
+                    )}
                   </div>
 
                   {/* Short Description */}
@@ -390,6 +454,47 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Thông tin Đợt thực tập & Tiến trình học kỳ */}
+            {activeModalInternship.semester && (
+              <div className="mt-4 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-blue-50/50 to-white p-3.5 shadow-2xs">
+                <div className="flex items-center justify-between gap-2 border-b border-indigo-100/70 pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-2xs">
+                      <CalendarDays className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Đợt thực tập áp dụng</p>
+                      <p className="text-xs font-extrabold text-slate-900">{activeModalInternship.semester.name}</p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200">
+                    Đang mở nhận hồ sơ
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2.5 text-xs sm:grid-cols-3">
+                  <div>
+                    <p className="text-[11px] font-medium text-slate-500">Hạn chốt nộp hồ sơ</p>
+                    <p className="font-bold text-slate-800">{formatDate(activeModalInternship.deadline, "Không thời hạn")}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium text-slate-500">Kỳ làm việc dự kiến</p>
+                    <p className="font-bold text-slate-800">
+                      {activeModalInternship.startDate && activeModalInternship.endDate
+                        ? `${formatDate(activeModalInternship.startDate)} - ${formatDate(activeModalInternship.endDate)}`
+                        : `${formatDate(activeModalInternship.semester.startDate)} - ${formatDate(activeModalInternship.semester.endDate)}`}
+                    </p>
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <p className="text-[11px] font-medium text-slate-500">Chỉ tiêu còn lại</p>
+                    <p className="font-bold text-indigo-700">
+                      {Math.max(0, activeModalInternship.slots - activeModalInternship.filledSlots)} / {activeModalInternship.slots} vị trí
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="py-4 space-y-4 text-xs text-slate-700">
               <div>

@@ -93,4 +93,65 @@ describe('SemesterLifecycleService', () => {
       },
     });
   });
+
+  it('broadcasts notifications to active students and approved companies when recruitment opens', async () => {
+    const notifications = {
+      create: jest.fn().mockResolvedValue({}),
+    };
+    const mailer = {
+      renderCampaignRecruitingTemplate: jest
+        .fn()
+        .mockReturnValue({ subject: 'Recruiting', html: '<p>Open</p>' }),
+      sendCampaignAnnouncementEmail: jest.fn().mockResolvedValue(undefined),
+    };
+    const prisma = {
+      studentProfile: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            userId: 'student-u1',
+            fullName: 'Nguyen Van A',
+            user: { id: 'student-u1', email: 'vana@school.edu.vn' },
+          },
+        ]),
+      },
+      companyProfile: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            userId: 'company-u1',
+            companyName: 'FPT Software',
+            user: { id: 'company-u1', email: 'hr@fpt.com' },
+          },
+        ]),
+      },
+    };
+
+    const service = new SemesterLifecycleService(
+      prisma as never,
+      notifications as never,
+      mailer as never,
+    );
+
+    await service.notifyCampaignRecruiting({
+      id: 'sem-2026',
+      name: 'Học kỳ 1 2026-2027',
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+    });
+
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'student-u1',
+        eventKey: 'campaign-recruiting:sem-2026:student-u1',
+        title: expect.stringContaining('Học kỳ 1 2026-2027'),
+      }),
+    );
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'company-u1',
+        eventKey: 'campaign-recruiting-company:sem-2026:company-u1',
+        title: expect.stringContaining('Học kỳ 1 2026-2027'),
+      }),
+    );
+    expect(mailer.sendCampaignAnnouncementEmail).toHaveBeenCalledTimes(2);
+  });
 });

@@ -27,6 +27,12 @@ export function toLegacyInternship(record: InternshipRecord): Internship {
     slots: record.slots,
     filledSlots: record.filledSlots,
     deadline: formatDate(record.deadline, 'Không thời hạn'),
+    rawDeadline: record.deadline,
+    startDate: record.startDate,
+    endDate: record.endDate,
+    semester: record.semester,
+    campaignPhase: record.campaignPhase,
+    recruitmentStart: record.recruitmentStart,
     createdAt: record.createdAt,
     status: record.status === 'OPEN' ? 'ACTIVE' : 'CLOSED',
   };

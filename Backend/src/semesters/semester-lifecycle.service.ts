@@ -33,6 +33,14 @@ export type SemesterWindow = {
 const RECONCILIATION_INTERVAL_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function formatViDate(date: Date): string {
+  const d = new Date(date);
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 /**
  * Applies the time-based rules of an internship campaign.
  * The recruitment window is one calendar month before the monitoring period.
@@ -138,18 +146,28 @@ export class SemesterLifecycleService implements OnModuleInit, OnModuleDestroy {
   private async reconcileInternal(now: Date) {
     const semesters = await this.prisma.semester.findMany({
       where: { status: { not: SemesterStatus.CANCELLED } },
-      select: { id: true, status: true, startDate: true, endDate: true },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        startDate: true,
+        endDate: true,
+      },
     });
 
     await Promise.all(
-      semesters.map((semester) => {
+      semesters.map(async (semester) => {
         const status = this.statusFor(semester, now);
-        return status === semester.status
-          ? Promise.resolve()
-          : this.prisma.semester.update({
-              where: { id: semester.id },
-              data: { status },
-            });
+        if (status === semester.status) return;
+        await this.prisma.semester.update({
+          where: { id: semester.id },
+          data: { status },
+        });
+        if (status === SemesterStatus.RECRUITING) {
+          await this.notifyCampaignRecruiting(semester);
+        } else if (status === SemesterStatus.MONITORING) {
+          await this.notifyCampaignMonitoring(semester);
+        }
       }),
     );
 
@@ -397,6 +415,195 @@ export class SemesterLifecycleService implements OnModuleInit, OnModuleDestroy {
           template,
         });
       }
+    }
+  }
+
+  async notifyCampaignRecruiting(semester: {
+    id: string;
+    name: string;
+    startDate: Date;
+    endDate: Date;
+  }) {
+    if (!this.notifications || !this.prisma.studentProfile?.findMany) return;
+    const recruitmentStart = this.recruitmentStart(semester.startDate);
+    const formattedRecruitmentStart = formatViDate(recruitmentStart);
+    const formattedStart = formatViDate(semester.startDate);
+
+    try {
+      // 1. Notify Active Students
+      const students = await this.prisma.studentProfile.findMany({
+        where: { user: { status: 'ACTIVE' } },
+        include: { user: { select: { id: true, email: true } } },
+      });
+
+      for (const student of students) {
+        const eventKey = `campaign-recruiting:${semester.id}:${student.userId}`;
+        await this.notifications.create({
+          userId: student.userId,
+          eventKey,
+          type: NotificationType.INTERNSHIP,
+          action: NotificationAction.OPEN_INTERNSHIP,
+          title: `🎉 Đợt thực tập "${semester.name}" đã chính thức mở nhận hồ sơ!`,
+          content: `Đợt tuyển dụng cho "${semester.name}" đã chính thức bắt đầu (từ ${formattedRecruitmentStart} đến ${formattedStart}). Hãy cập nhật hồ sơ và ứng tuyển ngay vào các cơ hội phù hợp!`,
+          resourceId: semester.id,
+          metadata: {
+            semesterId: semester.id,
+            semesterName: semester.name,
+            phase: 'RECRUITING',
+          },
+        });
+
+        if (this.mailer && student.user?.email) {
+          const template = this.mailer.renderCampaignRecruitingTemplate({
+            recipientName: student.fullName || 'bạn sinh viên',
+            semesterName: semester.name,
+            recruitmentStart,
+            startDate: semester.startDate,
+            isCompany: false,
+          });
+          void this.mailer.sendCampaignAnnouncementEmail({
+            to: student.user.email,
+            template,
+          });
+        }
+      }
+
+      // 2. Notify Approved Companies
+      if (this.prisma.companyProfile?.findMany) {
+        const companies = await this.prisma.companyProfile.findMany({
+          where: { status: 'APPROVED' },
+          include: { user: { select: { id: true, email: true } } },
+        });
+
+        for (const company of companies) {
+          const eventKey = `campaign-recruiting-company:${semester.id}:${company.userId}`;
+          await this.notifications.create({
+            userId: company.userId,
+            eventKey,
+            type: NotificationType.INTERNSHIP,
+            action: NotificationAction.OPEN_INTERNSHIP,
+            title: `📢 Đợt thực tập "${semester.name}" đã mở cổng tuyển dụng`,
+            content: `Cổng tiếp nhận tin tuyển dụng thực tập cho đợt "${semester.name}" đã chính thức mở. Quý doanh nghiệp có thể đăng bài tuyển dụng và gửi lời mời thực tập cho sinh viên.`,
+            resourceId: semester.id,
+            metadata: {
+              semesterId: semester.id,
+              semesterName: semester.name,
+              phase: 'RECRUITING',
+            },
+          });
+
+          if (this.mailer && company.user?.email) {
+            const template = this.mailer.renderCampaignRecruitingTemplate({
+              recipientName: company.companyName || 'Quý doanh nghiệp',
+              semesterName: semester.name,
+              recruitmentStart,
+              startDate: semester.startDate,
+              isCompany: true,
+            });
+            void this.mailer.sendCampaignAnnouncementEmail({
+              to: company.user.email,
+              template,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to broadcast recruiting notifications for semester ${semester.id}`,
+        error,
+      );
+    }
+  }
+
+  async notifyCampaignMonitoring(semester: {
+    id: string;
+    name: string;
+    startDate: Date;
+    endDate: Date;
+  }) {
+    if (!this.notifications || !this.prisma.internshipPlacement?.findMany) return;
+    const formattedStart = formatViDate(semester.startDate);
+    const formattedEnd = formatViDate(semester.endDate);
+
+    try {
+      const placements = await this.prisma.internshipPlacement.findMany({
+        where: { semesterId: semester.id },
+        include: {
+          student: {
+            include: { user: { select: { id: true, email: true } } },
+          },
+          company: {
+            include: { user: { select: { id: true, email: true } } },
+          },
+        },
+      });
+
+      for (const placement of placements) {
+        const studentEventKey = `campaign-monitoring-student:${semester.id}:${placement.student.userId}`;
+        await this.notifications.create({
+          userId: placement.student.userId,
+          eventKey: studentEventKey,
+          type: NotificationType.PLACEMENT,
+          action: NotificationAction.OPEN_PLACEMENT,
+          title: `🚀 Bắt đầu giai đoạn thực tế: "${semester.name}"`,
+          content: `Đợt tuyển dụng đã khép lại. Kỳ thực tập chính thức diễn ra từ ${formattedStart} đến ${formattedEnd}. Chúc bạn có kỳ thực tập hiệu quả và đừng quên nộp báo cáo định kỳ!`,
+          resourceId: placement.id,
+          metadata: {
+            semesterId: semester.id,
+            placementId: placement.id,
+            phase: 'MONITORING',
+          },
+        });
+
+        if (this.mailer && placement.student.user?.email) {
+          const template = this.mailer.renderCampaignMonitoringTemplate({
+            recipientName: placement.student.fullName || 'bạn sinh viên',
+            semesterName: semester.name,
+            startDate: semester.startDate,
+            endDate: semester.endDate,
+            isCompany: false,
+          });
+          void this.mailer.sendCampaignAnnouncementEmail({
+            to: placement.student.user.email,
+            template,
+          });
+        }
+
+        const companyEventKey = `campaign-monitoring-company:${semester.id}:${placement.company.userId}`;
+        await this.notifications.create({
+          userId: placement.company.userId,
+          eventKey: companyEventKey,
+          type: NotificationType.PLACEMENT,
+          action: NotificationAction.OPEN_PLACEMENT,
+          title: `🏢 Đợt thực tập "${semester.name}" bước vào giai đoạn theo dõi thực tế`,
+          content: `Giai đoạn tuyển dụng đã khép lại. Quý công ty và sinh viên bắt đầu giai đoạn làm việc thực tế và đánh giá học vụ trong đợt này.`,
+          resourceId: placement.id,
+          metadata: {
+            semesterId: semester.id,
+            placementId: placement.id,
+            phase: 'MONITORING',
+          },
+        });
+
+        if (this.mailer && placement.company.user?.email) {
+          const template = this.mailer.renderCampaignMonitoringTemplate({
+            recipientName: placement.company.companyName || 'Quý doanh nghiệp',
+            semesterName: semester.name,
+            startDate: semester.startDate,
+            endDate: semester.endDate,
+            isCompany: true,
+          });
+          void this.mailer.sendCampaignAnnouncementEmail({
+            to: placement.company.user.email,
+            template,
+          });
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to broadcast monitoring notifications for semester ${semester.id}`,
+        error,
+      );
     }
   }
 }

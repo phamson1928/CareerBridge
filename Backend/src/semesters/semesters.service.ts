@@ -96,7 +96,7 @@ export class SemestersService {
     await this.ensureNameAvailable(name);
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const record = await this.prisma.$transaction(async (tx) => {
         const semester = await tx.semester.create({
           data: {
             name,
@@ -122,6 +122,11 @@ export class SemestersService {
         });
         return this.toRecord(semester);
       });
+
+      if (record.phase === 'RECRUITING') {
+        void this.lifecycle.notifyCampaignRecruiting(record);
+      }
+      return record;
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }

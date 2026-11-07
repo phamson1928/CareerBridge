@@ -512,6 +512,128 @@ export class MailerService {
     return { subject, html };
   }
 
+  renderCampaignRecruitingTemplate(params: {
+    recipientName: string;
+    semesterName: string;
+    recruitmentStart: Date;
+    startDate: Date;
+    isCompany: boolean;
+  }): RenderedEmailTemplate {
+    const formattedStart = this.formatViDate(params.startDate);
+    const formattedRecruitmentStart = this.formatViDate(params.recruitmentStart);
+    const subject = params.isCompany
+      ? `[CareerBridge] Đợt thực tập "${params.semesterName}" đã mở cổng đăng tin tuyển dụng`
+      : `[CareerBridge] 🎉 Đợt thực tập "${params.semesterName}" đã chính thức mở nhận hồ sơ`;
+
+    const bodyHtml = params.isCompany
+      ? `
+      <p style="margin: 0 0 12px 0;">Kính gửi <strong>${this.escapeHtml(params.recipientName)}</strong>,</p>
+      <p style="margin: 0 0 16px 0;">
+        Hệ thống CareerBridge xin trân trọng thông báo: Cổng tiếp nhận tin tuyển dụng thực tập cho đợt <strong>"${this.escapeHtml(params.semesterName)}"</strong> đã chính thức mở.
+      </p>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin: 18px 0;">
+        <p style="margin: 6px 0;"><strong>Đợt thực tập:</strong> ${this.escapeHtml(params.semesterName)}</p>
+        <p style="margin: 6px 0;"><strong>Giai đoạn tuyển dụng:</strong> Từ ${formattedRecruitmentStart} đến ${formattedStart}</p>
+        <p style="margin: 6px 0;"><strong>Thời hạn chốt tuyển dụng:</strong> Hết ngày ${formattedStart}</p>
+      </div>
+      <p style="margin: 0;">
+        Quý doanh nghiệp vui lòng đăng bài tuyển dụng, sàng lọc hồ sơ và gửi lời mời thực tập sớm cho các ứng viên tiềm năng trước khi kỳ thực tập chính thức bắt đầu.
+      </p>
+    `
+      : `
+      <p style="margin: 0 0 12px 0;">Thân gửi <strong>${this.escapeHtml(params.recipientName)}</strong>,</p>
+      <p style="margin: 0 0 16px 0;">
+        Hệ thống CareerBridge xin thông báo: Đợt tuyển dụng thực tập cho <strong>"${this.escapeHtml(params.semesterName)}"</strong> đã chính thức mở nhận hồ sơ ứng tuyển!
+      </p>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin: 18px 0;">
+        <p style="margin: 6px 0;"><strong>Đợt thực tập:</strong> ${this.escapeHtml(params.semesterName)}</p>
+        <p style="margin: 6px 0;"><strong>Thời gian mở tuyển:</strong> Từ ${formattedRecruitmentStart} đến ${formattedStart}</p>
+        <p style="margin: 6px 0;"><strong>Hạn chót ứng tuyển:</strong> Ngày ${formattedStart}</p>
+      </div>
+      <p style="margin: 0;">
+        Hãy cập nhật hồ sơ cá nhân, hoàn thiện CV và nhanh chóng khám phá các cơ hội thực tập hấp dẫn từ các doanh nghiệp đối tác uy tín!
+      </p>
+    `;
+
+    const html = this.wrapEmailLayout({
+      badge: 'Đợt thực tập mới',
+      badgeColor: '#ecfdf5',
+      ctaColor: '#059669',
+      heading: params.isCompany
+        ? 'Cổng đăng tin tuyển dụng thực tập đã mở'
+        : 'Đợt tuyển dụng thực tập chính thức bắt đầu',
+      bodyHtml,
+      ctaLabel: params.isCompany
+        ? 'Đăng tin tuyển dụng ngay'
+        : 'Khám phá cơ hội thực tập',
+      ctaUrl: this.getFrontendUrl(),
+    });
+
+    return { subject, html };
+  }
+
+  renderCampaignMonitoringTemplate(params: {
+    recipientName: string;
+    semesterName: string;
+    startDate: Date;
+    endDate: Date;
+    isCompany: boolean;
+  }): RenderedEmailTemplate {
+    const formattedStart = this.formatViDate(params.startDate);
+    const formattedEnd = this.formatViDate(params.endDate);
+    const subject = `[CareerBridge] 🚀 Bắt đầu giai đoạn thực tập chính thức: "${params.semesterName}"`;
+
+    const bodyHtml = `
+      <p style="margin: 0 0 12px 0;">Xin chào <strong>${this.escapeHtml(params.recipientName)}</strong>,</p>
+      <p style="margin: 0 0 16px 0;">
+        Hệ thống CareerBridge xin thông báo: Đợt tuyển dụng cho <strong>"${this.escapeHtml(params.semesterName)}"</strong> đã chính thức khép lại. Kỳ thực tập và theo dõi học vụ bước vào giai đoạn thực tế!
+      </p>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin: 18px 0;">
+        <p style="margin: 6px 0;"><strong>Đợt thực tập:</strong> ${this.escapeHtml(params.semesterName)}</p>
+        <p style="margin: 6px 0;"><strong>Thời gian kỳ thực tập:</strong> Từ ${formattedStart} đến ${formattedEnd}</p>
+        <p style="margin: 6px 0;"><strong>Giai đoạn:</strong> Thực tập tại doanh nghiệp &amp; Báo cáo học vụ</p>
+      </div>
+      <p style="margin: 0;">
+        ${
+          params.isCompany
+            ? 'Quý doanh nghiệp vui lòng phối hợp cùng nhà trường hướng dẫn và theo dõi sinh viên tại cơ sở trong suốt thời gian này.'
+            : 'Chúc bạn có một kỳ thực tập bổ ích, tích lũy nhiều trải nghiệm quý báu và đừng quên theo dõi lịch nộp báo cáo định kỳ đầy đủ trên hệ thống.'
+        }
+      </p>
+    `;
+
+    const html = this.wrapEmailLayout({
+      badge: 'Giai đoạn thực tế',
+      badgeColor: '#eff6ff',
+      ctaColor: '#2563eb',
+      heading: 'Khởi động kỳ thực tập chính thức',
+      bodyHtml,
+      ctaLabel: 'Truy cập bảng theo dõi',
+      ctaUrl: this.getFrontendUrl(),
+    });
+
+    return { subject, html };
+  }
+
+  async sendCampaignAnnouncementEmail(params: {
+    to: string;
+    template: RenderedEmailTemplate;
+  }) {
+    try {
+      await this.transporter.sendMail({
+        from: `"CareerBridge" <${this.getFromAddress()}>`,
+        to: params.to,
+        subject: params.template.subject,
+        html: params.template.html,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to send campaign announcement email to ${params.to}`,
+        error,
+      );
+    }
+  }
+
   async sendAndLogApplicationEmail(params: {
     applicationId: string;
     type: EmailLogType;
