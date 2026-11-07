@@ -24,6 +24,14 @@ export function toLegacyInternship(record: InternshipRecord): Internship {
       ? record.requirements.split('\n').filter(Boolean)
       : [],
     requiredSkills: record.skills.map((item) => item.name),
+    majors: (record.majors ?? []).map((m) => ({
+      majorId: m.majorId,
+      id: m.id,
+      code: m.code,
+      name: m.name,
+      facultyId: m.facultyId,
+      faculty: m.faculty,
+    })),
     slots: record.slots,
     filledSlots: record.filledSlots,
     deadline: formatDate(record.deadline, 'Không thời hạn'),

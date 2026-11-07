@@ -70,6 +70,16 @@ const select = {
           studentCode: true,
           fullName: true,
           major: true,
+          majorId: true,
+          majorRef: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              facultyId: true,
+              faculty: { select: { id: true, code: true, name: true } },
+            },
+          },
         },
       },
       company: {
@@ -93,6 +103,8 @@ const select = {
               userId: true,
               fullName: true,
               department: true,
+              facultyId: true,
+              faculty: { select: { id: true, code: true, name: true } },
               title: true,
             },
           },
@@ -210,6 +222,13 @@ export class EvaluationsService {
         return { evaluation, notifications: [notification] };
       });
       this.notifications.publishMany(result.notifications);
+      const completed =
+        await this.lifecycle.autoCompletePlacementIfEligible?.(dto.placementId);
+      if (completed) {
+        result.evaluation.placement.status = PlacementStatus.COMPLETED;
+        result.evaluation.placement.academicStatus =
+          AcademicMonitoringStatus.CLOSED;
+      }
       return result.evaluation;
     } catch (error: unknown) {
       this.rethrowKnownMutationError(error);

@@ -23,6 +23,8 @@ import type {
 } from "../../placements/types";
 import { supervisionsApi } from "../../supervisions/api";
 import type { LecturerOption } from "../../supervisions/types";
+import { facultiesApi } from "../../organization/api";
+import type { FacultyOption } from "../../organization/types";
 import { formatDate, formatDateTime } from "../../utils/format";
 
 const statusLabel: Record<PlacementStatus, string> = {
@@ -67,11 +69,15 @@ export const SupervisionManagement: React.FC = () => {
   const { confirm } = useAppFeedback();
   const [items, setItems] = useState<PlacementRecord[]>([]);
   const [lecturers, setLecturers] = useState<LecturerOption[]>([]);
+  const [faculties, setFaculties] = useState<FacultyOption[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<PlacementStatus | "">("");
   const [assignment, setAssignment] = useState<
     "ALL" | "ASSIGNED" | "UNASSIGNED"
   >("ALL");
+  const [facultyId, setFacultyId] = useState("");
+  const [majorId, setMajorId] = useState("");
+  const [modalLecturerFacultyFilter, setModalLecturerFacultyFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -94,6 +100,8 @@ export const SupervisionManagement: React.FC = () => {
           search: search.trim() || undefined,
           status: status || undefined,
           assignmentStatus: assignment === "ALL" ? undefined : assignment,
+          facultyId: facultyId || undefined,
+          majorId: majorId || undefined,
         }),
         supervisionsApi.lecturerOptions(),
       ]);
@@ -109,9 +117,16 @@ export const SupervisionManagement: React.FC = () => {
   };
 
   useEffect(() => {
+    facultiesApi
+      .listOptions({ includeInactive: true })
+      .then((res) => setFaculties(res.items))
+      .catch(() => setFaculties([]));
+  }, []);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => void load(), 250);
     return () => window.clearTimeout(timer);
-  }, [page, search, status, assignment]);
+  }, [page, search, status, assignment, facultyId, majorId]);
 
   const metrics = useMemo(
     () => ({
@@ -126,11 +141,13 @@ export const SupervisionManagement: React.FC = () => {
   const openAssign = (placement: PlacementRecord) => {
     setModalPlacement(placement);
     setSelectedLecturer(placement.supervision?.lecturerId ?? "");
+    setModalLecturerFacultyFilter("");
   };
   const closeModal = () => {
     if (!saving) {
       setModalPlacement(null);
       setSelectedLecturer("");
+      setModalLecturerFacultyFilter("");
     }
   };
 
@@ -267,6 +284,62 @@ export const SupervisionManagement: React.FC = () => {
             <option value="UNASSIGNED">Chưa phân công</option>
           </select>
         </div>
+        <div className="mt-3 grid grid-cols-1 gap-3 border-t border-slate-100 pt-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">
+          <select
+            value={facultyId}
+            onChange={(event) => {
+              setPage(1);
+              setFacultyId(event.target.value);
+              setMajorId("");
+            }}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-indigo-500"
+          >
+            <option value="">Tất cả Khoa sinh viên</option>
+            {faculties.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.code} — {f.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={majorId}
+            onChange={(event) => {
+              setPage(1);
+              setMajorId(event.target.value);
+            }}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-indigo-500"
+          >
+            <option value="">Tất cả Ngành đào tạo</option>
+            {(facultyId
+              ? faculties.filter((f) => f.id === facultyId)
+              : faculties
+            ).map((f) => (
+              <optgroup key={f.id} label={`Khoa ${f.name}`}>
+                {f.majors.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          {(facultyId || majorId || search || status || assignment !== "ALL") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setStatus("");
+                setAssignment("ALL");
+                setFacultyId("");
+                setMajorId("");
+                setPage(1);
+              }}
+              className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100"
+            >
+              Xóa bộ lọc
+            </button>
+          )}
+        </div>
       </div>
       {error && (
         <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
@@ -335,6 +408,9 @@ export const SupervisionManagement: React.FC = () => {
                                 {placement.student.studentCode}
                               </span>{" "}
                               · {placement.student.major}
+                              {placement.student.faculty?.name
+                                ? ` (${placement.student.faculty.name})`
+                                : ""}
                             </p>
                           </div>
                         </div>
@@ -369,11 +445,25 @@ export const SupervisionManagement: React.FC = () => {
                       <td className="whitespace-nowrap px-5 py-4 align-middle">
                         {supervision ? (
                           <div>
-                            <p className="font-bold text-slate-800">
-                              {supervision.lecturer.fullName}
-                            </p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-bold text-slate-800">
+                                {supervision.lecturer.fullName}
+                              </p>
+                              {placement.student.faculty?.id &&
+                                supervision.lecturer.facultyId &&
+                                placement.student.faculty.id !==
+                                  supervision.lecturer.facultyId && (
+                                  <span
+                                    title="Giảng viên hướng dẫn thuộc Khoa khác với Khoa của sinh viên (Hướng dẫn liên khoa)"
+                                    className="rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700"
+                                  >
+                                    Liên khoa
+                                  </span>
+                                )}
+                            </div>
                             <p className="mt-0.5 text-[11px] text-slate-500">
-                              {supervision.lecturer.department}
+                              {supervision.lecturer.faculty?.name ??
+                                supervision.lecturer.department}
                             </p>
                           </div>
                         ) : (
@@ -477,6 +567,12 @@ export const SupervisionManagement: React.FC = () => {
                   {modalPlacement.internship.title} ·{" "}
                   {modalPlacement.company.companyName}
                 </p>
+                <p className="mt-1 text-[11px] font-semibold text-indigo-700">
+                  Ngành: {modalPlacement.student.major}
+                  {modalPlacement.student.faculty?.name
+                    ? ` · Khoa ${modalPlacement.student.faculty.name}`
+                    : ""}
+                </p>
               </div>
               <button
                 type="button"
@@ -494,25 +590,90 @@ export const SupervisionManagement: React.FC = () => {
                     Giảng viên phụ trách
                   </p>
                   <p className="mt-0.5 text-[11px] text-indigo-700">
-                    Chọn giảng viên đang hoạt động và cân bằng khối lượng hướng
-                    dẫn.
+                    Ưu tiên giảng viên cùng Khoa hoặc chọn giảng viên liên khoa
+                    và cân bằng khối lượng hướng dẫn.
                   </p>
                 </div>
               </div>
             </div>
-            <select
-              value={selectedLecturer}
-              onChange={(event) => setSelectedLecturer(event.target.value)}
-              className="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            >
-              <option value="">Chọn giảng viên...</option>
-              {lecturers.map((lecturer) => (
-                <option key={lecturer.id} value={lecturer.id}>
-                  {lecturer.fullName} · {lecturer.activeSupervisionCount} lượt
-                  hướng dẫn đang phụ trách
+            <div className="mt-4 space-y-3">
+              <select
+                value={modalLecturerFacultyFilter}
+                onChange={(event) =>
+                  setModalLecturerFacultyFilter(event.target.value)
+                }
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none focus:border-indigo-500 focus:bg-white"
+              >
+                <option value="">
+                  Hiển thị giảng viên toàn trường (Hỗ trợ hướng dẫn liên khoa)
                 </option>
-              ))}
-            </select>
+                {faculties.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    Chỉ hiển thị giảng viên Khoa {f.name} ({f.code})
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedLecturer}
+                onChange={(event) => setSelectedLecturer(event.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              >
+                <option value="">Chọn giảng viên...</option>
+                {(() => {
+                  const studentFacultyId =
+                    modalPlacement.student.faculty?.id ??
+                    modalPlacement.student.majorRef?.facultyId ??
+                    null;
+                  const visibleLecturers = modalLecturerFacultyFilter
+                    ? lecturers.filter(
+                        (l) => l.facultyId === modalLecturerFacultyFilter,
+                      )
+                    : lecturers;
+                  const sameFaculty = studentFacultyId
+                    ? visibleLecturers.filter(
+                        (l) => l.facultyId === studentFacultyId,
+                      )
+                    : [];
+                  const otherFaculty = studentFacultyId
+                    ? visibleLecturers.filter(
+                        (l) => l.facultyId !== studentFacultyId,
+                      )
+                    : visibleLecturers;
+                  const formatOption = (lecturer: LecturerOption) =>
+                    `${lecturer.fullName} (${lecturer.faculty?.name ?? lecturer.department}) · Đang hướng dẫn: ${lecturer.activeSupervisionCount} SV`;
+
+                  if (studentFacultyId && sameFaculty.length > 0 && !modalLecturerFacultyFilter) {
+                    return (
+                      <>
+                        <optgroup
+                          label={`★ Cùng Khoa với sinh viên (${modalPlacement.student.faculty?.name ?? "Khoa chủ quản"})`}
+                        >
+                          {sameFaculty.map((lecturer) => (
+                            <option key={lecturer.id} value={lecturer.id}>
+                              {formatOption(lecturer)}
+                            </option>
+                          ))}
+                        </optgroup>
+                        {otherFaculty.length > 0 && (
+                          <optgroup label="Giảng viên các Khoa khác (Hướng dẫn liên khoa)">
+                            {otherFaculty.map((lecturer) => (
+                              <option key={lecturer.id} value={lecturer.id}>
+                                {formatOption(lecturer)}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </>
+                    );
+                  }
+                  return visibleLecturers.map((lecturer) => (
+                    <option key={lecturer.id} value={lecturer.id}>
+                      {formatOption(lecturer)}
+                    </option>
+                  ));
+                })()}
+              </select>
+            </div>
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"

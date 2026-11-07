@@ -2,12 +2,34 @@ import { api } from "../auth/api";
 import type { ApiSuccess } from "../auth/auth.types";
 import type { JobPreferences } from "../recommendations/types";
 
+export interface StudentMajorRef {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  facultyId: string;
+  faculty: {
+    id: string;
+    code: string;
+    name: string;
+    isActive: boolean;
+  };
+}
+
 export interface StudentProfileRecord {
   id: string;
   userId: string;
   studentCode: string;
   fullName: string;
   major: string;
+  majorId: string | null;
+  majorRef?: StudentMajorRef | null;
+  faculty?: {
+    id: string;
+    code: string;
+    name: string;
+    isActive: boolean;
+  } | null;
   phone: string | null;
   summary: string | null;
   gpa: number | null;
@@ -63,7 +85,8 @@ export interface StudentProjectInput {
 export interface StudentProfileInput {
   studentCode: string;
   fullName: string;
-  major: string;
+  majorId?: string;
+  major?: string;
   phone?: string | null;
   summary?: string | null;
   gpa?: number | null;
@@ -100,7 +123,12 @@ export const studentsApi = {
     );
     return response.data.data;
   },
-  updateJobPreferences: async (input: Pick<JobPreferences, "desiredRoles" | "preferredLocations" | "preferredWorkTypes">) => {
+  updateJobPreferences: async (
+    input: Pick<
+      JobPreferences,
+      "desiredRoles" | "preferredLocations" | "preferredWorkTypes"
+    >,
+  ) => {
     const response = await api.put<ApiSuccess<JobPreferences>>(
       "/students/me/job-preferences",
       input,

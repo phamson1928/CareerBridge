@@ -77,7 +77,7 @@ export function StudentEvaluations({
 
       {groups.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500">
-          Chưa có đánh giá nào cho kỳ thực tập của bạn.
+          Chưa có đánh giá nào cho kỳ thực tập của bạn. Sau khi Doanh nghiệp hoặc Giảng viên hướng dẫn chấm điểm, kết quả sẽ hiển thị tại đây.
         </div>
       ) : (
         <div className="space-y-6">
@@ -134,7 +134,7 @@ export function StudentEvaluations({
                   </div>
                 </div>
 
-                {/* COMPANY CERTIFICATE FILE DOWNLOAD IF AVAILABLE */}
+                {/* COMPANY CERTIFICATE FILE DOWNLOAD */}
                 {companyEval?.certificateFile && (
                   <div className="flex flex-col justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 sm:flex-row sm:items-center print:hidden">
                     <div className="flex items-center gap-3">

@@ -203,7 +203,9 @@ export const PlacementOverview: React.FC = () => {
                           <p className="mt-0.5 text-[11px] text-slate-500">
                             {placement.supervision.lecturer.title ??
                               "Giảng viên"}{" "}
-                            · {placement.supervision.lecturer.department}
+                            ·{" "}
+                            {placement.supervision.lecturer.faculty?.name ??
+                              placement.supervision.lecturer.department}
                           </p>
                         </div>
                         <CheckCircle2 className="ml-auto h-5 w-5 text-emerald-500" />

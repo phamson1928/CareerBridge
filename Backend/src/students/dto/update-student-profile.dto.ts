@@ -27,7 +27,18 @@ export class UpdateStudentProfileDto {
 
   @IsOptional()
   @Transform((params: TransformFnParams): unknown =>
-    typeof params.value === 'string' ? params.value.trim() : params.value,
+    typeof params.value === 'string'
+      ? params.value.trim() || undefined
+      : params.value,
+  )
+  @IsString()
+  majorId?: string;
+
+  @IsOptional()
+  @Transform((params: TransformFnParams): unknown =>
+    typeof params.value === 'string'
+      ? params.value.trim() || undefined
+      : params.value,
   )
   @IsString()
   @MaxLength(150)

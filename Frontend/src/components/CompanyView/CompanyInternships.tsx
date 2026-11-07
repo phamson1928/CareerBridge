@@ -8,6 +8,7 @@ import {
   Edit3,
   Eye,
   FilterX,
+  GraduationCap,
   Layers,
   LoaderCircle,
   Plus,
@@ -35,6 +36,8 @@ import { semestersApi } from "../../semesters/api";
 import type { SemesterRecord } from "../../semesters/types";
 import { skillsApi } from "../../skills/api";
 import { SkillPicker, type SkillOption } from "../Skills/SkillPicker";
+import { facultiesApi } from "../../organization/api";
+import type { FacultyOption } from "../../organization/types";
 
 const initialInput: InternshipInput = {
   title: "",
@@ -49,6 +52,7 @@ const initialInput: InternshipInput = {
   startDate: "",
   endDate: "",
   status: "DRAFT",
+  majorIds: [],
 };
 
 const initialTemplateInput: CreateInternshipTemplateInput = {
@@ -108,16 +112,20 @@ export function CompanyInternships() {
   const [search, setSearch] = useState("");
   const [semesterId, setSemesterId] = useState("");
   const [filterSkills, setFilterSkills] = useState<SkillOption[]>([]);
+  const [filterMajorId, setFilterMajorId] = useState("");
   const [status, setStatus] = useState("");
   const [semesterOptions, setSemesterOptions] = useState<
     Array<{ id: string; name: string }>
   >([]);
   const [recruitingSemesters, setRecruitingSemesters] = useState<SemesterRecord[]>([]);
+  const [faculties, setFaculties] = useState<FacultyOption[]>([]);
 
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [form, setForm] = useState<InternshipInput>(initialInput);
   const [selectedSkills, setSelectedSkills] = useState<SkillOption[]>([]);
+  const [selectedMajorIds, setSelectedMajorIds] = useState<string[]>([]);
 
   // Save as template modal
   const [saveAsTemplateJob, setSaveAsTemplateJob] = useState<InternshipRecord | null>(null);
@@ -133,6 +141,7 @@ export function CompanyInternships() {
     deadline: "",
     startDate: "",
     endDate: "",
+    majorIds: [],
   });
 
   // Template CRUD modal (Create / Edit)
@@ -149,12 +158,14 @@ export function CompanyInternships() {
   const [fromTemplateStartDate, setFromTemplateStartDate] = useState("");
   const [fromTemplateEndDate, setFromTemplateEndDate] = useState("");
   const [fromTemplateStatus, setFromTemplateStatus] = useState<InternshipRecord["status"]>("DRAFT");
+  const [fromTemplateMajorIds, setFromTemplateMajorIds] = useState<string[]>([]);
 
   const loadInternships = async (
     filters = {
       search,
       semesterId,
       skillIds: filterSkills.map((skill) => skill.id),
+      majorId: filterMajorId,
       status,
     },
   ) => {
@@ -168,6 +179,7 @@ export function CompanyInternships() {
           ...(filters.search ? { search: filters.search } : {}),
           ...(filters.semesterId ? { semesterId: filters.semesterId } : {}),
           ...(filters.skillIds.length ? { skillIds: filters.skillIds } : {}),
+          ...(filters.majorId ? { majorId: filters.majorId } : {}),
           ...(filters.status
             ? { status: filters.status as InternshipRecord["status"] }
             : {}),
@@ -206,6 +218,10 @@ export function CompanyInternships() {
   useEffect(() => {
     void loadInternships();
     void loadTemplates();
+    facultiesApi
+      .listOptions({ includeInactive: false })
+      .then((data) => setFaculties(data.items))
+      .catch(() => setFaculties([]));
   }, []);
 
   const applyFilters = (event: FormEvent<HTMLFormElement>) => {
@@ -218,13 +234,53 @@ export function CompanyInternships() {
       search: "",
       semesterId: "",
       skillIds: [] as string[],
+      majorId: "",
       status: "",
     };
     setSearch("");
     setSemesterId("");
     setFilterSkills([]);
+    setFilterMajorId("");
     setStatus("");
     void loadInternships(empty);
+  };
+
+  const openCreateJobModal = () => {
+    setError(null);
+    setEditingJobId(null);
+    setForm(initialInput);
+    setSelectedSkills([]);
+    setSelectedMajorIds([]);
+    setIsFormOpen(true);
+  };
+
+  const openEditJobModal = (job: InternshipRecord) => {
+    setError(null);
+    setEditingJobId(job.id);
+    setForm({
+      semesterId: job.semesterId,
+      title: job.title,
+      description: job.description,
+      slots: job.slots,
+      department: job.department ?? "",
+      location: job.location ?? "",
+      workType: job.workType ?? "HYBRID",
+      stipend: job.stipend ?? "",
+      requirements: job.requirements ?? "",
+      deadline: job.deadline ? job.deadline.slice(0, 10) : "",
+      startDate: job.startDate ? job.startDate.slice(0, 10) : "",
+      endDate: job.endDate ? job.endDate.slice(0, 10) : "",
+      status: job.status === "REJECTED" || job.status === "CANCELLED" ? "DRAFT" : job.status,
+      majorIds: (job.majors ?? []).map((m) => m.majorId),
+    });
+    setSelectedSkills(
+      job.skills.map((s) => ({
+        id: s.skillId,
+        name: s.name,
+      })),
+    );
+    setSelectedMajorIds((job.majors ?? []).map((m) => m.majorId));
+    setIsFormOpen(true);
   };
 
   const update = (key: keyof InternshipInput, value: string | number) =>
@@ -285,9 +341,10 @@ export function CompanyInternships() {
         deadline: form.deadline ? `${form.deadline}T23:59:59.999Z` : null,
         startDate: form.startDate ? `${form.startDate}T00:00:00.000Z` : null,
         endDate: form.endDate ? `${form.endDate}T23:59:59.999Z` : null,
+        majorIds: selectedMajorIds,
       };
-      const internship = await internshipsApi.create(input);
-      if (selectedSkills.length) {
+      if (editingJobId) {
+        const internship = await internshipsApi.update(editingJobId, input);
         await skillsApi.syncInternship(
           internship.id,
           selectedSkills.map((skill) => ({
@@ -296,11 +353,26 @@ export function CompanyInternships() {
             weight: 1,
           })),
         );
+        showToast?.({ message: "Cập nhật bài đăng tuyển dụng thành công!", tone: "positive" });
+      } else {
+        const internship = await internshipsApi.create(input);
+        if (selectedSkills.length) {
+          await skillsApi.syncInternship(
+            internship.id,
+            selectedSkills.map((skill) => ({
+              skillId: skill.id,
+              isRequired: true,
+              weight: 1,
+            })),
+          );
+        }
+        showToast?.({ message: "Đăng tin tuyển dụng thành công!", tone: "positive" });
       }
       setIsFormOpen(false);
+      setEditingJobId(null);
       setForm(initialInput);
       setSelectedSkills([]);
-      showToast?.({ message: "Đăng tin tuyển dụng thành công!", tone: "positive" });
+      setSelectedMajorIds([]);
       await loadInternships();
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
@@ -374,6 +446,9 @@ export function CompanyInternships() {
       deadline: job.deadline ? job.deadline.slice(0, 10) : "",
       startDate: job.startDate ? job.startDate.slice(0, 10) : "",
       endDate: job.endDate ? job.endDate.slice(0, 10) : "",
+      majorIds: (job.majors ?? [])
+        .filter((m) => m.isActive)
+        .map((m) => m.majorId),
     });
   };
 
@@ -412,6 +487,7 @@ export function CompanyInternships() {
         deadline: repostForm.deadline ? `${repostForm.deadline}T23:59:59.999Z` : null,
         startDate: repostForm.startDate ? `${repostForm.startDate}T00:00:00.000Z` : null,
         endDate: repostForm.endDate ? `${repostForm.endDate}T23:59:59.999Z` : null,
+        majorIds: repostForm.majorIds ?? [],
       };
       const res = await internshipsApi.repost(repostJob.id, payload);
       if (res.warnings && res.warnings.length > 0) {
@@ -534,6 +610,7 @@ export function CompanyInternships() {
     setFromTemplateStartDate("");
     setFromTemplateEndDate("");
     setFromTemplateStatus("OPEN");
+    setFromTemplateMajorIds([]);
   };
 
   const handleFromTemplateSubmit = async (e: FormEvent) => {
@@ -566,6 +643,7 @@ export function CompanyInternships() {
         deadline: fromTemplateDeadline ? `${fromTemplateDeadline}T23:59:59.999Z` : null,
         startDate: fromTemplateStartDate ? `${fromTemplateStartDate}T00:00:00.000Z` : null,
         endDate: fromTemplateEndDate ? `${fromTemplateEndDate}T23:59:59.999Z` : null,
+        majorIds: fromTemplateMajorIds,
       });
 
       if (res.warnings && res.warnings.length > 0) {
@@ -640,7 +718,7 @@ export function CompanyInternships() {
         {activeTab === "INTERNSHIPS" ? (
           <button
             disabled={!recruitingSemesters.length}
-            onClick={() => setIsFormOpen(true)}
+            onClick={openCreateJobModal}
             title={
               recruitingSemesters.length
                 ? "Đăng tin tuyển dụng mới"
@@ -731,6 +809,22 @@ export function CompanyInternships() {
               onChange={setFilterSkills}
               placeholder="Tìm kỹ năng để lọc..."
             />
+            <select
+              value={filterMajorId}
+              onChange={(event) => setFilterMajorId(event.target.value)}
+              className="rounded-xl border border-slate-300 px-3 py-2.5 bg-white outline-none"
+            >
+              <option value="">Tất cả ngành tuyển dụng</option>
+              {faculties.map((f) => (
+                <optgroup key={f.id} label={`Khoa ${f.name}`}>
+                  {f.majors.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} {!m.isActive ? "(Tạm ngưng)" : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value)}
@@ -852,6 +946,27 @@ export function CompanyInternships() {
                         </span>
                       ))}
                     </div>
+
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                        <GraduationCap className="h-3.5 w-3.5 text-indigo-500" />
+                        Ngành ưu tiên:
+                      </span>
+                      {job.majors && job.majors.length > 0 ? (
+                        job.majors.map((m) => (
+                          <span
+                            key={m.majorId}
+                            className="rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-800 border border-indigo-100"
+                          >
+                            {m.name}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                          Mở cho mọi ngành
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="mt-5 border-t border-slate-100 pt-3">
@@ -884,6 +999,16 @@ export function CompanyInternships() {
                     </div>
 
                     <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
+                      {job.status !== "CANCELLED" && job.status !== "REJECTED" && (
+                        <button
+                          type="button"
+                          onClick={() => openEditJobModal(job)}
+                          title="Chỉnh sửa thông tin và ngành tuyển dụng của bài đăng"
+                          className="inline-flex items-center gap-1 rounded-xl bg-amber-50 px-3 py-1.5 font-bold text-amber-800 hover:bg-amber-100 transition border border-amber-200"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" /> Sửa
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setStatsInternshipId(job.id)}
@@ -1053,14 +1178,19 @@ export function CompanyInternships() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Đăng vị trí thực tập</h2>
+                <h2 className="text-xl font-bold text-slate-900">
+                  {editingJobId ? "Cập nhật vị trí thực tập" : "Đăng vị trí thực tập"}
+                </h2>
                 <p className="mt-1 text-xs text-slate-500">
                   Chọn lưu nháp hoặc công khai tuyển dụng ngay.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setIsFormOpen(false)}
+                onClick={() => {
+                  setIsFormOpen(false);
+                  setEditingJobId(null);
+                }}
                 className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
               >
                 <X className="h-5 w-5" />
@@ -1221,11 +1351,25 @@ export function CompanyInternships() {
                   className="mt-1"
                 />
               </fieldset>
+              <fieldset className="md:col-span-2">
+                <legend className="font-bold">Ngành học mục tiêu (tùy chọn)</legend>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  Chọn một hoặc nhiều ngành đào tạo ưu tiên cho vị trí này. Nếu để trống, tin sẽ mở cho sinh viên tất cả các ngành.
+                </p>
+                <MajorMultiPicker
+                  faculties={faculties}
+                  selectedMajorIds={selectedMajorIds}
+                  onChange={setSelectedMajorIds}
+                />
+              </fieldset>
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setIsFormOpen(false)}
+                onClick={() => {
+                  setIsFormOpen(false);
+                  setEditingJobId(null);
+                }}
                 className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold"
               >
                 Hủy
@@ -1233,12 +1377,12 @@ export function CompanyInternships() {
               <button
                 disabled={
                   saving ||
-                  !recruitingSemesters.length ||
-                  (recruitingSemesters.length > 1 && !form.semesterId)
+                  (!editingJobId && !recruitingSemesters.length) ||
+                  (!editingJobId && recruitingSemesters.length > 1 && !form.semesterId)
                 }
                 className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50 shadow-xs"
               >
-                {saving ? "Đang lưu..." : "Lưu bài đăng"}
+                {saving ? "Đang lưu..." : editingJobId ? "Cập nhật bài đăng" : "Lưu bài đăng"}
               </button>
             </div>
           </form>
@@ -1425,6 +1569,15 @@ export function CompanyInternships() {
                   (Hệ thống sẽ tự động lọc bỏ các kỹ năng đã bị quản trị viên gỡ khỏi danh mục)
                 </p>
               </div>
+
+              <fieldset className="md:col-span-2">
+                <legend className="font-bold">Ngành học mục tiêu áp dụng cho bài đăng lại</legend>
+                <MajorMultiPicker
+                  faculties={faculties}
+                  selectedMajorIds={repostForm.majorIds ?? []}
+                  onChange={(ids) => setRepostForm((c) => ({ ...c, majorIds: ids }))}
+                />
+              </fieldset>
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
@@ -1686,6 +1839,15 @@ export function CompanyInternships() {
                     : "Không có"}
                 </p>
               </div>
+
+              <fieldset className="md:col-span-2">
+                <legend className="font-bold">Ngành học mục tiêu cho đợt này (tùy chọn)</legend>
+                <MajorMultiPicker
+                  faculties={faculties}
+                  selectedMajorIds={fromTemplateMajorIds}
+                  onChange={setFromTemplateMajorIds}
+                />
+              </fieldset>
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
@@ -1754,5 +1916,85 @@ function Field({
         className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 font-normal outline-none focus:border-indigo-500"
       />
     </label>
+  );
+}
+
+function MajorMultiPicker({
+  faculties,
+  selectedMajorIds,
+  onChange,
+}: {
+  faculties: FacultyOption[];
+  selectedMajorIds: string[];
+  onChange: (majorIds: string[]) => void;
+}) {
+  const toggleMajor = (majorId: string) => {
+    if (selectedMajorIds.includes(majorId)) {
+      onChange(selectedMajorIds.filter((id) => id !== majorId));
+    } else {
+      onChange([...selectedMajorIds, majorId]);
+    }
+  };
+
+  if (faculties.length === 0) {
+    return (
+      <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+        Chưa có dữ liệu danh mục Khoa/Ngành.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-3">
+      {selectedMajorIds.length > 0 && (
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2 text-[11px]">
+          <span className="font-semibold text-indigo-700">
+            Đã chọn {selectedMajorIds.length} ngành mục tiêu
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="font-bold text-slate-500 hover:text-rose-600"
+          >
+            Bỏ chọn tất cả (Mở cho mọi ngành)
+          </button>
+        </div>
+      )}
+      {faculties.map((faculty) => {
+        const activeMajors = faculty.majors.filter(
+          (m) => m.isActive || selectedMajorIds.includes(m.id),
+        );
+        if (activeMajors.length === 0) return null;
+        return (
+          <div key={faculty.id} className="space-y-1.5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              {faculty.code} — {faculty.name}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {activeMajors.map((major) => {
+                const checked = selectedMajorIds.includes(major.id);
+                return (
+                  <button
+                    key={major.id}
+                    type="button"
+                    onClick={() => toggleMajor(major.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
+                      checked
+                        ? "border-indigo-600 bg-indigo-600 text-white shadow-2xs"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/40"
+                    }`}
+                  >
+                    <span>{major.name}</span>
+                    {!major.isActive && (
+                      <span className="text-[10px] opacity-80">(Ngưng)</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }

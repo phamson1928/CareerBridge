@@ -31,6 +31,11 @@ export interface StudentProfile {
   fullname: string;
   studentCode: string;
   major: string;
+  majorId?: string | null;
+  majorCode?: string | null;
+  facultyId?: string | null;
+  facultyCode?: string | null;
+  facultyName?: string | null;
   university: string;
   gpa: number;
   skills: string[];
@@ -91,6 +96,18 @@ export interface Internship {
   description: string;
   requirements: string[];
   requiredSkills: string[];
+  majors?: Array<{
+    majorId: string;
+    id: string;
+    code: string;
+    name: string;
+    facultyId: string;
+    faculty: {
+      id: string;
+      code: string;
+      name: string;
+    };
+  }>;
   slots: number;
   filledSlots: number;
   deadline: string;

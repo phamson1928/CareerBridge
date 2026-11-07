@@ -34,6 +34,8 @@ export interface PlacementProgress {
   finalScore?: number | null;
   hasCompanyCertificate?: boolean;
   lastReportAt?: string | null;
+  statusNote?: string | null;
+  statusChangedAt?: string | null;
 }
 
 export interface PlacementRecord {
@@ -52,6 +54,23 @@ export interface PlacementRecord {
     studentCode: string;
     fullName: string;
     major: string;
+    majorId?: string | null;
+    majorRef?: {
+      id: string;
+      code: string;
+      name: string;
+      facultyId: string;
+      faculty: {
+        id: string;
+        code: string;
+        name: string;
+      };
+    } | null;
+    faculty?: {
+      id: string;
+      code: string;
+      name: string;
+    } | null;
     avatarFileId?: string | null;
   };
   company: {
@@ -87,6 +106,12 @@ export interface PlacementRecord {
       userId: string;
       fullName: string;
       department: string;
+      facultyId?: string | null;
+      faculty?: {
+        id: string;
+        code: string;
+        name: string;
+      } | null;
       title: string | null;
       avatarFileId?: string | null;
     };

@@ -17,6 +17,7 @@ import type { PlacementRecord } from "../../placements/types";
 import { reportsApi } from "../../reports/api";
 import type { ReportRecord } from "../../reports/types";
 import { formatDate } from "../../utils/format";
+import { downloadExcelWorkbook } from "../../utils/excelExport";
 
 interface Props {
   placements: PlacementRecord[];
@@ -99,18 +100,118 @@ export function TeacherEvaluations({
     }
   };
 
+  const exportGradesExcel = () => {
+    downloadExcelWorkbook("bang-diem-thuc-tap-sinh-vien", [
+      {
+        name: "Bang diem thuc tap",
+        title: "BẢNG ĐIỂM ĐÁNH GIÁ THỰC TẬP TỐT NGHIỆP",
+        subtitle: `Ngày xuất: ${new Date().toLocaleDateString("vi-VN")} — Tổng số sinh viên: ${evaluable.length}`,
+        columns: [
+          { header: "STT", width: 50, value: (_, i) => i + 1 },
+          {
+            header: "Mã sinh viên",
+            width: 110,
+            value: (p) => p.student.studentCode,
+          },
+          {
+            header: "Họ và tên",
+            width: 160,
+            value: (p) => p.student.fullName,
+          },
+          {
+            header: "Ngành đào tạo",
+            width: 170,
+            value: (p) => p.student.majorRef?.name ?? p.student.major,
+          },
+          {
+            header: "Khoa",
+            width: 170,
+            value: (p) =>
+              p.student.faculty?.name ??
+              p.student.majorRef?.faculty?.name ??
+              "—",
+          },
+          {
+            header: "Doanh nghiệp thực tập",
+            width: 190,
+            value: (p) => p.company.companyName,
+          },
+          {
+            header: "Vị trí thực tập",
+            width: 170,
+            value: (p) => p.internship.title,
+          },
+          {
+            header: "Điểm Doanh nghiệp (50%)",
+            width: 130,
+            value: (p) => {
+              const comp = evaluations.find(
+                (e) => e.placementId === p.id && e.type === "COMPANY",
+              );
+              return comp ? comp.score : "Chưa chấm";
+            },
+          },
+          {
+            header: "Điểm GVHD (50%)",
+            width: 120,
+            value: (p) => {
+              const lect = evaluations.find(
+                (e) => e.placementId === p.id && e.type === "LECTURER",
+              );
+              return lect ? lect.score : "Chưa chấm";
+            },
+          },
+          {
+            header: "Điểm Tổng kết (Hệ 10)",
+            width: 130,
+            value: (p) => {
+              const comp = evaluations.find(
+                (e) => e.placementId === p.id && e.type === "COMPANY",
+              );
+              const lect = evaluations.find(
+                (e) => e.placementId === p.id && e.type === "LECTURER",
+              );
+              if (!comp || !lect) return "Chưa đủ điểm";
+              return Math.round(((comp.score + lect.score) / 2) * 100) / 100;
+            },
+          },
+          {
+            header: "Trạng thái hồ sơ",
+            width: 130,
+            value: (p) =>
+              p.status === "COMPLETED" ? "Đã nghiệm thu" : "Đang thực tập",
+          },
+        ],
+        rows: evaluable,
+      },
+    ]);
+  };
+
   return (
     <div className="space-y-6">
       <header className="rounded-3xl bg-linear-to-br from-violet-950 via-indigo-900 to-slate-900 p-6 text-white shadow-lg sm:p-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-violet-100">
-          <GraduationCap className="h-3.5 w-3.5" /> Đánh giá thực tập
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-violet-100">
+              <GraduationCap className="h-3.5 w-3.5" /> Đánh giá thực tập
+            </div>
+            <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
+              Chấm điểm & Nhận xét Sinh viên Hướng dẫn
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-violet-100/85">
+              Xem tiến độ báo cáo thực tập, kết quả đánh giá từ doanh nghiệp và nhập điểm đánh giá của giảng viên hướng dẫn (thang điểm 10).
+            </p>
+          </div>
+          {evaluable.length > 0 && (
+            <button
+              type="button"
+              onClick={exportGradesExcel}
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              <Download className="h-4 w-4" /> Xuất bảng điểm Excel
+            </button>
+          )}
         </div>
-        <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-          Chấm điểm & Nhận xét Sinh viên Hướng dẫn
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-violet-100/85">
-          Xem tiến độ báo cáo thực tập, kết quả đánh giá từ doanh nghiệp và nhập điểm đánh giá của giảng viên hướng dẫn (thang điểm 10).
-        </p>
       </header>
 
       {evaluable.length === 0 ? (
@@ -134,11 +235,23 @@ export function TeacherEvaluations({
               >
                 {evaluable.map((placement) => (
                   <option key={placement.id} value={placement.id}>
-                    {placement.student.fullName} ({placement.student.studentCode}) —{" "}
+                    {placement.student.fullName} ({placement.student.studentCode})
+                    {placement.student.major ? ` · ${placement.student.major}` : ""} —{" "}
                     {placement.company.companyName}
                   </option>
                 ))}
               </select>
+              {selectedPlacement && (
+                <p className="mt-2 text-xs font-semibold text-violet-700">
+                  Ngành:{" "}
+                  {selectedPlacement.student.majorRef?.name ??
+                    selectedPlacement.student.major}
+                  {selectedPlacement.student.faculty?.name ||
+                  selectedPlacement.student.majorRef?.faculty?.name
+                    ? ` · Khoa ${selectedPlacement.student.faculty?.name ?? selectedPlacement.student.majorRef?.faculty?.name}`
+                    : ""}
+                </p>
+              )}
             </div>
 
             <label className="block text-sm font-bold text-slate-800">

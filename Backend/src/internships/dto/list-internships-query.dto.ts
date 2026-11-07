@@ -75,6 +75,23 @@ export class ListInternshipsQueryDto {
   skillIds?: string[];
 
   @IsOptional()
+  @IsString()
+  facultyId?: string;
+
+  @IsOptional()
+  @IsString()
+  majorId?: string;
+
+  @IsOptional()
+  @Transform(toStringArray)
+  @IsArray()
+  @ArrayUnique()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  majorIds?: string[];
+
+  @IsOptional()
   @IsEnum(InternshipStatus)
   status?: InternshipStatus;
 

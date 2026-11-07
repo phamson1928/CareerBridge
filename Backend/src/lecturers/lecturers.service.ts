@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { FileType, Prisma } from '../generated/prisma/client';
+import { FacultiesService } from '../faculties/faculties.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLecturerProfileDto } from './dto/create-lecturer-profile.dto';
 import { UpdateLecturerProfileDto } from './dto/update-lecturer-profile.dto';
@@ -14,11 +16,20 @@ const profileSelect = {
   userId: true,
   fullName: true,
   department: true,
+  facultyId: true,
   title: true,
   avatarFileId: true,
   createdAt: true,
   updatedAt: true,
   user: { select: { email: true } },
+  faculty: {
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      isActive: true,
+    },
+  },
   avatarFile: {
     select: {
       id: true,
@@ -30,9 +41,16 @@ const profileSelect = {
   },
 } satisfies Prisma.LecturerProfileSelect;
 
+type LecturerProfileRecord = Prisma.LecturerProfileGetPayload<{
+  select: typeof profileSelect;
+}>;
+
 @Injectable()
 export class LecturersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly facultiesService: FacultiesService,
+  ) {}
 
   async findByUserId(userId: string) {
     const profile = await this.prisma.lecturerProfile.findUnique({
@@ -40,22 +58,29 @@ export class LecturersService {
       select: profileSelect,
     });
     if (!profile) throw this.notFound();
-    return profile;
+    return this.toProfileResponse(profile);
   }
 
   async create(userId: string, dto: CreateLecturerProfileDto) {
     await this.ensureAvatarFileIsOwnedByUser(dto.avatarFileId, userId);
+    const resolvedFaculty = await this.resolveFacultyInput(
+      dto.facultyId,
+      dto.department,
+    );
+
     try {
-      return await this.prisma.lecturerProfile.create({
+      const profile = await this.prisma.lecturerProfile.create({
         data: {
           userId,
           fullName: dto.fullName,
-          department: dto.department,
+          department: resolvedFaculty.departmentName,
+          facultyId: resolvedFaculty.facultyId,
           title: dto.title,
           avatarFileId: dto.avatarFileId,
         },
         select: profileSelect,
       });
+      return this.toProfileResponse(profile);
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
@@ -64,14 +89,19 @@ export class LecturersService {
   async updateByUserId(userId: string, dto: UpdateLecturerProfileDto) {
     const profile = await this.findByUserId(userId);
     await this.ensureAvatarFileIsOwnedByUser(dto.avatarFileId, userId);
+
+    const facultyPatch = await this.resolveFacultyUpdate(
+      dto.facultyId,
+      dto.department,
+      profile.facultyId,
+    );
+
     try {
-      return await this.prisma.lecturerProfile.update({
+      const updated = await this.prisma.lecturerProfile.update({
         where: { id: profile.id },
         data: {
           ...(dto.fullName !== undefined ? { fullName: dto.fullName } : {}),
-          ...(dto.department !== undefined
-            ? { department: dto.department }
-            : {}),
+          ...facultyPatch,
           ...(dto.title !== undefined ? { title: dto.title } : {}),
           ...(dto.avatarFileId !== undefined
             ? { avatarFileId: dto.avatarFileId }
@@ -79,6 +109,7 @@ export class LecturersService {
         },
         select: profileSelect,
       });
+      return this.toProfileResponse(updated);
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
@@ -92,6 +123,85 @@ export class LecturersService {
     } catch (error: unknown) {
       this.rethrowKnownDatabaseError(error);
     }
+  }
+
+  private async resolveFacultyInput(
+    facultyIdInput?: string,
+    departmentTextInput?: string,
+  ): Promise<{ facultyId: string | null; departmentName: string }> {
+    if (facultyIdInput) {
+      const faculty =
+        await this.facultiesService.assertActiveExists(facultyIdInput);
+      return { facultyId: faculty.id, departmentName: faculty.name };
+    }
+
+    if (departmentTextInput) {
+      const matched = await this.prisma.faculty.findFirst({
+        where: {
+          isActive: true,
+          OR: [
+            { code: { equals: departmentTextInput, mode: 'insensitive' } },
+            { name: { equals: departmentTextInput, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true, name: true },
+      });
+      if (matched) {
+        return { facultyId: matched.id, departmentName: matched.name };
+      }
+      return { facultyId: null, departmentName: departmentTextInput };
+    }
+
+    throw new BadRequestException({
+      code: 'FACULTY_REQUIRED',
+      message: 'Vui lòng chọn Khoa chủ quản',
+    });
+  }
+
+  private async resolveFacultyUpdate(
+    facultyIdInput: string | undefined,
+    departmentTextInput: string | undefined,
+    currentFacultyId: string | null,
+  ): Promise<{ department?: string; facultyId?: string | null }> {
+    if (facultyIdInput !== undefined) {
+      if (facultyIdInput === currentFacultyId && currentFacultyId) {
+        const currentFaculty = await this.prisma.faculty.findUnique({
+          where: { id: currentFacultyId },
+          select: { id: true, name: true },
+        });
+        if (currentFaculty) {
+          return {
+            facultyId: currentFaculty.id,
+            department: currentFaculty.name,
+          };
+        }
+      }
+      const faculty =
+        await this.facultiesService.assertActiveExists(facultyIdInput);
+      return { facultyId: faculty.id, department: faculty.name };
+    }
+
+    if (departmentTextInput !== undefined) {
+      const resolved = await this.resolveFacultyInput(
+        undefined,
+        departmentTextInput,
+      );
+      return {
+        department: resolved.departmentName,
+        ...(resolved.facultyId ? { facultyId: resolved.facultyId } : {}),
+      };
+    }
+
+    return {};
+  }
+
+  private toProfileResponse(profile: LecturerProfileRecord) {
+    return {
+      ...profile,
+      department: profile.faculty?.name ?? profile.department,
+      facultyId: profile.facultyId ?? profile.faculty?.id ?? null,
+      faculty: profile.faculty ?? null,
+    };
   }
 
   private notFound(): NotFoundException {
