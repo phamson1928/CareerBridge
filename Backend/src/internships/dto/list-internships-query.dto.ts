@@ -11,7 +11,10 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { InternshipStatus } from '../../generated/prisma/client';
+import {
+  InternshipModerationReasonCode,
+  InternshipStatus,
+} from '../../generated/prisma/client';
 
 const toStringArray = (params: TransformFnParams): unknown => {
   if (
@@ -110,6 +113,6 @@ export class ListInternshipsQueryDto {
   hasReports?: boolean;
 
   @IsOptional()
-  @IsString()
-  moderationReasonCode?: string;
+  @IsEnum(InternshipModerationReasonCode)
+  moderationReasonCode?: InternshipModerationReasonCode;
 }

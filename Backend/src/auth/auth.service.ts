@@ -48,6 +48,8 @@ const publicUserSelect = {
   email: true,
   role: true,
   status: true,
+  isSuperAdmin: true,
+  permissions: true,
 } as const;
 
 @Injectable()
@@ -218,7 +220,6 @@ export class AuthService {
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _, ...publicUser } = user;
     return this.buildAuthResult(publicUser, refreshToken);
   }

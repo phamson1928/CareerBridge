@@ -520,7 +520,9 @@ export class MailerService {
     isCompany: boolean;
   }): RenderedEmailTemplate {
     const formattedStart = this.formatViDate(params.startDate);
-    const formattedRecruitmentStart = this.formatViDate(params.recruitmentStart);
+    const formattedRecruitmentStart = this.formatViDate(
+      params.recruitmentStart,
+    );
     const subject = params.isCompany
       ? `[CareerBridge] Đợt thực tập "${params.semesterName}" đã mở cổng đăng tin tuyển dụng`
       : `[CareerBridge] 🎉 Đợt thực tập "${params.semesterName}" đã chính thức mở nhận hồ sơ`;

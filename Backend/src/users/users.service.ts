@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, UserStatus } from '../generated/prisma/client';
+import { Prisma, Role, UserStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
@@ -17,6 +17,8 @@ const userSelect = {
   email: true,
   role: true,
   status: true,
+  isSuperAdmin: true,
+  permissions: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -68,6 +70,10 @@ export class UsersService {
 
   async create(dto: CreateUserDto, actorId: string) {
     const passwordHash = await bcrypt.hash(dto.password, this.bcryptRounds);
+    const isAdmin = dto.role === Role.ADMIN;
+    const isSuperAdmin = isAdmin ? Boolean(dto.isSuperAdmin) : false;
+    const permissions = isAdmin && !isSuperAdmin ? dto.permissions || [] : [];
+
     try {
       return await this.prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
@@ -76,6 +82,8 @@ export class UsersService {
             passwordHash,
             role: dto.role,
             status: dto.status ?? UserStatus.ACTIVE,
+            isSuperAdmin,
+            permissions,
           },
           select: userSelect,
         });
@@ -85,7 +93,12 @@ export class UsersService {
             action: 'USER_CREATED',
             entity: 'User',
             entityId: user.id,
-            metadata: { role: user.role, status: user.status },
+            metadata: {
+              role: user.role,
+              status: user.status,
+              isSuperAdmin: user.isSuperAdmin,
+              permissions: user.permissions,
+            },
           },
         });
         return user;
@@ -115,7 +128,21 @@ export class UsersService {
       ...(dto.role !== undefined ? ['role'] : []),
       ...(dto.status !== undefined ? ['status'] : []),
       ...(dto.password !== undefined ? ['password'] : []),
+      ...(dto.isSuperAdmin !== undefined ? ['isSuperAdmin'] : []),
+      ...(dto.permissions !== undefined ? ['permissions'] : []),
     ];
+
+    const targetRole = dto.role ?? existing.role;
+    const isAdmin = targetRole === Role.ADMIN;
+    let updateSuperAdmin = dto.isSuperAdmin;
+    let updatePermissions = dto.permissions;
+
+    if (!isAdmin) {
+      updateSuperAdmin = false;
+      updatePermissions = [];
+    } else if (dto.isSuperAdmin === true) {
+      updatePermissions = [];
+    }
 
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -126,6 +153,12 @@ export class UsersService {
             ...(dto.role ? { role: dto.role } : {}),
             ...(dto.status ? { status: dto.status } : {}),
             ...(passwordHash ? { passwordHash } : {}),
+            ...(updateSuperAdmin !== undefined
+              ? { isSuperAdmin: updateSuperAdmin }
+              : {}),
+            ...(updatePermissions !== undefined
+              ? { permissions: updatePermissions }
+              : {}),
           },
           select: userSelect,
         });

@@ -3,6 +3,8 @@ import { Role } from '../generated/prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../common/constants/admin-permissions.constants';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { AdminDashboardQueryDto } from './dto/admin-dashboard-query.dto';
@@ -16,6 +18,7 @@ export class DashboardController {
 
   @Get('admin')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.DASHBOARD)
   getAdminDashboard(@Query() query: AdminDashboardQueryDto) {
     return this.dashboardService.getAdminDashboard(query);
   }

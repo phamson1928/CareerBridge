@@ -14,6 +14,8 @@ import {
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../common/constants/admin-permissions.constants';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
@@ -49,12 +51,14 @@ export class InternshipsController {
 
   @Get('reports/admin')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.INTERNSHIPS)
   listReports(@Query() query: ListInternshipReportsQueryDto) {
     return this.internshipsService.listReports(query);
   }
 
   @Patch('reports/:reportId/review')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.INTERNSHIPS)
   reviewReport(
     @Param('reportId') reportId: string,
     @Body() dto: ReviewInternshipReportDto,
@@ -86,6 +90,7 @@ export class InternshipsController {
 
   @Patch(':id/moderate')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.INTERNSHIPS)
   moderate(
     @Param('id') id: string,
     @Body() dto: ModerateInternshipDto,

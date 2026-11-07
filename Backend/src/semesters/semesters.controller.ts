@@ -14,6 +14,8 @@ import {
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../common/constants/admin-permissions.constants';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
@@ -40,12 +42,14 @@ export class SemestersController {
 
   @Post()
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.SEMESTERS)
   create(@Body() dto: CreateSemesterDto, @CurrentUser() user: AuthUser) {
     return this.semestersService.create(dto, user.id);
   }
 
   @Patch(':id')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.SEMESTERS)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateSemesterDto,
@@ -56,6 +60,7 @@ export class SemestersController {
 
   @Patch(':id/status')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.SEMESTERS)
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateSemesterStatusDto,
@@ -66,6 +71,7 @@ export class SemestersController {
 
   @Delete(':id')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.SEMESTERS)
   @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.semestersService.remove(id, user.id);

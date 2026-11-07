@@ -10,9 +10,9 @@ import {
   ApplicationStatus,
   CompanyStatus,
   InternshipModerationReasonCode,
-  InternshipReportReasonCode,
   InternshipReportStatus,
   InternshipStatus,
+  Notification,
   NotificationAction,
   NotificationType,
   Prisma,
@@ -925,7 +925,7 @@ export class InternshipsService {
 
     if (query.moderationReasonCode) {
       and.push({
-        moderationReasonCode: query.moderationReasonCode as any,
+        moderationReasonCode: query.moderationReasonCode,
       });
     }
 
@@ -1208,7 +1208,8 @@ export class InternshipsService {
     if (!current) throw this.notFound();
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const notificationsToPublish: any[] = [];
+      const notificationsToPublish: Array<Notification & { userId: string }> =
+        [];
       let updatedStatus: InternshipStatus;
       let reasonCodeToSet: InternshipModerationReasonCode | null = null;
       let reasonDetailToSet: string | null = null;

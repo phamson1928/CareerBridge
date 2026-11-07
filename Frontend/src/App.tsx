@@ -5,6 +5,7 @@
 
 import React, { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { ShieldAlert } from "lucide-react";
 import {
   Application,
   ApplicationStatus,
@@ -82,6 +83,20 @@ const adminPathByTab: Record<string, string> = {
   "semester-management": "semesters",
   "audit-logs": "audit-logs",
   "support-requests": "support-requests",
+};
+
+const TAB_PERMISSION_MAP: Record<string, string> = {
+  "stats-dashboard": "DASHBOARD",
+  "teacher-assignment": "PLACEMENTS",
+  "placement-management": "PLACEMENTS",
+  "internship-management": "INTERNSHIPS",
+  "company-approval": "COMPANIES",
+  "organization-management": "SEMESTERS",
+  "skill-management": "INTERNSHIPS",
+  "semester-management": "SEMESTERS",
+  "support-requests": "SUPPORT",
+  "user-management": "SUPER_ADMIN",
+  "audit-logs": "SUPER_ADMIN",
 };
 
 const adminTabByPath = Object.fromEntries(
@@ -204,15 +219,50 @@ export default function App() {
       navigate("/404", { replace: true });
       return;
     }
-    setActiveTab(adminTabByPath[path]);
-  }, [currentRole, location.pathname, navigate]);
+
+    const targetTab = adminTabByPath[path];
+    const userPerms = user?.permissions || [];
+    const required = TAB_PERMISSION_MAP[targetTab];
+    const isAllowed =
+      user?.isSuperAdmin ||
+      (required !== "SUPER_ADMIN" &&
+        (!required || userPerms.includes(required)));
+
+    if (!isAllowed) {
+      const firstAllowedEntry = Object.entries(TAB_PERMISSION_MAP).find(
+        ([, perm]) => perm !== "SUPER_ADMIN" && userPerms.includes(perm),
+      );
+      if (firstAllowedEntry) {
+        const allowedPath = adminPathByTab[firstAllowedEntry[0]];
+        if (allowedPath) {
+          navigate(`/admin/${allowedPath}`, { replace: true });
+          return;
+        }
+      }
+      setActiveTab("no-permissions");
+      return;
+    }
+
+    setActiveTab(targetTab);
+  }, [currentRole, location.pathname, navigate, user?.isSuperAdmin, user?.permissions]);
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
     if (currentRole === "ADMIN") {
+      const userPerms = user?.permissions || [];
+      const required = TAB_PERMISSION_MAP[tab];
+      const isAllowed =
+        user?.isSuperAdmin ||
+        (required !== "SUPER_ADMIN" &&
+          (!required || userPerms.includes(required)));
+      if (!isAllowed) return;
+
       const path = adminPathByTab[tab];
-      if (path) navigate(`/admin/${path}`);
+      if (path) {
+        navigate(`/admin/${path}`);
+        return;
+      }
     }
+    setActiveTab(tab);
   };
 
   const [studentProfile, setStudentProfile] =
@@ -672,6 +722,18 @@ export default function App() {
             {activeTab === "semester-management" && <SemesterManagement />}
             {activeTab === "support-requests" && <SupportRequestManagement />}
             {activeTab === "audit-logs" && <AuditLogManagement />}
+            {activeTab === "no-permissions" && (
+              <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-xs max-w-md mx-auto my-12">
+                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+                  <ShieldAlert className="w-6 h-6 text-amber-600" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">Chưa được cấp quyền</h3>
+                <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                  Tài khoản Quản trị viên phụ của bạn hiện chưa được phân quyền cho phân hệ nào.
+                  Vui lòng liên hệ Quản trị viên tối cao (Super Admin) để được cấp quyền thao tác.
+                </p>
+              </div>
+            )}
           </>
         )}
         </Suspense>

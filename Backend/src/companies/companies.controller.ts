@@ -14,6 +14,8 @@ import {
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../common/constants/admin-permissions.constants';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
@@ -70,18 +72,21 @@ export class CompaniesController {
 
   @Get()
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.COMPANIES)
   findAll(@Query() query: ListCompanyProfilesQueryDto) {
     return this.companiesService.findAll(query);
   }
 
   @Get(':id')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.COMPANIES)
   findOne(@Param('id') id: string) {
     return this.companiesService.findOne(id);
   }
 
   @Post(':id/approve')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.COMPANIES)
   approve(
     @Param('id') id: string,
     @Body() dto: ApproveCompanyDto,
@@ -92,6 +97,7 @@ export class CompaniesController {
 
   @Post(':id/reject')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.COMPANIES)
   reject(
     @Param('id') id: string,
     @Body() dto: RejectCompanyDto,
@@ -102,12 +108,14 @@ export class CompaniesController {
 
   @Get(':id/suspension-impact')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.COMPANIES)
   getSuspensionImpact(@Param('id') id: string) {
     return this.companiesService.getSuspensionImpact(id);
   }
 
   @Post(':id/suspend')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.COMPANIES)
   suspend(
     @Param('id') id: string,
     @Body() dto: SuspendCompanyDto,
@@ -118,6 +126,7 @@ export class CompaniesController {
 
   @Post(':id/unsuspend')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.COMPANIES)
   unsuspend(
     @Param('id') id: string,
     @Body() dto: UnsuspendCompanyDto,

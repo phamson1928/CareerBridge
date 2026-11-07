@@ -49,11 +49,7 @@ export class DashboardService {
     const facultyId = query.facultyId?.trim() || undefined;
     const majorId = query.majorId?.trim() || undefined;
     const studentScopeWhere: Prisma.StudentProfileWhereInput = {
-      ...(majorId
-        ? { majorId }
-        : facultyId
-          ? { majorRef: { facultyId } }
-          : {}),
+      ...(majorId ? { majorId } : facultyId ? { majorRef: { facultyId } } : {}),
     };
     const lecturerScopeWhere: Prisma.LecturerProfileWhereInput = {
       ...(facultyId ? { facultyId } : {}),

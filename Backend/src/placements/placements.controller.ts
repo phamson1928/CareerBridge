@@ -11,6 +11,8 @@ import { Role } from '../generated/prisma/client';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../common/constants/admin-permissions.constants';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { ListPlacementsQueryDto } from './dto/list-placements-query.dto';
@@ -25,6 +27,7 @@ export class PlacementsController {
 
   @Get()
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.PLACEMENTS)
   list(@Query() query: ListPlacementsQueryDto) {
     return this.placementsService.list(query);
   }
@@ -43,6 +46,7 @@ export class PlacementsController {
 
   @Patch(':id')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.PLACEMENTS)
   update(
     @Param('id') id: string,
     @Body() dto: UpdatePlacementDto,
@@ -53,6 +57,7 @@ export class PlacementsController {
 
   @Patch(':id/status')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.PLACEMENTS)
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdatePlacementStatusDto,

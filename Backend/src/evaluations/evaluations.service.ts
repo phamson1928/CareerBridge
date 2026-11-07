@@ -222,8 +222,9 @@ export class EvaluationsService {
         return { evaluation, notifications: [notification] };
       });
       this.notifications.publishMany(result.notifications);
-      const completed =
-        await this.lifecycle.autoCompletePlacementIfEligible?.(dto.placementId);
+      const completed = await this.lifecycle.autoCompletePlacementIfEligible?.(
+        dto.placementId,
+      );
       if (completed) {
         result.evaluation.placement.status = PlacementStatus.COMPLETED;
         result.evaluation.placement.academicStatus =

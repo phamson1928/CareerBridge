@@ -609,7 +609,7 @@ LOG_LEVEL=info
 
     zip.addFile('.env', Buffer.from(envContent, 'utf8'));
 
-    const buffer = zip.toBuffer();
+    const buffer = await Promise.resolve(zip.toBuffer());
     const safeWorkerName = workerName.replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = workerToken
       ? `CareerBridge-AI-Worker-${safeWorkerName}.zip`

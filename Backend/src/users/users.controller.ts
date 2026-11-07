@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { SuperAdminOnly } from '../common/decorators/admin-permissions.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
@@ -24,6 +25,7 @@ import { UsersService } from './users.service';
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
+@SuperAdminOnly()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

@@ -5,6 +5,8 @@ export interface AuthUser {
   email: string;
   role: AuthRole;
   status: 'ACTIVE';
+  isSuperAdmin?: boolean;
+  permissions?: string[];
 }
 
 export interface AuthSession {
@@ -43,6 +45,8 @@ export interface LoginInput {
   password: string;
 }
 
-export interface RegisterInput extends LoginInput {
+export interface RegisterInput {
+  email: string;
+  password: string;
   role: 'STUDENT' | 'COMPANY';
 }

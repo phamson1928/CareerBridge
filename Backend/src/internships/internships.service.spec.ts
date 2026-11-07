@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import { InternshipsService } from './internships.service';
 import { ListInternshipsQueryDto } from './dto/list-internships-query.dto';
 import {

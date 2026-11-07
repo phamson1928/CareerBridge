@@ -1,5 +1,6 @@
 import React from "react";
 import { UserRole } from "../types";
+import { useAuth } from "../auth/AuthContext";
 import {
   Briefcase,
   GraduationCap,
@@ -57,6 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   isSidebarCollapsed = false,
   onToggleSidebar,
 }) => {
+  const { user } = useAuth();
   const getNavItems = () => {
     switch (currentRole) {
       case "STUDENT":
@@ -150,59 +152,87 @@ export const Navbar: React.FC<NavbarProps> = ({
             icon: <User className="w-4 h-4" />,
           },
         ];
-      case "ADMIN":
-        return [
+      case "ADMIN": {
+        const adminItems = [
           {
             id: "stats-dashboard",
             label: "Thống kê hệ thống",
             icon: <LayoutDashboard className="w-4 h-4" />,
+            permission: "DASHBOARD",
           },
           {
             id: "teacher-assignment",
             label: "Phân công Giảng viên",
             icon: <GraduationCap className="w-4 h-4" />,
+            permission: "PLACEMENTS",
           },
           {
             id: "placement-management",
             label: "Quản lý thực tập",
             icon: <Briefcase className="w-4 h-4" />,
+            permission: "PLACEMENTS",
           },
           {
             id: "internship-management",
             label: "Tin tuyển dụng",
             icon: <FileText className="w-4 h-4" />,
+            permission: "INTERNSHIPS",
           },
           {
             id: "user-management",
             label: "Quản lý người dùng",
             icon: <Users className="w-4 h-4" />,
+            superAdminOnly: true,
+          },
+          {
+            id: "audit-logs",
+            label: "Nhật ký hệ thống",
+            icon: <ShieldCheck className="w-4 h-4" />,
+            superAdminOnly: true,
           },
           {
             id: "company-approval",
             label: "Duyệt Doanh nghiệp",
             icon: <Building className="w-4 h-4" />,
+            permission: "COMPANIES",
           },
           {
             id: "organization-management",
             label: "Khoa & Ngành",
             icon: <GraduationCap className="w-4 h-4" />,
+            permission: "SEMESTERS",
           },
           {
             id: "skill-management",
             label: "Danh mục kỹ năng",
             icon: <CheckSquare className="w-4 h-4" />,
+            permission: "INTERNSHIPS",
           },
           {
             id: "semester-management",
             label: "Kỳ thực tập",
             icon: <CalendarDays className="w-4 h-4" />,
+            permission: "SEMESTERS",
           },
           {
             id: "support-requests",
             label: "Hỗ trợ sinh viên",
             icon: <LifeBuoy className="w-4 h-4" />,
+            permission: "SUPPORT",
           },
         ];
+
+        if (user?.isSuperAdmin) {
+          return adminItems;
+        }
+
+        const userPerms = user?.permissions || [];
+        return adminItems.filter((item) => {
+          if (item.superAdminOnly) return false;
+          if (item.permission) return userPerms.includes(item.permission);
+          return true;
+        });
+      }
       default:
         return [];
     }
@@ -331,7 +361,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               CareerBridge
             </span>
             <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">
-              Khu vực quản trị
+              {user?.isSuperAdmin ? "Quản trị tối cao" : "Ban quản trị phân hệ"}
             </span>
           </span>
         </button>

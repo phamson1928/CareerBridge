@@ -8,6 +8,8 @@ export interface ManagedUser {
   email: string;
   role: AuthRole;
   status: UserStatus;
+  isSuperAdmin?: boolean;
+  permissions?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +37,8 @@ export interface CreateUserInput {
   password: string;
   role: AuthRole;
   status?: UserStatus;
+  isSuperAdmin?: boolean;
+  permissions?: string[];
 }
 
 export interface UpdateUserInput {
@@ -42,7 +46,18 @@ export interface UpdateUserInput {
   password?: string;
   role?: AuthRole;
   status?: UserStatus;
+  isSuperAdmin?: boolean;
+  permissions?: string[];
 }
+
+export const ADMIN_PERMISSION_OPTIONS = [
+  { id: 'DASHBOARD', label: 'Thống kê hệ thống', description: 'Xem tổng quan và các chỉ số thống kê toàn trường' },
+  { id: 'COMPANIES', label: 'Quản lý Doanh nghiệp', description: 'Xét duyệt hồ sơ, đình chỉ và quản lý thông tin đối tác DN' },
+  { id: 'INTERNSHIPS', label: 'Tin tuyển dụng & Kỹ năng', description: 'Kiểm duyệt tin đăng tuyển, báo cáo vi phạm và danh mục kỹ năng' },
+  { id: 'PLACEMENTS', label: 'Thực tập & Giảng viên', description: 'Quản lý tiến độ thực tập, phân công GV hướng dẫn và nghiệm thu' },
+  { id: 'SEMESTERS', label: 'Kỳ thực tập', description: 'Tạo và quản lý các đợt thực tập học vụ' },
+  { id: 'SUPPORT', label: 'Hỗ trợ sinh viên', description: 'Tiếp nhận và phản hồi các yêu cầu hỗ trợ, khiếu nại' },
+] as const;
 
 export const usersApi = {
   list: async (params: ListUsersParams) => {
@@ -63,6 +78,9 @@ export const usersApi = {
     return response.data.data;
   },
   remove: async (id: string) => {
-    await api.delete(`/users/${id}`);
+    const response = await api.delete<ApiSuccess<{ id: string; deleted: boolean }>>(
+      `/users/${id}`,
+    );
+    return response.data.data;
   },
 };

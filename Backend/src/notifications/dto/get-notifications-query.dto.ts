@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+import { Transform, type TransformFnParams } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -24,7 +24,7 @@ export class GetNotificationsQueryDto {
   limit = 20;
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: TransformFnParams): unknown => {
     if (value === 'true' || value === true) return true;
     if (value === 'false' || value === false) return false;
     return value;

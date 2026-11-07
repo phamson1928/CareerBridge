@@ -670,7 +670,8 @@ export class SemesterLifecycleService implements OnModuleInit, OnModuleDestroy {
     startDate: Date;
     endDate: Date;
   }) {
-    if (!this.notifications || !this.prisma.internshipPlacement?.findMany) return;
+    if (!this.notifications || !this.prisma.internshipPlacement?.findMany)
+      return;
     const formattedStart = formatViDate(semester.startDate);
     const formattedEnd = formatViDate(semester.endDate);
 

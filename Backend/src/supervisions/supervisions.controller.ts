@@ -11,6 +11,8 @@ import {
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../common/constants/admin-permissions.constants';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
@@ -28,6 +30,7 @@ export class SupervisionsController {
 
   @Get()
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.PLACEMENTS)
   list(@Query() query: ListSupervisionsQueryDto) {
     return this.supervisionsService.list(query);
   }
@@ -40,6 +43,7 @@ export class SupervisionsController {
 
   @Get('lecturer-options')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.PLACEMENTS)
   lecturerOptions(@Query() query: ListLecturerOptionsQueryDto) {
     return this.supervisionsService.lecturerOptions(query);
   }
@@ -52,12 +56,14 @@ export class SupervisionsController {
 
   @Post()
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.PLACEMENTS)
   assign(@Body() dto: CreateSupervisionDto, @CurrentUser() user: AuthUser) {
     return this.supervisionsService.assign(dto, user.id);
   }
 
   @Patch(':id')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.PLACEMENTS)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateSupervisionDto,
@@ -68,6 +74,7 @@ export class SupervisionsController {
 
   @Patch(':id/status')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.PLACEMENTS)
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateSupervisionStatusDto,

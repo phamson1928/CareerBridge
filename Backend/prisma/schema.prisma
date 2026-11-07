@@ -226,6 +226,8 @@ model User {
   role            Role
   status          UserStatus @default(PENDING_VERIFICATION)
   emailVerifiedAt DateTime?
+  isSuperAdmin    Boolean    @default(false)
+  permissions     String[]   @default([])
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 

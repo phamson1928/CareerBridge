@@ -3,7 +3,9 @@ import { ArrayMaxSize, IsArray, IsString, MaxLength } from 'class-validator';
 
 function trimItems({ value }: TransformFnParams): unknown {
   return Array.isArray(value)
-    ? value.map((item) => (typeof item === 'string' ? item.trim() : item))
+    ? value.map((item: unknown): unknown =>
+        typeof item === 'string' ? item.trim() : item,
+      )
     : value;
 }
 

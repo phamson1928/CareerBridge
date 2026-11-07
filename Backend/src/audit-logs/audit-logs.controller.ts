@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
+import { SuperAdminOnly } from '../common/decorators/admin-permissions.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Role } from '../generated/prisma/client';
@@ -9,6 +10,7 @@ import { ListAuditLogsQueryDto } from './dto/list-audit-logs-query.dto';
 @Controller('audit-logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
+@SuperAdminOnly()
 export class AuditLogsController {
   constructor(private readonly auditLogsService: AuditLogsService) {}
 

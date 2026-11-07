@@ -70,9 +70,7 @@ export class RecommendationCacheService {
           isRequired: skill.isRequired,
           weight: skill.weight,
         })),
-        majorIds: [...(internship.majors ?? [])]
-          .map((m) => m.majorId)
-          .sort(),
+        majorIds: [...(internship.majors ?? [])].map((m) => m.majorId).sort(),
       })),
     };
     return createHash('sha256')

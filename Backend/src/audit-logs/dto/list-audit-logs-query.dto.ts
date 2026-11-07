@@ -11,7 +11,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-const trimOptionalString = ({ value }: TransformFnParams) =>
+const trimOptionalString = ({ value }: TransformFnParams): unknown =>
   typeof value === 'string' ? value.trim() || undefined : value;
 
 export class ListAuditLogsQueryDto {

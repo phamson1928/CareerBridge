@@ -48,7 +48,7 @@ export class RealtimeGateway
       });
       if (!user) return socket.disconnect(true);
 
-      socket.data.userId = user.id;
+      (socket.data as { userId?: string }).userId = user.id;
       await socket.join(notificationRoom(user.id));
       this.logger.debug(`Realtime connected: ${socket.id}`);
     } catch {
@@ -66,7 +66,8 @@ export class RealtimeGateway
   }
 
   private readToken(socket: Socket): string | null {
-    const authToken = socket.handshake.auth?.token;
+    const auth = socket.handshake.auth as Record<string, unknown> | undefined;
+    const authToken = auth?.token;
     if (typeof authToken === 'string' && authToken.trim())
       return authToken.trim();
     const header = socket.handshake.headers.authorization;

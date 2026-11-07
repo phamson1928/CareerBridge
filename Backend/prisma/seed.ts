@@ -42,11 +42,12 @@ async function upsertUser(
   email: string,
   role: (typeof accounts)[keyof typeof accounts]['role'],
   passwordHash: string,
+  isSuperAdmin = false,
 ) {
   return prisma.user.upsert({
     where: { email },
-    update: { role, status: 'ACTIVE', passwordHash },
-    create: { email, role, status: 'ACTIVE', passwordHash },
+    update: { role, status: 'ACTIVE', passwordHash, isSuperAdmin },
+    create: { email, role, status: 'ACTIVE', passwordHash, isSuperAdmin, permissions: [] },
   });
 }
 
@@ -58,7 +59,7 @@ async function main() {
 
   const [admin, student, student2, student3, student4, lecturer, lecturer2, company] =
     await Promise.all([
-      upsertUser(accounts.admin.email, accounts.admin.role, passwordHash),
+      upsertUser(accounts.admin.email, accounts.admin.role, passwordHash, true),
       upsertUser(accounts.student.email, accounts.student.role, passwordHash),
       upsertUser(accounts.student2.email, accounts.student2.role, passwordHash),
       upsertUser(accounts.student3.email, accounts.student3.role, passwordHash),

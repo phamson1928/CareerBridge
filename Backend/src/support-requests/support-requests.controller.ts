@@ -10,6 +10,8 @@ import {
 import { Role } from '../generated/prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../common/constants/admin-permissions.constants';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
@@ -40,6 +42,7 @@ export class SupportRequestsController {
 
   @Get()
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.SUPPORT)
   listAll(@Query() query: ListSupportRequestsQueryDto) {
     return this.supportRequests.listAdmin(query);
   }
@@ -52,6 +55,7 @@ export class SupportRequestsController {
 
   @Post(':id/reply')
   @Roles(Role.ADMIN)
+  @RequirePermission(AdminPermission.SUPPORT)
   reply(
     @Param('id') id: string,
     @Body() dto: ReplySupportRequestDto,

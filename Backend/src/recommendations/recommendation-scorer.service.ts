@@ -82,7 +82,11 @@ export class RecommendationScorerService {
       Boolean(normalizeText(`${project.title} ${project.description ?? ''}`)),
     );
     const projectApplied = usableProjects.length > 0;
-    const majorEvaluation = evaluateMajorAlignment(student, internship, jobText);
+    const majorEvaluation = evaluateMajorAlignment(
+      student,
+      internship,
+      jobText,
+    );
 
     const components = {
       skills: component(skillScore, 60, true),

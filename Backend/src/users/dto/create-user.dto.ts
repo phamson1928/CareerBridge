@@ -1,5 +1,7 @@
 import { Transform, TransformFnParams } from 'class-transformer';
 import {
+  IsArray,
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsOptional,
@@ -9,6 +11,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { Role, UserStatus } from '../../generated/prisma/client';
+import { AdminPermission } from '../../common/constants/admin-permissions.constants';
 
 export class CreateUserDto {
   @Transform((params: TransformFnParams): unknown =>
@@ -33,4 +36,13 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;
+
+  @IsOptional()
+  @IsBoolean()
+  isSuperAdmin?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(AdminPermission, { each: true })
+  permissions?: AdminPermission[];
 }
