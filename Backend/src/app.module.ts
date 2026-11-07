@@ -10,6 +10,8 @@ import { UsersModule } from './users/users.module';
 import { StudentsModule } from './students/students.module';
 import { LecturersModule } from './lecturers/lecturers.module';
 import { CompaniesModule } from './companies/companies.module';
+import { FacultiesModule } from './faculties/faculties.module';
+import { MajorsModule } from './majors/majors.module';
 import { InternshipsModule } from './internships/internships.module';
 import { InternshipTemplatesModule } from './internship-templates/internship-templates.module';
 import { ApplicationsModule } from './applications/applications.module';
@@ -53,6 +55,8 @@ import { AiWorkerModule } from './ai-worker/ai-worker.module';
     StudentsModule,
     LecturersModule,
     CompaniesModule,
+    FacultiesModule,
+    MajorsModule,
     InternshipsModule,
     InternshipTemplatesModule,
     ApplicationsModule,

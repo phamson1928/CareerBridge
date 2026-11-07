@@ -61,6 +61,7 @@ const CompanyModeration = lazy(() => import("./components/AdminView/CompanyModer
 const SupervisionManagement = lazy(() => import("./components/AdminView/SupervisionManagement").then(({ SupervisionManagement }) => ({ default: SupervisionManagement })));
 const PlacementManagement = lazy(() => import("./components/AdminView/PlacementManagement").then(({ PlacementManagement }) => ({ default: PlacementManagement })));
 const InternshipManagement = lazy(() => import("./components/AdminView/InternshipManagement").then(({ InternshipManagement }) => ({ default: InternshipManagement })));
+const OrganizationManagement = lazy(() => import("./components/AdminView/OrganizationManagement").then(({ OrganizationManagement }) => ({ default: OrganizationManagement })));
 const SkillManagement = lazy(() => import("./components/AdminView/SkillManagement").then(({ SkillManagement }) => ({ default: SkillManagement })));
 const SemesterManagement = lazy(() => import("./components/AdminView/SemesterManagement").then(({ SemesterManagement }) => ({ default: SemesterManagement })));
 const AuditLogManagement = lazy(() => import("./components/AdminView/AuditLogManagement").then(({ AuditLogManagement }) => ({ default: AuditLogManagement })));
@@ -76,6 +77,7 @@ const adminPathByTab: Record<string, string> = {
   "internship-management": "internships",
   "user-management": "users",
   "company-approval": "companies",
+  "organization-management": "organization",
   "skill-management": "skills",
   "semester-management": "semesters",
   "audit-logs": "audit-logs",
@@ -657,6 +659,7 @@ export default function App() {
             {activeTab === "internship-management" && <InternshipManagement />}
             {activeTab === "user-management" && <UserManagement />}
             {activeTab === "company-approval" && <CompanyModeration />}
+            {activeTab === "organization-management" && <OrganizationManagement />}
             {activeTab === "skill-management" && <SkillManagement />}
             {activeTab === "semester-management" && <SemesterManagement />}
             {activeTab === "support-requests" && <SupportRequestManagement />}
