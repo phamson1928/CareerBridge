@@ -59,7 +59,23 @@ const select = {
       startDate: true,
       endDate: true,
       student: {
-        select: { id: true, userId: true, studentCode: true, fullName: true },
+        select: {
+          id: true,
+          userId: true,
+          studentCode: true,
+          fullName: true,
+          major: true,
+          majorId: true,
+          majorRef: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              facultyId: true,
+              faculty: { select: { id: true, code: true, name: true } },
+            },
+          },
+        },
       },
       company: { select: { id: true, userId: true, companyName: true } },
       internship: { select: { title: true } },
@@ -75,7 +91,15 @@ const select = {
       supervision: {
         select: {
           status: true,
-          lecturer: { select: { userId: true, fullName: true } },
+          lecturer: {
+            select: {
+              userId: true,
+              fullName: true,
+              department: true,
+              facultyId: true,
+              faculty: { select: { id: true, code: true, name: true } },
+            },
+          },
         },
       },
     },

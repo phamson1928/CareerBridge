@@ -31,13 +31,28 @@ export interface ReportRecord {
       userId: string;
       studentCode: string;
       fullName: string;
+      major?: string;
+      majorId?: string | null;
+      majorRef?: {
+        id: string;
+        code: string;
+        name: string;
+        facultyId: string;
+        faculty: { id: string; code: string; name: string };
+      } | null;
     };
     company: { companyName: string };
     internship: { title: string };
     semester: { name: string };
     supervision: {
       status: string;
-      lecturer: { userId: string; fullName: string };
+      lecturer: {
+        userId: string;
+        fullName: string;
+        department?: string;
+        facultyId?: string | null;
+        faculty?: { id: string; code: string; name: string } | null;
+      };
     } | null;
   };
 }

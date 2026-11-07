@@ -17,6 +17,8 @@ export interface DashboardScope {
     endDate: string;
     status: string;
   } | null;
+  facultyId?: string | null;
+  majorId?: string | null;
   months: number;
   from: string;
   to: string;
@@ -68,6 +70,36 @@ export interface TopSkillDemand {
   weightSum: number;
 }
 
+export interface MajorDashboardBreakdown {
+  majorId: string;
+  code: string;
+  name: string;
+  totalStudents: number;
+  placedStudents: number;
+  totalPlacements: number;
+  activePlacements: number;
+  completedPlacements: number;
+  pendingPlacements: number;
+  unassignedPlacements: number;
+  placementRate: number;
+}
+
+export interface FacultyDashboardBreakdown {
+  facultyId: string;
+  code: string;
+  name: string;
+  totalStudents: number;
+  totalLecturers: number;
+  placedStudents: number;
+  totalPlacements: number;
+  activePlacements: number;
+  completedPlacements: number;
+  pendingPlacements: number;
+  unassignedPlacements: number;
+  placementRate: number;
+  majors: MajorDashboardBreakdown[];
+}
+
 export interface AdminDashboardData {
   scope: DashboardScope;
   global: DashboardGlobalStats;
@@ -79,6 +111,7 @@ export interface AdminDashboardData {
   };
   monthlyTrend: MonthlyTrendPoint[];
   topSkills: TopSkillDemand[];
+  facultyBreakdown?: FacultyDashboardBreakdown[];
 }
 
 export interface CompanyDashboardKpis {

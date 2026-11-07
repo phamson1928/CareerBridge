@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Download,
   Eye,
   FileText,
   LoaderCircle,
@@ -31,6 +32,7 @@ import { supervisionsApi } from "../../supervisions/api";
 import type { LecturerOption } from "../../supervisions/types";
 import { facultiesApi } from "../../organization/api";
 import type { FacultyOption } from "../../organization/types";
+import { downloadExcelWorkbook } from "../../utils/excelExport";
 
 const statusLabel: Record<PlacementStatus, string> = {
   PENDING: "Chờ phân công",
@@ -311,6 +313,62 @@ export const PlacementManagement: React.FC<{
     setPage(1);
   };
 
+  const exportPlacementsExcel = async () => {
+    try {
+      const allPage = await placementsApi.list({
+        page: 1,
+        limit: 100,
+        search: search.trim() || undefined,
+        status: status || undefined,
+        semesterId: semesterId || undefined,
+        lecturerId: lecturerId || undefined,
+        facultyId: facultyId || undefined,
+        majorId: majorId || undefined,
+        assignmentStatus: assignmentStatus || undefined,
+        reportStatus: reportStatus || undefined,
+      });
+      downloadExcelWorkbook("danh-sach-ho-so-thuc-tap", [
+        {
+          name: "Ho so thuc tap",
+          title: "DANH SÁCH HỒ SƠ THỰC TẬP TỐT NGHIỆP",
+          subtitle: `Ngày xuất: ${new Date().toLocaleDateString("vi-VN")} — Tổng số bản ghi: ${allPage.items.length}`,
+          columns: [
+            { header: "STT", width: 45, value: (_, i) => i + 1 },
+            { header: "MSSV", width: 105, value: (p: PlacementRecord) => p.student.studentCode },
+            { header: "Họ và tên sinh viên", width: 165, value: (p: PlacementRecord) => p.student.fullName },
+            { header: "Ngành đào tạo", width: 175, value: (p: PlacementRecord) => p.student.major },
+            { header: "Khoa sinh viên", width: 170, value: (p: PlacementRecord) => p.student.faculty?.name ?? "—" },
+            { header: "Doanh nghiệp thực tập", width: 190, value: (p: PlacementRecord) => p.company.companyName },
+            { header: "Vị trí thực tập", width: 170, value: (p: PlacementRecord) => p.internship.title },
+            { header: "Học kỳ", width: 140, value: (p: PlacementRecord) => p.semester.name },
+            {
+              header: "Giảng viên hướng dẫn",
+              width: 165,
+              value: (p: PlacementRecord) =>
+                p.supervision?.status === "ACTIVE"
+                  ? p.supervision.lecturer.fullName
+                  : "Chưa phân công",
+            },
+            {
+              header: "Khoa GVHD",
+              width: 165,
+              value: (p: PlacementRecord) =>
+                p.supervision?.status === "ACTIVE"
+                  ? (p.supervision.lecturer.faculty?.name ?? p.supervision.lecturer.department)
+                  : "—",
+            },
+            { header: "Báo cáo đã nộp", width: 110, value: (p: PlacementRecord) => p.progress.reportCount },
+            { header: "Số bản đánh giá", width: 110, value: (p: PlacementRecord) => p.progress.evaluationCount },
+            { header: "Trạng thái", width: 135, value: (p: PlacementRecord) => getPlacementBadge(p).label },
+          ],
+          rows: allPage.items,
+        },
+      ]);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    }
+  };
+
   return (
     <section className="admin-page admin-page--feature space-y-5">
       <header className="rounded-3xl bg-gradient-to-br from-[#004f52] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/25 sm:p-8">
@@ -328,13 +386,22 @@ export const PlacementManagement: React.FC<{
               thực tập.
             </p>
           </div>
-          <button
-            onClick={onOpenAssignment}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
-          >
-            <UsersRound className="h-4 w-4" /> Mở phân công giảng viên{" "}
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              type="button"
+              onClick={() => void exportPlacementsExcel()}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              <Download className="h-4 w-4" /> Xuất danh sách Excel
+            </button>
+            <button
+              onClick={onOpenAssignment}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              <UsersRound className="h-4 w-4" /> Mở phân công giảng viên{" "}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </header>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">

@@ -5,6 +5,7 @@ import {
   Building2,
   CalendarDays,
   ClipboardCheck,
+  Download,
   LoaderCircle,
   MapPin,
   Search,
@@ -14,6 +15,7 @@ import { getApiErrorMessage } from "../../auth/api";
 import { supervisionsApi } from "../../supervisions/api";
 import type { SupervisionRecord } from "../../supervisions/types";
 import { formatDate, formatDateTime } from "../../utils/format";
+import { downloadExcelWorkbook } from "../../utils/excelExport";
 import { ProfileAvatarPreview } from "../ProfileAvatarUpload";
 
 const supervisionStatusLabel: Record<SupervisionRecord["status"], string> = {
@@ -56,6 +58,30 @@ export const SupervisedPlacements: React.FC = () => {
     return matchesKeyword && matchesMajor;
   });
 
+  const exportListExcel = () => {
+    downloadExcelWorkbook("danh-sach-sinh-vien-phu-trach", [
+      {
+        name: "Sinh vien phu trach",
+        title: "DANH SÁCH SINH VIÊN THỰC TẬP ĐANG PHỤ TRÁCH",
+        subtitle: `Ngày xuất: ${new Date().toLocaleDateString("vi-VN")} — Tổng số: ${filtered.length} sinh viên`,
+        columns: [
+          { header: "STT", width: 45, value: (_, i) => i + 1 },
+          { header: "MSSV", width: 105, value: (s) => s.placement.student.studentCode },
+          { header: "Họ và tên", width: 165, value: (s) => s.placement.student.fullName },
+          { header: "Ngành đào tạo", width: 175, value: (s) => s.placement.student.major },
+          { header: "Khoa", width: 165, value: (s) => s.placement.student.faculty?.name ?? "—" },
+          { header: "Doanh nghiệp thực tập", width: 190, value: (s) => s.placement.company.companyName },
+          { header: "Vị trí thực tập", width: 170, value: (s) => s.placement.internship.title },
+          { header: "Học kỳ", width: 140, value: (s) => s.placement.semester.name },
+          { header: "Số báo cáo đã nộp", width: 120, value: (s) => s.placement._count.reports },
+          { header: "Số đánh giá", width: 105, value: (s) => s.placement._count.evaluations },
+          { header: "Trạng thái hướng dẫn", width: 130, value: (s) => supervisionStatusLabel[s.status] },
+        ],
+        rows: filtered,
+      },
+    ]);
+  };
+
   return (
     <section className="space-y-5">
       <div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-indigo-950 via-indigo-900 to-slate-900 p-6 text-white shadow-lg sm:p-8 md:flex-row md:items-end md:justify-between">
@@ -72,10 +98,21 @@ export const SupervisedPlacements: React.FC = () => {
             viên của bạn.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm font-bold text-indigo-100">
-          <UsersRound className="h-5 w-5" />{" "}
-          {items.filter((item) => item.status === "ACTIVE").length} đang hoạt
-          động
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-indigo-100">
+            <UsersRound className="h-5 w-5" />{" "}
+            {items.filter((item) => item.status === "ACTIVE").length} đang hoạt
+            động
+          </div>
+          {filtered.length > 0 && (
+            <button
+              type="button"
+              onClick={exportListExcel}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              <Download className="h-4 w-4" /> Xuất danh sách Excel
+            </button>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:grid-cols-[1fr_240px]">

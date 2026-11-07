@@ -8,6 +8,8 @@ import type {
 
 export interface AdminDashboardParams {
   semesterId?: string;
+  facultyId?: string;
+  majorId?: string;
   months?: 3 | 6 | 9 | 12;
 }
 
