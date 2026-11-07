@@ -1,11 +1,20 @@
 import { api } from "../auth/api";
 import type { ApiSuccess } from "../auth/auth.types";
 
+export interface LecturerFacultyRef {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+}
+
 export interface LecturerProfileRecord {
   id: string;
   userId: string;
   fullName: string;
   department: string;
+  facultyId: string | null;
+  faculty?: LecturerFacultyRef | null;
   title: string | null;
   avatarFileId: string | null;
   createdAt: string;
@@ -21,7 +30,8 @@ export interface LecturerProfileRecord {
 
 export interface LecturerProfileInput {
   fullName: string;
-  department: string;
+  facultyId?: string;
+  department?: string;
   title?: string | null;
   avatarFileId?: string | null;
 }

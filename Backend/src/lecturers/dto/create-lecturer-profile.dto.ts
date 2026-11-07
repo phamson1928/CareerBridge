@@ -9,12 +9,24 @@ export class CreateLecturerProfileDto {
   @MaxLength(150)
   fullName!: string;
 
+  @IsOptional()
   @Transform((params: TransformFnParams): unknown =>
-    typeof params.value === 'string' ? params.value.trim() : params.value,
+    typeof params.value === 'string'
+      ? params.value.trim() || undefined
+      : params.value,
+  )
+  @IsString()
+  facultyId?: string;
+
+  @IsOptional()
+  @Transform((params: TransformFnParams): unknown =>
+    typeof params.value === 'string'
+      ? params.value.trim() || undefined
+      : params.value,
   )
   @IsString()
   @MaxLength(150)
-  department!: string;
+  department?: string;
 
   @IsOptional()
   @Transform((params: TransformFnParams): unknown =>
