@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { ReportJobModal } from '../Internships/ReportJobModal';
 import { SemesterCampaignBanner } from '../Semesters/SemesterCampaignBanner';
+import { facultiesApi } from '../../organization/api';
+import type { FacultyOption } from '../../organization/types';
 
 type InternshipPage = {
   items: Internship[];
@@ -37,6 +39,9 @@ interface InternshipListProps {
     limit: number;
     search?: string;
     skillIds?: string[];
+    facultyId?: string;
+    majorId?: string;
+    majorIds?: string[];
   }) => Promise<InternshipPage>;
   onApply: (internshipId: string, coverLetter: string, internshipTitle: string) => Promise<void>;
   onOpenProfile: () => void;
@@ -95,6 +100,9 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSkillFilter, setSelectedSkillFilter] = useState<SkillOption[]>([]);
+  const [selectedFacultyId, setSelectedFacultyId] = useState('');
+  const [selectedMajorId, setSelectedMajorId] = useState('');
+  const [faculties, setFaculties] = useState<FacultyOption[]>([]);
   const [page, setPage] = useState(1);
   const [internshipPage, setInternshipPage] = useState<InternshipPage>({
     items: internships,
@@ -115,6 +123,13 @@ export const InternshipList: React.FC<InternshipListProps> = ({
   }, [studentProfile.cvName]);
 
   useEffect(() => {
+    facultiesApi
+      .listOptions({ includeInactive: false })
+      .then((data) => setFaculties(data.items))
+      .catch(() => setFaculties([]));
+  }, []);
+
+  useEffect(() => {
     let active = true;
     const timer = window.setTimeout(async () => {
       setIsLoadingInternships(true);
@@ -125,6 +140,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
           limit: 12,
           search: searchTerm.trim() || undefined,
           skillIds: selectedSkillFilter.map((skill) => skill.id),
+          facultyId: selectedFacultyId || undefined,
+          majorId: selectedMajorId || undefined,
         });
         if (active) setInternshipPage(result);
       } catch (error) {
@@ -138,7 +155,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
       active = false;
       window.clearTimeout(timer);
     };
-  }, [loadInternships, page, searchTerm, selectedSkillFilter]);
+  }, [loadInternships, page, searchTerm, selectedSkillFilter, selectedFacultyId, selectedMajorId]);
 
   const filteredInternships = internshipPage.items;
   const getApplicationStatus = (internshipId: string) => {
@@ -244,6 +261,90 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               </p>
             )}
           </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-3 text-xs">
+          <div className="flex items-center gap-1.5 text-slate-500 font-semibold">
+            <GraduationCap className="h-4 w-4 text-indigo-600" />
+            <span>Khoa / Ngành:</span>
+          </div>
+
+          <select
+            value={selectedFacultyId}
+            onChange={(e) => {
+              setSelectedFacultyId(e.target.value);
+              setSelectedMajorId('');
+              setPage(1);
+            }}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-700 outline-none focus:border-indigo-500 focus:bg-white"
+          >
+            <option value="">Tất cả các Khoa</option>
+            {faculties.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.code} — {f.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedMajorId}
+            onChange={(e) => {
+              setSelectedMajorId(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-700 outline-none focus:border-indigo-500 focus:bg-white"
+          >
+            <option value="">Tất cả các Ngành</option>
+            {(selectedFacultyId
+              ? faculties.filter((f) => f.id === selectedFacultyId)
+              : faculties
+            ).map((f) => (
+              <optgroup key={f.id} label={`Khoa ${f.name}`}>
+                {f.majors.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+
+          {studentProfile.majorId && (
+            <button
+              type="button"
+              onClick={() => {
+                if (selectedMajorId === studentProfile.majorId) {
+                  setSelectedMajorId('');
+                  setSelectedFacultyId('');
+                } else {
+                  setSelectedFacultyId(studentProfile.facultyId || '');
+                  setSelectedMajorId(studentProfile.majorId || '');
+                }
+                setPage(1);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 font-semibold transition ${selectedMajorId === studentProfile.majorId
+                ? 'border-indigo-600 bg-indigo-600 text-white shadow-2xs'
+                : 'border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100'
+                }`}
+            >
+              <GraduationCap className="h-3.5 w-3.5" />
+              <span>Phù hợp ngành của tôi ({studentProfile.major})</span>
+            </button>
+          )}
+
+          {(selectedFacultyId || selectedMajorId) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedFacultyId('');
+                setSelectedMajorId('');
+                setPage(1);
+              }}
+              className="text-slate-500 hover:text-rose-600 font-semibold px-2 py-1"
+            >
+              Xóa lọc ngành
+            </button>
+          )}
         </div>
       </div>
 
@@ -353,6 +454,34 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                     {job.description}
                   </p>
 
+                  {/* Target Majors badges */}
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                    {job.majors && job.majors.length > 0 ? (
+                      job.majors.map((m) => {
+                        const isStudentMajor =
+                          (studentProfile.majorId && m.majorId === studentProfile.majorId) ||
+                          m.name.toLowerCase() === studentProfile.major.toLowerCase();
+                        return (
+                          <span
+                            key={m.majorId}
+                            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium border ${isStudentMajor
+                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold'
+                              : 'bg-slate-50 text-slate-600 border-slate-200'
+                              }`}
+                          >
+                            <GraduationCap className="w-3 h-3" />
+                            {isStudentMajor ? '✓ ' : ''}
+                            {m.name}
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 border border-slate-200">
+                        <GraduationCap className="w-3 h-3" /> Mở cho mọi ngành
+                      </span>
+                    )}
+                  </div>
+
                   {/* Required Skills tags */}
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {job.requiredSkills.map((sk) => {
@@ -360,11 +489,10 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                       return (
                         <span
                           key={sk}
-                          className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${
-                            isMatched
-                              ? 'bg-blue-50 text-blue-700 border-blue-200 font-semibold'
-                              : 'bg-slate-100 text-slate-600 border-slate-200'
-                          }`}
+                          className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${isMatched
+                            ? 'bg-blue-50 text-blue-700 border-blue-200 font-semibold'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}
                         >
                           {isMatched ? '✓ ' : ''}{sk}
                         </span>
@@ -519,6 +647,26 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                       {sk}
                     </span>
                   ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">Ngành đào tạo ưu tiên:</h4>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {activeModalInternship.majors && activeModalInternship.majors.length > 0 ? (
+                    activeModalInternship.majors.map((m) => (
+                      <span
+                        key={m.majorId}
+                        className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-md font-semibold text-[11px]"
+                      >
+                        {m.name} ({m.faculty.name})
+                      </span>
+                    ))
+                  ) : (
+                    <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-medium text-[11px]">
+                      Mở cho sinh viên tất cả các ngành
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

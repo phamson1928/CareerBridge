@@ -9,8 +9,8 @@ import {
   RecommendationStudent,
 } from './types/recommendation.types';
 
-const SCORING_VERSION = 'recommendation-scoring-v1';
-const PROMPT_VERSION = 'recommendation-explanation-v1';
+const SCORING_VERSION = 'recommendation-scoring-v2';
+const PROMPT_VERSION = 'recommendation-explanation-v2';
 
 @Injectable()
 export class RecommendationCacheService {
@@ -29,6 +29,8 @@ export class RecommendationCacheService {
       ai: { enabled: this.isAiEnabled(), model: this.getModel() },
       student: {
         major: student.major,
+        majorId: student.majorId ?? null,
+        facultyId: student.facultyId ?? null,
         summary: student.summary?.trim() ?? null,
         skills: [...student.skills]
           .sort(by('skillId'))
@@ -68,6 +70,9 @@ export class RecommendationCacheService {
           isRequired: skill.isRequired,
           weight: skill.weight,
         })),
+        majorIds: [...(internship.majors ?? [])]
+          .map((m) => m.majorId)
+          .sort(),
       })),
     };
     return createHash('sha256')

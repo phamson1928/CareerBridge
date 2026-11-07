@@ -46,22 +46,48 @@ export class DashboardService {
     }
 
     const trendRange = this.trendRange(query.months);
+    const facultyId = query.facultyId?.trim() || undefined;
+    const majorId = query.majorId?.trim() || undefined;
+    const studentScopeWhere: Prisma.StudentProfileWhereInput = {
+      ...(majorId
+        ? { majorId }
+        : facultyId
+          ? { majorRef: { facultyId } }
+          : {}),
+    };
+    const lecturerScopeWhere: Prisma.LecturerProfileWhereInput = {
+      ...(facultyId ? { facultyId } : {}),
+    };
     const internshipWhere: Prisma.InternshipWhereInput = {
       ...(semester ? { semesterId: semester.id } : {}),
+      ...(majorId
+        ? { majors: { some: { majorId } } }
+        : facultyId
+          ? { majors: { some: { major: { facultyId } } } }
+          : {}),
     };
     const nonCancelledInternshipWhere: Prisma.InternshipWhereInput = {
       ...internshipWhere,
       status: { not: InternshipStatus.CANCELLED },
     };
-    const applicationWhere: Prisma.ApplicationWhereInput = semester
-      ? { internship: { semesterId: semester.id } }
-      : {};
-    const placementWhere: Prisma.InternshipPlacementWhereInput = semester
-      ? { semesterId: semester.id }
-      : {};
-    const reportWhere: Prisma.ReportWhereInput = semester
-      ? { placement: { semesterId: semester.id } }
-      : {};
+    const applicationWhere: Prisma.ApplicationWhereInput = {
+      ...(semester ? { internship: { semesterId: semester.id } } : {}),
+      ...(majorId || facultyId ? { student: studentScopeWhere } : {}),
+    };
+    const placementWhere: Prisma.InternshipPlacementWhereInput = {
+      ...(semester ? { semesterId: semester.id } : {}),
+      ...(majorId || facultyId ? { student: studentScopeWhere } : {}),
+    };
+    const reportWhere: Prisma.ReportWhereInput = {
+      ...(semester || majorId || facultyId
+        ? {
+            placement: {
+              ...(semester ? { semesterId: semester.id } : {}),
+              ...(majorId || facultyId ? { student: studentScopeWhere } : {}),
+            },
+          }
+        : {}),
+    };
 
     const data = await this.prisma.$transaction(async (tx) => {
       const [
@@ -87,21 +113,25 @@ export class DashboardService {
         placementTrendRows,
         completedPlacementTrendRows,
         skillRows,
+        facultiesWithMajors,
+        studentMajorRows,
+        lecturerFacultyRows,
+        placementStudentRows,
       ] = await Promise.all([
-        tx.studentProfile.count(),
+        tx.studentProfile.count({ where: studentScopeWhere }),
         tx.user.count({
           where: {
             role: Role.STUDENT,
             status: UserStatus.ACTIVE,
-            studentProfile: { isNot: null },
+            studentProfile: { is: studentScopeWhere },
           },
         }),
-        tx.lecturerProfile.count(),
+        tx.lecturerProfile.count({ where: lecturerScopeWhere }),
         tx.user.count({
           where: {
             role: Role.LECTURER,
             status: UserStatus.ACTIVE,
-            lecturerProfile: { isNot: null },
+            lecturerProfile: { is: lecturerScopeWhere },
           },
         }),
         tx.companyProfile.count({ where: { status: CompanyStatus.APPROVED } }),
@@ -196,6 +226,35 @@ export class DashboardService {
           _count: { _all: true },
           _sum: { weight: true },
         }),
+        tx.faculty.findMany({
+          orderBy: { name: 'asc' },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            majors: {
+              orderBy: { name: 'asc' },
+              select: { id: true, code: true, name: true },
+            },
+          },
+        }),
+        tx.studentProfile.groupBy({
+          by: ['majorId'],
+          _count: { _all: true },
+        }),
+        tx.lecturerProfile.groupBy({
+          by: ['facultyId'],
+          _count: { _all: true },
+        }),
+        tx.internshipPlacement.findMany({
+          where: semester ? { semesterId: semester.id } : {},
+          select: {
+            status: true,
+            studentId: true,
+            student: { select: { majorId: true } },
+            supervision: { select: { status: true } },
+          },
+        }),
       ]);
 
       const skillIds = [...new Set(skillRows.map((row) => row.skillId))];
@@ -229,6 +288,10 @@ export class DashboardService {
         completedPlacementTrendRows,
         skillRows,
         skills,
+        facultiesWithMajors,
+        studentMajorRows,
+        lecturerFacultyRows,
+        placementStudentRows,
       };
     });
 
@@ -239,9 +302,124 @@ export class DashboardService {
     const applicantStudents = data.applicantStudentRows.length;
     const placedStudents = data.placedStudentRows.length;
 
+    const studentCountByMajor = new Map<string, number>();
+    for (const row of data.studentMajorRows) {
+      if (row.majorId) {
+        studentCountByMajor.set(row.majorId, row._count._all);
+      }
+    }
+    const lecturerCountByFaculty = new Map<string, number>();
+    for (const row of data.lecturerFacultyRows) {
+      if (row.facultyId) {
+        lecturerCountByFaculty.set(row.facultyId, row._count._all);
+      }
+    }
+    const majorPlacementStats = new Map<
+      string,
+      {
+        totalPlacements: number;
+        activePlacements: number;
+        completedPlacements: number;
+        pendingPlacements: number;
+        unassignedPlacements: number;
+        placedStudentIds: Set<string>;
+      }
+    >();
+    for (const row of data.placementStudentRows) {
+      const mId = row.student.majorId;
+      if (!mId) continue;
+      let stat = majorPlacementStats.get(mId);
+      if (!stat) {
+        stat = {
+          totalPlacements: 0,
+          activePlacements: 0,
+          completedPlacements: 0,
+          pendingPlacements: 0,
+          unassignedPlacements: 0,
+          placedStudentIds: new Set<string>(),
+        };
+        majorPlacementStats.set(mId, stat);
+      }
+      stat.totalPlacements += 1;
+      if (row.status === PlacementStatus.ACTIVE) stat.activePlacements += 1;
+      if (row.status === PlacementStatus.COMPLETED)
+        stat.completedPlacements += 1;
+      if (row.status === PlacementStatus.PENDING) {
+        stat.pendingPlacements += 1;
+        if (row.supervision?.status !== 'ACTIVE') {
+          stat.unassignedPlacements += 1;
+        }
+      }
+      if (
+        row.status === PlacementStatus.PENDING ||
+        row.status === PlacementStatus.ACTIVE ||
+        row.status === PlacementStatus.COMPLETED
+      ) {
+        stat.placedStudentIds.add(row.studentId);
+      }
+    }
+
+    const facultyBreakdown = data.facultiesWithMajors.map((faculty) => {
+      const majors = faculty.majors.map((major) => {
+        const totalStudentsInMajor = studentCountByMajor.get(major.id) ?? 0;
+        const stat = majorPlacementStats.get(major.id);
+        const placedInMajor = stat?.placedStudentIds.size ?? 0;
+        return {
+          majorId: major.id,
+          code: major.code,
+          name: major.name,
+          totalStudents: totalStudentsInMajor,
+          placedStudents: placedInMajor,
+          totalPlacements: stat?.totalPlacements ?? 0,
+          activePlacements: stat?.activePlacements ?? 0,
+          completedPlacements: stat?.completedPlacements ?? 0,
+          pendingPlacements: stat?.pendingPlacements ?? 0,
+          unassignedPlacements: stat?.unassignedPlacements ?? 0,
+          placementRate: this.rate(placedInMajor, totalStudentsInMajor),
+        };
+      });
+      const totalFacultyStudents = majors.reduce(
+        (sum, m) => sum + m.totalStudents,
+        0,
+      );
+      const placedFacultyStudents = majors.reduce(
+        (sum, m) => sum + m.placedStudents,
+        0,
+      );
+      return {
+        facultyId: faculty.id,
+        code: faculty.code,
+        name: faculty.name,
+        totalStudents: totalFacultyStudents,
+        totalLecturers: lecturerCountByFaculty.get(faculty.id) ?? 0,
+        placedStudents: placedFacultyStudents,
+        totalPlacements: majors.reduce((sum, m) => sum + m.totalPlacements, 0),
+        activePlacements: majors.reduce(
+          (sum, m) => sum + m.activePlacements,
+          0,
+        ),
+        completedPlacements: majors.reduce(
+          (sum, m) => sum + m.completedPlacements,
+          0,
+        ),
+        pendingPlacements: majors.reduce(
+          (sum, m) => sum + m.pendingPlacements,
+          0,
+        ),
+        unassignedPlacements: majors.reduce(
+          (sum, m) => sum + m.unassignedPlacements,
+          0,
+        ),
+        placementRate: this.rate(placedFacultyStudents, totalFacultyStudents),
+        majors,
+      };
+    });
+
     return {
       scope: {
         semester,
+        facultyId: facultyId ?? null,
+        majorId: majorId ?? null,
         months: query.months,
         from: trendRange.from,
         to: trendRange.to,
@@ -301,6 +479,7 @@ export class DashboardService {
         data.completedPlacementTrendRows.map((row) => row.updatedAt),
       ),
       topSkills: this.topSkills(data.skillRows, data.skills),
+      facultyBreakdown,
     };
   }
 

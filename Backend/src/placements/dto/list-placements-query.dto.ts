@@ -48,4 +48,12 @@ export class ListPlacementsQueryDto {
   @IsOptional()
   @IsEnum(ReportStatus)
   reportStatus?: ReportStatus;
+
+  @IsOptional()
+  @IsString()
+  facultyId?: string;
+
+  @IsOptional()
+  @IsString()
+  majorId?: string;
 }

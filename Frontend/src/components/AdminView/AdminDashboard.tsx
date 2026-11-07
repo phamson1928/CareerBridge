@@ -28,6 +28,7 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
+  Download,
   GraduationCap,
   Layers3,
   LoaderCircle,
@@ -38,8 +39,11 @@ import {
 import { getApiErrorMessage } from "../../auth/api";
 import { dashboardApi } from "../../dashboard/api";
 import type { AdminDashboardData } from "../../dashboard/types";
+import { facultiesApi } from "../../organization/api";
+import type { FacultyOption } from "../../organization/types";
 import { semestersApi } from "../../semesters/api";
 import type { SemesterRecord } from "../../semesters/types";
+import { downloadExcelWorkbook } from "../../utils/excelExport";
 
 interface AdminDashboardProps {
   onNavigate?: (tab: string) => void;
@@ -117,12 +121,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigate,
 }) => {
   const [semesterId, setSemesterId] = useState("ALL");
+  const [facultyId, setFacultyId] = useState("");
+  const [majorId, setMajorId] = useState("");
   const [months, setMonths] = useState<3 | 6 | 9 | 12>(6);
   const [semesters, setSemesters] = useState<SemesterRecord[]>([]);
+  const [faculties, setFaculties] = useState<FacultyOption[]>([]);
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const requestSequence = useRef(0);
+
+  useEffect(() => {
+    facultiesApi
+      .listOptions({ includeInactive: true })
+      .then((res) => setFaculties(res.items))
+      .catch(() => setFaculties([]));
+  }, []);
 
   const load = useCallback(async () => {
     const sequence = ++requestSequence.current;
@@ -132,6 +146,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const [dashboard, semesterPage] = await Promise.all([
         dashboardApi.getAdmin({
           semesterId: semesterId === "ALL" ? undefined : semesterId,
+          facultyId: facultyId || undefined,
+          majorId: majorId || undefined,
           months,
         }),
         semestersApi.list({ page: 1, limit: 100 }),
@@ -145,7 +161,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     } finally {
       if (sequence === requestSequence.current) setLoading(false);
     }
-  }, [months, semesterId]);
+  }, [facultyId, majorId, months, semesterId]);
 
   useEffect(() => {
     void load();
@@ -193,6 +209,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
   if (!data) return null;
   const { global, kpis, scope } = data;
+  const facultyBreakdown = data.facultyBreakdown ?? [];
+
+  const exportDashboardExcel = () => {
+    const majorRows = facultyBreakdown.flatMap((f) =>
+      f.majors.map((m) => ({
+        facultyCode: f.code,
+        facultyName: f.name,
+        ...m,
+      })),
+    );
+    downloadExcelWorkbook("bao-cao-thong-ke-thuc-tap-toan-truong", [
+      {
+        name: "Thong ke theo Khoa",
+        title: "BÁO CÁO THỐNG KÊ THỰC TẬP THEO KHOA",
+        subtitle: `Phạm vi: ${scope.semester?.name ?? "Toàn hệ thống"} — Xuất lúc: ${dateTime.format(new Date())}`,
+        columns: [
+          { header: "Mã Khoa", width: 95, value: (f) => f.code },
+          { header: "Tên Khoa", width: 210, value: (f) => f.name },
+          { header: "Số Giảng viên", width: 110, value: (f) => f.totalLecturers },
+          { header: "Tổng Sinh viên", width: 115, value: (f) => f.totalStudents },
+          { header: "SV Đã có nơi TT", width: 120, value: (f) => f.placedStudents },
+          { header: "Tỷ lệ có nơi TT (%)", width: 125, value: (f) => `${f.placementRate}%` },
+          { header: "Đang thực tập", width: 115, value: (f) => f.activePlacements },
+          { header: "Đã hoàn tất", width: 110, value: (f) => f.completedPlacements },
+          { header: "Chờ phân công GVHD", width: 135, value: (f) => f.unassignedPlacements },
+        ],
+        rows: facultyBreakdown,
+      },
+      {
+        name: "Thong ke theo Nganh",
+        title: "BÁO CÁO THỐNG KÊ THỰC TẬP CHI TIẾT THEO NGÀNH ĐÀO TẠO",
+        subtitle: `Phạm vi: ${scope.semester?.name ?? "Toàn hệ thống"} — Xuất lúc: ${dateTime.format(new Date())}`,
+        columns: [
+          { header: "Khoa", width: 185, value: (m) => `${m.facultyCode} — ${m.facultyName}` },
+          { header: "Mã Ngành", width: 100, value: (m) => m.code },
+          { header: "Tên Ngành đào tạo", width: 210, value: (m) => m.name },
+          { header: "Tổng Sinh viên", width: 115, value: (m) => m.totalStudents },
+          { header: "SV Đã có nơi TT", width: 120, value: (m) => m.placedStudents },
+          { header: "Tỷ lệ có nơi TT (%)", width: 125, value: (m) => `${m.placementRate}%` },
+          { header: "Đang thực tập", width: 115, value: (m) => m.activePlacements },
+          { header: "Đã hoàn tất", width: 110, value: (m) => m.completedPlacements },
+          { header: "Chờ phân công GVHD", width: 135, value: (m) => m.unassignedPlacements },
+        ],
+        rows: majorRows,
+      },
+    ]);
+  };
 
   return (
     <section className="admin-page admin-page--feature space-y-5">
@@ -210,7 +273,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               liệu vận hành thực tế.
             </p>
           </div>
-          <div className="grid gap-2.5 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
             <label className="text-xs font-semibold text-white/80">
               Kỳ thực tập
               <div className="relative mt-1.5">
@@ -230,6 +293,68 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     >
                       {semester.name}
                     </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+              </div>
+            </label>
+            <label className="text-xs font-semibold text-white/80">
+              Khoa
+              <div className="relative mt-1.5">
+                <select
+                  value={facultyId}
+                  onChange={(event) => {
+                    setFacultyId(event.target.value);
+                    setMajorId("");
+                  }}
+                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
+                >
+                  <option className="bg-slate-900 text-white py-1" value="">
+                    Tất cả Khoa
+                  </option>
+                  {faculties.map((f) => (
+                    <option
+                      className="bg-slate-900 text-white py-1"
+                      key={f.id}
+                      value={f.id}
+                    >
+                      {f.code} — {f.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+              </div>
+            </label>
+            <label className="text-xs font-semibold text-white/80">
+              Ngành đào tạo
+              <div className="relative mt-1.5">
+                <select
+                  value={majorId}
+                  onChange={(event) => setMajorId(event.target.value)}
+                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
+                >
+                  <option className="bg-slate-900 text-white py-1" value="">
+                    Tất cả Ngành
+                  </option>
+                  {(facultyId
+                    ? faculties.filter((f) => f.id === facultyId)
+                    : faculties
+                  ).map((f) => (
+                    <optgroup
+                      className="bg-slate-900 text-white"
+                      key={f.id}
+                      label={`Khoa ${f.name}`}
+                    >
+                      {f.majors.map((m) => (
+                        <option
+                          className="bg-slate-900 text-white py-1"
+                          key={m.id}
+                          value={m.id}
+                        >
+                          {m.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
@@ -260,17 +385,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </label>
           </div>
         </div>
-        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-xs text-white/75">
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarClock className="h-3.5 w-3.5" /> Cập nhật:{" "}
-            {dateTime.format(new Date(scope.generatedAt))}
-          </span>
-          <span>Phạm vi: {scope.semester?.name ?? "Toàn hệ thống"}</span>
-          {loading && (
-            <span className="inline-flex items-center gap-1.5 text-white">
-              <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> Đang đồng bộ
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-xs text-white/75">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarClock className="h-3.5 w-3.5" /> Cập nhật:{" "}
+              {dateTime.format(new Date(scope.generatedAt))}
             </span>
-          )}
+            <span>Phạm vi: {scope.semester?.name ?? "Toàn hệ thống"}</span>
+            {loading && (
+              <span className="inline-flex items-center gap-1.5 text-white">
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> Đang đồng bộ
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={exportDashboardExcel}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/15 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-white/25"
+          >
+            <Download className="h-4 w-4" /> Xuất báo cáo Excel Khoa/Ngành
+          </button>
         </div>
       </header>
       {error && (
@@ -634,6 +768,113 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </article>
       </div>
+      {facultyBreakdown.length > 0 && (
+        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
+          <div className="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
+            <div>
+              <h2 className="font-black text-slate-900">
+                Thống kê thực tập theo Khoa &amp; Ngành đào tạo
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Tổng hợp quy mô sinh viên, giảng viên và tiến độ phân bố thực tập trên toàn trường.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={exportDashboardExcel}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+            >
+              <Download className="h-4 w-4 text-[#00878a]" /> Xuất Excel Khoa/Ngành
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="px-5 py-3.5">Khoa / Ngành đào tạo</th>
+                  <th className="px-4 py-3.5 text-right">Sinh viên</th>
+                  <th className="px-4 py-3.5 text-right">Giảng viên</th>
+                  <th className="px-4 py-3.5 text-right">Đã có nơi TT</th>
+                  <th className="px-4 py-3.5 text-right">Đang TT</th>
+                  <th className="px-4 py-3.5 text-right">Hoàn tất</th>
+                  <th className="px-5 py-3.5 text-right">Tỷ lệ có nơi TT</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(facultyId
+                  ? facultyBreakdown.filter((f) => f.facultyId === facultyId)
+                  : facultyBreakdown
+                ).map((f) => (
+                  <React.Fragment key={f.facultyId}>
+                    <tr className="bg-slate-50/70 font-bold text-slate-900">
+                      <td className="px-5 py-3">
+                        <span className="mr-2 rounded-md bg-[#e6f6f6] px-2 py-0.5 font-mono text-[10px] font-extrabold text-[#00878a]">
+                          {f.code}
+                        </span>
+                        Khoa {f.name}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {number.format(f.totalStudents)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {number.format(f.totalLecturers)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-[#00878a]">
+                        {number.format(f.placedStudents)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {number.format(f.activePlacements)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {number.format(f.completedPlacements)}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <span className="rounded-full bg-[#e6f6f6] px-2.5 py-0.5 text-[11px] font-extrabold text-[#00878a]">
+                          {f.placementRate}%
+                        </span>
+                      </td>
+                    </tr>
+                    {(majorId
+                      ? f.majors.filter((m) => m.majorId === majorId)
+                      : f.majors
+                    ).map((m) => (
+                      <tr
+                        key={m.majorId}
+                        className="text-slate-600 transition hover:bg-slate-50/50"
+                      >
+                        <td className="py-2.5 pl-10 pr-5">
+                          <span className="mr-2 font-mono text-[10px] text-slate-400">
+                            {m.code}
+                          </span>
+                          {m.name}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-medium">
+                          {number.format(m.totalStudents)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-slate-400">
+                          —
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-semibold text-slate-800">
+                          {number.format(m.placedStudents)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          {number.format(m.activePlacements)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          {number.format(m.completedPlacements)}
+                        </td>
+                        <td className="px-5 py-2.5 text-right font-semibold text-slate-700">
+                          {m.placementRate}%
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      )}
     </section>
   );
 };

@@ -64,6 +64,22 @@ const placementSelect = {
       fullName: true,
       avatarFileId: true,
       major: true,
+      majorId: true,
+      majorRef: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          facultyId: true,
+          faculty: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+        },
+      },
     },
   },
   company: {
@@ -102,6 +118,14 @@ const placementSelect = {
           userId: true,
           fullName: true,
           department: true,
+          facultyId: true,
+          faculty: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
           title: true,
           avatarFileId: true,
         },
@@ -131,6 +155,8 @@ export interface PlacementProgress {
   finalScore: number | null;
   hasCompanyCertificate: boolean;
   lastReportAt: Date | null;
+  statusNote: string | null;
+  statusChangedAt: Date | null;
 }
 
 @Injectable()
@@ -155,10 +181,19 @@ export class PlacementsService {
             query.lecturerId
           ? { supervision: { is: activeSupervision } }
           : {};
+    const studentOrgFilter: Prisma.StudentProfileWhereInput = {
+      ...(query.majorId ? { majorId: query.majorId } : {}),
+      ...(query.facultyId
+        ? { majorRef: { is: { facultyId: query.facultyId } } }
+        : {}),
+    };
     const where: Prisma.InternshipPlacementWhereInput = {
       ...(query.status ? { status: query.status } : {}),
       ...(query.semesterId ? { semesterId: query.semesterId } : {}),
       ...(query.companyId ? { companyId: query.companyId } : {}),
+      ...(query.majorId || query.facultyId
+        ? { student: { is: studentOrgFilter } }
+        : {}),
       ...supervisionFilter,
       ...(query.reportStatus
         ? { reports: { some: { status: query.reportStatus } } }
@@ -420,6 +455,35 @@ export class PlacementsService {
           }
         }
 
+        if (dto.status === PublicPlacementStatus.CANCELLED) {
+          if (!dto.note || !dto.note.trim()) {
+            throw new BadRequestException({
+              code: 'PLACEMENT_CANCELLATION_REASON_REQUIRED',
+              message: 'Vui lòng nhập lý do hủy hoặc dừng hồ sơ thực tập.',
+            });
+          }
+          const [finalReport, evaluationCount] = await Promise.all([
+            tx.report.findFirst({
+              where: {
+                placementId: id,
+                week: 0,
+                status: { not: ReportStatus.DRAFT },
+              },
+              select: { id: true },
+            }),
+            tx.evaluation.count({
+              where: { placementId: id },
+            }),
+          ]);
+          if (finalReport || evaluationCount > 0) {
+            throw new ConflictException({
+              code: 'PLACEMENT_ALREADY_EVALUATED_OR_FINALIZED',
+              message:
+                'Không thể hủy hoặc dừng hồ sơ thực tập khi sinh viên đã nộp báo cáo tổng kết hoặc đã có điểm đánh giá cuối kỳ.',
+            });
+          }
+        }
+
         const statusUpdate = await tx.internshipPlacement.updateMany({
           where: { id, status: current.status },
           data: {
@@ -520,7 +584,7 @@ export class PlacementsService {
           content:
             dto.status === PublicPlacementStatus.COMPLETED
               ? `Hồ sơ thực tập vị trí "${placement.internship.title}" của sinh viên ${placement.student.fullName} tại ${placement.company.companyName} đã được xác nhận hoàn thành.`
-              : `Hồ sơ thực tập vị trí "${placement.internship.title}" của sinh viên ${placement.student.fullName} tại ${placement.company.companyName} đã bị hủy.`,
+              : `Hồ sơ thực tập vị trí "${placement.internship.title}" của sinh viên ${placement.student.fullName} tại ${placement.company.companyName} đã bị hủy.${dto.note?.trim() ? ` Lý do: ${dto.note.trim()}` : ''}`,
           resourceId: id,
           metadata: { status: dto.status },
         });
@@ -681,7 +745,7 @@ export class PlacementsService {
   private async progressByPlacementIds(ids: string[]) {
     const progress = new Map<string, PlacementProgress>();
     if (ids.length === 0) return progress;
-    const [reports, evaluations] = await this.prisma.$transaction([
+    const [reports, evaluations, statusLogs] = await this.prisma.$transaction([
       this.prisma.report.findMany({
         where: { placementId: { in: ids } },
         select: {
@@ -698,6 +762,19 @@ export class PlacementsService {
           type: true,
           score: true,
           certificateFileId: true,
+        },
+      }),
+      this.prisma.auditLog.findMany({
+        where: {
+          entity: 'InternshipPlacement',
+          action: 'PLACEMENT_STATUS_CHANGED',
+          entityId: { in: ids },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          entityId: true,
+          metadata: true,
+          createdAt: true,
         },
       }),
     ]);
@@ -719,7 +796,25 @@ export class PlacementsService {
         finalScore: null,
         hasCompanyCertificate: false,
         lastReportAt: null,
+        statusNote: null,
+        statusChangedAt: null,
       });
+    }
+    for (const log of statusLogs) {
+      if (!log.entityId) continue;
+      const item = progress.get(log.entityId);
+      if (!item || item.statusChangedAt) continue;
+      item.statusChangedAt = log.createdAt;
+      if (
+        log.metadata &&
+        typeof log.metadata === 'object' &&
+        !Array.isArray(log.metadata)
+      ) {
+        const rawNote = (log.metadata as Record<string, unknown>).note;
+        if (typeof rawNote === 'string' && rawNote.trim()) {
+          item.statusNote = rawNote.trim();
+        }
+      }
     }
     for (const row of reports) {
       const item = progress.get(row.placementId)!;
@@ -782,9 +877,27 @@ export class PlacementsService {
       finalScore: null,
       hasCompanyCertificate: false,
       lastReportAt: null,
+      statusNote: null,
+      statusChangedAt: null,
     };
     return {
       ...item,
+      student: {
+        ...item.student,
+        major: item.student.majorRef?.name ?? item.student.major,
+        faculty: item.student.majorRef?.faculty ?? null,
+      },
+      supervision: item.supervision
+        ? {
+            ...item.supervision,
+            lecturer: {
+              ...item.supervision.lecturer,
+              department:
+                item.supervision.lecturer.faculty?.name ??
+                item.supervision.lecturer.department,
+            },
+          }
+        : null,
       assignmentStatus:
         item.supervision?.status === SupervisionStatus.ACTIVE
           ? PlacementAssignmentStatus.ASSIGNED

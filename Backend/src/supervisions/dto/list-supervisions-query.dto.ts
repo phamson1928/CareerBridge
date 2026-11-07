@@ -34,4 +34,12 @@ export class ListSupervisionsQueryDto {
   @IsOptional()
   @IsEnum(PlacementStatus)
   placementStatus?: PlacementStatus;
+
+  @IsOptional()
+  @IsString()
+  facultyId?: string;
+
+  @IsOptional()
+  @IsString()
+  majorId?: string;
 }

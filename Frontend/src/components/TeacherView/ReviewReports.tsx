@@ -88,6 +88,8 @@ export const ReviewReports = () => {
         const match = [
           item.placement.student.fullName,
           item.placement.student.studentCode,
+          item.placement.student.majorRef?.name ?? item.placement.student.major ?? "",
+          item.placement.student.majorRef?.faculty?.name ?? "",
           item.placement.company.companyName,
           item.title ?? "",
           item.content,
@@ -322,6 +324,16 @@ export const ReviewReports = () => {
                           {report.placement.student.fullName} (
                           {report.placement.student.studentCode})
                         </h3>
+                        {(report.placement.student.majorRef?.name ||
+                          report.placement.student.major) && (
+                          <span className="rounded-md bg-violet-50 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                            {report.placement.student.majorRef?.name ??
+                              report.placement.student.major}
+                            {report.placement.student.majorRef?.faculty?.name
+                              ? ` · ${report.placement.student.majorRef.faculty.name}`
+                              : ""}
+                          </span>
+                        )}
                       </div>
                       <p className="mt-1 text-xs font-semibold text-slate-700">
                         {report.title ||
@@ -399,6 +411,17 @@ export const ReviewReports = () => {
                   {selected.placement.student.fullName} (
                   {selected.placement.student.studentCode})
                 </h3>
+                {(selected.placement.student.majorRef?.name ||
+                  selected.placement.student.major) && (
+                  <p className="mt-0.5 text-xs font-semibold text-violet-700">
+                    Ngành:{" "}
+                    {selected.placement.student.majorRef?.name ??
+                      selected.placement.student.major}
+                    {selected.placement.student.majorRef?.faculty?.name
+                      ? ` · Khoa ${selected.placement.student.majorRef.faculty.name}`
+                      : ""}
+                  </p>
+                )}
                 <p className="text-xs text-slate-500">
                   {selected.placement.company.companyName} ·{" "}
                   {selected.placement.internship.title}

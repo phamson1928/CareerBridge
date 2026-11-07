@@ -64,7 +64,7 @@ const statusLabel: Record<ReportRecord["status"], string> = {
   REJECTED: "Cần chỉnh sửa & nộp lại",
 };
 
-export const StudentReports = () => {
+export const StudentReports: React.FC<{ onNavigateTab?: (tab: string) => void }> = ({ onNavigateTab }) => {
   const [reports, setReports] = useState<ReportRecord[]>([]);
   const [placements, setPlacements] = useState<PlacementRecord[]>([]);
   const [selectedPlacementFilter, setSelectedPlacementFilter] = useState("");
@@ -442,6 +442,33 @@ export const StudentReports = () => {
 
           {finalReport && (
             <div className="mt-4 border-t border-indigo-100 pt-4">
+              {finalReport.status === "APPROVED" && (
+                <div className="mb-4 flex flex-col justify-between gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 sm:flex-row sm:items-center">
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-xl bg-emerald-600 p-2 text-white">
+                      <Award className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-black text-emerald-950">
+                        Báo cáo tổng kết đã được phê duyệt!
+                      </h4>
+                      <p className="text-xs text-emerald-800">
+                        Bạn có thể xem bảng điểm tổng kết (50% DN + 50% GVHD) và Giấy chứng nhận thực tập từ doanh nghiệp.
+                      </p>
+                    </div>
+                  </div>
+                  {onNavigateTab && (
+                    <button
+                      type="button"
+                      onClick={() => onNavigateTab("evaluations")}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
+                    >
+                      <Award className="h-4 w-4" />
+                      Xem Kết quả Đánh giá
+                    </button>
+                  )}
+                </div>
+              )}
               <p className="whitespace-pre-line text-sm leading-6 text-slate-700">
                 {finalReport.content}
               </p>

@@ -1,5 +1,7 @@
 import { Transform, TransformFnParams, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayUnique,
   IsArray,
   IsDate,
   IsEnum,
@@ -98,4 +100,12 @@ export class RepostInternshipDto {
   @ValidateNested({ each: true })
   @Type(() => InternshipSkillItemDto)
   skills?: InternshipSkillItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @ArrayMaxSize(30)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  majorIds?: string[];
 }

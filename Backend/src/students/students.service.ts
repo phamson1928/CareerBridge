@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { FileType, Prisma, Role } from '../generated/prisma/client';
+import { MajorsService } from '../majors/majors.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStudentProfileDto } from './dto/create-student-profile.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
@@ -18,6 +20,7 @@ const profileSelect = {
   studentCode: true,
   fullName: true,
   major: true,
+  majorId: true,
   phone: true,
   summary: true,
   gpa: true,
@@ -26,6 +29,23 @@ const profileSelect = {
   createdAt: true,
   updatedAt: true,
   user: { select: { email: true } },
+  majorRef: {
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      isActive: true,
+      facultyId: true,
+      faculty: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          isActive: true,
+        },
+      },
+    },
+  },
   cvFile: {
     select: {
       id: true,
@@ -63,7 +83,10 @@ type StudentProfileRecord = Prisma.StudentProfileGetPayload<{
 
 @Injectable()
 export class StudentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly majorsService: MajorsService,
+  ) {}
 
   async findByUserId(userId: string) {
     const profile = await this.prisma.studentProfile.findUnique({
@@ -78,13 +101,16 @@ export class StudentsService {
     await this.ensureStudentUser(userId);
     await this.ensureCvFileIsOwnedByStudent(dto.cvFileId, userId);
     await this.ensureAvatarFileIsOwnedByUser(dto.avatarFileId, userId);
+    const resolvedMajor = await this.resolveMajorInput(dto.majorId, dto.major);
+
     try {
       const profile = await this.prisma.studentProfile.create({
         data: {
           userId,
           studentCode: dto.studentCode,
           fullName: dto.fullName,
-          major: dto.major,
+          major: resolvedMajor.majorName,
+          majorId: resolvedMajor.majorId,
           phone: dto.phone,
           summary: dto.summary,
           gpa: dto.gpa,
@@ -103,10 +129,20 @@ export class StudentsService {
     const profile = await this.findByUserId(userId);
     await this.ensureCvFileIsOwnedByStudent(dto.cvFileId, profile.userId);
     await this.ensureAvatarFileIsOwnedByUser(dto.avatarFileId, profile.userId);
+
+    const majorPatch = await this.resolveMajorUpdate(
+      dto.majorId,
+      dto.major,
+      profile.majorId,
+    );
+
     try {
       const updatedProfile = await this.prisma.studentProfile.update({
         where: { id: profile.id },
-        data: this.toUpdateData(dto),
+        data: {
+          ...this.toUpdateData(dto),
+          ...majorPatch,
+        },
         select: profileSelect,
       });
       return this.toProfileResponse(updatedProfile);
@@ -232,15 +268,77 @@ export class StudentsService {
     return { deleted: true, id: project.id };
   }
 
+  private async resolveMajorInput(
+    majorIdInput?: string,
+    majorTextInput?: string,
+  ): Promise<{ majorId: string | null; majorName: string }> {
+    if (majorIdInput) {
+      const major = await this.majorsService.assertActiveExists(majorIdInput);
+      return { majorId: major.id, majorName: major.name };
+    }
+
+    if (majorTextInput) {
+      const matched = await this.prisma.major.findFirst({
+        where: {
+          isActive: true,
+          faculty: { isActive: true },
+          OR: [
+            { code: { equals: majorTextInput, mode: 'insensitive' } },
+            { name: { equals: majorTextInput, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true, name: true },
+      });
+      if (matched) {
+        return { majorId: matched.id, majorName: matched.name };
+      }
+      return { majorId: null, majorName: majorTextInput };
+    }
+
+    throw new BadRequestException({
+      code: 'MAJOR_REQUIRED',
+      message: 'Vui lòng chọn ngành học',
+    });
+  }
+
+  private async resolveMajorUpdate(
+    majorIdInput: string | undefined,
+    majorTextInput: string | undefined,
+    currentMajorId: string | null,
+  ): Promise<{ major?: string; majorId?: string | null }> {
+    if (majorIdInput !== undefined) {
+      if (majorIdInput === currentMajorId && currentMajorId) {
+        const currentMajor = await this.prisma.major.findUnique({
+          where: { id: currentMajorId },
+          select: { id: true, name: true },
+        });
+        if (currentMajor) {
+          return { majorId: currentMajor.id, major: currentMajor.name };
+        }
+      }
+      const major = await this.majorsService.assertActiveExists(majorIdInput);
+      return { majorId: major.id, major: major.name };
+    }
+
+    if (majorTextInput !== undefined) {
+      const resolved = await this.resolveMajorInput(undefined, majorTextInput);
+      return {
+        major: resolved.majorName,
+        ...(resolved.majorId ? { majorId: resolved.majorId } : {}),
+      };
+    }
+
+    return {};
+  }
+
   private toUpdateData(
     dto: UpdateStudentProfileDto,
-  ): Prisma.StudentProfileUpdateInput {
+  ): Prisma.StudentProfileUncheckedUpdateInput {
     return {
       ...(dto.studentCode !== undefined
         ? { studentCode: dto.studentCode }
         : {}),
       ...(dto.fullName !== undefined ? { fullName: dto.fullName } : {}),
-      ...(dto.major !== undefined ? { major: dto.major } : {}),
       ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
       ...(dto.summary !== undefined ? { summary: dto.summary } : {}),
       ...(dto.gpa !== undefined ? { gpa: dto.gpa } : {}),
@@ -254,6 +352,10 @@ export class StudentsService {
   private toProfileResponse(profile: StudentProfileRecord) {
     return {
       ...profile,
+      major: profile.majorRef?.name ?? profile.major,
+      majorId: profile.majorId ?? profile.majorRef?.id ?? null,
+      majorRef: profile.majorRef ?? null,
+      faculty: profile.majorRef?.faculty ?? null,
       skills: profile.skills.map((item) => ({
         skillId: item.skillId,
         name: item.skill.name,
@@ -367,8 +469,8 @@ export class StudentsService {
   private rethrowKnownDatabaseError(error: unknown): never {
     if (this.isPrismaError(error, 'P2002')) {
       throw new ConflictException({
-        code: 'STUDENT_PROFILE_ALREADY_EXISTS',
-        message: 'Student code or profile already exists',
+        code: 'STUDENT_PROFILE_CONFLICT',
+        message: 'Student profile or student code already exists',
       });
     }
     if (this.isPrismaError(error, 'P2003')) {
@@ -378,7 +480,9 @@ export class StudentsService {
           'Student profile cannot be deleted because related records must be retained',
       });
     }
-    if (this.isPrismaError(error, 'P2025')) throw this.notFound();
+    if (this.isPrismaError(error, 'P2025')) {
+      throw this.notFound();
+    }
     throw error;
   }
 

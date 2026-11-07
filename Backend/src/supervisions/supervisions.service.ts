@@ -42,6 +42,22 @@ const supervisionSelect = {
           studentCode: true,
           fullName: true,
           major: true,
+          majorId: true,
+          majorRef: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              facultyId: true,
+              faculty: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                },
+              },
+            },
+          },
           avatarFileId: true,
         },
       },
@@ -63,6 +79,14 @@ const supervisionSelect = {
       userId: true,
       fullName: true,
       department: true,
+      facultyId: true,
+      faculty: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+        },
+      },
       title: true,
       avatarFileId: true,
     },
@@ -83,11 +107,23 @@ export class SupervisionsService {
 
   async list(query: ListSupervisionsQueryDto) {
     const search = query.search?.trim();
+    const studentOrgFilter: Prisma.StudentProfileWhereInput = {
+      ...(query.majorId ? { majorId: query.majorId } : {}),
+      ...(query.facultyId
+        ? { majorRef: { is: { facultyId: query.facultyId } } }
+        : {}),
+    };
+    const placementFilter: Prisma.InternshipPlacementWhereInput = {
+      ...(query.placementStatus ? { status: query.placementStatus } : {}),
+      ...(query.majorId || query.facultyId
+        ? { student: { is: studentOrgFilter } }
+        : {}),
+    };
     const where: Prisma.SupervisionWhereInput = {
       ...(query.status ? { status: query.status } : {}),
       ...(query.lecturerId ? { lecturerId: query.lecturerId } : {}),
-      ...(query.placementStatus
-        ? { placement: { status: query.placementStatus } }
+      ...(query.placementStatus || query.majorId || query.facultyId
+        ? { placement: placementFilter }
         : {}),
       ...(search
         ? {
@@ -162,11 +198,17 @@ export class SupervisionsService {
     const lecturers = await this.prisma.lecturerProfile.findMany({
       where: {
         user: { status: 'ACTIVE' },
+        ...(query.facultyId ? { facultyId: query.facultyId } : {}),
         ...(search
           ? {
               OR: [
                 { fullName: { contains: search, mode: 'insensitive' } },
                 { department: { contains: search, mode: 'insensitive' } },
+                {
+                  faculty: {
+                    name: { contains: search, mode: 'insensitive' },
+                  },
+                },
               ],
             }
           : {}),
@@ -176,6 +218,14 @@ export class SupervisionsService {
         userId: true,
         fullName: true,
         department: true,
+        facultyId: true,
+        faculty: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
         title: true,
         user: { select: { email: true } },
       },
@@ -193,7 +243,9 @@ export class SupervisionsService {
       id: lecturer.id,
       userId: lecturer.userId,
       fullName: lecturer.fullName,
-      department: lecturer.department,
+      department: lecturer.faculty?.name ?? lecturer.department,
+      facultyId: lecturer.facultyId ?? lecturer.faculty?.id ?? null,
+      faculty: lecturer.faculty ?? null,
       title: lecturer.title,
       email: lecturer.user.email,
       activeSupervisionCount: countMap.get(lecturer.id) ?? 0,
@@ -571,7 +623,23 @@ export class SupervisionsService {
   }
 
   private toRecord(item: SupervisionRecord) {
-    return item;
+    return {
+      ...item,
+      placement: {
+        ...item.placement,
+        student: {
+          ...item.placement.student,
+          major:
+            item.placement.student.majorRef?.name ??
+            item.placement.student.major,
+          faculty: item.placement.student.majorRef?.faculty ?? null,
+        },
+      },
+      lecturer: {
+        ...item.lecturer,
+        department: item.lecturer.faculty?.name ?? item.lecturer.department,
+      },
+    };
   }
   private notFound() {
     return new NotFoundException({

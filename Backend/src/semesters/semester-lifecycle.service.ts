@@ -13,6 +13,8 @@ import {
   InternshipStatus,
   NotificationAction,
   NotificationType,
+  PlacementStatus,
+  ReportStatus,
   SemesterStatus,
   SupervisionStatus,
 } from '../generated/prisma/client';
@@ -220,6 +222,153 @@ export class SemesterLifecycleService implements OnModuleInit, OnModuleDestroy {
       },
       data: { status: SupervisionStatus.COMPLETED, completedAt: now },
     });
+
+    await this.reconcileAutoCompletedPlacements(now);
+  }
+
+  async autoCompletePlacementIfEligible(
+    placementId: string,
+    now = new Date(),
+  ): Promise<boolean> {
+    if (!this.prisma.internshipPlacement?.findUnique) return false;
+
+    const placement = await this.prisma.internshipPlacement.findUnique({
+      where: { id: placementId },
+      select: {
+        id: true,
+        status: true,
+        academicStatus: true,
+        student: { select: { userId: true, fullName: true } },
+        company: { select: { userId: true, companyName: true } },
+        internship: { select: { title: true } },
+        supervision: {
+          select: {
+            id: true,
+            status: true,
+            lecturer: { select: { userId: true } },
+          },
+        },
+        reports: { select: { status: true } },
+        evaluations: { select: { type: true } },
+      },
+    });
+
+    if (!placement || placement.status !== PlacementStatus.ACTIVE) {
+      return false;
+    }
+
+    const hasCompanyEval = placement.evaluations.some(
+      (e) => e.type === 'COMPANY',
+    );
+    const hasLecturerEval = placement.evaluations.some(
+      (e) => e.type === 'LECTURER',
+    );
+    const hasApprovedReport = placement.reports.some(
+      (r) => r.status === ReportStatus.APPROVED,
+    );
+    const hasPendingOrRejectedReport = placement.reports.some(
+      (r) =>
+        r.status === ReportStatus.SUBMITTED ||
+        r.status === ReportStatus.REJECTED,
+    );
+
+    if (
+      !hasCompanyEval ||
+      !hasLecturerEval ||
+      !hasApprovedReport ||
+      hasPendingOrRejectedReport
+    ) {
+      return false;
+    }
+
+    const updated = await this.prisma.internshipPlacement.updateMany({
+      where: { id: placement.id, status: PlacementStatus.ACTIVE },
+      data: {
+        status: PlacementStatus.COMPLETED,
+        ...(placement.academicStatus !== AcademicMonitoringStatus.CLOSED
+          ? {
+              academicStatus: AcademicMonitoringStatus.CLOSED,
+              academicClosedAt: now,
+            }
+          : {}),
+      },
+    });
+
+    if (updated.count !== 1) return false;
+
+    if (placement.supervision?.status === SupervisionStatus.ACTIVE) {
+      await this.prisma.supervision.update({
+        where: { id: placement.supervision.id },
+        data: {
+          status: SupervisionStatus.COMPLETED,
+          completedAt: now,
+        },
+      });
+    }
+
+    await this.prisma.auditLog?.create({
+      data: {
+        userId: null,
+        action: 'PLACEMENT_STATUS_CHANGED',
+        entity: 'InternshipPlacement',
+        entityId: placement.id,
+        metadata: {
+          from: PlacementStatus.ACTIVE,
+          to: PlacementStatus.COMPLETED,
+          note: 'Tự động hoàn tất khi đủ báo cáo được duyệt và điểm đánh giá từ Doanh nghiệp & Giảng viên hướng dẫn.',
+        },
+      },
+    });
+
+    const recipients = [
+      placement.student.userId,
+      placement.company.userId,
+      placement.supervision?.lecturer.userId,
+    ].filter((value): value is string => Boolean(value));
+
+    for (const userId of [...new Set(recipients)]) {
+      await this.notifications?.create({
+        userId,
+        eventKey: `placement:${placement.id}:status:COMPLETED:${userId}`,
+        type: NotificationType.PLACEMENT,
+        action: NotificationAction.OPEN_PLACEMENT,
+        title: 'Kỳ thực tập đã hoàn thành',
+        content: `Hồ sơ thực tập vị trí "${placement.internship.title}" của sinh viên ${placement.student.fullName} tại ${placement.company.companyName} đã hoàn tất đầy đủ báo cáo và điểm đánh giá cuối kỳ.`,
+        resourceId: placement.id,
+        metadata: { status: PlacementStatus.COMPLETED },
+      });
+    }
+
+    return true;
+  }
+
+  private async reconcileAutoCompletedPlacements(now: Date) {
+    if (!this.prisma.internshipPlacement?.findMany) return;
+
+    const candidates = await this.prisma.internshipPlacement.findMany({
+      where: {
+        status: PlacementStatus.ACTIVE,
+        evaluations: { some: { type: 'COMPANY' } },
+        AND: [
+          { evaluations: { some: { type: 'LECTURER' } } },
+          { reports: { some: { status: ReportStatus.APPROVED } } },
+          {
+            reports: {
+              none: {
+                status: {
+                  in: [ReportStatus.SUBMITTED, ReportStatus.REJECTED],
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+
+    for (const candidate of candidates) {
+      await this.autoCompletePlacementIfEligible(candidate.id, now);
+    }
   }
 
   private async reconcileApplicationOffersAndCampaigns(now: Date) {

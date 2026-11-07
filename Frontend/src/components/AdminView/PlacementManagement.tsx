@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Download,
   Eye,
   FileText,
   LoaderCircle,
@@ -29,6 +30,9 @@ import { semestersApi } from "../../semesters/api";
 import type { SemesterRecord } from "../../semesters/types";
 import { supervisionsApi } from "../../supervisions/api";
 import type { LecturerOption } from "../../supervisions/types";
+import { facultiesApi } from "../../organization/api";
+import type { FacultyOption } from "../../organization/types";
+import { downloadExcelWorkbook } from "../../utils/excelExport";
 
 const statusLabel: Record<PlacementStatus, string> = {
   PENDING: "Chờ phân công",
@@ -92,16 +96,49 @@ function getPlacementBadge(placement: PlacementRecord): {
   };
 }
 
+function isMidInternship(placement: PlacementRecord): boolean {
+  return (
+    placement.status === "ACTIVE" && hasInternshipStartedOrProgress(placement)
+  );
+}
+
+function hasFinalReportOrEvaluations(placement: PlacementRecord): boolean {
+  return (
+    (placement.progress?.evaluationCount ?? 0) > 0 ||
+    Boolean(
+      placement.progress?.finalReportStatus &&
+        placement.progress.finalReportStatus !== "DRAFT",
+    )
+  );
+}
+
+const PRE_START_CANCEL_REASONS = [
+  "Sinh viên xin đổi đơn vị thực tập trước ngày bắt đầu",
+  "Doanh nghiệp ngừng tiếp nhận / điều chỉnh kế hoạch tuyển dụng",
+  "Thông tin tiếp nhận chưa hợp lệ",
+  "Lý do sức khỏe / cá nhân của sinh viên",
+];
+
+const MID_INTERNSHIP_STOP_REASONS = [
+  "Doanh nghiệp bị tạm dừng hoạt động / không đảm bảo hướng dẫn",
+  "Sinh viên tự ý nghỉ thực tập / vi phạm kỷ luật",
+  "Sinh viên xin dừng thực tập vì lý do sức khỏe / bất khả kháng",
+  "Thỏa thuận chấm dứt thực tập sớm giữa Sinh viên và Doanh nghiệp",
+];
+
 export const PlacementManagement: React.FC<{
   onOpenAssignment?: () => void;
 }> = ({ onOpenAssignment }) => {
   const [items, setItems] = useState<PlacementRecord[]>([]);
   const [semesters, setSemesters] = useState<SemesterRecord[]>([]);
   const [lecturers, setLecturers] = useState<LecturerOption[]>([]);
+  const [faculties, setFaculties] = useState<FacultyOption[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<PlacementStatus | "">("");
   const [semesterId, setSemesterId] = useState("");
   const [lecturerId, setLecturerId] = useState("");
+  const [facultyId, setFacultyId] = useState("");
+  const [majorId, setMajorId] = useState("");
   const [assignmentStatus, setAssignmentStatus] = useState<
     "" | "ASSIGNED" | "UNASSIGNED"
   >("");
@@ -131,6 +168,8 @@ export const PlacementManagement: React.FC<{
           status: status || undefined,
           semesterId: semesterId || undefined,
           lecturerId: lecturerId || undefined,
+          facultyId: facultyId || undefined,
+          majorId: majorId || undefined,
           assignmentStatus: assignmentStatus || undefined,
           reportStatus: reportStatus || undefined,
         }),
@@ -149,13 +188,22 @@ export const PlacementManagement: React.FC<{
     }
   }, [
     assignmentStatus,
+    facultyId,
     lecturerId,
+    majorId,
     page,
     reportStatus,
     search,
     semesterId,
     status,
   ]);
+
+  useEffect(() => {
+    facultiesApi
+      .listOptions({ includeInactive: true })
+      .then((res) => setFaculties(res.items))
+      .catch(() => setFaculties([]));
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 220);
@@ -258,9 +306,67 @@ export const PlacementManagement: React.FC<{
     setStatus("");
     setSemesterId("");
     setLecturerId("");
+    setFacultyId("");
+    setMajorId("");
     setAssignmentStatus("");
     setReportStatus("");
     setPage(1);
+  };
+
+  const exportPlacementsExcel = async () => {
+    try {
+      const allPage = await placementsApi.list({
+        page: 1,
+        limit: 100,
+        search: search.trim() || undefined,
+        status: status || undefined,
+        semesterId: semesterId || undefined,
+        lecturerId: lecturerId || undefined,
+        facultyId: facultyId || undefined,
+        majorId: majorId || undefined,
+        assignmentStatus: assignmentStatus || undefined,
+        reportStatus: reportStatus || undefined,
+      });
+      downloadExcelWorkbook("danh-sach-ho-so-thuc-tap", [
+        {
+          name: "Ho so thuc tap",
+          title: "DANH SÁCH HỒ SƠ THỰC TẬP TỐT NGHIỆP",
+          subtitle: `Ngày xuất: ${new Date().toLocaleDateString("vi-VN")} — Tổng số bản ghi: ${allPage.items.length}`,
+          columns: [
+            { header: "STT", width: 45, value: (_, i) => i + 1 },
+            { header: "MSSV", width: 105, value: (p: PlacementRecord) => p.student.studentCode },
+            { header: "Họ và tên sinh viên", width: 165, value: (p: PlacementRecord) => p.student.fullName },
+            { header: "Ngành đào tạo", width: 175, value: (p: PlacementRecord) => p.student.major },
+            { header: "Khoa sinh viên", width: 170, value: (p: PlacementRecord) => p.student.faculty?.name ?? "—" },
+            { header: "Doanh nghiệp thực tập", width: 190, value: (p: PlacementRecord) => p.company.companyName },
+            { header: "Vị trí thực tập", width: 170, value: (p: PlacementRecord) => p.internship.title },
+            { header: "Học kỳ", width: 140, value: (p: PlacementRecord) => p.semester.name },
+            {
+              header: "Giảng viên hướng dẫn",
+              width: 165,
+              value: (p: PlacementRecord) =>
+                p.supervision?.status === "ACTIVE"
+                  ? p.supervision.lecturer.fullName
+                  : "Chưa phân công",
+            },
+            {
+              header: "Khoa GVHD",
+              width: 165,
+              value: (p: PlacementRecord) =>
+                p.supervision?.status === "ACTIVE"
+                  ? (p.supervision.lecturer.faculty?.name ?? p.supervision.lecturer.department)
+                  : "—",
+            },
+            { header: "Báo cáo đã nộp", width: 110, value: (p: PlacementRecord) => p.progress.reportCount },
+            { header: "Số bản đánh giá", width: 110, value: (p: PlacementRecord) => p.progress.evaluationCount },
+            { header: "Trạng thái", width: 135, value: (p: PlacementRecord) => getPlacementBadge(p).label },
+          ],
+          rows: allPage.items,
+        },
+      ]);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    }
   };
 
   return (
@@ -280,13 +386,22 @@ export const PlacementManagement: React.FC<{
               thực tập.
             </p>
           </div>
-          <button
-            onClick={onOpenAssignment}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
-          >
-            <UsersRound className="h-4 w-4" /> Mở phân công giảng viên{" "}
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              type="button"
+              onClick={() => void exportPlacementsExcel()}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              <Download className="h-4 w-4" /> Xuất danh sách Excel
+            </button>
+            <button
+              onClick={onOpenAssignment}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              <UsersRound className="h-4 w-4" /> Mở phân công giảng viên{" "}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </header>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -420,6 +535,44 @@ export const PlacementManagement: React.FC<{
               </option>
             ))}
           </select>
+          <select
+            value={facultyId}
+            onChange={(event) => {
+              setFacultyId(event.target.value);
+              setMajorId("");
+              setPage(1);
+            }}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+          >
+            <option value="">Tất cả Khoa sinh viên</option>
+            {faculties.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.code} — {f.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={majorId}
+            onChange={(event) => {
+              setMajorId(event.target.value);
+              setPage(1);
+            }}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+          >
+            <option value="">Tất cả Ngành đào tạo</option>
+            {(facultyId
+              ? faculties.filter((f) => f.id === facultyId)
+              : faculties
+            ).map((f) => (
+              <optgroup key={f.id} label={`Khoa ${f.name}`}>
+                {f.majors.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
           <button
             onClick={resetFilters}
             className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-700 transition"
@@ -533,6 +686,9 @@ export const PlacementManagement: React.FC<{
                               {placement.student.studentCode}
                             </span>{" "}
                             · {placement.student.major}
+                            {placement.student.faculty?.name
+                              ? ` (${placement.student.faculty.name})`
+                              : ""}
                           </p>
                         </div>
                       </div>
@@ -557,11 +713,22 @@ export const PlacementManagement: React.FC<{
                     <td className="whitespace-nowrap px-5 py-4 align-middle">
                       {placement.supervision?.status === "ACTIVE" ? (
                         <div>
-                          <p className="font-bold text-slate-800">
-                            {placement.supervision.lecturer.fullName}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-bold text-slate-800">
+                              {placement.supervision.lecturer.fullName}
+                            </p>
+                            {placement.student.faculty?.id &&
+                              placement.supervision.lecturer.facultyId &&
+                              placement.student.faculty.id !==
+                                placement.supervision.lecturer.facultyId && (
+                                <span className="rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                                  Liên khoa
+                                </span>
+                              )}
+                          </div>
                           <p className="mt-0.5 text-[11px] text-slate-500">
-                            {placement.supervision.lecturer.department}
+                            {placement.supervision.lecturer.faculty?.name ??
+                              placement.supervision.lecturer.department}
                           </p>
                         </div>
                       ) : (
@@ -682,6 +849,9 @@ export const PlacementManagement: React.FC<{
                       {selected.student.studentCode}
                     </span>{" "}
                     · {selected.student.major}
+                    {selected.student.faculty?.name
+                      ? ` · Khoa ${selected.student.faculty.name}`
+                      : ""}
                   </p>
                 </div>
               </div>
@@ -696,6 +866,48 @@ export const PlacementManagement: React.FC<{
 
             {/* Modal Body */}
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+              {selected.status === "CANCELLED" && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3.5 text-xs text-rose-900">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-bold text-rose-800">
+                      Hồ sơ thực tập đã bị hủy
+                    </p>
+                    <span className="text-[11px] font-medium text-rose-600">
+                      {formatDateTime(
+                        selected.progress.statusChangedAt ??
+                          selected.academicClosedAt ??
+                          selected.updatedAt,
+                      )}
+                    </span>
+                  </div>
+                  <p className="mt-1 leading-relaxed text-rose-700">
+                    <span className="font-semibold">Lý do:</span>{" "}
+                    {selected.progress.statusNote ||
+                      "Không có ghi chú lý do hủy."}
+                  </p>
+                </div>
+              )}
+
+              {selected.status === "COMPLETED" &&
+                selected.progress.statusNote && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-xs text-emerald-900">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-bold text-emerald-800">
+                        Đã hoàn tất thực tập
+                      </p>
+                      {selected.progress.statusChangedAt && (
+                        <span className="text-[11px] font-medium text-emerald-600">
+                          {formatDateTime(selected.progress.statusChangedAt)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 leading-relaxed text-emerald-700">
+                      <span className="font-semibold">Ghi chú:</span>{" "}
+                      {selected.progress.statusNote}
+                    </p>
+                  </div>
+                )}
+
               {/* Position, Company & Supervisor */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5">
@@ -721,7 +933,8 @@ export const PlacementManagement: React.FC<{
                       "Chưa phân công"}
                   </p>
                   <p className="mt-0.5 text-xs text-slate-600">
-                    {selected.supervision?.lecturer.department ??
+                    {selected.supervision?.lecturer.faculty?.name ??
+                      selected.supervision?.lecturer.department ??
                       "Mở trang Phân công giảng viên để chỉ định"}
                   </p>
                 </div>
@@ -919,48 +1132,79 @@ export const PlacementManagement: React.FC<{
                 ) : (
                   selected.status === "ACTIVE" && (
                     <p className="mt-3 rounded-xl bg-slate-50 px-3.5 py-2.5 text-xs leading-relaxed text-slate-500">
-                      Để nghiệm thu hoàn tất hồ sơ, sinh viên cần có báo cáo
-                      được duyệt và đủ 2 bản chấm điểm từ Doanh nghiệp &amp;
-                      Giảng viên hướng dẫn.
+                      Hồ sơ sẽ tự động chuyển sang <strong>Đã hoàn tất</strong>{" "}
+                      khi có báo cáo được giảng viên duyệt (không còn báo cáo
+                      chờ duyệt) và đủ điểm từ Doanh nghiệp &amp; Giảng viên.
                     </p>
                   )
                 )}
               </div>
+            </div>
 
-              {/* Action Confirmation Form */}
-              {action && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-bold text-slate-900">
-                    {action === "COMPLETED"
-                      ? "Xác nhận nghiệm thu & hoàn tất thực tập"
+            {/* Action Confirmation Panel */}
+            {action && (
+              <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <p className="text-sm font-bold text-slate-900">
+                  {action === "COMPLETED"
+                    ? "Xác nhận nghiệm thu & hoàn tất thực tập"
+                    : isMidInternship(selected)
+                      ? "Xác nhận dừng thực tập giữa kỳ"
                       : "Xác nhận hủy hồ sơ thực tập"}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                    {action === "COMPLETED"
-                      ? "Xác nhận sinh viên đã hoàn thành kỳ thực tập tại doanh nghiệp và đủ điều kiện nghiệm thu."
-                      : "Lịch sử ứng tuyển, báo cáo và đánh giá vẫn được lưu trữ. Suất tuyển dụng sẽ được hoàn lại cho vị trí thực tập."}
-                  </p>
-                  <textarea
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    maxLength={500}
-                    rows={3}
-                    placeholder={
-                      action === "CANCELLED"
-                        ? "Nhập lý do hủy hồ sơ thực tập (bắt buộc)..."
-                        : "Ghi chú nghiệm thu (không bắt buộc)..."
-                    }
-                    className="mt-3 w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500"
-                  />
-                  <div className="mt-1 text-right text-[11px] text-slate-400">
-                    {note.length}/500
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                  {action === "COMPLETED"
+                    ? "Xác nhận sinh viên đã hoàn thành kỳ thực tập tại doanh nghiệp và đủ điều kiện nghiệm thu."
+                    : isMidInternship(selected)
+                      ? "Sinh viên đang trong kỳ thực tập. Việc dừng hồ sơ chỉ áp dụng khi doanh nghiệp bị tạm dừng, sinh viên tự ý bỏ thực tập hoặc sự cố bất khả kháng. Chỉ tiêu hướng dẫn của giảng viên và suất tuyển dụng của doanh nghiệp sẽ được hoàn lại."
+                      : "Hồ sơ chưa bắt đầu kỳ thực tập. Sau khi hủy, suất tuyển dụng sẽ được hoàn lại cho doanh nghiệp và sinh viên có thể ứng tuyển vị trí khác trong đợt này."}
+                </p>
+
+                {action === "CANCELLED" && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {(isMidInternship(selected)
+                      ? MID_INTERNSHIP_STOP_REASONS
+                      : PRE_START_CANCEL_REASONS
+                    ).map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setNote(preset)}
+                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition ${
+                          note === preset
+                            ? "border-rose-300 bg-rose-100 text-rose-800"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100"
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
                   </div>
-                  <div className="mt-2 flex justify-end gap-2">
+                )}
+
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  maxLength={500}
+                  rows={2}
+                  placeholder={
+                    action === "CANCELLED"
+                      ? isMidInternship(selected)
+                        ? "Nhập hoặc chọn lý do dừng thực tập giữa kỳ (bắt buộc)..."
+                        : "Nhập hoặc chọn lý do hủy hồ sơ thực tập (bắt buộc)..."
+                      : "Ghi chú nghiệm thu (không bắt buộc)..."
+                  }
+                  className="mt-2.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500"
+                />
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400">
+                    {note.length}/500
+                  </span>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       disabled={saving}
                       onClick={() => setAction(null)}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
                     >
                       Quay lại
                     </button>
@@ -972,8 +1216,8 @@ export const PlacementManagement: React.FC<{
                       onClick={() => void submitStatus()}
                       className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white disabled:opacity-50 ${
                         action === "COMPLETED"
-                          ? "bg-emerald-600"
-                          : "bg-rose-600"
+                          ? "bg-emerald-600 hover:bg-emerald-700"
+                          : "bg-rose-600 hover:bg-rose-700"
                       }`}
                     >
                       {saving && (
@@ -981,62 +1225,52 @@ export const PlacementManagement: React.FC<{
                       )}
                       {action === "COMPLETED"
                         ? "Xác nhận hoàn tất"
-                        : "Xác nhận hủy hồ sơ"}
+                        : isMidInternship(selected)
+                          ? "Xác nhận dừng thực tập"
+                          : "Xác nhận hủy hồ sơ"}
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Modal Footer */}
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-6 py-3.5">
-              <div>
-                {!action &&
-                  (selected.status === "PENDING" ||
-                    selected.status === "ACTIVE") && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAction("CANCELLED");
-                        setNote("");
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
-                    >
-                      <XCircle className="h-4 w-4" /> Hủy hồ sơ thực tập
-                    </button>
-                  )}
+            {!action && (
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-6 py-3.5">
+                <div>
+                  {(selected.status === "PENDING" ||
+                    selected.status === "ACTIVE") &&
+                    (hasFinalReportOrEvaluations(selected) ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                        Đã có báo cáo tổng kết / điểm đánh giá (Không thể hủy)
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAction("CANCELLED");
+                          setNote("");
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+                      >
+                        <XCircle className="h-4 w-4" />{" "}
+                        {isMidInternship(selected)
+                          ? "Dừng thực tập giữa kỳ"
+                          : "Hủy hồ sơ thực tập"}
+                      </button>
+                    ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={closeDetail}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                  >
+                    Đóng
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={closeDetail}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
-                >
-                  Đóng
-                </button>
-                {!action &&
-                  selected.status === "ACTIVE" &&
-                  (selected.academicStatus === "CLOSED" ||
-                    Boolean(
-                      selected.progress.hasCompanyEvaluation &&
-                        selected.progress.hasLecturerEvaluation &&
-                        (selected.progress.approvedReports ?? 0) > 0 &&
-                        selected.progress.reportsAwaitingReview === 0,
-                    )) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAction("COMPLETED");
-                        setNote("");
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
-                    >
-                      <CheckCircle2 className="h-4 w-4" /> Nghiệm thu &amp; Hoàn
-                      tất
-                    </button>
-                  )}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}

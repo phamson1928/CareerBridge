@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
   Building2,
@@ -9,16 +9,22 @@ import {
   Trash2,
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
+import { facultiesApi } from "../../organization/api";
+import type { FacultyOption } from "../../organization/types";
 import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 import {
   lecturersApi,
   LecturerProfileInput,
   LecturerProfileRecord,
 } from "../../lecturers/api";
-import { ProfileAvatarPreview, ProfileAvatarUpload } from "../ProfileAvatarUpload";
+import {
+  ProfileAvatarPreview,
+  ProfileAvatarUpload,
+} from "../ProfileAvatarUpload";
 
 const emptyForm: LecturerProfileInput = {
   fullName: "",
+  facultyId: "",
   department: "",
   title: "",
 };
@@ -27,15 +33,31 @@ export const LecturerProfileView: React.FC = () => {
   const { confirm } = useAppFeedback();
   const [profile, setProfile] = useState<LecturerProfileRecord | null>(null);
   const [form, setForm] = useState<LecturerProfileInput>(emptyForm);
+  const [facultyOptions, setFacultyOptions] = useState<FacultyOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const applyProfile = (nextProfile: LecturerProfileRecord) => {
+  const applyProfile = (
+    nextProfile: LecturerProfileRecord,
+    faculties = facultyOptions,
+  ) => {
     setProfile(nextProfile);
+    let resolvedFacultyId =
+      nextProfile.facultyId ?? nextProfile.faculty?.id ?? "";
+    if (!resolvedFacultyId && nextProfile.department && faculties.length > 0) {
+      const matched = faculties.find(
+        (f) =>
+          f.name.toLowerCase() === nextProfile.department.toLowerCase() ||
+          f.code.toLowerCase() === nextProfile.department.toLowerCase(),
+      );
+      if (matched) resolvedFacultyId = matched.id;
+    }
+
     setForm({
       fullName: nextProfile.fullName,
+      facultyId: resolvedFacultyId,
       department: nextProfile.department,
       title: nextProfile.title ?? "",
       avatarFileId: nextProfile.avatarFileId,
@@ -45,19 +67,36 @@ export const LecturerProfileView: React.FC = () => {
   useEffect(() => {
     let active = true;
     const loadProfile = async () => {
-      try {
-        const result = await lecturersApi.getMine();
-        if (active) applyProfile(result);
-      } catch (requestError) {
-        if (
-          axios.isAxiosError(requestError) &&
-          requestError.response?.status === 404
-        ) {
-          if (active) setIsEditing(true);
-        } else if (active) setError(getApiErrorMessage(requestError));
-      } finally {
-        if (active) setIsLoading(false);
+      const [profileResult, optionsResult] = await Promise.allSettled([
+        lecturersApi.getMine(),
+        facultiesApi.listOptions({ includeInactive: true }),
+      ]);
+      if (!active) return;
+
+      const loadedFaculties =
+        optionsResult.status === "fulfilled" ? optionsResult.value.items : [];
+      setFacultyOptions(loadedFaculties);
+
+      if (profileResult.status === "fulfilled") {
+        applyProfile(profileResult.value, loadedFaculties);
+      } else if (
+        axios.isAxiosError(profileResult.reason) &&
+        profileResult.reason.response?.status === 404
+      ) {
+        const firstActive = loadedFaculties.find((f) => f.isActive);
+        if (firstActive) {
+          setForm((prev) => ({
+            ...prev,
+            facultyId: firstActive.id,
+            department: firstActive.name,
+          }));
+        }
+        setIsEditing(true);
+      } else {
+        setError(getApiErrorMessage(profileResult.reason));
       }
+
+      setIsLoading(false);
     };
     void loadProfile();
     return () => {
@@ -65,14 +104,28 @@ export const LecturerProfileView: React.FC = () => {
     };
   }, []);
 
+  const selectableFaculties = useMemo(() => {
+    const currentId = profile?.facultyId ?? profile?.faculty?.id;
+    return facultyOptions.filter((f) => f.isActive || f.id === currentId);
+  }, [facultyOptions, profile]);
+
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!form.facultyId && !form.department?.trim()) {
+      setError("Vui lòng chọn Khoa chủ quản.");
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
     try {
       const payload: LecturerProfileInput = {
-        ...form,
+        fullName: form.fullName,
+        ...(form.facultyId
+          ? { facultyId: form.facultyId }
+          : { department: form.department?.trim() }),
         title: form.title?.trim() || null,
+        avatarFileId: form.avatarFileId,
       };
       const result = profile
         ? await lecturersApi.updateMine(payload)
@@ -87,7 +140,12 @@ export const LecturerProfileView: React.FC = () => {
   };
 
   const deleteProfile = async () => {
-    const accepted = await confirm({ title: "Xóa hồ sơ giảng viên", message: "Xóa hồ sơ giảng viên? Thao tác này không thể hoàn tác.", confirmLabel: "Xóa hồ sơ", tone: "danger" });
+    const accepted = await confirm({
+      title: "Xóa hồ sơ giảng viên",
+      message: "Xóa hồ sơ giảng viên? Thao tác này không thể hoàn tác.",
+      confirmLabel: "Xóa hồ sơ",
+      tone: "danger",
+    });
     if (!accepted) return;
     setIsSaving(true);
     setError(null);
@@ -111,19 +169,32 @@ export const LecturerProfileView: React.FC = () => {
       </div>
     );
 
+  const facultyDisplay = profile?.faculty
+    ? `[${profile.faculty.code}] ${profile.faculty.name}${
+        !profile.faculty.isActive ? " (Khoa cũ)" : ""
+      }`
+    : profile?.department || "Chưa cập nhật";
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <ProfileAvatarPreview fileId={profile?.avatarFileId} fallback={profile?.fullName.charAt(0) || "G"} className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-xl font-black text-white" imageClassName="h-full w-full object-cover" />
+            <ProfileAvatarPreview
+              fileId={profile?.avatarFileId}
+              fallback={profile?.fullName.charAt(0) || "G"}
+              className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-xl font-black text-white"
+              imageClassName="h-full w-full object-cover"
+            />
             <div>
               <h2 className="text-xl font-extrabold text-slate-900">
                 {profile?.fullName || "Hoàn thiện hồ sơ giảng viên"}
               </h2>
               <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-purple-600">
                 <GraduationCap className="h-4 w-4" />
-                Thông tin hồ sơ được lưu trực tiếp trên hệ thống.
+                {profile
+                  ? `${facultyDisplay}${profile.title ? ` · ${profile.title}` : ""}`
+                  : "Thông tin hồ sơ được lưu trực tiếp trên hệ thống."}
               </p>
             </div>
           </div>
@@ -157,15 +228,37 @@ export const LecturerProfileView: React.FC = () => {
               onChange={(avatarFileId) => setForm({ ...form, avatarFileId })}
               onError={setError}
             />
-            <Field
-              label="Khoa/Bộ môn"
-              required
-              value={form.department}
-              onChange={(value) => setForm({ ...form, department: value })}
-            />
-            <div className="md:col-span-2">
+            <div>
+              <label className="mb-1 block text-xs font-bold text-slate-800">
+                Khoa cơ hữu *
+              </label>
+              <select
+                required
+                value={form.facultyId ?? ""}
+                onChange={(event) => {
+                  const fac = facultyOptions.find(
+                    (f) => f.id === event.target.value,
+                  );
+                  setForm({
+                    ...form,
+                    facultyId: event.target.value,
+                    department: fac?.name ?? form.department,
+                  });
+                }}
+                className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm"
+              >
+                <option value="">-- Chọn Khoa cơ hữu --</option>
+                {selectableFaculties.map((fac) => (
+                  <option key={fac.id} value={fac.id}>
+                    [{fac.code}] {fac.name}
+                    {!fac.isActive ? " (Khoa cũ)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
               <Field
-                label="Chức danh học thuật"
+                label="Chức danh học thuật / Học vị"
                 value={form.title ?? ""}
                 onChange={(value) => setForm({ ...form, title: value })}
               />
@@ -195,15 +288,16 @@ export const LecturerProfileView: React.FC = () => {
         ) : (
           profile && (
             <div className="mt-6 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
-              <Info label="Khoa/Bộ môn" value={profile.department} />
+              <Info label="Khoa cơ hữu" value={facultyDisplay} />
               <Info
-                label="Chức danh"
+                label="Chức danh / Học vị"
                 value={profile.title || "Chưa cập nhật"}
               />
               <div className="md:col-span-2 rounded-xl border border-purple-100 bg-purple-50 p-4 text-xs text-purple-900">
                 <Building2 className="mb-2 h-4 w-4" />
-                Thông tin này sẽ được dùng trong các luồng phân công và duyệt
-                báo cáo ở các tuần tiếp theo.
+                Khoa cơ hữu giúp ưu tiên phân công sinh viên đúng chuyên môn,
+                đồng thời giảng viên vẫn có thể được phân công hướng dẫn sinh
+                viên liên khoa khi cần.
               </div>
             </div>
           )

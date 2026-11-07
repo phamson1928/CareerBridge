@@ -61,6 +61,7 @@ const CompanyModeration = lazy(() => import("./components/AdminView/CompanyModer
 const SupervisionManagement = lazy(() => import("./components/AdminView/SupervisionManagement").then(({ SupervisionManagement }) => ({ default: SupervisionManagement })));
 const PlacementManagement = lazy(() => import("./components/AdminView/PlacementManagement").then(({ PlacementManagement }) => ({ default: PlacementManagement })));
 const InternshipManagement = lazy(() => import("./components/AdminView/InternshipManagement").then(({ InternshipManagement }) => ({ default: InternshipManagement })));
+const OrganizationManagement = lazy(() => import("./components/AdminView/OrganizationManagement").then(({ OrganizationManagement }) => ({ default: OrganizationManagement })));
 const SkillManagement = lazy(() => import("./components/AdminView/SkillManagement").then(({ SkillManagement }) => ({ default: SkillManagement })));
 const SemesterManagement = lazy(() => import("./components/AdminView/SemesterManagement").then(({ SemesterManagement }) => ({ default: SemesterManagement })));
 const AuditLogManagement = lazy(() => import("./components/AdminView/AuditLogManagement").then(({ AuditLogManagement }) => ({ default: AuditLogManagement })));
@@ -76,6 +77,7 @@ const adminPathByTab: Record<string, string> = {
   "internship-management": "internships",
   "user-management": "users",
   "company-approval": "companies",
+  "organization-management": "organization",
   "skill-management": "skills",
   "semester-management": "semesters",
   "audit-logs": "audit-logs",
@@ -132,7 +134,12 @@ function toLegacyStudentProfile(
     userId: record.userId,
     fullname: record.fullName,
     studentCode: record.studentCode,
-    major: record.major,
+    major: record.majorRef?.name ?? record.major,
+    majorId: record.majorId ?? null,
+    majorCode: record.majorRef?.code ?? null,
+    facultyId: record.majorRef?.facultyId ?? null,
+    facultyCode: record.majorRef?.faculty?.code ?? null,
+    facultyName: record.majorRef?.faculty?.name ?? null,
     university: "",
     gpa: record.gpa ?? 0,
     skills,
@@ -382,6 +389,9 @@ export default function App() {
     limit: number;
     search?: string;
     skillIds?: string[];
+    facultyId?: string;
+    majorId?: string;
+    majorIds?: string[];
   }) => {
     const result = await internshipsApi.list(params);
     return {
@@ -564,7 +574,7 @@ export default function App() {
               />
             )}
             {activeTab === "reports" && (
-              <StudentReports />
+              <StudentReports onNavigateTab={handleTabChange} />
             )}
             {activeTab === "placement" && <PlacementOverview />}
             {activeTab === "evaluations" && <StudentEvaluations evaluations={evaluationRecords} />}
@@ -657,6 +667,7 @@ export default function App() {
             {activeTab === "internship-management" && <InternshipManagement />}
             {activeTab === "user-management" && <UserManagement />}
             {activeTab === "company-approval" && <CompanyModeration />}
+            {activeTab === "organization-management" && <OrganizationManagement />}
             {activeTab === "skill-management" && <SkillManagement />}
             {activeTab === "semester-management" && <SemesterManagement />}
             {activeTab === "support-requests" && <SupportRequestManagement />}
@@ -718,7 +729,7 @@ export default function App() {
 
 
 function PageLoading() {
-  return <div className="rounded-2xl bg-white p-10 text-center text-sm text-slate-500">Đang tải nội dung...</div>;
+  return null;
 }function getDefaultTab(role: UserRole): string {
   switch (role) {
     case "STUDENT":

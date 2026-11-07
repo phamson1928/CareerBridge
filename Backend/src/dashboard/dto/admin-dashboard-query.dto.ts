@@ -6,6 +6,14 @@ export class AdminDashboardQueryDto {
   @IsString()
   semesterId?: string;
 
+  @IsOptional()
+  @IsString()
+  facultyId?: string;
+
+  @IsOptional()
+  @IsString()
+  majorId?: string;
+
   /** Number of calendar months shown in the operational trend. */
   @IsOptional()
   @Type(() => Number)

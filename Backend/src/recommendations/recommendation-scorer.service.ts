@@ -82,6 +82,7 @@ export class RecommendationScorerService {
       Boolean(normalizeText(`${project.title} ${project.description ?? ''}`)),
     );
     const projectApplied = usableProjects.length > 0;
+    const majorEvaluation = evaluateMajorAlignment(student, internship, jobText);
 
     const components = {
       skills: component(skillScore, 60, true),
@@ -90,7 +91,7 @@ export class RecommendationScorerService {
         12,
         desiredRoleApplied,
       ),
-      major: component(tokenOverlap(student.major, jobText), 8, true),
+      major: component(majorEvaluation.score, 8, true),
       location: component(
         preferenceMatch(
           student.preferences.preferredLocations,
@@ -137,6 +138,9 @@ export class RecommendationScorerService {
     );
     const confidenceScore = Math.round(availableWeight);
     const flags = hasRequirements ? [] : ['LOW_REQUIREMENT_DATA'];
+    if (majorEvaluation.flag) {
+      flags.push(majorEvaluation.flag);
+    }
 
     return {
       internshipId: internship.id,
@@ -160,7 +164,12 @@ export class RecommendationScorerService {
         level: confidenceLevel(confidenceScore),
       },
       flags,
-      matchSummary: buildSummary(skillMatch, components, flags),
+      matchSummary: buildSummary(
+        skillMatch,
+        components,
+        flags,
+        majorEvaluation.summarySignal,
+      ),
       internship,
     };
   }
@@ -261,6 +270,7 @@ function buildSummary(
   skillMatch: ReturnType<typeof calculateSkillMatch>,
   components: Record<string, RecommendationScoreComponent>,
   flags: string[],
+  majorSummarySignal?: 'EXACT_TARGET_MAJOR' | 'SAME_FACULTY_MAJOR' | null,
 ) {
   const matchedSignals: string[] = [];
   const missingSignals: string[] = [];
@@ -271,8 +281,13 @@ function buildSummary(
     matchedSignals.push('Có kỹ năng phù hợp với vị trí');
   if (components.desiredRole.applied && components.desiredRole.score > 0)
     matchedSignals.push('Phù hợp với vị trí mong muốn');
-  if (components.major.score > 0)
+  if (majorSummarySignal === 'EXACT_TARGET_MAJOR') {
+    matchedSignals.push('Đúng ngành mục tiêu của tin tuyển dụng');
+  } else if (majorSummarySignal === 'SAME_FACULTY_MAJOR') {
+    matchedSignals.push('Thuộc cùng Khoa với ngành mục tiêu');
+  } else if (components.major.score > 0) {
     matchedSignals.push('Có liên quan đến ngành học');
+  }
   if (components.location.applied && components.location.score === 100)
     matchedSignals.push('Phù hợp địa điểm mong muốn');
   if (components.workType.applied && components.workType.score === 100)
@@ -283,9 +298,80 @@ function buildSummary(
     missingSignals.push(
       `Thiếu kỹ năng bắt buộc: ${skillMatch.missingRequiredSkills.map((skill) => skill.name).join(', ')}`,
     );
+  if (flags.includes('OUTSIDE_TARGET_MAJORS'))
+    missingSignals.push('Không thuộc danh sách ngành ưu tiên của vị trí này');
   if (flags.includes('LOW_REQUIREMENT_DATA'))
     missingSignals.push('Vị trí chưa cung cấp đủ yêu cầu kỹ năng');
   return { matchedSignals, missingSignals };
+}
+
+function evaluateMajorAlignment(
+  student: RecommendationStudent,
+  internship: RecommendationCandidate,
+  jobText: string,
+): {
+  score: number;
+  flag: string | null;
+  summarySignal: 'EXACT_TARGET_MAJOR' | 'SAME_FACULTY_MAJOR' | null;
+} {
+  const targetMajors = internship.majors ?? [];
+  const textOverlapScore = tokenOverlap(student.major, jobText);
+
+  if (targetMajors.length === 0) {
+    return {
+      score: textOverlapScore,
+      flag: null,
+      summarySignal: null,
+    };
+  }
+
+  if (student.majorId) {
+    const exactMatch = targetMajors.some(
+      (tm) => tm.majorId === student.majorId || tm.id === student.majorId,
+    );
+    if (exactMatch) {
+      return {
+        score: 100,
+        flag: null,
+        summarySignal: 'EXACT_TARGET_MAJOR',
+      };
+    }
+
+    if (
+      student.facultyId &&
+      targetMajors.some((tm) => tm.facultyId === student.facultyId)
+    ) {
+      return {
+        score: Math.max(65, textOverlapScore),
+        flag: null,
+        summarySignal: 'SAME_FACULTY_MAJOR',
+      };
+    }
+
+    return {
+      score: 0,
+      flag: 'OUTSIDE_TARGET_MAJORS',
+      summarySignal: null,
+    };
+  }
+
+  const normalizedStudentMajor = normalizeText(student.major);
+  const nameMatch = targetMajors.some(
+    (tm) => normalizeText(tm.name) === normalizedStudentMajor,
+  );
+  if (nameMatch) {
+    return {
+      score: 100,
+      flag: null,
+      summarySignal: 'EXACT_TARGET_MAJOR',
+    };
+  }
+
+  return {
+    score: textOverlapScore,
+    flag: 'OUTSIDE_TARGET_MAJORS',
+    summarySignal: null,
+  };
 }
 
 function confidenceLevel(score: number): 'LOW' | 'MEDIUM' | 'HIGH' {

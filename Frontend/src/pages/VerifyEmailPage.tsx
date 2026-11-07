@@ -55,7 +55,7 @@ export function VerifyEmailPage() {
           <div className="login-label">
             <span className="relative mt-2 block">
               <Mail className="login-input-icon" />
-              <input type="email" disabled className="login-input" placeholder="customer@eyewear.com" />
+              <input type="email" disabled className="login-input" placeholder="email@careerbridge.vn" />
             </span>
           </div>
           <div className="login-label">

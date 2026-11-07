@@ -52,6 +52,14 @@ export type EvaluationRecord = {
       studentCode: string;
       fullName: string;
       major: string;
+      majorId?: string | null;
+      majorRef?: {
+        id: string;
+        code: string;
+        name: string;
+        facultyId: string;
+        faculty: { id: string; code: string; name: string };
+      } | null;
     };
     company: {
       id: string;
@@ -73,6 +81,8 @@ export type EvaluationRecord = {
         userId: string;
         fullName: string;
         department?: string;
+        facultyId?: string | null;
+        faculty?: { id: string; code: string; name: string } | null;
         title?: string | null;
       };
     } | null;

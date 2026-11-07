@@ -8,6 +8,8 @@ export interface SupervisionListParams {
   status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
   lecturerId?: string;
   placementStatus?: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  facultyId?: string;
+  majorId?: string;
 }
 
 export const supervisionsApi = {
@@ -19,9 +21,15 @@ export const supervisionsApi = {
     const response = await api.get<{ data: { items: SupervisionRecord[] } }>('/supervisions/me');
     return response.data.data;
   },
-  async lecturerOptions(search?: string) {
+  async lecturerOptions(params?: string | { search?: string; facultyId?: string }) {
+    const query =
+      typeof params === 'string'
+        ? params
+          ? { search: params }
+          : undefined
+        : params;
     const response = await api.get<{ data: LecturerOption[] }>('/supervisions/lecturer-options', {
-      params: search ? { search } : undefined,
+      params: query,
     });
     return response.data.data;
   },
