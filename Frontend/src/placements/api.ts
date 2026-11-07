@@ -16,6 +16,8 @@ export interface PlacementListParams {
   lecturerId?: string;
   assignmentStatus?: "ASSIGNED" | "UNASSIGNED";
   reportStatus?: ReportStatus;
+  facultyId?: string;
+  majorId?: string;
 }
 
 export const placementsApi = {

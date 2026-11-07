@@ -4,4 +4,8 @@ export class ListLecturerOptionsQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsString()
+  facultyId?: string;
 }

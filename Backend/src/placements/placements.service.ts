@@ -63,6 +63,22 @@ const placementSelect = {
       fullName: true,
       avatarFileId: true,
       major: true,
+      majorId: true,
+      majorRef: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          facultyId: true,
+          faculty: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+        },
+      },
     },
   },
   company: {
@@ -101,6 +117,14 @@ const placementSelect = {
           userId: true,
           fullName: true,
           department: true,
+          facultyId: true,
+          faculty: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
           title: true,
           avatarFileId: true,
         },
@@ -156,10 +180,19 @@ export class PlacementsService {
             query.lecturerId
           ? { supervision: { is: activeSupervision } }
           : {};
+    const studentOrgFilter: Prisma.StudentProfileWhereInput = {
+      ...(query.majorId ? { majorId: query.majorId } : {}),
+      ...(query.facultyId
+        ? { majorRef: { is: { facultyId: query.facultyId } } }
+        : {}),
+    };
     const where: Prisma.InternshipPlacementWhereInput = {
       ...(query.status ? { status: query.status } : {}),
       ...(query.semesterId ? { semesterId: query.semesterId } : {}),
       ...(query.companyId ? { companyId: query.companyId } : {}),
+      ...(query.majorId || query.facultyId
+        ? { student: { is: studentOrgFilter } }
+        : {}),
       ...supervisionFilter,
       ...(query.reportStatus
         ? { reports: { some: { status: query.reportStatus } } }
@@ -843,6 +876,22 @@ export class PlacementsService {
     };
     return {
       ...item,
+      student: {
+        ...item.student,
+        major: item.student.majorRef?.name ?? item.student.major,
+        faculty: item.student.majorRef?.faculty ?? null,
+      },
+      supervision: item.supervision
+        ? {
+            ...item.supervision,
+            lecturer: {
+              ...item.supervision.lecturer,
+              department:
+                item.supervision.lecturer.faculty?.name ??
+                item.supervision.lecturer.department,
+            },
+          }
+        : null,
       assignmentStatus:
         item.supervision?.status === SupervisionStatus.ACTIVE
           ? PlacementAssignmentStatus.ASSIGNED

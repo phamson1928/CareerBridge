@@ -14,7 +14,20 @@ export interface SupervisionRecord {
   placement: Pick<PlacementRecord, 'id' | 'status' | 'academicStatus' | 'startDate' | 'endDate' | 'student' | 'company' | 'internship' | 'semester'> & {
     _count: { reports: number; evaluations: number };
   };
-  lecturer: { id: string; userId: string; fullName: string; department: string; title: string | null; avatarFileId?: string | null };
+  lecturer: {
+    id: string;
+    userId: string;
+    fullName: string;
+    department: string;
+    facultyId?: string | null;
+    faculty?: {
+      id: string;
+      code: string;
+      name: string;
+    } | null;
+    title: string | null;
+    avatarFileId?: string | null;
+  };
 }
 
 export interface LecturerOption {
@@ -22,6 +35,12 @@ export interface LecturerOption {
   userId: string;
   fullName: string;
   department: string;
+  facultyId?: string | null;
+  faculty?: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
   title: string | null;
   email: string;
   activeSupervisionCount: number;

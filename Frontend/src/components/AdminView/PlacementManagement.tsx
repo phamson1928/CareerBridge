@@ -29,6 +29,8 @@ import { semestersApi } from "../../semesters/api";
 import type { SemesterRecord } from "../../semesters/types";
 import { supervisionsApi } from "../../supervisions/api";
 import type { LecturerOption } from "../../supervisions/types";
+import { facultiesApi } from "../../organization/api";
+import type { FacultyOption } from "../../organization/types";
 
 const statusLabel: Record<PlacementStatus, string> = {
   PENDING: "Chờ phân công",
@@ -128,10 +130,13 @@ export const PlacementManagement: React.FC<{
   const [items, setItems] = useState<PlacementRecord[]>([]);
   const [semesters, setSemesters] = useState<SemesterRecord[]>([]);
   const [lecturers, setLecturers] = useState<LecturerOption[]>([]);
+  const [faculties, setFaculties] = useState<FacultyOption[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<PlacementStatus | "">("");
   const [semesterId, setSemesterId] = useState("");
   const [lecturerId, setLecturerId] = useState("");
+  const [facultyId, setFacultyId] = useState("");
+  const [majorId, setMajorId] = useState("");
   const [assignmentStatus, setAssignmentStatus] = useState<
     "" | "ASSIGNED" | "UNASSIGNED"
   >("");
@@ -161,6 +166,8 @@ export const PlacementManagement: React.FC<{
           status: status || undefined,
           semesterId: semesterId || undefined,
           lecturerId: lecturerId || undefined,
+          facultyId: facultyId || undefined,
+          majorId: majorId || undefined,
           assignmentStatus: assignmentStatus || undefined,
           reportStatus: reportStatus || undefined,
         }),
@@ -179,13 +186,22 @@ export const PlacementManagement: React.FC<{
     }
   }, [
     assignmentStatus,
+    facultyId,
     lecturerId,
+    majorId,
     page,
     reportStatus,
     search,
     semesterId,
     status,
   ]);
+
+  useEffect(() => {
+    facultiesApi
+      .listOptions({ includeInactive: true })
+      .then((res) => setFaculties(res.items))
+      .catch(() => setFaculties([]));
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 220);
@@ -288,6 +304,8 @@ export const PlacementManagement: React.FC<{
     setStatus("");
     setSemesterId("");
     setLecturerId("");
+    setFacultyId("");
+    setMajorId("");
     setAssignmentStatus("");
     setReportStatus("");
     setPage(1);
@@ -450,6 +468,44 @@ export const PlacementManagement: React.FC<{
               </option>
             ))}
           </select>
+          <select
+            value={facultyId}
+            onChange={(event) => {
+              setFacultyId(event.target.value);
+              setMajorId("");
+              setPage(1);
+            }}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+          >
+            <option value="">Tất cả Khoa sinh viên</option>
+            {faculties.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.code} — {f.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={majorId}
+            onChange={(event) => {
+              setMajorId(event.target.value);
+              setPage(1);
+            }}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+          >
+            <option value="">Tất cả Ngành đào tạo</option>
+            {(facultyId
+              ? faculties.filter((f) => f.id === facultyId)
+              : faculties
+            ).map((f) => (
+              <optgroup key={f.id} label={`Khoa ${f.name}`}>
+                {f.majors.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
           <button
             onClick={resetFilters}
             className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-700 transition"
@@ -563,6 +619,9 @@ export const PlacementManagement: React.FC<{
                               {placement.student.studentCode}
                             </span>{" "}
                             · {placement.student.major}
+                            {placement.student.faculty?.name
+                              ? ` (${placement.student.faculty.name})`
+                              : ""}
                           </p>
                         </div>
                       </div>
@@ -587,11 +646,22 @@ export const PlacementManagement: React.FC<{
                     <td className="whitespace-nowrap px-5 py-4 align-middle">
                       {placement.supervision?.status === "ACTIVE" ? (
                         <div>
-                          <p className="font-bold text-slate-800">
-                            {placement.supervision.lecturer.fullName}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-bold text-slate-800">
+                              {placement.supervision.lecturer.fullName}
+                            </p>
+                            {placement.student.faculty?.id &&
+                              placement.supervision.lecturer.facultyId &&
+                              placement.student.faculty.id !==
+                                placement.supervision.lecturer.facultyId && (
+                                <span className="rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                                  Liên khoa
+                                </span>
+                              )}
+                          </div>
                           <p className="mt-0.5 text-[11px] text-slate-500">
-                            {placement.supervision.lecturer.department}
+                            {placement.supervision.lecturer.faculty?.name ??
+                              placement.supervision.lecturer.department}
                           </p>
                         </div>
                       ) : (
@@ -712,6 +782,9 @@ export const PlacementManagement: React.FC<{
                       {selected.student.studentCode}
                     </span>{" "}
                     · {selected.student.major}
+                    {selected.student.faculty?.name
+                      ? ` · Khoa ${selected.student.faculty.name}`
+                      : ""}
                   </p>
                 </div>
               </div>
@@ -793,7 +866,8 @@ export const PlacementManagement: React.FC<{
                       "Chưa phân công"}
                   </p>
                   <p className="mt-0.5 text-xs text-slate-600">
-                    {selected.supervision?.lecturer.department ??
+                    {selected.supervision?.lecturer.faculty?.name ??
+                      selected.supervision?.lecturer.department ??
                       "Mở trang Phân công giảng viên để chỉ định"}
                   </p>
                 </div>
