@@ -57,6 +57,7 @@ export interface CreateInternshipFromTemplateInput {
   endDate?: string | null;
   status?: InternshipStatus;
   skills?: Array<{ skillId: string; isRequired?: boolean; weight?: number }>;
+  majorIds?: string[];
 }
 
 export interface InternshipWithWarnings extends InternshipRecord {

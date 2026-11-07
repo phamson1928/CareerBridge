@@ -52,6 +52,20 @@ export interface InternshipSkillRecord {
   weight: number;
 }
 
+export interface InternshipMajorRecord {
+  majorId: string;
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  facultyId: string;
+  faculty: {
+    id: string;
+    code: string;
+    name: string;
+  };
+}
+
 export interface InternshipRecord {
   id: string;
   companyId: string;
@@ -94,6 +108,7 @@ export interface InternshipRecord {
   };
   semester: { id: string; name: string; startDate: string; endDate: string; status: SemesterStatus };
   skills: InternshipSkillRecord[];
+  majors?: InternshipMajorRecord[];
   warnings?: string[];
   _count?: {
     applications: number;
@@ -165,6 +180,7 @@ export interface InternshipInput {
   startDate?: string | null;
   endDate?: string | null;
   status?: InternshipStatus;
+  majorIds?: string[];
 }
 
 export interface RepostInternshipInput {
@@ -182,6 +198,7 @@ export interface RepostInternshipInput {
   endDate?: string | null;
   status?: InternshipStatus;
   skills?: Array<{ skillId: string; isRequired?: boolean; weight?: number }>;
+  majorIds?: string[];
 }
 
 export interface InternshipsPage {
@@ -202,6 +219,9 @@ export type ListInternshipsParams = {
   companyId?: string;
   skillId?: string;
   skillIds?: string[];
+  facultyId?: string;
+  majorId?: string;
+  majorIds?: string[];
   status?: InternshipStatus;
   hasReports?: boolean;
   moderationReasonCode?: string;
@@ -217,10 +237,11 @@ export type ListInternshipReportsParams = {
 
 const serializeListParams = (params?: ListInternshipsParams) => {
   if (!params) return undefined;
-  const { skillIds, ...rest } = params;
+  const { skillIds, majorIds, ...rest } = params;
   return {
     ...rest,
     ...(skillIds?.length ? { skillIds: skillIds.join(',') } : {}),
+    ...(majorIds?.length ? { majorIds: majorIds.join(',') } : {}),
   };
 };
 

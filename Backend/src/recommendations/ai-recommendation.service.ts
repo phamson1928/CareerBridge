@@ -73,6 +73,7 @@ export class AiRecommendationService {
     const payload = {
       student: {
         major: student.major,
+        faculty: student.facultyName ?? null,
         summary: student.summary?.trim() ?? null,
         skills: student.skills.map(({ name, level }) => ({ name, level })),
         projects: student.projects.map(({ title, description }) => ({
@@ -89,6 +90,9 @@ export class AiRecommendationService {
         workType: recommendation.internship.workType,
         description: recommendation.internship.description,
         requirements: recommendation.internship.requirements,
+        targetMajors: (recommendation.internship.majors ?? []).map(
+          (m) => `${m.name} (${m.faculty.name})`,
+        ),
         skills: recommendation.internship.skills.map(
           ({ name, isRequired, weight }) => ({ name, isRequired, weight }),
         ),

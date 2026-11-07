@@ -88,6 +88,28 @@ const internshipSelect = {
     },
     orderBy: { skill: { name: 'asc' } },
   },
+  majors: {
+    select: {
+      majorId: true,
+      major: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          isActive: true,
+          facultyId: true,
+          faculty: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { major: { name: 'asc' } },
+  },
   _count: {
     select: {
       applications: true,
@@ -242,13 +264,22 @@ export class InternshipsService {
       dto.endDate,
       semester,
     );
+    const { majorIds, ...internshipData } = dto;
+    const validMajorIds = await this.validateTargetMajors(majorIds);
     const record = await this.prisma.$transaction(async (tx) => {
       const internship = await tx.internship.create({
         data: {
-          ...dto,
+          ...internshipData,
           companyId: company.id,
           semesterId: semester.id,
           status: dto.status ?? InternshipStatus.DRAFT,
+          ...(validMajorIds.length
+            ? {
+                majors: {
+                  create: validMajorIds.map((majorId) => ({ majorId })),
+                },
+              }
+            : {}),
         },
         select: internshipSelect,
       });
@@ -283,6 +314,9 @@ export class InternshipsService {
         endDate: true,
         deadline: true,
         status: true,
+        majors: {
+          select: { majorId: true },
+        },
       },
     });
     if (!current) throw this.notFound();
@@ -329,10 +363,33 @@ export class InternshipsService {
       semester,
     );
 
+    const { majorIds, ...internshipData } = dto;
+    const validMajorIds =
+      majorIds !== undefined
+        ? await this.validateTargetMajors(
+            majorIds,
+            (current.majors ?? []).map((m) => m.majorId),
+          )
+        : undefined;
+
     const updated = await this.prisma.$transaction(async (tx) => {
       const internship = await tx.internship.update({
         where: { id },
-        data: dto,
+        data: {
+          ...internshipData,
+          ...(validMajorIds !== undefined
+            ? {
+                majors: {
+                  deleteMany: {},
+                  ...(validMajorIds.length
+                    ? {
+                        create: validMajorIds.map((majorId) => ({ majorId })),
+                      }
+                    : {}),
+                },
+              }
+            : {}),
+        },
         select: internshipSelect,
       });
       await tx.auditLog.create({
@@ -493,6 +550,18 @@ export class InternshipsService {
         skills: {
           include: { skill: { select: { id: true, name: true } } },
         },
+        majors: {
+          include: {
+            major: {
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+                faculty: { select: { id: true, isActive: true } },
+              },
+            },
+          },
+        },
       },
     });
     if (!source) throw this.notFound();
@@ -563,6 +632,21 @@ export class InternshipsService {
       return exists;
     });
 
+    let majorsToCreate: string[] = [];
+    if (dto.majorIds !== undefined) {
+      majorsToCreate = await this.validateTargetMajors(dto.majorIds);
+    } else if (source.majors && source.majors.length > 0) {
+      for (const sm of source.majors) {
+        if (sm.major?.isActive && sm.major?.faculty?.isActive) {
+          majorsToCreate.push(sm.majorId);
+        } else if (sm.major) {
+          warnings.push(
+            `Ngành "${sm.major.name}" hiện đã tạm ngưng hoạt động và đã được bỏ qua khi đăng lại.`,
+          );
+        }
+      }
+    }
+
     const created = await this.prisma.$transaction(async (tx) => {
       const newInternship = await tx.internship.create({
         data: {
@@ -596,6 +680,13 @@ export class InternshipsService {
               weight: s.weight,
             })),
           },
+          ...(majorsToCreate.length
+            ? {
+                majors: {
+                  create: majorsToCreate.map((majorId) => ({ majorId })),
+                },
+              }
+            : {}),
         },
         select: internshipSelect,
       });
@@ -712,6 +803,8 @@ export class InternshipsService {
       return exists;
     });
 
+    const majorsToCreate = await this.validateTargetMajors(dto.majorIds);
+
     const created = await this.prisma.$transaction(async (tx) => {
       const newInternship = await tx.internship.create({
         data: {
@@ -747,6 +840,13 @@ export class InternshipsService {
               weight: s.weight,
             })),
           },
+          ...(majorsToCreate.length
+            ? {
+                majors: {
+                  create: majorsToCreate.map((majorId) => ({ majorId })),
+                },
+              }
+            : {}),
         },
         select: internshipSelect,
       });
@@ -829,6 +929,27 @@ export class InternshipsService {
       });
     }
 
+    const majorIds = [
+      ...(query.majorIds ?? []),
+      ...(query.majorId ? [query.majorId] : []),
+    ].filter((majorId, index, values) => values.indexOf(majorId) === index);
+
+    if (majorIds.length > 0) {
+      and.push({
+        OR: [
+          { majors: { some: { majorId: { in: majorIds } } } },
+          { majors: { none: {} } },
+        ],
+      });
+    } else if (query.facultyId) {
+      and.push({
+        OR: [
+          { majors: { some: { major: { facultyId: query.facultyId } } } },
+          { majors: { none: {} } },
+        ],
+      });
+    }
+
     if (query.search) {
       and.push({
         OR: [
@@ -900,6 +1021,47 @@ export class InternshipsService {
       });
     this.lifecycle.assertRecruitmentOpen(semester);
     return semester;
+  }
+
+  private async validateTargetMajors(
+    majorIds?: string[],
+    existingMajorIds: string[] = [],
+  ): Promise<string[]> {
+    if (!majorIds || majorIds.length === 0) return [];
+    const uniqueIds = Array.from(
+      new Set(majorIds.map((id) => id.trim()).filter(Boolean)),
+    );
+    if (uniqueIds.length === 0) return [];
+
+    const majors = await this.prisma.major.findMany({
+      where: { id: { in: uniqueIds } },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        faculty: { select: { id: true, name: true, isActive: true } },
+      },
+    });
+    const majorMap = new Map(majors.map((m) => [m.id, m]));
+    const existingSet = new Set(existingMajorIds);
+
+    for (const id of uniqueIds) {
+      const m = majorMap.get(id);
+      if (!m) {
+        throw new BadRequestException({
+          code: 'MAJOR_NOT_FOUND',
+          message: `Ngành học không tồn tại trong hệ thống (${id})`,
+        });
+      }
+      if (!existingSet.has(id) && (!m.isActive || !m.faculty.isActive)) {
+        throw new BadRequestException({
+          code: 'MAJOR_INACTIVE',
+          message: `Ngành "${m.name}" hiện đã ngừng hoạt động và không thể chọn mới`,
+        });
+      }
+    }
+
+    return uniqueIds;
   }
 
   private async resolvePostingSemester(requestedSemesterId?: string | null) {
@@ -1023,6 +1185,15 @@ export class InternshipsService {
       skills: record.skills.map(({ skill, ...item }) => ({
         ...item,
         name: skill.name,
+      })),
+      majors: (record.majors ?? []).map(({ major }) => ({
+        majorId: major.id,
+        id: major.id,
+        code: major.code,
+        name: major.name,
+        isActive: major.isActive,
+        facultyId: major.facultyId,
+        faculty: major.faculty,
       })),
     };
   }
@@ -1306,6 +1477,21 @@ export class InternshipsService {
               fullName: true,
               studentCode: true,
               major: true,
+              majorId: true,
+              majorRef: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  faculty: {
+                    select: {
+                      id: true,
+                      code: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
             },
           },
           internship: {

@@ -15,6 +15,22 @@ import {
 const studentSelect = {
   id: true,
   major: true,
+  majorId: true,
+  majorRef: {
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      facultyId: true,
+      faculty: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+        },
+      },
+    },
+  },
   summary: true,
   skills: {
     select: { skillId: true, level: true, skill: { select: { name: true } } },
@@ -56,6 +72,26 @@ const candidateSelect = {
       isRequired: true,
       weight: true,
       skill: { select: { name: true } },
+    },
+  },
+  majors: {
+    select: {
+      majorId: true,
+      major: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          facultyId: true,
+          faculty: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+        },
+      },
     },
   },
   company: {
@@ -123,7 +159,12 @@ export class RecommendationCandidatesService {
     return {
       student: {
         id: student.id,
-        major: student.major,
+        major: student.majorRef?.name ?? student.major,
+        majorId: student.majorId ?? null,
+        majorCode: student.majorRef?.code ?? null,
+        facultyId: student.majorRef?.facultyId ?? null,
+        facultyCode: student.majorRef?.faculty?.code ?? null,
+        facultyName: student.majorRef?.faculty?.name ?? null,
         summary: student.summary,
         skills: student.skills.map(({ skill, ...item }) => ({
           ...item,
@@ -138,11 +179,19 @@ export class RecommendationCandidatesService {
       },
       candidates: internships
         .filter((internship) => internship.filledSlots < internship.slots)
-        .map(({ skills, ...internship }) => ({
+        .map(({ skills, majors, ...internship }) => ({
           ...internship,
           skills: skills.map(({ skill, ...item }) => ({
             ...item,
             name: skill.name,
+          })),
+          majors: (majors ?? []).map(({ major }) => ({
+            majorId: major.id,
+            id: major.id,
+            code: major.code,
+            name: major.name,
+            facultyId: major.facultyId,
+            faculty: major.faculty,
           })),
         })),
     };

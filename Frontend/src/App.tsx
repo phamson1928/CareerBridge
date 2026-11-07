@@ -134,7 +134,12 @@ function toLegacyStudentProfile(
     userId: record.userId,
     fullname: record.fullName,
     studentCode: record.studentCode,
-    major: record.major,
+    major: record.majorRef?.name ?? record.major,
+    majorId: record.majorId ?? null,
+    majorCode: record.majorRef?.code ?? null,
+    facultyId: record.majorRef?.facultyId ?? null,
+    facultyCode: record.majorRef?.faculty?.code ?? null,
+    facultyName: record.majorRef?.faculty?.name ?? null,
     university: "",
     gpa: record.gpa ?? 0,
     skills,
@@ -384,6 +389,9 @@ export default function App() {
     limit: number;
     search?: string;
     skillIds?: string[];
+    facultyId?: string;
+    majorId?: string;
+    majorIds?: string[];
   }) => {
     const result = await internshipsApi.list(params);
     return {

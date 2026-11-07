@@ -9,6 +9,11 @@ import { InternshipSkillForMatch } from '../../skills/skill-match.calculator';
 export type RecommendationStudent = {
   id: string;
   major: string;
+  majorId?: string | null;
+  majorCode?: string | null;
+  facultyId?: string | null;
+  facultyCode?: string | null;
+  facultyName?: string | null;
   summary: string | null;
   skills: Array<{ skillId: string; level: SkillLevel; name: string }>;
   projects: Array<{
@@ -21,6 +26,19 @@ export type RecommendationStudent = {
     desiredRoles: string[];
     preferredLocations: string[];
     preferredWorkTypes: string[];
+  };
+};
+
+export type RecommendationTargetMajor = {
+  majorId: string;
+  id: string;
+  code: string;
+  name: string;
+  facultyId: string;
+  faculty: {
+    id: string;
+    code: string;
+    name: string;
   };
 };
 
@@ -44,6 +62,7 @@ export type RecommendationCandidate = {
   createdAt: Date;
   updatedAt: Date;
   skills: InternshipSkillForMatch[];
+  majors?: RecommendationTargetMajor[];
   company: {
     id: string;
     companyName: string;

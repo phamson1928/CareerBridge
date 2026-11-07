@@ -333,7 +333,7 @@ export class StudentsService {
 
   private toUpdateData(
     dto: UpdateStudentProfileDto,
-  ): Prisma.StudentProfileUpdateInput {
+  ): Prisma.StudentProfileUncheckedUpdateInput {
     return {
       ...(dto.studentCode !== undefined
         ? { studentCode: dto.studentCode }

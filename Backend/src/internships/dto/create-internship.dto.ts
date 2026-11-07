@@ -1,5 +1,8 @@
 import { Transform, TransformFnParams, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayUnique,
+  IsArray,
   IsDate,
   IsEnum,
   IsInt,
@@ -85,4 +88,12 @@ export class CreateInternshipDto {
   @IsOptional()
   @IsEnum(InternshipStatus)
   status?: InternshipStatus;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @ArrayMaxSize(30)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  majorIds?: string[];
 }
