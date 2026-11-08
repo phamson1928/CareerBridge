@@ -52,11 +52,11 @@ export interface UpdateUserInput {
 
 export const ADMIN_PERMISSION_OPTIONS = [
   { id: 'DASHBOARD', label: 'Thống kê hệ thống', description: 'Xem tổng quan và các chỉ số thống kê toàn trường' },
-  { id: 'COMPANIES', label: 'Quản lý Doanh nghiệp', description: 'Xét duyệt hồ sơ, đình chỉ và quản lý thông tin đối tác DN' },
-  { id: 'INTERNSHIPS', label: 'Tin tuyển dụng & Kỹ năng', description: 'Kiểm duyệt tin đăng tuyển, báo cáo vi phạm và danh mục kỹ năng' },
-  { id: 'PLACEMENTS', label: 'Thực tập & Giảng viên', description: 'Quản lý tiến độ thực tập, phân công GV hướng dẫn và nghiệm thu' },
-  { id: 'SEMESTERS', label: 'Kỳ thực tập', description: 'Tạo và quản lý các đợt thực tập học vụ' },
-  { id: 'SUPPORT', label: 'Hỗ trợ sinh viên', description: 'Tiếp nhận và phản hồi các yêu cầu hỗ trợ, khiếu nại' },
+  { id: 'PLACEMENTS', label: 'Thực tập & Phân công GV', description: 'Quản lý tiến độ thực tập và phân công Giảng viên hướng dẫn' },
+  { id: 'SEMESTERS', label: 'Kỳ thực tập & Khoa ngành', description: 'Quản lý các kỳ thực tập, danh mục Khoa và Ngành đào tạo' },
+  { id: 'COMPANIES', label: 'Duyệt Doanh nghiệp', description: 'Xét duyệt hồ sơ, đình chỉ và quản lý đối tác Doanh nghiệp' },
+  { id: 'INTERNSHIPS', label: 'Tin tuyển dụng & Kỹ năng', description: 'Kiểm duyệt tin tuyển dụng và quản lý danh mục kỹ năng' },
+  { id: 'SUPPORT', label: 'Hỗ trợ sinh viên', description: 'Tiếp nhận và phản hồi các yêu cầu hỗ trợ của sinh viên' },
 ] as const;
 
 export const usersApi = {

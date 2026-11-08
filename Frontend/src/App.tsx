@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
 import {
@@ -68,6 +68,7 @@ const SkillManagement = lazy(() => import("./components/AdminView/SkillManagemen
 const SemesterManagement = lazy(() => import("./components/AdminView/SemesterManagement").then(({ SemesterManagement }) => ({ default: SemesterManagement })));
 const AuditLogManagement = lazy(() => import("./components/AdminView/AuditLogManagement").then(({ AuditLogManagement }) => ({ default: AuditLogManagement })));
 const SupportRequestManagement = lazy(() => import("./components/AdminView/SupportRequestManagement").then(({ SupportRequestManagement }) => ({ default: SupportRequestManagement })));
+const AdminProfile = lazy(() => import("./components/AdminView/AdminProfile").then(({ AdminProfile }) => ({ default: AdminProfile })));
 const PlacementOverview = lazy(() => import("./components/StudentView/PlacementOverview").then(({ PlacementOverview }) => ({ default: PlacementOverview })));
 const StudentEvaluations = lazy(() => import("./components/StudentView/StudentEvaluations").then(({ StudentEvaluations }) => ({ default: StudentEvaluations })));
 const StudentSupportRequests = lazy(() => import("./components/StudentView/StudentSupportRequests").then(({ StudentSupportRequests }) => ({ default: StudentSupportRequests })));
@@ -85,6 +86,7 @@ const adminPathByTab: Record<string, string> = {
   "semester-management": "semesters",
   "audit-logs": "audit-logs",
   "support-requests": "support-requests",
+  "admin-profile": "profile",
 };
 
 const TAB_PERMISSION_MAP: Record<string, string> = {
@@ -551,11 +553,61 @@ export default function App() {
     if (tab) handleTabChange(tab);
   };
 
+  const renderAdminView = useMemo(() => {
+    switch (activeTab) {
+      case "stats-dashboard":
+        return <AdminDashboard onNavigate={handleTabChange} />;
+      case "teacher-assignment":
+        return <SupervisionManagement />;
+      case "placement-management":
+        return (
+          <PlacementManagement
+            onOpenAssignment={() => handleTabChange("teacher-assignment")}
+          />
+        );
+      case "internship-management":
+        return <InternshipManagement />;
+      case "user-management":
+        return <UserManagement />;
+      case "admin-permissions":
+        return <AdminPermissionManagement />;
+      case "company-approval":
+        return <CompanyModeration />;
+      case "organization-management":
+        return <OrganizationManagement />;
+      case "skill-management":
+        return <SkillManagement />;
+      case "semester-management":
+        return <SemesterManagement />;
+      case "support-requests":
+        return <SupportRequestManagement />;
+      case "audit-logs":
+        return <AuditLogManagement />;
+      case "admin-profile":
+        return <AdminProfile />;
+      case "no-permissions":
+        return (
+          <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-xs max-w-md mx-auto my-12">
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+              <ShieldAlert className="w-6 h-6 text-amber-600" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800">Chưa được cấp quyền</h3>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              Tài khoản Quản trị viên phụ của bạn hiện chưa được phân quyền cho phân hệ nào.
+              Vui lòng liên hệ Quản trị viên tối cao (Super Admin) để được cấp quyền thao tác.
+            </p>
+          </div>
+        );
+      default:
+        return null;
+    }
+  }, [activeTab]);
+
   return (
     <div
       className={`min-h-screen overflow-x-clip bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${
         currentRole === "ADMIN"
-          ? `admin-theme pl-20 will-change-[padding-left] transition-[padding-left] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          ? `admin-theme pl-20 will-change-[padding-left] transition-[padding-left] duration-200 ease-out ${
               isAdminSidebarCollapsed ? "lg:pl-20" : "lg:pl-72"
             }`
           : ""
@@ -707,41 +759,8 @@ export default function App() {
           </>
         )}
 
-        {/* ADMIN VIEWS */}
-        {currentRole === "ADMIN" && (
-          <>
-            {activeTab === "stats-dashboard" && (
-              <AdminDashboard onNavigate={handleTabChange} />
-            )}
-            {activeTab === "teacher-assignment" && <SupervisionManagement />}
-            {activeTab === "placement-management" && (
-              <PlacementManagement
-                onOpenAssignment={() => handleTabChange("teacher-assignment")}
-              />
-            )}
-            {activeTab === "internship-management" && <InternshipManagement />}
-            {activeTab === "user-management" && <UserManagement />}
-            {activeTab === "admin-permissions" && <AdminPermissionManagement />}
-            {activeTab === "company-approval" && <CompanyModeration />}
-            {activeTab === "organization-management" && <OrganizationManagement />}
-            {activeTab === "skill-management" && <SkillManagement />}
-            {activeTab === "semester-management" && <SemesterManagement />}
-            {activeTab === "support-requests" && <SupportRequestManagement />}
-            {activeTab === "audit-logs" && <AuditLogManagement />}
-            {activeTab === "no-permissions" && (
-              <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-xs max-w-md mx-auto my-12">
-                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
-                  <ShieldAlert className="w-6 h-6 text-amber-600" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-800">Chưa được cấp quyền</h3>
-                <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                  Tài khoản Quản trị viên phụ của bạn hiện chưa được phân quyền cho phân hệ nào.
-                  Vui lòng liên hệ Quản trị viên tối cao (Super Admin) để được cấp quyền thao tác.
-                </p>
-              </div>
-            )}
-          </>
-        )}
+        {/* ADMIN VIEWS (Memoized for silky-smooth 60fps sidebar toggling) */}
+        {currentRole === "ADMIN" && renderAdminView}
         </Suspense>
       </main>
 

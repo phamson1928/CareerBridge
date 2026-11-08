@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { UserRole } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import {
@@ -20,8 +20,15 @@ import {
   LifeBuoy,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { ProfileAvatarPreview } from "./ProfileAvatarUpload";
+import {
+  ADMIN_PROFILE_UPDATED_EVENT,
+  loadAdminProfile,
+} from "./AdminView/AdminProfile";
 import type { AppNotification } from "../notifications/types";
 
 interface NavbarProps {
@@ -42,6 +49,136 @@ interface NavbarProps {
   onToggleSidebar?: () => void;
 }
 
+interface AdminItemDef {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  permission?: string;
+  superAdminOnly?: boolean;
+}
+
+interface AdminGroupDef {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  items: AdminItemDef[];
+}
+
+type AdminNavEntry =
+  | { type: "item"; data: AdminItemDef }
+  | { type: "group"; data: AdminGroupDef };
+
+const adminNavStructure: AdminNavEntry[] = [
+  {
+    type: "item",
+    data: {
+      id: "stats-dashboard",
+      label: "Thống kê hệ thống",
+      icon: <LayoutDashboard className="w-4 h-4" />,
+      permission: "DASHBOARD",
+    },
+  },
+  {
+    type: "group",
+    data: {
+      id: "training",
+      label: "Thực tập & Đào tạo",
+      icon: <GraduationCap className="w-4 h-4" />,
+      items: [
+        {
+          id: "placement-management",
+          label: "Quản lý thực tập",
+          icon: <Briefcase className="w-4 h-4" />,
+          permission: "PLACEMENTS",
+        },
+        {
+          id: "teacher-assignment",
+          label: "Phân công Giảng viên",
+          icon: <GraduationCap className="w-4 h-4" />,
+          permission: "PLACEMENTS",
+        },
+        {
+          id: "semester-management",
+          label: "Kỳ thực tập",
+          icon: <CalendarDays className="w-4 h-4" />,
+          permission: "SEMESTERS",
+        },
+        {
+          id: "organization-management",
+          label: "Khoa & Ngành",
+          icon: <Building className="w-4 h-4" />,
+          permission: "SEMESTERS",
+        },
+      ],
+    },
+  },
+  {
+    type: "group",
+    data: {
+      id: "business",
+      label: "Doanh nghiệp & Tuyển dụng",
+      icon: <Building className="w-4 h-4" />,
+      items: [
+        {
+          id: "company-approval",
+          label: "Duyệt Doanh nghiệp",
+          icon: <Building className="w-4 h-4" />,
+          permission: "COMPANIES",
+        },
+        {
+          id: "internship-management",
+          label: "Tin tuyển dụng",
+          icon: <FileText className="w-4 h-4" />,
+          permission: "INTERNSHIPS",
+        },
+        {
+          id: "skill-management",
+          label: "Danh mục kỹ năng",
+          icon: <CheckSquare className="w-4 h-4" />,
+          permission: "INTERNSHIPS",
+        },
+      ],
+    },
+  },
+  {
+    type: "group",
+    data: {
+      id: "system",
+      label: "Tài khoản & Hệ thống",
+      icon: <Users className="w-4 h-4" />,
+      items: [
+        {
+          id: "user-management",
+          label: "Quản lý người dùng",
+          icon: <Users className="w-4 h-4" />,
+          superAdminOnly: true,
+        },
+        {
+          id: "admin-permissions",
+          label: "Phân quyền quản trị",
+          icon: <KeyRound className="w-4 h-4" />,
+          superAdminOnly: true,
+        },
+        {
+          id: "audit-logs",
+          label: "Nhật ký hệ thống",
+          icon: <ShieldCheck className="w-4 h-4" />,
+          superAdminOnly: true,
+        },
+      ],
+    },
+  },
+  {
+    type: "item",
+    data: {
+      id: "support-requests",
+      label: "Hỗ trợ sinh viên",
+      icon: <LifeBuoy className="w-4 h-4" />,
+      permission: "SUPPORT",
+    },
+  },
+];
+
 export const Navbar: React.FC<NavbarProps> = ({
   currentRole,
   activeTab,
@@ -60,6 +197,48 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
 }) => {
   const { user } = useAuth();
+  const [adminSearch, setAdminSearch] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [adminProfile, setAdminProfile] = useState(() =>
+    loadAdminProfile(user?.id, user?.email, user?.isSuperAdmin),
+  );
+
+  useEffect(() => {
+    const syncProfile = () => {
+      setAdminProfile(loadAdminProfile(user?.id, user?.email, user?.isSuperAdmin));
+    };
+    syncProfile();
+    window.addEventListener(ADMIN_PROFILE_UPDATED_EVENT, syncProfile);
+    return () => window.removeEventListener(ADMIN_PROFILE_UPDATED_EVENT, syncProfile);
+  }, [user?.id, user?.email, user?.isSuperAdmin]);
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const entry of adminNavStructure) {
+      if (entry.type === "group") {
+        initial[entry.data.id] = entry.data.items.some((i) => i.id === activeTab);
+      }
+    }
+    return initial;
+  });
+
+  const toggleGroup = (groupId: string) => {
+    setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
+  useEffect(() => {
+    if (currentRole === "ADMIN") {
+      for (const entry of adminNavStructure) {
+        if (entry.type === "group" && entry.data.items.some((i) => i.id === activeTab)) {
+          setOpenGroups((prev) =>
+            prev[entry.data.id] ? prev : { ...prev, [entry.data.id]: true },
+          );
+          break;
+        }
+      }
+    }
+  }, [activeTab, currentRole]);
   const getNavItems = () => {
     switch (currentRole) {
       case "STUDENT":
@@ -154,87 +333,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           },
         ];
       case "ADMIN": {
-        const adminItems = [
-          {
-            id: "stats-dashboard",
-            label: "Thống kê hệ thống",
-            icon: <LayoutDashboard className="w-4 h-4" />,
-            permission: "DASHBOARD",
-          },
-          {
-            id: "teacher-assignment",
-            label: "Phân công Giảng viên",
-            icon: <GraduationCap className="w-4 h-4" />,
-            permission: "PLACEMENTS",
-          },
-          {
-            id: "placement-management",
-            label: "Quản lý thực tập",
-            icon: <Briefcase className="w-4 h-4" />,
-            permission: "PLACEMENTS",
-          },
-          {
-            id: "internship-management",
-            label: "Tin tuyển dụng",
-            icon: <FileText className="w-4 h-4" />,
-            permission: "INTERNSHIPS",
-          },
-          {
-            id: "user-management",
-            label: "Quản lý người dùng",
-            icon: <Users className="w-4 h-4" />,
-            superAdminOnly: true,
-          },
-          {
-            id: "admin-permissions",
-            label: "Phân quyền quản trị",
-            icon: <KeyRound className="w-4 h-4 text-amber-500" />,
-            superAdminOnly: true,
-          },
-          {
-            id: "audit-logs",
-            label: "Nhật ký hệ thống",
-            icon: <ShieldCheck className="w-4 h-4" />,
-            superAdminOnly: true,
-          },
-          {
-            id: "company-approval",
-            label: "Duyệt Doanh nghiệp",
-            icon: <Building className="w-4 h-4" />,
-            permission: "COMPANIES",
-          },
-          {
-            id: "organization-management",
-            label: "Khoa & Ngành",
-            icon: <GraduationCap className="w-4 h-4" />,
-            permission: "SEMESTERS",
-          },
-          {
-            id: "skill-management",
-            label: "Danh mục kỹ năng",
-            icon: <CheckSquare className="w-4 h-4" />,
-            permission: "INTERNSHIPS",
-          },
-          {
-            id: "semester-management",
-            label: "Kỳ thực tập",
-            icon: <CalendarDays className="w-4 h-4" />,
-            permission: "SEMESTERS",
-          },
-          {
-            id: "support-requests",
-            label: "Hỗ trợ sinh viên",
-            icon: <LifeBuoy className="w-4 h-4" />,
-            permission: "SUPPORT",
-          },
-        ];
-
-        if (user?.isSuperAdmin) {
-          return adminItems;
+        const items: AdminItemDef[] = [];
+        for (const entry of adminNavStructure) {
+          if (entry.type === "item") {
+            items.push(entry.data);
+          } else {
+            items.push(...entry.data.items);
+          }
         }
-
+        if (user?.isSuperAdmin) {
+          return items;
+        }
         const userPerms = user?.permissions || [];
-        return adminItems.filter((item) => {
+        return items.filter((item) => {
           if (item.superAdminOnly) return false;
           if (item.permission) return userPerms.includes(item.permission);
           return true;
@@ -254,193 +365,591 @@ export const Navbar: React.FC<NavbarProps> = ({
   const showNotificationPreview =
     currentRole === "STUDENT" ||
     currentRole === "COMPANY" ||
-    currentRole === "TEACHER";
+    currentRole === "TEACHER" ||
+    currentRole === "ADMIN";
   const unreadNotifications = notifications
     .filter((notification) => !notification.isRead)
     .slice(0, 4);
 
   const notificationPreview = showNotificationPreview ? (
     <div
-      className="notification-hover-card invisible absolute right-0 top-full z-50 mt-3 w-[min(23rem,calc(100vw-2rem))] translate-y-2 origin-top-right rounded-2xl border border-slate-200/90 bg-white/95 p-2 opacity-0 shadow-2xl shadow-slate-900/15 backdrop-blur-xl transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100"
+      className="invisible absolute right-0 top-full z-50 pt-2 w-[min(23rem,calc(100vw-2rem))] origin-top-right opacity-0 translate-y-1.5 scale-[0.98] pointer-events-none transition-all duration-200 ease-out before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-hover:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:pointer-events-auto"
       role="dialog"
       aria-label="Xem nhanh thông báo"
     >
-      <div className="flex items-center justify-between px-3 py-2">
-        <div>
-          <p className="text-sm font-bold text-slate-800">Thông báo</p>
-          <p className="text-[11px] text-slate-500">
-            {unreadNotifsCount
-              ? `${unreadNotifsCount} chưa đọc`
-              : "Bạn đã cập nhật đầy đủ"}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onOpenNotifs}
-          className="rounded-lg px-2 py-1 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-700"
-        >
-          Xem tất cả
-        </button>
-      </div>
-      <div className="max-h-80 space-y-1 overflow-x-hidden overflow-y-auto pt-1">
-        {unreadNotifications.length ? (
-          unreadNotifications.map((notification) => (
-            <button
-              key={notification.id}
-              type="button"
-              onClick={() => onNotificationClick(notification)}
-              className={`w-full overflow-hidden rounded-xl px-3 py-2.5 text-left transition hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none ${notification.isRead ? "" : "bg-indigo-50/60"}`}
-            >
-              <div className="flex min-w-0 items-start gap-2">
-                <span
-                  className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${notification.isRead ? "bg-slate-300" : "bg-indigo-600"}`}
-                />
-                <span className="min-w-0 flex-1 overflow-hidden">
-                  <span className="block truncate text-xs font-bold text-slate-800">
-                    {notification.title}
-                  </span>
-                  <span className="mt-0.5 block truncate text-[11px] leading-4 text-slate-500">
-                    {notification.content}
-                  </span>
-                </span>
-              </div>
-            </button>
-          ))
-        ) : (
-          <div className="px-3 py-8 text-center text-xs text-slate-500">
-            Bạn đã đọc hết thông báo
+      <div className="notification-hover-card origin-top-right rounded-2xl border border-slate-200/90 bg-white p-2 shadow-2xl shadow-teal-950/15">
+        <div className="flex items-center justify-between px-3 py-2">
+          <div>
+            <p className="text-sm font-bold text-slate-800">Thông báo</p>
+            <p className="text-[11px] text-slate-500">
+              {unreadNotifsCount
+                ? `${unreadNotifsCount} chưa đọc`
+                : "Bạn đã cập nhật đầy đủ"}
+            </p>
           </div>
-        )}
+          <button
+            type="button"
+            onClick={onOpenNotifs}
+            className="rounded-lg px-2 py-1 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer"
+          >
+            Xem tất cả
+          </button>
+        </div>
+        <div className="max-h-80 space-y-1 overflow-x-hidden overflow-y-auto pt-1">
+          {unreadNotifications.length ? (
+            unreadNotifications.map((notification) => (
+              <button
+                key={notification.id}
+                type="button"
+                onClick={() => onNotificationClick(notification)}
+                className={`w-full overflow-hidden rounded-xl px-3 py-2.5 text-left transition hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none cursor-pointer ${notification.isRead ? "" : "bg-indigo-50/60"}`}
+              >
+                <div className="flex min-w-0 items-start gap-2">
+                  <span
+                    className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${notification.isRead ? "bg-slate-300" : "bg-indigo-600"}`}
+                  />
+                  <span className="min-w-0 flex-1 overflow-hidden">
+                    <span className="block truncate text-xs font-bold text-slate-800">
+                      {notification.title}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[11px] leading-4 text-slate-500">
+                      {notification.content}
+                    </span>
+                  </span>
+                </div>
+              </button>
+            ))
+          ) : (
+            <div className="px-3 py-8 text-center text-xs text-slate-500">
+              Bạn đã đọc hết thông báo
+            </div>
+          )}
+        </div>
       </div>
     </div>
   ) : null;
 
   if (currentRole === "ADMIN") {
-    const labelTransitionClass = `whitespace-nowrap overflow-hidden transition-[opacity,transform,max-width] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-      isSidebarCollapsed
-        ? "max-w-0 opacity-0 -translate-x-1.5 pointer-events-none"
-        : "max-w-0 opacity-0 lg:max-w-[180px] lg:opacity-100 lg:translate-x-0"
+    const labelTransitionClass = `whitespace-nowrap overflow-hidden transition-opacity duration-150 ${
+      isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
     }`;
 
+    const filterAdminItem = (item: AdminItemDef) => {
+      if (user?.isSuperAdmin) return true;
+      if (item.superAdminOnly) return false;
+      if (item.permission) {
+        const userPerms = user?.permissions || [];
+        return userPerms.includes(item.permission);
+      }
+      return true;
+    };
+
+    const visibleEntries = adminNavStructure
+      .map((entry) => {
+        if (entry.type === "item") {
+          return filterAdminItem(entry.data) ? entry : null;
+        }
+        const visibleSub = entry.data.items.filter(filterAdminItem);
+        if (visibleSub.length === 0) return null;
+        return {
+          type: "group" as const,
+          data: {
+            ...entry.data,
+            items: visibleSub,
+          },
+        };
+      })
+      .filter(Boolean) as AdminNavEntry[];
+
+    const searchableItems: { id: string; label: string; groupLabel: string; icon: React.ReactNode }[] = [];
+    for (const entry of visibleEntries) {
+      if (entry.type === "item") {
+        searchableItems.push({
+          id: entry.data.id,
+          label: entry.data.label,
+          groupLabel: "Tổng quan & Vận hành",
+          icon: entry.data.icon,
+        });
+      } else {
+        for (const sub of entry.data.items) {
+          searchableItems.push({
+            id: sub.id,
+            label: sub.label,
+            groupLabel: entry.data.label,
+            icon: sub.icon,
+          });
+        }
+      }
+    }
+    searchableItems.push({
+      id: "admin-profile",
+      label: "Hồ sơ cá nhân",
+      groupLabel: "Tài khoản quản trị",
+      icon: <User className="w-4 h-4" />,
+    });
+
+    const activeModule =
+      searchableItems.find((item) => item.id === activeTab) ||
+      searchableItems[0] || {
+        id: "stats-dashboard",
+        label: "Thống kê hệ thống",
+        groupLabel: "Tổng quan & Vận hành",
+        icon: <LayoutDashboard className="w-4 h-4" />,
+      };
+
+    const q = adminSearch.trim().toLowerCase();
+    const filteredSearchItems = q
+      ? searchableItems.filter(
+          (item) =>
+            item.label.toLowerCase().includes(q) ||
+            item.groupLabel.toLowerCase().includes(q),
+        )
+      : searchableItems;
+
+    const avatarInitial = (
+      adminProfile.fullName?.charAt(0) ||
+      user?.email?.charAt(0) ||
+      "A"
+    ).toUpperCase();
+    const resolvedAvatarId = adminProfile.avatarFileId || avatarFileId;
+
     return (
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-[#006f72] bg-[#00878a] text-white shadow-2xl will-change-[width] transition-[width] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-          isSidebarCollapsed ? "lg:w-20" : "lg:w-72"
-        }`}
-      >
-        {onToggleSidebar && (
-          <button
-            type="button"
-            onClick={onToggleSidebar}
-            title={
-              isSidebarCollapsed
-                ? "Mở rộng thanh điều hướng"
-                : "Thu gọn thanh điều hướng"
-            }
-            aria-label={
-              isSidebarCollapsed
-                ? "Mở rộng thanh điều hướng"
-                : "Thu gọn thanh điều hướng"
-            }
-            className="absolute -right-3.5 top-9 z-50 hidden h-7 w-7 items-center justify-center rounded-full border border-[#006f72]/30 bg-white text-[#00777a] shadow-md transition-transform duration-200 hover:scale-105 hover:bg-[#e6f6f6] lg:flex"
-          >
-            <ChevronLeft
-              className={`h-4 w-4 transition-transform duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                isSidebarCollapsed ? "rotate-180" : "rotate-0"
-              }`}
-            />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setActiveTab(navItems[0]?.id || "")}
-          className="flex h-24 items-center justify-start gap-3 overflow-hidden border-b border-white/15 px-3 text-left"
-        >
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1 shadow-lg">
-            <img
-              src="/careerbridge-logo.svg"
-              alt="CareerBridge"
-              className="h-full w-full -translate-x-[14%] scale-[1.35] object-contain"
-            />
-          </span>
-          <span className={labelTransitionClass}>
-            <span className="block text-base font-black tracking-tight">
-              CareerBridge
-            </span>
-            <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">
-              {user?.isSuperAdmin ? "Quản trị tối cao" : "Ban quản trị phân hệ"}
-            </span>
-          </span>
-        </button>
-        <div
-          className={`overflow-hidden whitespace-nowrap px-5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 transition-[opacity,max-height,padding] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            isSidebarCollapsed
-              ? "max-h-0 pt-0 opacity-0"
-              : "max-h-0 pt-0 opacity-0 lg:max-h-10 lg:pt-6 lg:opacity-100"
+      <>
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-[#006f72] bg-[#00878a] text-white shadow-2xl transition-[width] duration-200 ease-out will-change-[width] ${
+            isSidebarCollapsed ? "lg:w-20" : "lg:w-72"
           }`}
         >
-          Điều hướng
-        </div>
-        <nav className="mt-3 flex-1 space-y-1 overflow-x-hidden overflow-y-auto px-3">
-          {navItems.map((item) => {
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                id={`nav-tab-${item.id}`}
-                title={item.label}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex w-full items-center justify-start gap-3 overflow-hidden rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors duration-150 ${
-                  isActive
-                    ? "bg-white text-[#00777a] shadow-lg"
-                    : "text-white/80 hover:bg-white/10 hover:text-white"
+          {onToggleSidebar && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              title={
+                isSidebarCollapsed
+                  ? "Mở rộng thanh điều hướng"
+                  : "Thu gọn thanh điều hướng"
+              }
+              aria-label={
+                isSidebarCollapsed
+                  ? "Mở rộng thanh điều hướng"
+                  : "Thu gọn thanh điều hướng"
+              }
+              className="absolute -right-3.5 top-[22px] z-50 hidden h-7 w-7 items-center justify-center rounded-full border border-[#006f72]/30 bg-white text-[#00777a] shadow-md transition-all duration-200 hover:scale-110 hover:bg-[#e6f6f6] lg:flex cursor-pointer"
+            >
+              <ChevronLeft
+                className={`h-4 w-4 transition-transform duration-200 ease-out ${
+                  isSidebarCollapsed ? "rotate-180" : "rotate-0"
                 }`}
-              >
-                <span className="flex h-5 w-6 shrink-0 items-center justify-center">
-                  {item.icon}
-                </span>
-                <span className={labelTransitionClass}>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-        <div className="m-3 space-y-2 border-t border-white/15 pt-3">
-          <button
-            id="btn-notifs-toggle"
-            title="Thông báo"
-            onClick={onOpenNotifs}
-            className="relative flex w-full items-center justify-start gap-3 overflow-hidden rounded-xl px-4 py-3 text-sm font-semibold text-white/85 transition-colors duration-150 hover:bg-white/10 hover:text-white"
-          >
-            <span className="flex h-5 w-6 shrink-0 items-center justify-center">
-              <Bell className="h-5 w-5 shrink-0" />
-            </span>
-            <span className={labelTransitionClass}>Thông báo</span>
-            {unreadNotifsCount > 0 && (
-              <span
-                className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-[#da1c2d] px-1 text-[10px] font-bold text-white transition-all duration-200 ${
-                  isSidebarCollapsed
-                    ? "absolute right-1.5 top-1.5"
-                    : "absolute right-1.5 top-1.5 lg:static lg:ml-auto"
-                }`}
-              >
-                {unreadNotifsCount}
+              />
+            </button>
+          )}
+
+          <div className="flex h-full w-full flex-col overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setActiveTab(navItems[0]?.id || "")}
+              className="flex h-[72px] items-center justify-start gap-3 overflow-hidden border-b border-white/15 px-3.5 text-left cursor-pointer shrink-0"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-md">
+                <img
+                  src="/careerbridge-logo.svg"
+                  alt="CareerBridge"
+                  className="h-full w-full -translate-x-[14%] scale-[1.35] object-contain"
+                />
               </span>
-            )}
-          </button>
-          <button
-            id="btn-logout"
-            title="Đăng xuất"
-            type="button"
-            onClick={onLogout}
-            className="flex w-full items-center justify-start gap-3 overflow-hidden rounded-xl bg-[#da1c2d] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#da1c2d]/20 transition-colors duration-150 hover:bg-[#bd1425]"
-          >
-            <span className="flex h-5 w-6 shrink-0 items-center justify-center">
-              <LogOut className="h-5 w-5 shrink-0" />
-            </span>
-            <span className={labelTransitionClass}>Đăng xuất</span>
-          </button>
+              <span className={labelTransitionClass}>
+                <span className="block text-base font-black tracking-tight">
+                  CareerBridge
+                </span>
+                <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">
+                  {user?.isSuperAdmin ? "Quản trị tối cao" : "Ban quản trị phân hệ"}
+                </span>
+              </span>
+            </button>
+            <div
+              className={`overflow-hidden whitespace-nowrap px-5 pt-5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 transition-opacity duration-150 ${
+                isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+              }`}
+            >
+              Điều hướng
+            </div>
+          <nav className="mt-2 flex-1 space-y-1 overflow-x-hidden overflow-y-auto px-3 pb-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {visibleEntries.map((entry) => {
+              if (entry.type === "item") {
+                const item = entry.data;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    id={`nav-tab-${item.id}`}
+                    title={item.label}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex w-full items-center justify-start gap-2.5 overflow-hidden rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition-colors duration-150 cursor-pointer ${
+                      isActive
+                        ? "bg-white text-[#00777a] shadow-lg"
+                        : "text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <span className="flex h-5 w-6 shrink-0 items-center justify-center">
+                      {item.icon}
+                    </span>
+                    <span className={labelTransitionClass}>{item.label}</span>
+                  </button>
+                );
+              }
+
+              const group = entry.data;
+              const isOpen = !!openGroups[group.id];
+              const hasActiveChild = group.items.some((i) => i.id === activeTab);
+
+              return (
+                <div key={group.id} className="space-y-1">
+                  <button
+                    type="button"
+                    title={group.label}
+                    onClick={() => {
+                      if (isSidebarCollapsed && onToggleSidebar) {
+                        onToggleSidebar();
+                      }
+                      toggleGroup(group.id);
+                    }}
+                    className={`flex w-full items-center justify-between gap-2 overflow-hidden rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition-colors duration-150 cursor-pointer ${
+                      !isOpen && hasActiveChild
+                        ? "bg-white/15 text-white"
+                        : isOpen
+                          ? "text-white"
+                          : "text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="flex h-5 w-6 shrink-0 items-center justify-center">
+                        {group.icon}
+                      </span>
+                      <span className={labelTransitionClass}>{group.label}</span>
+                    </div>
+                    {!isSidebarCollapsed && (
+                      <ChevronDown
+                        className={`h-4 w-4 shrink-0 text-white/70 transition-transform duration-200 ${
+                          isOpen ? "rotate-180 text-white" : ""
+                        }`}
+                      />
+                    )}
+                  </button>
+
+                  {isOpen && (
+                    <div
+                      className={`space-y-1 overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${
+                        isSidebarCollapsed
+                          ? "max-h-0 opacity-0 pointer-events-none"
+                          : "max-h-96 opacity-100"
+                      }`}
+                    >
+                      {group.items.map((subItem) => {
+                        const isSubActive = activeTab === subItem.id;
+                        return (
+                          <button
+                            key={subItem.id}
+                            id={`nav-tab-${subItem.id}`}
+                            title={subItem.label}
+                            onClick={() => setActiveTab(subItem.id)}
+                            className={`flex w-full items-center justify-start gap-2.5 overflow-hidden rounded-xl pl-8 pr-3.5 py-2.5 text-left text-sm font-semibold transition-colors duration-150 cursor-pointer ${
+                              isSubActive
+                                ? "bg-white text-[#00777a] shadow-lg"
+                                : "text-white/75 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                              {subItem.icon}
+                            </span>
+                            <span className="truncate">{subItem.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
         </div>
       </aside>
+
+        {/* Cohesive Modern Admin Top Header Bar */}
+        <header className="sticky top-0 z-40 flex h-[72px] w-full items-center justify-between gap-4 border-b border-[#d5eaea] bg-white px-4 shadow-[0_4px_20px_rgb(0_105_110/0.05)] sm:px-6 lg:px-7">
+          {/* Left: Active Module Badge & Clean Two-line Title Hierarchy */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#cde4e5] bg-[#e6f6f6]/70 text-[#00777a] shadow-xs">
+              {activeModule.icon}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-slate-400 truncate leading-tight">
+                {activeModule.groupLabel}
+              </p>
+              <h2 className="text-base font-extrabold text-slate-800 tracking-tight truncate leading-snug">
+                {activeModule.label}
+              </h2>
+            </div>
+          </div>
+
+          {/* Right Cluster: Search Pill + Notifications + Account Capsule */}
+          <div className="flex items-center gap-3">
+            {/* Sleek Search Pill */}
+            <div className="group relative hidden md:block w-64 lg:w-80">
+              <div className="relative flex items-center">
+                <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-[#00878a]" />
+                <input
+                  type="text"
+                  value={adminSearch}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => {
+                    setTimeout(() => setIsSearchFocused(false), 200);
+                  }}
+                  onChange={(e) => setAdminSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && filteredSearchItems.length > 0) {
+                      setActiveTab(filteredSearchItems[0].id);
+                      setAdminSearch("");
+                      setIsSearchFocused(false);
+                    } else if (e.key === "Escape") {
+                      setIsSearchFocused(false);
+                    }
+                  }}
+                  placeholder="Tìm nhanh chức năng quản trị..."
+                  className="h-10 w-full rounded-full border border-[#cde4e5] bg-[#f4fbfb] pl-10 pr-10 text-xs font-medium text-slate-700 placeholder:text-slate-400 transition-all hover:border-[#9bd8d9] hover:bg-white focus:border-[#00878a] focus:bg-white focus:ring-3 focus:ring-[#00878a]/12 focus:outline-none"
+                />
+                {adminSearch ? (
+                  <button
+                    type="button"
+                    onClick={() => setAdminSearch("")}
+                    className="absolute right-3 text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    ×
+                  </button>
+                ) : (
+                  <span className="pointer-events-none absolute right-3 rounded-md border border-[#cde4e5] bg-white px-1.5 py-0.5 text-[10px] font-bold text-[#00777a]/70">
+                    /
+                  </span>
+                )}
+              </div>
+
+              {/* Seamless Search Dropdown (Smooth float transition, 0 gap) */}
+              <div
+                className={`absolute right-0 top-full z-50 pt-2 w-88 origin-top-right transition-all duration-200 ease-out before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] ${
+                  isSearchFocused
+                    ? "visible opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                    : "invisible opacity-0 translate-y-1.5 scale-[0.98] pointer-events-none group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-hover:pointer-events-auto"
+                }`}
+              >
+                <div className="max-h-72 overflow-y-auto rounded-2xl border border-[#cde4e5] bg-white p-2 shadow-2xl shadow-teal-950/12 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex items-center justify-between px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span>{q ? "Kết quả tìm kiếm" : "Chuyển nhanh phân hệ"}</span>
+                    <span>{filteredSearchItems.length} mục</span>
+                  </div>
+                  {filteredSearchItems.length === 0 ? (
+                    <div className="px-3 py-6 text-center text-xs text-slate-400">
+                      Không tìm thấy chức năng phù hợp
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {filteredSearchItems.map((item) => {
+                        const isCurrentTab = activeTab === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onMouseDown={() => {
+                              setActiveTab(item.id);
+                              setAdminSearch("");
+                              setIsSearchFocused(false);
+                            }}
+                            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs transition cursor-pointer ${
+                              isCurrentTab
+                                ? "bg-[#e6f6f6] font-bold text-[#00777a]"
+                                : "font-medium text-slate-700 hover:bg-[#f4fbfb]"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
+                                  isCurrentTab
+                                    ? "bg-[#00878a] text-white"
+                                    : "bg-[#e6f6f6]/70 text-[#00777a]"
+                                }`}
+                              >
+                                {item.icon}
+                              </span>
+                              <span className="truncate">{item.label}</span>
+                            </div>
+                            <span className="ml-2 shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                              {item.groupLabel}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Notification Bell Circle (Hover to preview, Click to open full drawer) */}
+            <div className="group relative notification-trigger">
+              <button
+                id="btn-notifs-toggle"
+                type="button"
+                onClick={onOpenNotifs}
+                title="Thông báo"
+                aria-label="Thông báo"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#cde4e5] bg-[#f4fbfb] text-[#00777a] transition-all hover:border-[#00878a] hover:bg-white hover:shadow-xs cursor-pointer"
+              >
+                <Bell className="h-4.5 w-4.5" />
+                {unreadNotifsCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#da1c2d] px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                    {unreadNotifsCount}
+                  </span>
+                )}
+              </button>
+              {notificationPreview}
+            </div>
+
+            {/* Unified Account & Avatar Capsule (Click avatar to open Profile, Hover/Chevron to open Menu) */}
+            <div className="group relative">
+              <div
+                className={`flex items-center gap-2 rounded-full border py-1 pl-1.5 pr-2.5 text-left transition-all ${
+                  activeTab === "admin-profile"
+                    ? "border-[#00878a] bg-[#e6f6f6]/70 ring-2 ring-[#00878a]/20"
+                    : isProfileOpen
+                      ? "border-[#00878a] bg-white ring-3 ring-[#00878a]/12"
+                      : "border-[#cde4e5] bg-[#f4fbfb] hover:border-[#00878a]/60 hover:bg-white hover:shadow-xs group-hover:border-[#00878a]/60 group-hover:bg-white"
+                }`}
+              >
+                {/* Clicking Avatar or Name navigates directly to Hồ sơ cá nhân */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("admin-profile");
+                    setIsProfileOpen(false);
+                  }}
+                  className="flex items-center gap-2.5 text-left cursor-pointer focus:outline-none"
+                  title="Nhấp để xem Hồ sơ cá nhân"
+                >
+                  <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#00878a] to-[#005a5d] text-xs font-black text-white shadow-xs transition-transform hover:scale-105">
+                    <ProfileAvatarPreview
+                      fileId={resolvedAvatarId}
+                      fallback={avatarInitial}
+                      className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#00878a] to-[#005a5d] text-white"
+                      imageClassName="h-full w-full object-cover"
+                    />
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  </div>
+                  <div className="hidden sm:block max-w-[170px]">
+                    <p className="truncate text-xs font-extrabold leading-tight text-slate-800 hover:text-[#00878a] transition-colors">
+                      {adminProfile.fullName}
+                    </p>
+                    <p className="truncate text-[10px] font-medium leading-tight text-slate-500">
+                      {adminProfile.title || user?.email}
+                    </p>
+                  </div>
+                </button>
+
+                {/* Dropdown toggle chevron */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsProfileOpen((prev) => !prev);
+                  }}
+                  title="Tùy chọn tài khoản"
+                  aria-label="Tùy chọn tài khoản"
+                  className="hidden sm:flex h-5 w-5 items-center justify-center text-slate-400 hover:text-[#00878a] transition-colors cursor-pointer"
+                >
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                      isProfileOpen ? "rotate-180 text-[#00878a]" : "group-hover:rotate-180"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Account Dropdown Menu (Smooth float transition, 0 gap) */}
+              <div
+                className={`absolute right-0 top-full z-50 pt-2 w-68 origin-top-right transition-all duration-200 ease-out before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] ${
+                  isProfileOpen
+                    ? "visible opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                    : "invisible opacity-0 translate-y-1.5 scale-[0.98] pointer-events-none group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-hover:pointer-events-auto"
+                }`}
+              >
+                <div className="rounded-2xl border border-[#cde4e5] bg-white p-2 shadow-2xl shadow-teal-950/15">
+                  <div className="rounded-xl bg-gradient-to-br from-[#f0fbfb] to-white border border-[#e0f2f2] px-3.5 py-2.5 mb-1">
+                    <p className="truncate text-xs font-extrabold text-slate-800">
+                      {adminProfile.fullName}
+                    </p>
+                    <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
+                      {user?.email}
+                    </p>
+                    <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-[#e6f6f6] px-2 py-0.5 text-[10px] font-bold text-[#00777a]">
+                      <ShieldCheck className="h-3 w-3 shrink-0" />
+                      {user?.isSuperAdmin ? "Quản trị tối cao (Super Admin)" : "Quản trị viên phân hệ"}
+                    </span>
+                  </div>
+
+                  <div className="py-1 border-b border-slate-100 space-y-0.5">
+                    <button
+                      type="button"
+                      onMouseDown={() => {
+                        setActiveTab("admin-profile");
+                        setIsProfileOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-[#f0fbfb] hover:text-[#00777a] cursor-pointer"
+                    >
+                      <User className="h-4 w-4 text-[#00878a]" />
+                      Hồ sơ cá nhân
+                    </button>
+                    {user?.isSuperAdmin && (
+                      <>
+                        <button
+                          type="button"
+                          onMouseDown={() => {
+                            setActiveTab("admin-permissions");
+                            setIsProfileOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-[#f0fbfb] hover:text-[#00777a] cursor-pointer"
+                        >
+                          <KeyRound className="h-4 w-4 text-[#00878a]" />
+                          Phân quyền quản trị
+                        </button>
+                        <button
+                          type="button"
+                          onMouseDown={() => {
+                            setActiveTab("user-management");
+                            setIsProfileOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-[#f0fbfb] hover:text-[#00777a] cursor-pointer"
+                        >
+                          <Users className="h-4 w-4 text-[#00878a]" />
+                          Quản lý người dùng
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="pt-1">
+                    <button
+                      id="btn-logout"
+                      type="button"
+                      onMouseDown={onLogout}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#da1c2d] hover:bg-rose-50 cursor-pointer"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Đăng xuất
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+      </>
     );
   }
 

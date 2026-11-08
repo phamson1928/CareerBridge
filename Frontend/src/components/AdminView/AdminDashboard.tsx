@@ -532,7 +532,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 item.placements ||
                 item.completedPlacements,
             ) ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={300}>
                 <AreaChart
                   data={data.monthlyTrend}
                   margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
@@ -610,7 +610,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="relative mt-4 h-52">
             {placementTotal > 0 ? (
               <>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" debounce={300}>
                   <PieChart>
                     <Pie
                       data={placementPie}
@@ -684,7 +684,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <div className="mt-5 h-64">
             {data.topSkills.length ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={300}>
                 <BarChart
                   data={data.topSkills}
                   layout="vertical"

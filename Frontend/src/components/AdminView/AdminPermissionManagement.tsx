@@ -214,7 +214,7 @@ export const AdminPermissionManagement: React.FC = () => {
       feedback.notify({
         title: "Thiếu thông tin",
         message: "Vui lòng nhập email và mật khẩu.",
-        tone: "warning",
+        tone: "info",
       });
       return;
     }
@@ -251,14 +251,6 @@ export const AdminPermissionManagement: React.FC = () => {
       setCreating(false);
     }
   };
-
-  const permNameMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const opt of ADMIN_PERMISSION_OPTIONS) {
-      map[opt.id] = opt.label;
-    }
-    return map;
-  }, []);
 
   return (
     <div className="admin-page admin-page--standard space-y-5">
@@ -342,6 +334,9 @@ export const AdminPermissionManagement: React.FC = () => {
                 filteredAdmins.map((admin) => {
                   const isCurrent = admin.id === currentUser?.id;
                   const adminPerms = admin.permissions || [];
+                  const validPerms = ADMIN_PERMISSION_OPTIONS.filter((opt) =>
+                    adminPerms.includes(opt.id),
+                  );
 
                   return (
                     <tr key={admin.id} className="hover:bg-slate-50">
@@ -358,20 +353,20 @@ export const AdminPermissionManagement: React.FC = () => {
                       </td>
 
                       {/* Cấp bậc */}
-                      <td className="p-4">
+                      <td className="p-4 whitespace-nowrap">
                         {admin.isSuperAdmin ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                             <Crown className="w-3.5 h-3.5 text-amber-500" /> Super Admin
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            <Shield className="w-3.5 h-3.5 text-indigo-500" /> Admin phụ ({adminPerms.length}/6)
+                            <Shield className="w-3.5 h-3.5 text-indigo-500" /> Admin phụ ({validPerms.length}/{ADMIN_PERMISSION_OPTIONS.length})
                           </span>
                         )}
                       </td>
 
                       {/* Trạng thái */}
-                      <td className="p-4">
+                      <td className="p-4 whitespace-nowrap">
                         <select
                           disabled={isCurrent || savingId === admin.id}
                           value={admin.status}
@@ -390,16 +385,16 @@ export const AdminPermissionManagement: React.FC = () => {
                           <span className="text-xs text-amber-800 font-semibold inline-flex items-center gap-1">
                             Toàn quyền mọi phân hệ
                           </span>
-                        ) : adminPerms.length === 0 ? (
+                        ) : validPerms.length === 0 ? (
                           <span className="text-xs text-slate-400 italic">Chưa được cấp quyền</span>
                         ) : (
-                          <div className="flex flex-wrap gap-1 max-w-md">
-                            {adminPerms.map((pid) => (
+                          <div className="flex flex-wrap gap-1.5 max-w-lg">
+                            {validPerms.map((opt) => (
                               <span
-                                key={pid}
+                                key={opt.id}
                                 className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"
                               >
-                                {permNameMap[pid] || pid}
+                                {opt.label}
                               </span>
                             ))}
                           </div>
