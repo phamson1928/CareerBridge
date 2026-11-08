@@ -16,6 +16,7 @@ import {
   CalendarDays,
   LogOut,
   ShieldCheck,
+  KeyRound,
   LifeBuoy,
   ChevronLeft,
   ChevronRight,
@@ -182,6 +183,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             id: "user-management",
             label: "Quản lý người dùng",
             icon: <Users className="w-4 h-4" />,
+            superAdminOnly: true,
+          },
+          {
+            id: "admin-permissions",
+            label: "Phân quyền quản trị",
+            icon: <KeyRound className="w-4 h-4 text-amber-500" />,
             superAdminOnly: true,
           },
           {

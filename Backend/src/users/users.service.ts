@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -112,12 +113,39 @@ export class UsersService {
     const existing = await this.findOne(id);
     if (
       id === currentUserId &&
-      ((dto.status && dto.status !== UserStatus.ACTIVE) || dto.role)
+      ((dto.status && dto.status !== UserStatus.ACTIVE) ||
+        dto.role ||
+        dto.isSuperAdmin === false ||
+        (existing.isSuperAdmin && dto.permissions !== undefined))
     ) {
       throw new ForbiddenException({
         code: 'SELF_ACCOUNT_CHANGE_FORBIDDEN',
-        message: 'You cannot change your own role or deactivate your account',
+        message:
+          'You cannot demote yourself, change your own role, modify your own permissions, or deactivate your account',
       });
+    }
+
+    const isDemotingSuperAdmin =
+      existing.isSuperAdmin &&
+      (dto.isSuperAdmin === false ||
+        (dto.role && dto.role !== Role.ADMIN) ||
+        (dto.status && dto.status !== UserStatus.ACTIVE));
+
+    if (isDemotingSuperAdmin) {
+      const activeSuperAdminCount = await this.prisma.user.count({
+        where: {
+          role: Role.ADMIN,
+          isSuperAdmin: true,
+          status: UserStatus.ACTIVE,
+        },
+      });
+      if (activeSuperAdminCount <= 1) {
+        throw new BadRequestException({
+          code: 'LAST_SUPER_ADMIN_PROTECTED',
+          message:
+            'Cannot demote, deactivate, or change the role of the last active Super Admin',
+        });
+      }
     }
 
     const passwordHash = dto.password
@@ -204,6 +232,21 @@ export class UsersService {
       });
     }
     const existing = await this.findOne(id);
+    if (existing.isSuperAdmin) {
+      const activeSuperAdminCount = await this.prisma.user.count({
+        where: {
+          role: Role.ADMIN,
+          isSuperAdmin: true,
+          status: UserStatus.ACTIVE,
+        },
+      });
+      if (activeSuperAdminCount <= 1) {
+        throw new BadRequestException({
+          code: 'LAST_SUPER_ADMIN_PROTECTED',
+          message: 'Cannot delete the last active Super Admin',
+        });
+      }
+    }
     try {
       return await this.prisma.$transaction(async (tx) => {
         await tx.user.delete({ where: { id } });

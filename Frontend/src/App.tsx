@@ -58,6 +58,7 @@ const LecturerProfileView = lazy(() => import("./components/TeacherView/Lecturer
 const SupervisedPlacements = lazy(() => import("./components/TeacherView/SupervisedPlacements").then(({ SupervisedPlacements }) => ({ default: SupervisedPlacements })));
 const AdminDashboard = lazy(() => import("./components/AdminView/AdminDashboard").then(({ AdminDashboard }) => ({ default: AdminDashboard })));
 const UserManagement = lazy(() => import("./components/AdminView/UserManagement").then(({ UserManagement }) => ({ default: UserManagement })));
+const AdminPermissionManagement = lazy(() => import("./components/AdminView/AdminPermissionManagement").then(({ AdminPermissionManagement }) => ({ default: AdminPermissionManagement })));
 const CompanyModeration = lazy(() => import("./components/AdminView/CompanyModeration").then(({ CompanyModeration }) => ({ default: CompanyModeration })));
 const SupervisionManagement = lazy(() => import("./components/AdminView/SupervisionManagement").then(({ SupervisionManagement }) => ({ default: SupervisionManagement })));
 const PlacementManagement = lazy(() => import("./components/AdminView/PlacementManagement").then(({ PlacementManagement }) => ({ default: PlacementManagement })));
@@ -77,6 +78,7 @@ const adminPathByTab: Record<string, string> = {
   "placement-management": "placements",
   "internship-management": "internships",
   "user-management": "users",
+  "admin-permissions": "permissions",
   "company-approval": "companies",
   "organization-management": "organization",
   "skill-management": "skills",
@@ -96,6 +98,7 @@ const TAB_PERMISSION_MAP: Record<string, string> = {
   "semester-management": "SEMESTERS",
   "support-requests": "SUPPORT",
   "user-management": "SUPER_ADMIN",
+  "admin-permissions": "SUPER_ADMIN",
   "audit-logs": "SUPER_ADMIN",
 };
 
@@ -718,6 +721,7 @@ export default function App() {
             )}
             {activeTab === "internship-management" && <InternshipManagement />}
             {activeTab === "user-management" && <UserManagement />}
+            {activeTab === "admin-permissions" && <AdminPermissionManagement />}
             {activeTab === "company-approval" && <CompanyModeration />}
             {activeTab === "organization-management" && <OrganizationManagement />}
             {activeTab === "skill-management" && <SkillManagement />}
