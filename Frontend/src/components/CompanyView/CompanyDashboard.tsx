@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   Briefcase,
   CheckCircle,
+  Download,
   Clock,
   Eye,
   FileText,
@@ -29,6 +30,8 @@ import { companiesApi, CompanyProfileRecord } from '../../companies/api';
 import { dashboardApi } from '../../dashboard/api';
 import type { CompanyDashboardData } from '../../dashboard/types';
 import { semestersApi } from '../../semesters/api';
+import { findDefaultSemester, toSemesterSlug } from '../../semesters/utils';
+import { downloadExcelWorkbook } from '../../utils/excelExport';
 import type { SemesterRecord } from '../../semesters/types';
 import { CompanyInternshipStatsModal } from './CompanyInternshipStatsModal';
 import { SemesterCampaignBanner } from '../Semesters/SemesterCampaignBanner';
@@ -64,7 +67,10 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
         ]);
         if (active) {
           setCompany(profile);
-          setSemesters(semPage.items || []);
+          const semList = semPage.items || [];
+          setSemesters(semList);
+          const def = findDefaultSemester(semList, 'COMPANY');
+          if (def) setSelectedSemesterId(def.id);
         }
       } catch (err) {
         if (active) setError(getApiErrorMessage(err));
@@ -108,6 +114,33 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
   const handleSemesterChange = (semesterId: string) => {
     setSelectedSemesterId(semesterId);
     setPage(1); // Reset về trang 1 khi lọc
+  };
+
+  const exportStatsExcel = () => {
+    if (!dashboardData) return;
+    const currentSem = semesters.find((s) => s.id === selectedSemesterId);
+    const semLabel = currentSem ? currentSem.name : 'Tất cả các đợt';
+    const fileSlug = currentSem ? toSemesterSlug(currentSem.name) : 'tat-ca-cac-dot';
+    downloadExcelWorkbook(`thong-ke-tuyen-dung-${fileSlug}`, [
+      {
+        name: 'Thong ke tuyen dung',
+        title: `BÁO CÁO THỐNG KÊ HIỆU QUẢ TUYỂN DỤNG — ${semLabel.toUpperCase()}`,
+        subtitle: `Doanh nghiệp: ${company?.companyName ?? ''} · Đợt: ${semLabel} · Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`,
+        columns: [
+          { header: 'STT', width: 45, value: (_: any, i: number) => i + 1 },
+          { header: 'Vị trí tuyển dụng', width: 190, value: (item: any) => item.title },
+          { header: 'Đợt thực tập', width: 140, value: (item: any) => item.semesterName || '—' },
+          { header: 'Lượt xem', width: 90, value: (item: any) => item.views },
+          { header: 'Người xem duy nhất', width: 120, value: (item: any) => item.uniqueViewers },
+          { header: 'Ứng tuyển', width: 90, value: (item: any) => item.applications },
+          { header: 'Chỉ tiêu', width: 80, value: (item: any) => item.slots },
+          { header: 'Đã nhận', width: 85, value: (item: any) => item.filledSlots },
+          { header: 'Tỷ lệ lấp đầy', width: 100, value: (item: any) => `${Math.round((item.fillRate || 0) * 100)}%` },
+          { header: 'Trạng thái', width: 110, value: (item: any) => item.status === 'OPEN' ? 'Đang mở' : item.status === 'CLOSED' ? 'Đã đóng' : item.status },
+        ],
+        rows: dashboardData.perInternship.items,
+      },
+    ]);
   };
 
   const formatHours = (hours: number | null | undefined) => {
@@ -266,6 +299,16 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
             </div>
 
             <div className="flex items-center gap-2">
+              {dashboardData && dashboardData.perInternship.items.length > 0 && (
+                <button
+                  type="button"
+                  onClick={exportStatsExcel}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition shadow-2xs"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Xuất Excel thống kê</span>
+                </button>
+              )}
               <button
                 onClick={() => void fetchDashboardStats(true)}
                 disabled={refreshing}

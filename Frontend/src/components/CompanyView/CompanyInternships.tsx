@@ -34,6 +34,7 @@ import {
 } from "../../internship-templates/api";
 import { semestersApi } from "../../semesters/api";
 import type { SemesterRecord } from "../../semesters/types";
+import { findDefaultSemester } from "../../semesters/utils";
 import { SemesterCampaignBanner } from "../Semesters/SemesterCampaignBanner";
 import { skillsApi } from "../../skills/api";
 import { SkillPicker, type SkillOption } from "../Skills/SkillPicker";
@@ -217,12 +218,43 @@ export function CompanyInternships() {
   };
 
   useEffect(() => {
-    void loadInternships();
+    let active = true;
+    const init = async () => {
+      try {
+        const semesterPage = await semestersApi.list({ page: 1, limit: 100 });
+        if (!active) return;
+        const recruiting = semesterPage.items.filter(
+          (semester) => semester.phase === "RECRUITING",
+        );
+        setRecruitingSemesters(recruiting);
+        setSemesterOptions(
+          semesterPage.items
+            .map((semester) => ({ id: semester.id, name: semester.name }))
+            .sort((a, b) => a.name.localeCompare(b.name)),
+        );
+        const def = findDefaultSemester(semesterPage.items, "COMPANY");
+        const defaultSemId = def ? def.id : "";
+        if (defaultSemId) setSemesterId(defaultSemId);
+        void loadInternships({
+          search,
+          semesterId: defaultSemId,
+          skillIds: filterSkills.map((skill) => skill.id),
+          majorId: filterMajorId,
+          status,
+        });
+      } catch {
+        void loadInternships();
+      }
+    };
+    void init();
     void loadTemplates();
     facultiesApi
       .listOptions({ includeInactive: false })
       .then((data) => setFaculties(data.items))
       .catch(() => setFaculties([]));
+    return () => {
+      active = false;
+    };
   }, []);
 
   const applyFilters = (event: FormEvent<HTMLFormElement>) => {

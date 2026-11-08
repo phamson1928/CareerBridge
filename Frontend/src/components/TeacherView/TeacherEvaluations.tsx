@@ -18,6 +18,9 @@ import { reportsApi } from "../../reports/api";
 import type { ReportRecord } from "../../reports/types";
 import { formatDate } from "../../utils/format";
 import { downloadExcelWorkbook } from "../../utils/excelExport";
+import { semestersApi } from "../../semesters/api";
+import type { SemesterRecord } from "../../semesters/types";
+import { findDefaultSemester, toSemesterSlug } from "../../semesters/utils";
 
 interface Props {
   placements: PlacementRecord[];
@@ -42,14 +45,42 @@ export function TeacherEvaluations({
       ),
     [placements],
   );
+  const [semesters, setSemesters] = useState<SemesterRecord[]>([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("");
   const [placementId, setPlacementId] = useState("");
   const [score, setScore] = useState(8.0);
   const [comment, setComment] = useState("");
   const [reports, setReports] = useState<ReportRecord[]>([]);
+
+  useEffect(() => {
+    semestersApi
+      .list({ limit: 100 })
+      .then((res) => {
+        setSemesters(res.items);
+        const def = findDefaultSemester(res.items, "LECTURER");
+        if (def) setSelectedSemesterId(def.id);
+      })
+      .catch(() => {});
+  }, []);
   const [saving, setSaving] = useState(false);
 
-  const selectedId = placementId || evaluable[0]?.id || "";
-  const selectedPlacement = evaluable.find((p) => p.id === selectedId) ?? null;
+  const filteredEvaluable = useMemo(
+    () =>
+      evaluable.filter(
+        (placement) =>
+          !selectedSemesterId ||
+          selectedSemesterId === "ALL" ||
+          placement.semester.id === selectedSemesterId,
+      ),
+    [evaluable, selectedSemesterId],
+  );
+
+  const selectedId =
+    (filteredEvaluable.some((p) => p.id === placementId) ? placementId : "") ||
+    filteredEvaluable[0]?.id ||
+    "";
+  const selectedPlacement =
+    filteredEvaluable.find((p) => p.id === selectedId) ?? null;
   const lecturerEvaluation = evaluations.find(
     (item) => item.placementId === selectedId && item.type === "LECTURER",
   );
@@ -101,11 +132,14 @@ export function TeacherEvaluations({
   };
 
   const exportGradesExcel = () => {
-    downloadExcelWorkbook("bang-diem-thuc-tap-sinh-vien", [
+    const currentSem = semesters.find((s) => s.id === selectedSemesterId);
+    const semLabel = currentSem ? currentSem.name : "Tất cả học kỳ";
+    const fileSlug = currentSem ? toSemesterSlug(currentSem.name) : "tat-ca-hoc-ky";
+    downloadExcelWorkbook(`bang-diem-thuc-tap-${fileSlug}`, [
       {
         name: "Bang diem thuc tap",
-        title: "BẢNG ĐIỂM ĐÁNH GIÁ THỰC TẬP TỐT NGHIỆP",
-        subtitle: `Ngày xuất: ${new Date().toLocaleDateString("vi-VN")} — Tổng số sinh viên: ${evaluable.length}`,
+        title: `BẢNG ĐIỂM ĐÁNH GIÁ THỰC TẬP — ${semLabel.toUpperCase()}`,
+        subtitle: `Học kỳ: ${semLabel} — Ngày xuất: ${new Date().toLocaleDateString("vi-VN")} — Tổng số: ${filteredEvaluable.length} sinh viên`,
         columns: [
           { header: "STT", width: 50, value: (_, i) => i + 1 },
           {
@@ -182,7 +216,7 @@ export function TeacherEvaluations({
               p.status === "COMPLETED" ? "Đã nghiệm thu" : "Đang thực tập",
           },
         ],
-        rows: evaluable,
+        rows: filteredEvaluable,
       },
     ]);
   };
@@ -202,21 +236,35 @@ export function TeacherEvaluations({
               Xem tiến độ báo cáo thực tập, kết quả đánh giá từ doanh nghiệp và nhập điểm đánh giá của giảng viên hướng dẫn (thang điểm 10).
             </p>
           </div>
-          {evaluable.length > 0 && (
-            <button
-              type="button"
-              onClick={exportGradesExcel}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+          <div className="flex flex-wrap items-center gap-2.5">
+            <select
+              value={selectedSemesterId}
+              onChange={(e) => setSelectedSemesterId(e.target.value)}
+              className="rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white outline-none [&>option]:text-slate-900 transition hover:bg-white/15"
             >
-              <Download className="h-4 w-4" /> Xuất bảng điểm Excel
-            </button>
-          )}
+              <option value="ALL">Tất cả học kỳ</option>
+              {semesters.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.status})
+                </option>
+              ))}
+            </select>
+            {filteredEvaluable.length > 0 && (
+              <button
+                type="button"
+                onClick={exportGradesExcel}
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+              >
+                <Download className="h-4 w-4" /> Xuất bảng điểm Excel
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
-      {evaluable.length === 0 ? (
+      {filteredEvaluable.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
-          Chưa có sinh viên nào trong danh sách hướng dẫn để chấm điểm.
+          Chưa có sinh viên nào trong học kỳ này để chấm điểm.
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
@@ -233,7 +281,7 @@ export function TeacherEvaluations({
                 onChange={(event) => setPlacementId(event.target.value)}
                 className="mt-2 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm font-bold text-slate-900 outline-none focus:border-violet-600"
               >
-                {evaluable.map((placement) => (
+                {filteredEvaluable.map((placement) => (
                   <option key={placement.id} value={placement.id}>
                     {placement.student.fullName} ({placement.student.studentCode})
                     {placement.student.major ? ` · ${placement.student.major}` : ""} —{" "}

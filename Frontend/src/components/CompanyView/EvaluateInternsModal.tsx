@@ -18,6 +18,10 @@ import type { PlacementRecord } from "../../placements/types";
 import { reportsApi } from "../../reports/api";
 import type { ReportRecord } from "../../reports/types";
 import { formatDate, formatFileSize } from "../../utils/format";
+import { semestersApi } from "../../semesters/api";
+import type { SemesterRecord } from "../../semesters/types";
+import { findDefaultSemester, toSemesterSlug } from "../../semesters/utils";
+import { downloadExcelWorkbook } from "../../utils/excelExport";
 
 interface Props {
   placements: PlacementRecord[];
@@ -42,6 +46,8 @@ export function EvaluateInternsModal({
       ),
     [placements],
   );
+  const [semesters, setSemesters] = useState<SemesterRecord[]>([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("");
   const [placementId, setPlacementId] = useState("");
   const [score, setScore] = useState(8.0);
   const [comment, setComment] = useState("");
@@ -51,8 +57,34 @@ export function EvaluateInternsModal({
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedId = placementId || evaluable[0]?.id || "";
-  const selectedPlacement = evaluable.find((p) => p.id === selectedId) ?? null;
+  useEffect(() => {
+    semestersApi
+      .list({ limit: 100 })
+      .then((res) => {
+        setSemesters(res.items);
+        const def = findDefaultSemester(res.items, "COMPANY");
+        if (def) setSelectedSemesterId(def.id);
+      })
+      .catch(() => {});
+  }, []);
+
+  const filteredEvaluable = useMemo(
+    () =>
+      evaluable.filter(
+        (placement) =>
+          !selectedSemesterId ||
+          selectedSemesterId === "ALL" ||
+          placement.semester.id === selectedSemesterId,
+      ),
+    [evaluable, selectedSemesterId],
+  );
+
+  const selectedId =
+    (filteredEvaluable.some((p) => p.id === placementId) ? placementId : "") ||
+    filteredEvaluable[0]?.id ||
+    "";
+  const selectedPlacement =
+    filteredEvaluable.find((p) => p.id === selectedId) ?? null;
   const existing = evaluations.find(
     (item) => item.placementId === selectedId && item.type === "COMPANY",
   );
@@ -76,6 +108,49 @@ export function EvaluateInternsModal({
       .catch(() => setStudentReports([]))
       .finally(() => setLoadingReports(false));
   }, [selectedId]);
+
+  const exportCompanyEvaluationsExcel = () => {
+    const currentSem = semesters.find((s) => s.id === selectedSemesterId);
+    const semLabel = currentSem ? currentSem.name : "Tất cả học kỳ";
+    const fileSlug = currentSem ? toSemesterSlug(currentSem.name) : "tat-ca-hoc-ky";
+    downloadExcelWorkbook(`danh-gia-thuc-tap-sinh-${fileSlug}`, [
+      {
+        name: "Danh gia thuc tap",
+        title: `BẢNG ĐÁNH GIÁ THỰC TẬP SINH DOANH NGHIỆP — ${semLabel.toUpperCase()}`,
+        subtitle: `Học kỳ: ${semLabel} — Ngày xuất: ${new Date().toLocaleDateString("vi-VN")} — Tổng số: ${filteredEvaluable.length} thực tập sinh`,
+        columns: [
+          { header: "STT", width: 45, value: (_: any, i: number) => i + 1 },
+          { header: "MSSV", width: 105, value: (p: any) => p.student.studentCode },
+          { header: "Họ và tên", width: 165, value: (p: any) => p.student.fullName },
+          { header: "Ngành đào tạo", width: 165, value: (p: any) => p.student.major },
+          { header: "Vị trí thực tập", width: 170, value: (p: any) => p.internship.title },
+          { header: "Học kỳ", width: 140, value: (p: any) => p.semester.name },
+          {
+            header: "Điểm DN",
+            width: 90,
+            value: (p: any) => {
+              const ev = evaluations.find((e) => e.placementId === p.id && e.type === "COMPANY");
+              return ev ? ev.score : "Chưa chấm";
+            },
+          },
+          {
+            header: "Nhận xét",
+            width: 200,
+            value: (p: any) => {
+              const ev = evaluations.find((e) => e.placementId === p.id && e.type === "COMPANY");
+              return ev ? ev.comment : "—";
+            },
+          },
+          {
+            header: "Trạng thái",
+            width: 120,
+            value: (p: any) => (p.status === "COMPLETED" ? "Đã hoàn tất" : "Đang thực tập"),
+          },
+        ],
+        rows: filteredEvaluable,
+      },
+    ]);
+  };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -111,17 +186,44 @@ export function EvaluateInternsModal({
         <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-100">
           <Building2 className="h-3.5 w-3.5" /> Đánh giá doanh nghiệp & Chứng nhận
         </div>
-        <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-          Đánh giá Thực tập sinh
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-emerald-100/85">
-          Chấm điểm tổng kết, nhận xét quá trình làm việc và đính kèm tệp Chứng nhận thực tập (nếu có) cho sinh viên.
-        </p>
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
+              Đánh giá Thực tập sinh
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-emerald-100/85">
+              Chấm điểm tổng kết, nhận xét quá trình làm việc và đính kèm tệp Chứng nhận thực tập (nếu có) cho sinh viên.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <select
+              value={selectedSemesterId}
+              onChange={(e) => setSelectedSemesterId(e.target.value)}
+              className="rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white outline-none [&>option]:text-slate-900 transition hover:bg-white/15"
+            >
+              <option value="ALL">Tất cả học kỳ</option>
+              {semesters.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.status})
+                </option>
+              ))}
+            </select>
+            {filteredEvaluable.length > 0 && (
+              <button
+                type="button"
+                onClick={exportCompanyEvaluationsExcel}
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+              >
+                <Download className="h-4 w-4" /> Xuất bảng điểm Excel
+              </button>
+            )}
+          </div>
+        </div>
       </header>
 
-      {evaluable.length === 0 ? (
+      {filteredEvaluable.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
-          Hiện chưa có thực tập sinh nào đang trong giai đoạn thực tập hoặc chờ đánh giá tại doanh nghiệp của bạn.
+          Không có thực tập sinh nào trong học kỳ này để đánh giá.
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
@@ -138,7 +240,7 @@ export function EvaluateInternsModal({
                 onChange={(event) => setPlacementId(event.target.value)}
                 className="mt-2 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm font-bold text-slate-900 outline-none focus:border-emerald-600"
               >
-                {evaluable.map((placement) => (
+                {filteredEvaluable.map((placement) => (
                   <option key={placement.id} value={placement.id}>
                     {placement.student.fullName} ({placement.student.studentCode}) —{" "}
                     {placement.internship.title}

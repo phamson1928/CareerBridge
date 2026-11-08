@@ -43,7 +43,7 @@ export interface ReportRecord {
     };
     company: { companyName: string };
     internship: { title: string };
-    semester: { name: string };
+    semester: { id?: string; name: string };
     supervision: {
       status: string;
       lecturer: {

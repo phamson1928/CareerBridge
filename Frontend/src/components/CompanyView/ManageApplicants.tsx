@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Application, ApplicationStatus, CompanyProfile } from '../../types';
 import { getStatusBadge } from '../../utils/matching';
 import { getApiErrorMessage } from '../../auth/api';
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   XCircle,
   FileText,
+  Download,
   Sparkles,
   MessageSquare,
   Calendar,
@@ -34,6 +35,10 @@ import {
 import { CompanyAiWorkerModal } from './CompanyAiWorkerModal';
 import { AiScanDetailModal } from './AiScanDetailModal';
 import { aiWorkerApi } from '../../ai-worker/api';
+import { semestersApi } from '../../semesters/api';
+import type { SemesterRecord } from '../../semesters/types';
+import { findDefaultSemester, toSemesterSlug } from '../../semesters/utils';
+import { downloadExcelWorkbook } from '../../utils/excelExport';
 
 interface ManageApplicantsProps {
   companyProfile: CompanyProfile;
@@ -75,6 +80,19 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
   const feedback = useAppFeedback();
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
+  const [semesters, setSemesters] = useState<SemesterRecord[]>([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string>('');
+
+  useEffect(() => {
+    semestersApi
+      .list({ limit: 100 })
+      .then((res) => {
+        setSemesters(res.items);
+        const def = findDefaultSemester(res.items, 'COMPANY');
+        if (def) setSelectedSemesterId(def.id);
+      })
+      .catch(() => {});
+  }, []);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
 
@@ -172,7 +190,12 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
       else if (aiFilterScore === 'UNDER_60') matchesAiScore = score !== null && score < 60;
       else if (aiFilterScore === 'NOT_SCANNED') matchesAiScore = score === null;
 
-      return matchesStatus && matchesSearch && matchesAiRec && matchesAiScore;
+      const matchesSemester =
+        !selectedSemesterId ||
+        selectedSemesterId === 'ALL' ||
+        a.semesterId === selectedSemesterId;
+
+      return matchesStatus && matchesSearch && matchesAiRec && matchesAiScore && matchesSemester;
     })
     .sort((a, b) => {
       if (sortBy === 'AI_SCORE_DESC') {
@@ -185,6 +208,32 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
       }
       return new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime();
     });
+
+  const exportApplicantsExcel = () => {
+    const currentSem = semesters.find((s) => s.id === selectedSemesterId);
+    const semLabel = currentSem ? currentSem.name : 'Tất cả các đợt';
+    const fileSlug = currentSem ? toSemesterSlug(currentSem.name) : 'tat-ca-cac-dot';
+    downloadExcelWorkbook(`danh-sach-ung-vien-${fileSlug}`, [
+      {
+        name: 'Ung vien',
+        title: `DANH SÁCH ỨNG VIÊN TUYỂN DỤNG — ${semLabel.toUpperCase()}`,
+        subtitle: `Doanh nghiệp: ${companyProfile.companyName} • Đợt: ${semLabel} • Ngày xuất: ${new Date().toLocaleDateString('vi-VN')} • Tổng số: ${filteredApps.length} ứng viên`,
+        columns: [
+          { header: 'STT', width: 45, value: (_: any, i: number) => i + 1 },
+          { header: 'Họ và tên ứng viên', width: 175, value: (a: any) => a.studentName },
+          { header: 'Chuyên ngành', width: 160, value: (a: any) => a.studentMajor },
+          { header: 'Vị trí tuyển dụng', width: 180, value: (a: any) => a.internshipTitle },
+          { header: 'Đợt thực tập', width: 140, value: (a: any) => a.semesterName || '—' },
+          { header: 'Ngày nộp', width: 110, value: (a: any) => new Date(a.appliedAt).toLocaleDateString('vi-VN') },
+          { header: 'Điểm AI', width: 90, value: (a: any) => a.aiScore !== null && a.aiScore !== undefined ? a.aiScore : 'Chưa quét' },
+          { header: 'Khuyến nghị AI', width: 140, value: (a: any) => a.aiScanJob?.recommendation || '—' },
+          { header: 'Trạng thái', width: 130, value: (a: any) => getStatusBadge(a.status).label },
+          { header: 'Phản hồi / Ghi chú', width: 180, value: (a: any) => a.companyFeedback || a.rejectionReason || '—' },
+        ],
+        rows: filteredApps,
+      },
+    ]);
+  };
 
   const openInterviewModal = (app: Application) => {
     setSelectedApp(app);
@@ -485,6 +534,20 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
 
           {/* Filters Cluster */}
           <div className="flex flex-wrap items-center gap-2.5">
+            {/* Semester Filter */}
+            <select
+              value={selectedSemesterId}
+              onChange={(e) => setSelectedSemesterId(e.target.value)}
+              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 hover:bg-slate-100 font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 focus:outline-hidden transition-all cursor-pointer"
+            >
+              <option value="ALL">Tất cả đợt tuyển dụng</option>
+              {semesters.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.status})
+                </option>
+              ))}
+            </select>
+
             {/* Status Filter */}
             <select
               value={filterStatus}

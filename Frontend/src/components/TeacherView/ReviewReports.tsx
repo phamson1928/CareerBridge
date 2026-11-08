@@ -13,6 +13,9 @@ import { getApiErrorMessage } from "../../auth/api";
 import { downloadPrivateFile } from "../../files/api";
 import { ReportFileDetails } from "../../reports/ReportFileDetails";
 import { reportsApi } from "../../reports/api";
+import { semestersApi } from "../../semesters/api";
+import type { SemesterRecord } from "../../semesters/types";
+import { findDefaultSemester } from "../../semesters/utils";
 import type { ReportRecord, ReportStatus } from "../../reports/types";
 import { formatDateTime } from "../../utils/format";
 
@@ -43,6 +46,8 @@ export const ReviewReports = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("SUBMITTED");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "FINAL" | "WEEKLY">("ALL");
+  const [semesters, setSemesters] = useState<SemesterRecord[]>([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("");
   const [placementFilter, setPlacementFilter] = useState<string>("");
   const [error, setError] = useState("");
   const [modalError, setModalError] = useState("");
@@ -51,8 +56,14 @@ export const ReviewReports = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await reportsApi.supervised({ limit: 100 });
+      const [res, semRes] = await Promise.all([
+        reportsApi.supervised({ limit: 100 }),
+        semestersApi.list({ limit: 100 }),
+      ]);
       setItems(res.items.filter((item) => item.status !== "DRAFT"));
+      setSemesters(semRes.items);
+      const def = findDefaultSemester(semRes.items, "LECTURER");
+      if (def) setSelectedSemesterId(def.id);
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -66,7 +77,10 @@ export const ReviewReports = () => {
 
   const studentOptions = useMemo(() => {
     const map = new Map<string, { placementId: string; label: string }>();
-    for (const r of items) {
+    const scoped = selectedSemesterId && selectedSemesterId !== "ALL"
+      ? items.filter((r) => !r.placement.semester?.id || r.placement.semester.id === selectedSemesterId)
+      : items;
+    for (const r of scoped) {
       if (!map.has(r.placementId)) {
         map.set(r.placementId, {
           placementId: r.placementId,
@@ -79,6 +93,14 @@ export const ReviewReports = () => {
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
+      if (
+        selectedSemesterId &&
+        selectedSemesterId !== "ALL" &&
+        item.placement.semester?.id &&
+        item.placement.semester.id !== selectedSemesterId
+      ) {
+        return false;
+      }
       if (statusFilter && item.status !== statusFilter) return false;
       if (placementFilter && item.placementId !== placementFilter) return false;
       if (typeFilter === "FINAL" && item.week !== 0) return false;
@@ -217,7 +239,7 @@ export const ReviewReports = () => {
       </div>
 
       {/* FILTER BAR */}
-      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:grid-cols-2 lg:grid-cols-5">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
           <input
@@ -227,6 +249,18 @@ export const ReviewReports = () => {
             className="w-full rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-indigo-500"
           />
         </div>
+        <select
+          value={selectedSemesterId}
+          onChange={(e) => setSelectedSemesterId(e.target.value)}
+          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+        >
+          <option value="ALL">Tất cả học kỳ</option>
+          {semesters.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name} ({s.status})
+            </option>
+          ))}
+        </select>
         <select
           value={placementFilter}
           onChange={(e) => setPlacementFilter(e.target.value)}
