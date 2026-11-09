@@ -223,16 +223,17 @@ export function TeacherEvaluations({
 
   return (
     <div className="space-y-6">
-      <header className="rounded-3xl bg-linear-to-br from-violet-950 via-indigo-900 to-slate-900 p-6 text-white shadow-lg sm:p-8">
+      {/* Modern Clean SaaS Page Header */}
+      <header className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-violet-100">
-              <GraduationCap className="h-3.5 w-3.5" /> Đánh giá thực tập
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-800 mb-2">
+              <GraduationCap className="h-3.5 w-3.5 text-teal-600" /> Đánh giá thực tập
             </div>
-            <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-              Chấm điểm & Nhận xét Sinh viên Hướng dẫn
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+              Chấm Điểm & Nhận Xét Sinh Viên Hướng Dẫn
             </h2>
-            <p className="mt-2 max-w-2xl text-sm text-violet-100/85">
+            <p className="mt-1 max-w-2xl text-xs sm:text-sm text-slate-500">
               Xem tiến độ báo cáo thực tập, kết quả đánh giá từ doanh nghiệp và nhập điểm đánh giá của giảng viên hướng dẫn (thang điểm 10).
             </p>
           </div>
@@ -240,7 +241,7 @@ export function TeacherEvaluations({
             <select
               value={selectedSemesterId}
               onChange={(e) => setSelectedSemesterId(e.target.value)}
-              className="rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white outline-none [&>option]:text-slate-900 transition hover:bg-white/15"
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition-all"
             >
               <option value="ALL">Tất cả học kỳ</option>
               {semesters.map((s) => (
@@ -253,7 +254,7 @@ export function TeacherEvaluations({
               <button
                 type="button"
                 onClick={exportGradesExcel}
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-teal-300 hover:text-teal-800 active:scale-95 transition-all"
               >
                 <Download className="h-4 w-4" /> Xuất bảng điểm Excel
               </button>
@@ -263,14 +264,14 @@ export function TeacherEvaluations({
       </header>
 
       {filteredEvaluable.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-10 text-center text-sm text-slate-500">
           Chưa có sinh viên nào trong học kỳ này để chấm điểm.
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr] bento-stagger">
           <form
             onSubmit={submit}
-            className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-xs"
+            className="space-y-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs"
           >
             <div>
               <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500">
@@ -279,7 +280,7 @@ export function TeacherEvaluations({
               <select
                 value={selectedId}
                 onChange={(event) => setPlacementId(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm font-bold text-slate-900 outline-none focus:border-violet-600"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-900 outline-none focus:border-teal-600 focus:bg-white transition-all"
               >
                 {filteredEvaluable.map((placement) => (
                   <option key={placement.id} value={placement.id}>
@@ -290,7 +291,7 @@ export function TeacherEvaluations({
                 ))}
               </select>
               {selectedPlacement && (
-                <p className="mt-2 text-xs font-semibold text-violet-700">
+                <p className="mt-2 text-xs font-semibold text-teal-800">
                   Ngành:{" "}
                   {selectedPlacement.student.majorRef?.name ??
                     selectedPlacement.student.major}
@@ -314,16 +315,16 @@ export function TeacherEvaluations({
                 step="0.1"
                 value={score}
                 onChange={(event) => setScore(Number(event.target.value))}
-                className="mt-2 w-full rounded-xl border border-slate-300 p-3 text-sm font-black text-slate-900 outline-none focus:border-violet-600"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-900 outline-none focus:border-teal-600 focus:bg-white transition-all"
               />
             </label>
 
             {combinedFinalScore !== null && (
-              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs">
-                <span className="font-semibold text-slate-600">
+              <div className="flex items-center justify-between rounded-xl border border-teal-200 bg-teal-50/70 px-4 py-3 text-xs">
+                <span className="font-semibold text-slate-700">
                   Điểm tổng kết hệ 10 (50% DN + 50% GVHD):
                 </span>
-                <span className="text-base font-black text-indigo-700">
+                <span className="text-base font-black text-teal-800">
                   {combinedFinalScore.toFixed(2)}/10
                 </span>
               </div>
@@ -339,14 +340,14 @@ export function TeacherEvaluations({
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 placeholder="Nhận xét về quá trình báo cáo tuần và chất lượng báo cáo tổng kết thực tập của sinh viên..."
-                className="mt-2 w-full rounded-xl border border-slate-300 p-3 text-sm font-normal outline-none focus:border-violet-600"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-normal outline-none focus:border-teal-600 focus:bg-white transition-all"
               />
             </label>
 
             {!isLocked ? (
               <button
                 disabled={saving}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:bg-slate-400"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white shadow-xs transition-all hover:bg-teal-800 active:scale-95 disabled:bg-slate-400"
               >
                 <Save className="h-4 w-4" />
                 {saving

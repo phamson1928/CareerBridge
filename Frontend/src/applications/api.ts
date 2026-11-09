@@ -1,6 +1,7 @@
 import { api } from '../auth/api';
 import type { ApiSuccess } from '../auth/auth.types';
 import type { AiScanJobRecord } from '../ai-worker/types';
+import type { Application } from '../types';
 
 export type ApplicationStatus =
   | 'PENDING'
@@ -181,7 +182,49 @@ export const applicationsApi = {
   resendEmail: async (id: string, logId: string) =>
     (await api.post<ApiSuccess<ApplicationRecord>>(`/applications/${id}/emails/${logId}/resend`))
       .data.data,
+  getById: async (id: string) =>
+    (await api.get<ApiSuccess<ApplicationRecord>>(`/applications/${id}`)).data.data,
   remove: async (id: string) =>
     (await api.delete<ApiSuccess<{ id: string; deleted: boolean }>>(`/applications/${id}`))
       .data.data,
 };
+
+export function toLegacyApplication(record: ApplicationRecord): Application {
+  return {
+    id: record.id,
+    studentId: record.studentId,
+    studentName: record.student.fullName,
+    studentMajor: record.student.major,
+    studentSkills: [],
+    internshipId: record.internshipId,
+    internshipTitle: record.internship.title,
+    semesterId: record.internship.semester?.id ?? record.internship.semesterId ?? null,
+    semesterName: record.internship.semester?.name ?? null,
+    internshipStartDate: record.internship.startDate ?? null,
+    internshipEndDate: record.internship.endDate ?? null,
+    companyId: record.internship.company.id,
+    companyName: record.internship.company.companyName,
+    companyContactEmail: record.internship.company.contactEmail ?? null,
+    companyAddress: record.internship.company.address ?? null,
+    cvUrl: '',
+    cvFileId: record.cvFileId ?? undefined,
+    cvName: (record as any).cvFile?.originalName ?? null,
+    coverLetter: record.coverLetter ?? undefined,
+    matchScore: record.matchScore,
+    aiScore: record.aiScore ?? null,
+    aiScanJob: record.aiScanJob ?? null,
+    status: record.status,
+    companyFeedback: record.companyFeedback ?? undefined,
+    rejectionReason: record.rejectionReason ?? null,
+    offeredAt: record.offeredAt ?? null,
+    offerExpiresAt: record.offerExpiresAt ?? null,
+    offerMessage: record.offerMessage ?? null,
+    respondedAt: record.respondedAt ?? null,
+    interview: record.interview ?? null,
+    emailLogs: record.emailLogs ?? [],
+    appliedAt: record.appliedAt,
+    hiddenByStudentAt: record.hiddenByStudentAt ?? null,
+    hiddenByCompanyAt: record.hiddenByCompanyAt ?? null,
+    updatedAt: record.updatedAt,
+  };
+}

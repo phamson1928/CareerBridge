@@ -74,17 +74,17 @@ export const PlacementOverview: React.FC = () => {
     );
 
   return (
-    <section className="space-y-5">
-      <div className="rounded-3xl bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-900 p-6 text-white shadow-lg sm:p-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-100">
-          <BriefcaseBusiness className="h-3.5 w-3.5" /> Hành trình thực tập
+    <section className="space-y-6">
+      {/* Modern Clean SaaS Page Header */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
+        <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-800 mb-2">
+          <BriefcaseBusiness className="h-3.5 w-3.5 text-teal-600" /> Hành trình thực tập
         </div>
-        <h1 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">
-          Vị trí thực tập của tôi
+        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+          Vị Trí Thực Tập Của Tôi
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-emerald-100/80">
-          Theo dõi vị trí đã được xác nhận, thời gian thực tập và giảng viên
-          hướng dẫn.
+        <p className="mt-1 max-w-2xl text-xs sm:text-sm text-slate-500">
+          Theo dõi thông tin vị trí đã được xác nhận, thời gian thực tập và giảng viên hướng dẫn phụ trách học phần.
         </p>
       </div>
       {placements.length === 0 ? (
@@ -99,14 +99,14 @@ export const PlacementOverview: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-2 bento-stagger">
           {placements.map((placement) => (
             <article
               key={placement.id}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs"
+              className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 card-interactive"
             >
               <div
-                className={`h-1.5 ${placement.status === "ACTIVE" ? "bg-emerald-500" : placement.status === "PENDING" ? "bg-amber-400" : "bg-slate-400"}`}
+                className={`h-1.5 ${placement.status === "ACTIVE" ? "bg-teal-600" : placement.status === "PENDING" ? "bg-amber-400" : "bg-slate-400"}`}
               />
               <div className="p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-3">
@@ -120,12 +120,12 @@ export const PlacementOverview: React.FC = () => {
                   </div>
                   <div className="flex flex-col items-end gap-1.5">
                     <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${placement.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700" : placement.status === "PENDING" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"}`}
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${placement.status === "ACTIVE" ? "bg-teal-50 text-teal-800 border border-teal-200" : placement.status === "PENDING" ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-slate-100 text-slate-600 border border-slate-200"}`}
                     >
                       Công việc: {placementStatusLabel[placement.status]}
                     </span>
                     <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${placement.academicStatus === "ACTIVE" ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600"}`}
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${placement.academicStatus === "ACTIVE" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-600 border border-slate-200"}`}
                     >
                       {academicStatusLabel[placement.academicStatus]}
                     </span>
@@ -133,20 +133,20 @@ export const PlacementOverview: React.FC = () => {
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Building2 className="h-4 w-4 text-indigo-500" />
+                    <Building2 className="h-4 w-4 text-teal-700" />
                     {placement.company.companyName}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <MapPin className="h-4 w-4 text-indigo-500" />
+                    <MapPin className="h-4 w-4 text-teal-700" />
                     {placement.internship.location ?? "Chưa cập nhật địa điểm"}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <CalendarDays className="h-4 w-4 text-indigo-500" />
+                    <CalendarDays className="h-4 w-4 text-teal-700" />
                     {formatDate(placement.startDate)} —{" "}
                     {formatDate(placement.endDate)}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Clock3 className="h-4 w-4 text-indigo-500" />
+                    <Clock3 className="h-4 w-4 text-teal-700" />
                     {placement.internship.workType
                       ? (workTypeLabel[placement.internship.workType] ??
                         placement.internship.workType)

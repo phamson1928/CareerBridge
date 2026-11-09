@@ -7,6 +7,9 @@ import {
   Search,
   Send,
   X,
+  User,
+  Building,
+  CheckCheck,
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { getApiErrorMessage } from "../../auth/api";
@@ -71,8 +74,8 @@ export function ChatDrawer({
           : Promise.resolve(null),
       ]);
       const placements = (placementPage?.items ?? []).filter(
-          (placement) => placement.supervision?.status === "ACTIVE",
-        );
+        (placement) => placement.supervision?.status === "ACTIVE",
+      );
       setConversations(conversationPage.items);
       setSupervisedPlacements(placements);
       return { conversations: conversationPage.items, placements };
@@ -166,6 +169,7 @@ export function ChatDrawer({
       });
     }
   }, [initialPlacementId, isOpen]);
+
   useEffect(() => {
     if (!latestMessage) return;
     setConversations((items) =>
@@ -189,6 +193,7 @@ export function ChatDrawer({
           .catch(() => undefined);
     }
   }, [latestMessage, onMessagesRead, selected, user?.id]);
+
   useLayoutEffect(() => {
     if (!selected || isLoadingMessages) return;
     const container = messageScrollRef.current;
@@ -197,9 +202,9 @@ export function ChatDrawer({
     });
     return () => window.cancelAnimationFrame(frame);
   }, [selected?.id, messages.length, isLoadingMessages]);
+
   if (!isOpen) return null;
-  // A placement that already owns a conversation belongs in the inbox only.
-  // This prevents the "start a chat" shortcuts from duplicating contacts.
+
   const startablePlacements = supervisedPlacements.filter(
     (placement) => !conversations.some((conversation) => conversation.placementId === placement.id),
   );
@@ -213,155 +218,260 @@ export function ChatDrawer({
         return person?.fullName.toLocaleLowerCase("vi-VN").includes(normalizedContactSearch);
       })
     : startablePlacements;
+
   return (
-    <div className="chat-backdrop fixed inset-0 z-50 flex justify-end bg-slate-900/30 backdrop-blur-xs">
-      <aside className="chat-drawer flex h-full w-full max-w-[50rem] flex-col border-l border-slate-200 bg-white shadow-2xl">
-        <header className="chat-header flex h-16 items-center justify-between border-b border-slate-200 px-5 text-white">
+    <div className="chat-backdrop fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs">
+      <aside className="chat-drawer flex h-full w-full max-w-[54rem] flex-col border-l border-slate-200 bg-white shadow-2xl">
+        {/* Modern Clean Header */}
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
           <div className="flex items-center gap-3">
             {selected && (
-              <button className="md:hidden" onClick={() => setSelected(null)} aria-label="Quay lại">
+              <button
+                className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800 md:hidden"
+                onClick={() => setSelected(null)}
+                aria-label="Quay lại danh bạ"
+              >
                 <ArrowLeft className="h-5 w-5" />
               </button>
             )}
-            <MessageSquare className="h-5 w-5" />
-            <h3 className="text-sm font-bold">Tin nhắn</h3>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-teal-200/80 bg-teal-50 text-teal-700">
+              <MessageSquare className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 leading-tight">
+                Tin nhắn &amp; Trao đổi thực tập
+              </h3>
+              <p className="text-[11px] text-slate-500 leading-none mt-0.5">
+                Kênh liên lạc trực tiếp theo thời gian thực
+              </p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Đóng chat"
-            className="rounded-lg p-1 text-slate-400 hover:text-white"
-          >
-            <X className="h-5 w-5" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => void loadConversations()}
+              disabled={isLoadingConversations}
+              className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+              title="Làm mới danh sách"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingConversations ? "animate-spin text-teal-600" : ""}`} />
+            </button>
+            <button
+              onClick={onClose}
+              aria-label="Đóng chat"
+              className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </header>
+
         {error && (
-          <div className="m-3 rounded-lg bg-red-50 p-3 text-xs text-red-700">
+          <div className="mx-4 mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
             {error}
           </div>
         )}
-        <div className="chat-layout flex min-h-0 flex-1">
-          <div className={`chat-conversation-list min-h-0 flex-1 overflow-y-auto bg-slate-50 p-4 md:max-w-[19rem] md:flex-none ${selected ? "hidden md:block" : ""}`}>
-            <label className="chat-contact-search mb-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-              <Search className="h-4 w-4 text-teal-700" />
-              <input value={contactSearch} onChange={(event) => setContactSearch(event.target.value)} placeholder="Tìm theo tên..." className="min-w-0 flex-1 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400" aria-label="Tìm kiếm danh bạ" />
-            </label>
+
+        <div className="flex min-h-0 flex-1">
+          {/* Conversation List / Contacts Sidebar */}
+          <div
+            className={`min-h-0 flex-1 overflow-y-auto border-r border-slate-200/80 bg-slate-50/70 p-3.5 md:w-80 md:flex-none ${
+              selected ? "hidden md:block" : ""
+            }`}
+          >
+            {/* Search Box */}
+            <div className="mb-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-2xs focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-500/20">
+              <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <input
+                value={contactSearch}
+                onChange={(event) => setContactSearch(event.target.value)}
+                placeholder="Tìm theo tên..."
+                className="w-full bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400 font-medium"
+                aria-label="Tìm kiếm danh bạ"
+              />
+            </div>
+
             {isLoadingConversations && conversations.length === 0 && startablePlacements.length === 0 && (
-              <p className="py-10 text-center text-sm text-slate-500">
-                Đang tải…
+              <p className="py-12 text-center text-xs text-slate-400">
+                Đang tải danh bạ…
               </p>
             )}
+
             {!isLoadingConversations && !error && visibleConversations.length === 0 && visibleStartablePlacements.length === 0 && (
-              <div className="py-10 text-center text-slate-500">
-                <MessageSquare className="mx-auto mb-3 h-10 w-10 text-slate-300" />
-                <p className="text-sm font-medium">Chưa có hội thoại</p>
+              <div className="py-12 text-center text-slate-400">
+                <MessageSquare className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+                <p className="text-xs font-semibold text-slate-600">Chưa có hội thoại</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Các ứng viên và người liên quan sẽ xuất hiện tại đây.</p>
               </div>
             )}
-            {visibleStartablePlacements.map((placement, index) => {
+
+            {/* Quick Contacts (Startable) */}
+            {visibleStartablePlacements.map((placement) => {
               const person = user?.role === "LECTURER" ? placement.student : placement.supervision?.lecturer;
               return (
                 <button
                   key={placement.id}
                   onClick={() => void startLecturerConversation(placement)}
-                  className="chat-conversation chat-contact flex w-full items-start gap-3 bg-white p-4 text-left"
-                  style={{ animationDelay: `${index * 45}ms` }}
+                  className="mb-1.5 flex w-full items-start gap-3 rounded-xl border border-dashed border-teal-200 bg-teal-50/40 p-3 text-left transition hover:bg-teal-50 cursor-pointer"
                 >
                   <ProfileAvatarPreview
                     fileId={person?.avatarFileId}
-                    fallback={person?.fullName.charAt(0).toUpperCase() ?? "G"}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-100 font-bold text-indigo-700"
+                    fallback={person?.fullName.charAt(0).toUpperCase() ?? "U"}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-100 font-bold text-teal-800"
                     imageClassName="h-full w-full object-cover"
                   />
                   <span className="min-w-0 flex-1">
-                    <strong className="block truncate text-sm">{person?.fullName}</strong>
-                    <span className="mt-0.5 block truncate text-xs text-slate-500">{placement.internship.title}</span>
-                    <span className="mt-1 block text-xs font-medium text-teal-700">Sẵn sàng trao đổi</span>
+                    <strong className="block truncate text-xs font-bold text-slate-900">
+                      {person?.fullName}
+                    </strong>
+                    <span className="mt-0.5 block truncate text-[11px] text-slate-500">
+                      {placement.internship.title}
+                    </span>
+                    <span className="mt-1 inline-block rounded-md bg-teal-100/70 px-1.5 py-0.5 text-[10px] font-bold text-teal-800">
+                      Bắt đầu trao đổi →
+                    </span>
                   </span>
                 </button>
               );
             })}
-            {visibleConversations.map((conversation) => (
-              <button
-                key={conversation.id}
-                onClick={() => void openConversation(conversation)}
-                className={`chat-conversation flex w-full items-start gap-3 bg-white p-4 text-left ${selected?.id === conversation.id ? "is-active" : ""}`}
-              >
-                <ProfileAvatarPreview
-                  fileId={conversation.participant.avatarFileId}
-                  fallback={conversation.participant.name
-                    .charAt(0)
-                    .toUpperCase()}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 font-bold text-blue-700"
-                  imageClassName="h-full w-full object-cover"
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="flex justify-between gap-2">
-                    <strong className="truncate text-sm">
-                      {conversation.participant.name}
-                    </strong>
-                    <time className="text-[10px] text-slate-400">
-                      {dateTime(conversation.updatedAt)}
-                    </time>
+
+            {/* Existing Conversations */}
+            {visibleConversations.map((conversation) => {
+              const isSelected = selected?.id === conversation.id;
+              return (
+                <button
+                  key={conversation.id}
+                  onClick={() => void openConversation(conversation)}
+                  className={`chat-contact mb-1.5 flex w-full items-start gap-3 rounded-xl p-3 text-left transition cursor-pointer ${
+                    isSelected
+                      ? "border border-teal-200 bg-white shadow-xs ring-1 ring-teal-500/20"
+                      : "border border-transparent bg-white/70 hover:border-slate-200 hover:bg-white"
+                  }`}
+                >
+                  <ProfileAvatarPreview
+                    fileId={conversation.participant.avatarFileId}
+                    fallback={conversation.participant.name.charAt(0).toUpperCase()}
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full font-bold text-xs ${
+                      isSelected ? "bg-teal-700 text-white" : "bg-slate-100 text-slate-700"
+                    }`}
+                    imageClassName="h-full w-full object-cover"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center justify-between gap-1">
+                      <strong className={`truncate text-xs font-bold ${isSelected ? "text-teal-900" : "text-slate-900"}`}>
+                        {conversation.participant.name}
+                      </strong>
+                      <time className="shrink-0 text-[10px] text-slate-400">
+                        {dateTime(conversation.updatedAt)}
+                      </time>
+                    </span>
+                    <span className="mt-0.5 block truncate text-[11px] font-medium text-teal-700">
+                      {conversation.internship?.title ?? "Hội thoại thực tập"}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[11px] text-slate-500">
+                      {conversation.latestMessage?.content ?? "Chưa có tin nhắn"}
+                    </span>
                   </span>
-                  <span className="block truncate text-xs text-slate-500">
-                    {conversation.internship?.title ?? "Kỳ thực tập"}
-                  </span>
-                  <span className="block truncate text-xs text-slate-600">
-                    {conversation.latestMessage?.content ?? "Chưa có tin nhắn"}
-                  </span>
-                </span>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Chat Thread Panel */}
           {selected ? (
-          <div className="chat-thread-panel flex min-w-0 flex-1 flex-col">
-            <div className="chat-thread-header flex items-center gap-3 border-b border-slate-200 bg-white px-5 py-3.5">
-              <ProfileAvatarPreview fileId={selected.participant.avatarFileId} fallback={selected.participant.name.charAt(0).toUpperCase()} className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-teal-100 text-xs font-bold text-teal-700" imageClassName="h-full w-full object-cover" />
-              <div className="min-w-0"><h4 className="truncate text-sm font-bold text-slate-800">{selected.participant.name}</h4><p className="truncate text-xs text-slate-500">{selected.internship?.title ?? "Hội thoại thực tập"}</p></div>
-            </div>
-            <div ref={messageScrollRef} className="chat-messages flex-1 overflow-y-auto bg-slate-50 p-5">
-              {isLoadingMessages ? (
-                <p className="py-10 text-center text-sm text-slate-500">
-                  Đang tải tin nhắn…
-                </p>
-              ) : (
-                messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`chat-message mb-3 flex flex-col ${message.senderId === user?.id ? "items-end" : "items-start"}`}
-                  >
-                    <p
-                      className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${message.senderId === user?.id ? "rounded-tr-none bg-blue-600 text-white" : "rounded-tl-none border border-slate-200 bg-white text-slate-800"}`}
-                    >
-                      {message.content}
+            <div className="chat-thread-panel flex min-w-0 flex-1 flex-col bg-white">
+              {/* Active Conversation Header */}
+              <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-3 shadow-2xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <ProfileAvatarPreview
+                    fileId={selected.participant.avatarFileId}
+                    fallback={selected.participant.name.charAt(0).toUpperCase()}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-100 text-xs font-bold text-teal-800"
+                    imageClassName="h-full w-full object-cover"
+                  />
+                  <div className="min-w-0">
+                    <h4 className="truncate text-xs font-bold text-slate-900">
+                      {selected.participant.name}
+                    </h4>
+                    <p className="truncate text-[11px] text-slate-500">
+                      {selected.internship?.title ?? "Hội thoại thực tập"}
                     </p>
-                    <time className="mt-1 text-[10px] text-slate-400">
-                      {dateTime(message.createdAt)}
-                    </time>
                   </div>
-                ))
-              )}
-            </div>
-            <form
-              onSubmit={(event) => void submit(event)}
-              className="chat-compose flex gap-2 border-t border-slate-200 p-4"
-            >
-              <input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                maxLength={4000}
-                placeholder="Nhập tin nhắn..."
-                className="flex-1 rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                disabled={isSending || !input.trim()}
-                className="chat-send rounded-2xl bg-blue-600 p-3 text-white disabled:opacity-50"
+                </div>
+
+                <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 border border-emerald-200">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span>Sẵn sàng</span>
+                </div>
+              </div>
+
+              {/* Messages Container */}
+              <div
+                ref={messageScrollRef}
+                className="flex-1 overflow-y-auto bg-slate-50/50 p-5 space-y-3"
               >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
-          </div>
+                {isLoadingMessages ? (
+                  <p className="py-12 text-center text-xs text-slate-400">
+                    Đang tải tin nhắn…
+                  </p>
+                ) : (
+                  messages.map((message) => {
+                    const isMine = message.senderId === user?.id;
+                    return (
+                      <div
+                        key={message.id}
+                        className={`chat-message flex flex-col ${isMine ? "items-end" : "items-start"}`}
+                      >
+                        <div
+                          className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-xs font-medium shadow-2xs leading-relaxed ${
+                            isMine
+                              ? "rounded-tr-xs bg-teal-700 text-white"
+                              : "rounded-tl-xs border border-slate-200/90 bg-white text-slate-800"
+                          }`}
+                        >
+                          {message.content}
+                        </div>
+                        <time className={`mt-1 text-[10px] text-slate-400 ${isMine ? "mr-1" : "ml-1"}`}>
+                          {dateTime(message.createdAt)}
+                        </time>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Compose Bar */}
+              <form
+                onSubmit={(event) => void submit(event)}
+                className="flex items-center gap-2 border-t border-slate-200/80 bg-white p-3.5"
+              >
+                <input
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  maxLength={4000}
+                  placeholder="Nhập tin nhắn..."
+                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 transition font-medium"
+                />
+                <button
+                  type="submit"
+                  disabled={isSending || !input.trim()}
+                  className="inline-flex items-center justify-center rounded-xl bg-teal-700 p-2.5 text-white shadow-xs hover:bg-teal-800 disabled:opacity-40 transition cursor-pointer"
+                  title="Gửi tin nhắn"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
           ) : (
-            <div className="chat-empty-state hidden flex-1 flex-col items-center justify-center bg-[#fbfefe] px-8 text-center md:flex"><MessageSquare className="mb-3 h-10 w-10 text-teal-200" /><p className="text-sm font-bold text-slate-700">Chọn một liên hệ</p><p className="mt-1 text-xs text-slate-500">Mở hội thoại để bắt đầu trao đổi.</p></div>
+            <div className="hidden flex-1 flex-col items-center justify-center bg-slate-50/40 p-8 text-center md:flex">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-teal-200/70 bg-teal-50 text-teal-600 mb-3 shadow-2xs">
+                <MessageSquare className="h-6 w-6" />
+              </div>
+              <p className="text-sm font-bold text-slate-800">Chọn một liên hệ</p>
+              <p className="mt-1 max-w-xs text-xs text-slate-500">
+                Chọn ứng viên hoặc người hướng dẫn từ danh bạ bên trái để bắt đầu trao đổi thông tin.
+              </p>
+            </div>
           )}
         </div>
       </aside>

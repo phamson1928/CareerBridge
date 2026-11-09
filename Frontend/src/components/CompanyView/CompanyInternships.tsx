@@ -698,82 +698,96 @@ export function CompanyInternships() {
       {/* Tiến trình Đợt thực tập / Campaign Timeline Banner */}
       <SemesterCampaignBanner role="COMPANY" />
 
-      {/* Tab Switcher & Header */}
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+      {/* Page Header (Modern Clean SaaS Style) */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveTab("INTERNSHIPS")}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
-                activeTab === "INTERNSHIPS"
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              <Briefcase className="h-4 w-4" />
-              <span>Tin tuyển dụng</span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[11px] ${
-                  activeTab === "INTERNSHIPS" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
-                }`}
-              >
-                {items.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("TEMPLATES")}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
-                activeTab === "TEMPLATES"
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              <Layers className="h-4 w-4" />
-              <span>Mẫu tin tuyển dụng</span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[11px] ${
-                  templates.length >= 20
-                    ? "bg-rose-500 text-white"
-                    : activeTab === "TEMPLATES"
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-200 text-slate-700"
-                }`}
-              >
-                {templates.length}/20
-              </span>
-            </button>
+          <div className="inline-flex items-center gap-2 rounded-full bg-teal-50 border border-teal-200/60 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-800 mb-2">
+            <Briefcase className="h-3.5 w-3.5 text-teal-600" />
+            <span>QUẢN LÝ TIN TUYỂN DỤNG</span>
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Tin tuyển dụng & Mẫu vị trí thực tập
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
             {activeTab === "INTERNSHIPS"
               ? "Quản lý bài đăng tuyển dụng, đăng lại sang đợt mới hoặc lưu làm mẫu để tái sử dụng."
               : "Bộ sưu tập mẫu tin tuyển dụng chuẩn hóa (tối đa 20 mẫu) giúp tái tạo nhanh chóng khi có đợt tuyển dụng mới."}
           </p>
         </div>
 
-        {activeTab === "INTERNSHIPS" ? (
+        {/* Header Action Button */}
+        <div className="flex items-center gap-2.5">
+          {activeTab === "INTERNSHIPS" ? (
+            <button
+              disabled={!recruitingSemesters.length}
+              onClick={openCreateJobModal}
+              title={
+                recruitingSemesters.length
+                  ? "Đăng tin tuyển dụng mới"
+                  : "Hiện không có đợt nào trong giai đoạn tuyển dụng"
+              }
+              className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300 shadow-xs transition cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> Đăng bài mới
+            </button>
+          ) : (
+            <button
+              disabled={templates.length >= 20}
+              onClick={handleOpenCreateTemplate}
+              title={templates.length >= 20 ? "Đã đạt giới hạn tối đa 20 mẫu tin" : "Tạo mẫu tin mới"}
+              className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300 shadow-xs transition cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> Tạo mẫu mới ({templates.length}/20)
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Tab Switcher Bar */}
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+        <div className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 p-1">
           <button
-            disabled={!recruitingSemesters.length}
-            onClick={openCreateJobModal}
-            title={
-              recruitingSemesters.length
-                ? "Đăng tin tuyển dụng mới"
-                : "Hiện không có đợt nào trong giai đoạn tuyển dụng"
-            }
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 shadow-xs transition"
+            onClick={() => setActiveTab("INTERNSHIPS")}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition cursor-pointer ${
+              activeTab === "INTERNSHIPS"
+                ? "bg-white text-teal-800 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
           >
-            <Plus className="h-4 w-4" /> Đăng bài mới
+            <Briefcase className="h-3.5 w-3.5" />
+            <span>Tin tuyển dụng</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                activeTab === "INTERNSHIPS" ? "bg-teal-50 text-teal-800 border border-teal-200" : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {items.length}
+            </span>
           </button>
-        ) : (
+
           <button
-            disabled={templates.length >= 20}
-            onClick={handleOpenCreateTemplate}
-            title={templates.length >= 20 ? "Đã đạt giới hạn tối đa 20 mẫu tin" : "Tạo mẫu tin mới"}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 shadow-xs transition"
+            onClick={() => setActiveTab("TEMPLATES")}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition cursor-pointer ${
+              activeTab === "TEMPLATES"
+                ? "bg-white text-teal-800 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
           >
-            <Plus className="h-4 w-4" /> Tạo mẫu mới ({templates.length}/20)
+            <Layers className="h-3.5 w-3.5" />
+            <span>Mẫu tin tuyển dụng</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                templates.length >= 20
+                  ? "bg-rose-500 text-white"
+                  : activeTab === "TEMPLATES"
+                  ? "bg-teal-50 text-teal-800 border border-teal-200"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {templates.length}/20
+            </span>
           </button>
-        )}
+        </div>
       </section>
 
       {/* Warnings Banner if any skills were omitted */}
@@ -813,24 +827,24 @@ export function CompanyInternships() {
         <>
           <form
             onSubmit={applyFilters}
-            className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-xs md:grid-cols-5 shadow-xs"
+            className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200/90 bg-white p-4 text-xs md:grid-cols-5 shadow-xs"
           >
             <label className="md:col-span-2">
               <span className="sr-only">Tìm kiếm</span>
-              <div className="flex items-center gap-2 rounded-xl border border-slate-300 px-3">
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-500/20 transition">
                 <Search className="h-4 w-4 text-slate-400" />
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Tìm theo vị trí, công ty, mô tả"
-                  className="w-full py-2.5 outline-none"
+                  className="w-full py-2.5 outline-none font-medium text-slate-800"
                 />
               </div>
             </label>
             <select
               value={semesterId}
               onChange={(event) => setSemesterId(event.target.value)}
-              className="rounded-xl border border-slate-300 px-3 py-2.5 bg-white outline-none"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-800 font-medium outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 transition"
             >
               <option value="">Tất cả đợt thực tập</option>
               {semesterOptions.map((semester) => (
@@ -848,7 +862,7 @@ export function CompanyInternships() {
             <select
               value={filterMajorId}
               onChange={(event) => setFilterMajorId(event.target.value)}
-              className="rounded-xl border border-slate-300 px-3 py-2.5 bg-white outline-none"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-800 font-medium outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 transition"
             >
               <option value="">Tất cả ngành tuyển dụng</option>
               {faculties.map((f) => (
@@ -864,7 +878,7 @@ export function CompanyInternships() {
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value)}
-              className="rounded-xl border border-slate-300 px-3 py-2.5 bg-white outline-none"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-800 font-medium outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 transition"
             >
               <option value="">Tất cả trạng thái</option>
               <option value="DRAFT">Nháp</option>
@@ -874,22 +888,22 @@ export function CompanyInternships() {
               <option value="REJECTED">Bị gỡ vi phạm</option>
             </select>
             <div className="flex gap-2 md:col-span-5">
-              <button className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition">
-                Lọc
+              <button className="rounded-xl bg-teal-700 px-5 py-2 text-xs font-bold text-white hover:bg-teal-800 transition cursor-pointer shadow-2xs">
+                Áp dụng bộ lọc
               </button>
               <button
                 type="button"
                 onClick={clearFilters}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-300 px-3 py-2 font-bold text-slate-700 hover:bg-slate-100 transition"
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer shadow-2xs"
               >
-                <FilterX className="h-3.5 w-3.5" /> Xóa bộ lọc
+                <FilterX className="h-3.5 w-3.5 text-slate-400" /> Xóa bộ lọc
               </button>
             </div>
           </form>
 
           {loading ? (
             <div className="rounded-2xl bg-white border border-slate-200 p-12 text-center text-sm text-slate-500 shadow-xs">
-              <LoaderCircle className="mx-auto mb-3 h-5 w-5 animate-spin text-indigo-600" />
+              <LoaderCircle className="mx-auto mb-3 h-5 w-5 animate-spin text-teal-600" />
               Đang tải bài đăng tuyển dụng...
             </div>
           ) : (

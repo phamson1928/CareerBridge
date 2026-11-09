@@ -22,7 +22,11 @@ import { ChatDrawer } from "./components/Chat/ChatDrawer";
 import { useAuth } from "./auth/AuthContext";
 import { useNotifications } from "./notifications/use-notifications";
 import type { NotificationAction } from "./notifications/types";
-import { applicationsApi, type ApplicationRecord } from "./applications/api";
+import {
+  applicationsApi,
+  toLegacyApplication,
+  type ApplicationRecord,
+} from "./applications/api";
 import { companiesApi, type CompanyProfileRecord } from "./companies/api";
 import { internshipsApi } from "./internships/api";
 import { toLegacyInternship } from "./internships/mappers";
@@ -108,44 +112,7 @@ const adminTabByPath = Object.fromEntries(
   Object.entries(adminPathByTab).map(([tab, path]) => [path, tab]),
 ) as Record<string, string>;
 
-function toLegacyApplication(record: ApplicationRecord): Application {
-  return {
-    id: record.id,
-    studentId: record.studentId,
-    studentName: record.student.fullName,
-    studentMajor: record.student.major,
-    studentSkills: [],
-    internshipId: record.internshipId,
-    internshipTitle: record.internship.title,
-    semesterId: record.internship.semester?.id ?? record.internship.semesterId ?? null,
-    semesterName: record.internship.semester?.name ?? null,
-    internshipStartDate: record.internship.startDate ?? null,
-    internshipEndDate: record.internship.endDate ?? null,
-    companyId: record.internship.company.id,
-    companyName: record.internship.company.companyName,
-    companyContactEmail: record.internship.company.contactEmail ?? null,
-    companyAddress: record.internship.company.address ?? null,
-    cvUrl: "",
-    cvFileId: record.cvFileId ?? undefined,
-    coverLetter: record.coverLetter ?? undefined,
-    matchScore: record.matchScore,
-    aiScore: record.aiScore ?? null,
-    aiScanJob: record.aiScanJob ?? null,
-    status: record.status,
-    companyFeedback: record.companyFeedback ?? undefined,
-    rejectionReason: record.rejectionReason ?? null,
-    offeredAt: record.offeredAt ?? null,
-    offerExpiresAt: record.offerExpiresAt ?? null,
-    offerMessage: record.offerMessage ?? null,
-    respondedAt: record.respondedAt ?? null,
-    interview: record.interview ?? null,
-    emailLogs: record.emailLogs ?? [],
-    appliedAt: record.appliedAt,
-    hiddenByStudentAt: record.hiddenByStudentAt ?? null,
-    hiddenByCompanyAt: record.hiddenByCompanyAt ?? null,
-    updatedAt: record.updatedAt,
-  };
-}
+
 
 function toLegacyStudentProfile(
   record: StudentProfileRecord,
@@ -605,7 +572,9 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen overflow-x-clip bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${
+      className={`min-h-screen overflow-x-clip ${
+        currentRole === "ADMIN" ? "bg-slate-100/70" : "bg-[#edf0f4]"
+      } text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${
         currentRole === "ADMIN"
           ? `admin-theme pl-20 will-change-[padding-left] transition-[padding-left] duration-200 ease-out ${
               isAdminSidebarCollapsed ? "lg:pl-20" : "lg:pl-[300px]"
@@ -630,17 +599,19 @@ export default function App() {
         onLogout={() => void handleLogout()}
         avatarFileId={avatarFileId}
         companyLogo={companyProfile?.logo}
+        companyName={companyProfile?.companyName}
         companyVerificationStatus={companyVerificationStatus}
         isSidebarCollapsed={isAdminSidebarCollapsed}
         onToggleSidebar={toggleAdminSidebar}
       />
 
-      {/* Main Page Body Container */}
+      {/* Main Page Body Container with smooth page entrance animation */}
       <main
-        className={`flex-1 w-full mx-auto px-4 sm:px-6 py-8 ${
+        key={`${currentRole}-${activeTab}`}
+        className={`flex-1 w-full mx-auto px-4 sm:px-6 py-6 page-fade-in ${
           currentRole === "ADMIN"
             ? "max-w-none lg:px-7 lg:py-8"
-            : "max-w-7xl lg:px-8"
+            : "max-w-[1440px] lg:px-8"
         }`}
       >
         {workflowError && (

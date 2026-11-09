@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { AdminPermission } from '../src/common/constants/admin-permissions.constants';
 import {
@@ -152,6 +154,7 @@ async function main() {
     'Java', 'Spring Boot', 'C++', 'C#', '.NET Core', 'Go', 'PostgreSQL', 'MySQL', 'MongoDB',
     'Redis', 'Docker', 'Kubernetes', 'Git', 'CI/CD', 'AWS', 'RESTful API', 'GraphQL',
     'Microservices', 'Linux/Shell Scripting', 'Software Architecture', 'Unit Testing',
+    'Socket.IO', 'Prisma ORM', 'Tailwind CSS', 'React Native', 'Nginx',
     // AI & Dữ liệu
     'Machine Learning', 'Deep Learning', 'PyTorch', 'TensorFlow', 'Computer Vision',
     'Natural Language Processing (NLP)', 'Pandas', 'NumPy', 'Data Analysis', 'SQL & Data Modeling', 'Power BI',
@@ -656,6 +659,60 @@ async function main() {
   console.log('🎓 [7/12] Khởi tạo hồ sơ Sinh viên Đại học Bách Khoa...');
 
   const studentsData = [
+    // 0. Phạm Hoàng Sơn - FullStack / Backend Developer
+    {
+      email: 'pson4282@gmail.com',
+      studentCode: '2314282',
+      fullName: 'Phạm Hoàng Sơn',
+      majorCode: 'BK-SE',
+      phone: '0901234567',
+      gpa: 3.65,
+      summary:
+        '4rd-year IT student with hands-on experience building scalable backend applications using NestJS, TypeScript, PostgreSQL, Redis, and Docker. Experienced in API development, database design, authentication, and VPS deployment. Seeking a Backend Developer Intern role to contribute to real-world products and further develop backend engineering skills.',
+      skills: [
+        { name: 'NestJS', level: SkillLevel.ADVANCED },
+        { name: 'TypeScript', level: SkillLevel.ADVANCED },
+        { name: 'Node.js', level: SkillLevel.ADVANCED },
+        { name: 'PostgreSQL', level: SkillLevel.ADVANCED },
+        { name: 'Redis', level: SkillLevel.INTERMEDIATE },
+        { name: 'Docker', level: SkillLevel.INTERMEDIATE },
+        { name: 'Git', level: SkillLevel.ADVANCED },
+        { name: 'CI/CD', level: SkillLevel.INTERMEDIATE },
+        { name: 'RESTful API', level: SkillLevel.ADVANCED },
+        { name: 'React', level: SkillLevel.INTERMEDIATE },
+        { name: 'Tailwind CSS', level: SkillLevel.ADVANCED },
+        { name: 'React Native', level: SkillLevel.INTERMEDIATE },
+        { name: 'Prisma ORM', level: SkillLevel.ADVANCED },
+        { name: 'Socket.IO', level: SkillLevel.ADVANCED },
+        { name: 'Nginx', level: SkillLevel.INTERMEDIATE },
+        { name: 'AWS', level: SkillLevel.INTERMEDIATE },
+        { name: 'Linux/Shell Scripting', level: SkillLevel.INTERMEDIATE },
+      ],
+      projects: [
+        {
+          title: 'TEAMZONEVN — Social Gaming Matchmaking Platform',
+          description:
+            'Designed PostgreSQL schema with 23 Prisma models, JWT & Google OAuth 2.0 auth, Redis rate limiting & real-time leaderboard, Socket.IO chat & notifications, deployed on AWS EC2 with Docker Compose, Nginx reverse proxy, HTTPS, Supabase Storage, and GitHub Actions CI/CD.',
+          repositoryUrl: 'https://github.com/pson4282/teamzonevn',
+          demoUrl: 'https://teamzone.vn',
+          startedAt: new Date('2026-01-01'),
+          endedAt: new Date('2026-07-31'),
+        },
+        {
+          title: 'UTH CLUBS & EVENTS — Club & Event Management System',
+          description:
+            'Developed RESTful APIs with NestJS & PostgreSQL, RBAC with custom guards, email notifications, cloud storage & image upload, QR Code-based event check-in, AWS EC2 Docker deployment with Nginx & HTTPS, responsive React & Tailwind CSS UI.',
+          repositoryUrl: 'https://github.com/pson4282/uth-clubs-events',
+          demoUrl: 'https://uth-clubs.edu.vn',
+          startedAt: new Date('2025-07-01'),
+          endedAt: new Date('2025-12-31'),
+        },
+      ],
+      desiredRoles: ['Backend Developer', 'Fullstack Developer'],
+      preferredLocations: ['TP. Hồ Chí Minh'],
+      preferredWorkTypes: ['Toàn thời gian (On-site)', 'Hybrid'],
+      cvFileName: 'CV_PhamHoangSon_FullStackDeveloper.pdf',
+    },
     // 1. Nguyễn Hoàng Long - Đang thực tập tuần 8 tại FPT Software
     {
       email: 'student.interning@student.hcmut.edu.vn',
@@ -988,8 +1045,74 @@ async function main() {
   ];
 
   const studentProfileMap = new Map<string, { id: string; userId: string; fullName: string; studentCode: string }>();
+  const studentCvMap = new Map<string, string>();
 
-  for (const s of studentsData) {
+  // Helper upload CV to Supabase Storage and upsert into File table
+  async function uploadCvFile(filePath: string, originalName: string, storageKey: string, ownerId: string) {
+    const buffer = fs.readFileSync(filePath);
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+    const bucket = process.env.FILES_BUCKET || 'internhub-files';
+
+    if (supabaseUrl && serviceKey) {
+      try {
+        const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${storageKey}`;
+        const res = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            apikey: serviceKey,
+            'Content-Type': 'application/pdf',
+            'x-upsert': 'true',
+          },
+          body: buffer,
+        });
+        if (!res.ok) {
+          console.warn(`⚠️ [Supabase] Warning upload ${storageKey}:`, res.status, await res.text());
+        }
+      } catch (err) {
+        console.warn(`⚠️ [Supabase] Lỗi kết nối khi upload ${storageKey}:`, err);
+      }
+    }
+
+    const file = await prisma.file.upsert({
+      where: { storageKey },
+      update: {
+        ownerId,
+        type: FileType.CV,
+        originalName,
+        mimeType: 'application/pdf',
+        sizeBytes: buffer.length,
+      },
+      create: {
+        ownerId,
+        type: FileType.CV,
+        storageKey,
+        originalName,
+        mimeType: 'application/pdf',
+        sizeBytes: buffer.length,
+      },
+    });
+
+    return file;
+  }
+
+  const candidates = [
+    path.resolve(process.cwd(), 'prisma/seed-data/cvs'),
+    path.resolve(__dirname, '../../prisma/seed-data/cvs'),
+    path.resolve(__dirname, 'seed-data/cvs'),
+    path.resolve(__dirname, '../seed-data/cvs'),
+  ];
+  const cvDir = candidates.find((dir) => fs.existsSync(dir)) || candidates[0];
+  let availablePdfs: string[] = [];
+  if (fs.existsSync(cvDir)) {
+    availablePdfs = fs.readdirSync(cvDir)
+      .filter((f) => f.toLowerCase().endsWith('.pdf'))
+      .map((f) => path.join(cvDir, f));
+  }
+
+  for (let studentIdx = 0; studentIdx < studentsData.length; studentIdx++) {
+    const s = studentsData[studentIdx];
     const user = await upsertUser(s.email, Role.STUDENT);
     const majorInfo = majorMap.get(s.majorCode);
 
@@ -1016,6 +1139,42 @@ async function main() {
       },
     });
     studentProfileMap.set(s.email, { id: profile.id, userId: user.id, fullName: s.fullName, studentCode: s.studentCode });
+
+    // Upload & gán CV cho sinh viên
+    let assignedPdfPath: string | null = null;
+    let originalCvName = 'CV.pdf';
+
+    const preferredCvName = (s as { cvFileName?: string }).cvFileName;
+    if (preferredCvName) {
+      const match = availablePdfs.find((p) => path.basename(p) === preferredCvName);
+      if (match) {
+        assignedPdfPath = match;
+        originalCvName = preferredCvName;
+      }
+    }
+
+    if (!assignedPdfPath && availablePdfs.length > 0) {
+      const pool = availablePdfs.filter((p) => !path.basename(p).includes('PhamHoangSon'));
+      const activePool = pool.length > 0 ? pool : availablePdfs;
+      assignedPdfPath = activePool[studentIdx % activePool.length];
+      originalCvName = path.basename(assignedPdfPath);
+    }
+
+    if (assignedPdfPath) {
+      const safeStorageKey = `seed/cvs/${s.studentCode}_${originalCvName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .replace(/_+/g, '_')}`;
+
+      const cvFile = await uploadCvFile(assignedPdfPath, originalCvName, safeStorageKey, user.id);
+      await prisma.studentProfile.update({
+        where: { id: profile.id },
+        data: { cvFileId: cvFile.id },
+      });
+      studentCvMap.set(profile.id, cvFile.id);
+      console.log(`📄 Đã gán CV "${originalCvName}" cho sinh viên ${s.fullName} (${s.studentCode})`);
+    }
 
     // Cập nhật Skills
     await prisma.studentSkill.deleteMany({ where: { studentId: profile.id } });
@@ -1490,6 +1649,7 @@ async function main() {
   // =========================================================================
   console.log('📝 [11/12] Khởi tạo Đơn ứng tuyển bao phủ 9 trạng thái nghiệp vụ & AI Scan...');
 
+  const stSon = studentProfileMap.get('pson4282@gmail.com')!;
   const stLong = studentProfileMap.get('student.interning@student.hcmut.edu.vn')!;
   const stMaiAnh = studentProfileMap.get('student.completed@student.hcmut.edu.vn')!;
   const stTuan = studentProfileMap.get('student.unassigned@student.hcmut.edu.vn')!;
@@ -1501,6 +1661,38 @@ async function main() {
   const stNam = studentProfileMap.get('student.withdrawn@student.hcmut.edu.vn')!;
 
   const appsData = [
+    // 0. Phạm Hoàng Sơn - REVIEWING (Tại FPT Software Fullstack)
+    {
+      id: 'seed-app-son-fpt-fullstack-reviewing',
+      studentId: stSon.id,
+      internshipId: 'seed-internship-recruiting-fpt-fullstack',
+      coverLetter:
+        'Kính gửi Bộ phận Tuyển dụng FPT Software, em là Phạm Hoàng Sơn, sinh viên chuyên ngành Kỹ thuật Phần mềm. Em có kinh nghiệm thực chiến phát triển ứng dụng Backend & Fullstack với NestJS, TypeScript, PostgreSQL, Prisma ORM, Redis và Docker. Em rất mong muốn được gia nhập và cống hiến cho các dự án tại FPT Software.',
+      status: ApplicationStatus.REVIEWING,
+      matchScore: 95.0,
+      aiScore: 94.0,
+      companyFeedback:
+        'Hồ sơ năng lực xuất sắc, các dự án thực tế rất ấn tượng (đã deploy production trên AWS, dùng thuần thục NestJS, Prisma và Redis).',
+      appliedAt: new Date('2026-11-06T08:30:00Z'),
+    },
+    // 0.1 Phạm Hoàng Sơn - OFFERED (Tại FPT Software Backend)
+    {
+      id: 'seed-app-son-fpt-backend-offered',
+      studentId: stSon.id,
+      internshipId: 'seed-internship-current-fpt-backend',
+      coverLetter:
+        'Em là Phạm Hoàng Sơn, sinh viên năm 4 đam mê kiến trúc Backend và hệ thống phân tán cao tải.',
+      status: ApplicationStatus.OFFERED,
+      matchScore: 96.0,
+      aiScore: 95.0,
+      companyFeedback:
+        'Ứng viên làm bài kiểm tra kỹ thuật Backend đạt điểm tối đa, hiểu sâu về tối ưu hóa cơ sở dữ liệu và bảo mật JWT / RBAC.',
+      appliedAt: new Date('2026-10-18T09:00:00Z'),
+      offeredAt: new Date('2026-10-28T14:00:00Z'),
+      offerExpiresAt: new Date('2026-11-20T23:59:59Z'),
+      offerMessage:
+        'FPT Software trân trọng gửi thư mời thực tập vị trí Backend Developer đến bạn Phạm Hoàng Sơn. Mức phụ cấp thực tập: 8,500,000 VNĐ/tháng.',
+    },
     // 1. Nguyễn Hoàng Long - ACCEPTED (Tại FPT Software Backend - Kỳ Thu 2026 hiện tại) -> Có Placement
     {
       id: 'seed-app-long-fpt-accepted',
@@ -1673,11 +1865,13 @@ async function main() {
 
   for (const a of appsData) {
     const itId = internshipMap.get(a.internshipId)!;
+    const cvFileId = studentCvMap.get(a.studentId) || null;
     const app = await prisma.application.upsert({
       where: { id: a.id },
       update: {
         studentId: a.studentId,
         internshipId: itId,
+        cvFileId,
         coverLetter: a.coverLetter,
         status: a.status,
         matchScore: a.matchScore,
@@ -1697,6 +1891,7 @@ async function main() {
         id: a.id,
         studentId: a.studentId,
         internshipId: itId,
+        cvFileId,
         coverLetter: a.coverLetter,
         status: a.status,
         matchScore: a.matchScore,

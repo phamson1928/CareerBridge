@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
+  ArrowRight,
   ArrowUpRight,
   Briefcase,
+  Building,
   CheckCircle,
   Download,
   Clock,
@@ -24,6 +26,9 @@ import {
   Undo2,
   Calendar,
   Lock,
+  LayoutDashboard,
+  Award,
+  Layers,
 } from 'lucide-react';
 import { getApiErrorMessage } from '../../auth/api';
 import { companiesApi, CompanyProfileRecord } from '../../companies/api';
@@ -52,6 +57,7 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
   // Modal xem chi tiết thống kê của 1 tin tuyển dụng
   const [selectedInternshipIdForStats, setSelectedInternshipIdForStats] = useState<string | null>(null);
@@ -71,6 +77,8 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
           setSemesters(semList);
           const def = findDefaultSemester(semList, 'COMPANY');
           if (def) setSelectedSemesterId(def.id);
+          const now = new Date();
+          setLastUpdated(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} ${now.getDate()} thg ${now.getMonth() + 1}, ${now.getFullYear()}`);
         }
       } catch (err) {
         if (active) setError(getApiErrorMessage(err));
@@ -95,6 +103,8 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
         limit: pageSize,
       });
       setDashboardData(data);
+      const now = new Date();
+      setLastUpdated(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} ${now.getDate()} thg ${now.getMonth() + 1}, ${now.getFullYear()}`);
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -104,39 +114,51 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
   }, [selectedSemesterId, page]);
 
   useEffect(() => {
-    if (company && (company.status === 'APPROVED' || company.status === 'SUSPENDED')) {
-      void fetchDashboardStats();
-    } else if (company) {
+    if (!company) return;
+    if (company.status === 'DRAFT' || company.status === 'PENDING' || company.status === 'REJECTED') {
       setLoading(false);
+      return;
     }
+    void fetchDashboardStats();
   }, [company, fetchDashboardStats]);
 
-  const handleSemesterChange = (semesterId: string) => {
-    setSelectedSemesterId(semesterId);
-    setPage(1); // Reset về trang 1 khi lọc
+  const handleSemesterChange = (newSemesterId: string) => {
+    setSelectedSemesterId(newSemesterId);
+    setPage(1);
   };
 
+  // Xuất Excel danh sách tin tuyển dụng & hiệu quả
   const exportStatsExcel = () => {
-    if (!dashboardData) return;
+    if (!dashboardData || dashboardData.perInternship.items.length === 0) return;
+
     const currentSem = semesters.find((s) => s.id === selectedSemesterId);
-    const semLabel = currentSem ? currentSem.name : 'Tất cả các đợt';
-    const fileSlug = currentSem ? toSemesterSlug(currentSem.name) : 'tat-ca-cac-dot';
-    downloadExcelWorkbook(`thong-ke-tuyen-dung-${fileSlug}`, [
+    const semName = currentSem ? currentSem.name : 'Tat-ca-dot';
+    const slug = toSemesterSlug(semName);
+
+    downloadExcelWorkbook(`thong-ke-tuyen-dung-${slug}`, [
       {
-        name: 'Thong ke tuyen dung',
-        title: `BÁO CÁO THỐNG KÊ HIỆU QUẢ TUYỂN DỤNG — ${semLabel.toUpperCase()}`,
-        subtitle: `Doanh nghiệp: ${company?.companyName ?? ''} · Đợt: ${semLabel} · Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`,
+        name: 'Thong Ke Tuyen Dung',
+        title: `BÁO CÁO HIỆU QUẢ TUYỂN DỤNG THỰC TẬP — ${semName.toUpperCase()}`,
+        subtitle: `Doanh nghiệp: ${company?.companyName || ''} — Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`,
         columns: [
-          { header: 'STT', width: 45, value: (_: any, i: number) => i + 1 },
-          { header: 'Vị trí tuyển dụng', width: 190, value: (item: any) => item.title },
-          { header: 'Đợt thực tập', width: 140, value: (item: any) => item.semesterName || '—' },
-          { header: 'Lượt xem', width: 90, value: (item: any) => item.views },
-          { header: 'Người xem duy nhất', width: 120, value: (item: any) => item.uniqueViewers },
-          { header: 'Ứng tuyển', width: 90, value: (item: any) => item.applications },
+          { header: 'STT', width: 45, value: (_: unknown, index: number) => index + 1 },
+          { header: 'Vị trí tuyển dụng', width: 220, value: (item: any) => item.title },
+          { header: 'Đợt thực tập', width: 150, value: (item: any) => item.semesterName || '—' },
+          { header: 'Trạng thái', width: 110, value: (item: any) => item.status },
           { header: 'Chỉ tiêu', width: 80, value: (item: any) => item.slots },
-          { header: 'Đã nhận', width: 85, value: (item: any) => item.filledSlots },
-          { header: 'Tỷ lệ lấp đầy', width: 100, value: (item: any) => `${Math.round((item.fillRate || 0) * 100)}%` },
-          { header: 'Trạng thái', width: 110, value: (item: any) => item.status === 'OPEN' ? 'Đang mở' : item.status === 'CLOSED' ? 'Đã đóng' : item.status },
+          { header: 'Đã nhận', width: 80, value: (item: any) => item.filledSlots },
+          { header: 'Lượt xem', width: 90, value: (item: any) => item.views },
+          { header: 'Đơn nộp', width: 90, value: (item: any) => item.applications },
+          {
+            header: 'Tỷ lệ lấp đầy',
+            width: 120,
+            value: (item: any) => (item.fillRate ? `${(item.fillRate * 100).toFixed(1)}%` : '0%'),
+          },
+          {
+            header: 'Tỷ lệ chấp thuận',
+            width: 120,
+            value: (item: any) => (item.acceptRate ? `${(item.acceptRate * 100).toFixed(1)}%` : '0%'),
+          },
         ],
         rows: dashboardData.perInternship.items,
       },
@@ -144,8 +166,11 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
   };
 
   const formatHours = (hours: number | null | undefined) => {
-    if (hours === null || hours === undefined) return 'Chưa có dữ liệu';
-    if (hours < 24) return `${hours.toFixed(1)} giờ`;
+    if (hours === null || hours === undefined) return 'Chưa đủ dữ liệu';
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60);
+      return `${minutes} phút`;
+    }
     const days = (hours / 24).toFixed(1);
     return `${hours.toFixed(1)} giờ (~${days} ngày)`;
   };
@@ -161,15 +186,15 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
 
   if (!company) {
     return (
-      <div className="rounded-3xl border border-rose-200 bg-white p-10 text-center shadow-xs">
+      <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-xs">
         <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-rose-600" />
-        <h3 className="text-base font-extrabold text-slate-900">Chưa có hồ sơ doanh nghiệp</h3>
+        <h3 className="text-base font-bold text-slate-900">Chưa có hồ sơ doanh nghiệp</h3>
         <p className="mt-1 text-xs text-slate-500 max-w-md mx-auto">
           {error || 'Hãy tạo và gửi hồ sơ xác minh doanh nghiệp để bắt đầu quản lý tuyển dụng và xem thống kê số liệu.'}
         </p>
         <button
           onClick={() => onNavigateTab('company-profile')}
-          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition"
+          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-800 transition"
         >
           Cập nhật hồ sơ doanh nghiệp
         </button>
@@ -178,63 +203,112 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
   }
 
   const isPendingApproval = company.status === 'DRAFT' || company.status === 'PENDING' || company.status === 'REJECTED';
+  const currentSemester = semesters.find((s) => s.id === selectedSemesterId);
 
   return (
     <div className="space-y-6">
-      {/* Hero Header */}
-      <section className="company-hero relative overflow-hidden flex flex-col items-start justify-between gap-6 rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 text-white shadow-xl md:flex-row md:items-center border border-emerald-900/40">
-        <div className="flex items-center gap-4 z-10">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-2 border-emerald-400 bg-emerald-100 text-xl font-black text-emerald-800 shadow-md overflow-hidden">
+      {/* 1. Page Header (Modern Clean SaaS Style) */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-teal-50 border border-teal-200/60 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-800 mb-2">
+            <LayoutDashboard className="h-3.5 w-3.5 text-teal-600" />
+            <span>TỔNG QUAN DOANH NGHIỆP</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Trung tâm điều hành tuyển dụng
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
+            Theo dõi tuyển dụng, hồ sơ ứng viên và tiến độ tuyển sinh bằng dữ liệu vận hành thời gian thực.
+          </p>
+        </div>
+
+        {/* Header Actions */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => void fetchDashboardStats(true)}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${refreshing ? 'animate-spin text-teal-600' : ''}`} />
+            <span>Làm mới</span>
+          </button>
+
+          {dashboardData && dashboardData.perInternship.items.length > 0 && (
+            <button
+              type="button"
+              onClick={exportStatsExcel}
+              className="inline-flex items-center gap-2 rounded-xl bg-teal-50 border border-teal-200 px-4 py-2.5 text-xs font-bold text-teal-800 hover:bg-teal-100 transition shadow-2xs"
+            >
+              <Download className="h-3.5 w-3.5 text-teal-700" />
+              <span>Xuất Excel</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onOpenCreatePosting}
+            className="inline-flex items-center gap-2 rounded-xl bg-teal-700 hover:bg-teal-800 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Đăng tuyển mới</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Company Profile Mini-Card (Soft UI Hero replacement) */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-xl font-bold text-teal-800 shadow-2xs overflow-hidden">
             {company.logo ? (
               <img src={company.logo} alt={company.companyName} className="h-full w-full object-cover" />
             ) : (
-              company.companyName.charAt(0)
+              <Building className="h-6 w-6 text-teal-600" />
             )}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-black">{company.companyName}</h1>
+              <h2 className="text-lg font-bold text-slate-900">{company.companyName}</h2>
               {company.status === 'APPROVED' && (
-                <span className="rounded-full border border-emerald-400/40 bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-300">
+                <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-bold text-teal-800">
                   ✓ Đã xác minh
                 </span>
               )}
               {company.status === 'SUSPENDED' && (
-                <span className="rounded-full border border-amber-400/40 bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold text-amber-300">
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
                   ⚠ Tạm dừng hoạt động
                 </span>
               )}
               {company.status === 'PENDING' && (
-                <span className="rounded-full border border-blue-400/40 bg-blue-500/20 px-2.5 py-0.5 text-[11px] font-bold text-blue-300">
+                <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
                   ⏳ Đang chờ xác minh
                 </span>
               )}
             </div>
-            <p className="mt-1 text-xs text-slate-300">
+            <p className="mt-0.5 text-xs text-slate-500">
               {company.tagline || 'Thống kê hiệu quả tuyển dụng & phân tích chất lượng ứng viên'}
+              {company.address ? ` • ${company.address}` : ''}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 z-10">
-          <button
-            onClick={onOpenCreatePosting}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-xs font-black text-slate-950 shadow-lg hover:bg-emerald-400 transition"
-          >
-            <Plus className="h-4 w-4" /> Đăng tuyển thực tập mới
-          </button>
-        </div>
-      </section>
+        <button
+          onClick={() => onNavigateTab('company-profile')}
+          className="text-xs font-semibold text-teal-700 hover:text-teal-900 hover:underline"
+        >
+          Chỉnh sửa hồ sơ →
+        </button>
+      </div>
 
       {/* Thông báo nếu chưa được xác minh (PENDING/DRAFT/REJECTED) */}
       {isPendingApproval && (
-        <div className="rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-6 text-amber-900 shadow-xs">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-6 text-amber-900 shadow-xs">
           <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-amber-100 p-3 text-amber-700">
-              <Lock className="h-6 w-6" />
+            <div className="rounded-xl bg-amber-100 p-2.5 text-amber-700 shrink-0">
+              <Lock className="h-5 w-5" />
             </div>
-            <div className="space-y-1 flex-1">
-              <h3 className="text-base font-extrabold text-amber-950">
+            <div className="space-y-1.5 flex-1">
+              <h3 className="text-sm font-bold text-amber-950">
                 Tính năng Thống kê Tuyển dụng đang tạm khóa
               </h3>
               <p className="text-xs text-amber-800 leading-relaxed max-w-2xl">
@@ -243,7 +317,7 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
               <div className="pt-2">
                 <button
                   onClick={() => onNavigateTab('company-profile')}
-                  className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition"
+                  className="rounded-xl bg-amber-700 px-4 py-2 text-xs font-bold text-white hover:bg-amber-800 transition"
                 >
                   Xem tình trạng hồ sơ xác minh
                 </button>
@@ -275,48 +349,58 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
       {!isPendingApproval && (
         <>
           {/* Tiến trình Đợt thực tập / Campaign Timeline Banner */}
-          <SemesterCampaignBanner role="COMPANY" className="mb-4" />
+          <SemesterCampaignBanner role="COMPANY" />
 
-          {/* Controls & Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                <Filter className="h-4 w-4 text-emerald-600" />
-                <span>Lọc theo đợt thực tập:</span>
+          {/* 3. Segmented Filter Toolbar (Reference Style) */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex flex-col">
+                <label className="text-xs text-slate-500 mb-1 font-medium">Kỳ thực tập</label>
+                <select
+                  value={selectedSemesterId}
+                  onChange={(e) => handleSemesterChange(e.target.value)}
+                  className="bg-white border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 outline-none transition"
+                >
+                  <option value="">Toàn bộ các đợt</option>
+                  {semesters.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.status})
+                    </option>
+                  ))}
+                </select>
               </div>
-              <select
-                value={selectedSemesterId}
-                onChange={(e) => handleSemesterChange(e.target.value)}
-                className="rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white transition"
-              >
-                <option value="">Tất cả các đợt tuyển dụng</option>
-                {semesters.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.status})
-                  </option>
-                ))}
-              </select>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-slate-500 mb-1 font-medium">Phạm vi tuyển dụng</label>
+                <div className="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl px-3 py-2.5 flex items-center justify-between">
+                  <span>{company.companyName}</span>
+                  <span className="text-[10px] text-teal-700 font-bold bg-teal-50 px-2 py-0.5 rounded-md">DN</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-slate-500 mb-1 font-medium">Trạng thái dữ liệu</label>
+                <div className="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl px-3 py-2.5 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-teal-500" />
+                  <span>Dữ liệu thời gian thực</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-slate-500 mb-1 font-medium">Đợt hiển thị</label>
+                <div className="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl px-3 py-2.5 truncate">
+                  {currentSemester ? currentSemester.name : 'Tất cả các đợt'}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {dashboardData && dashboardData.perInternship.items.length > 0 && (
-                <button
-                  type="button"
-                  onClick={exportStatsExcel}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition shadow-2xs"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span>Xuất Excel thống kê</span>
-                </button>
-              )}
-              <button
-                onClick={() => void fetchDashboardStats(true)}
-                disabled={refreshing}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition disabled:opacity-50"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin text-emerald-600' : ''}`} />
-                <span>Làm mới số liệu</span>
-              </button>
+            <div className="mt-3.5 pt-3 border-t border-slate-200/50 text-xs text-slate-500 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                <span>Cập nhật: {lastUpdated || 'Vừa xong'}</span>
+              </span>
+              <span>•</span>
+              <span>Phạm vi: {currentSemester ? currentSemester.name : 'Toàn hệ thống'}</span>
             </div>
           </div>
 
@@ -329,49 +413,107 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
 
           {dashboardData && (
             <>
-              {/* 1. KPIs Top Grid */}
+              {/* 4. KPI Metrics Bento Grid (3-Tier Structure + Pastel Circles) */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
-                  label="Lượt xem tuyển dụng"
+                  label="LƯỢT XEM BÀI ĐĂNG"
                   value={dashboardData.kpis.totalViews}
-                  subtext={`${dashboardData.kpis.uniqueViewers} ứng viên duy nhất đã xem`}
-                  icon={<Eye className="h-5 w-5" />}
-                  tone="blue"
+                  subtext={`${dashboardData.kpis.uniqueViewers} sinh viên duy nhất đã xem`}
+                  icon={<Eye className="h-5 w-5 text-sky-600" />}
+                  iconBgColor="bg-sky-50"
                 />
+
                 <MetricCard
-                  label="Đơn nộp ứng tuyển"
+                  label="ĐƠN ỨNG TUYỂN"
                   value={dashboardData.kpis.totalApplications}
-                  subtext={`${dashboardData.kpis.applicationsByStatus.ACCEPTED} hồ sơ đã tiếp nhận`}
-                  icon={<FileText className="h-5 w-5" />}
-                  tone="emerald"
+                  subtext={`${dashboardData.kpis.applicationsByStatus.ACCEPTED} ứng viên đã tiếp nhận`}
+                  icon={<FileText className="h-5 w-5 text-teal-600" />}
+                  iconBgColor="bg-teal-50"
                 />
+
                 <MetricCard
-                  label="Lấp đầy chỉ tiêu"
+                  label="CHỈ TIÊU LẤP ĐẦY"
                   value={`${dashboardData.kpis.filledSlots} / ${dashboardData.kpis.totalSlots}`}
                   subtext={`Đạt ${formatPercent(dashboardData.kpis.fillRate)} tổng chỉ tiêu`}
-                  icon={<Target className="h-5 w-5" />}
-                  tone="amber"
+                  icon={<Target className="h-5 w-5 text-amber-600" />}
+                  iconBgColor="bg-amber-50"
                 />
+
                 <MetricCard
-                  label="Tin tuyển dụng"
+                  label="TIN TUYỂN DỤNG"
                   value={dashboardData.kpis.totalInternships}
-                  subtext={`${dashboardData.kpis.openInternships} đang mở · ${dashboardData.kpis.closedInternships} đã đóng`}
-                  icon={<Briefcase className="h-5 w-5" />}
-                  tone="purple"
+                  subtext={`${dashboardData.kpis.openInternships} đang mở • ${dashboardData.kpis.closedInternships} đã đóng`}
+                  icon={<Briefcase className="h-5 w-5 text-rose-600" />}
+                  iconBgColor="bg-rose-50"
                 />
               </div>
 
-              {/* Phân bố tin & Thời gian tuyển trung bình (Time to Hire) */}
+              {/* 5. Accent Progress Cards (Bottom Row Reference Style) */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {/* Accent 1: Tỷ lệ lấp đầy slot */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 border-l-4 border-l-teal-600 shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      TỶ LỆ LẤP ĐẦY CHỈ TIÊU (FILL RATE)
+                    </span>
+                    <div className="text-3xl font-bold text-teal-800 mt-2 tracking-tight">
+                      {formatPercent(dashboardData.kpis.fillRate)}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {dashboardData.kpis.filledSlots}/{dashboardData.kpis.totalSlots} vị trí đã được sử dụng
+                    </p>
+                  </div>
+                </div>
+
+                {/* Accent 2: Tỷ lệ chấp thuận sau xem xét */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 border-l-4 border-l-teal-600 shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      TỶ LỆ TUYỂN DỤNG THÀNH CÔNG
+                    </span>
+                    <div className="text-3xl font-bold text-teal-800 mt-2 tracking-tight">
+                      {formatPercent(dashboardData.funnel.acceptRate)}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {dashboardData.funnel.accepted} sinh viên trúng tuyển trên tổng {dashboardData.funnel.applied} đơn
+                    </p>
+                  </div>
+                </div>
+
+                {/* Accent 3: Đơn chờ duyệt (cần xử lý) */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 border-l-4 border-l-rose-500 shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      HỒ SƠ CHỜ DUYỆT CẦN XỬ LÝ
+                    </span>
+                    <div className="text-3xl font-bold text-rose-600 mt-2 tracking-tight">
+                      {dashboardData.kpis.applicationsByStatus.PENDING}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Ứng viên đang chờ phản hồi từ doanh nghiệp
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onNavigateTab('applicants')}
+                    className="w-9 h-9 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 transition-colors cursor-pointer"
+                    title="Chuyển đến duyệt ứng viên"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 6. Phân bố trạng thái & Thời gian tuyển trung bình (Time to Hire) */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Thời gian tuyển TB */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
+                <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="rounded-xl bg-purple-100 p-2 text-purple-700">
+                      <div className="rounded-full bg-teal-50 p-2 text-teal-700">
                         <Clock className="h-4 w-4" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-extrabold text-slate-900">
+                        <h3 className="text-sm font-bold text-slate-900">
                           Thời gian tuyển dụng trung bình (Time-to-Hire)
                         </h3>
                         <p className="text-[11px] text-slate-500">
@@ -382,11 +524,11 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
+                    <div className="rounded-xl bg-slate-50/70 p-3.5 border border-slate-100">
                       <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                         Tới khi tiếp nhận (Accept)
                       </span>
-                      <div className="mt-1 text-lg font-black text-slate-900">
+                      <div className="mt-1 text-xl font-bold text-slate-900">
                         {formatHours(dashboardData.kpis.avgHoursToAccept)}
                       </div>
                       <span className="text-[10px] text-slate-400 block mt-1">
@@ -394,11 +536,11 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                       </span>
                     </div>
 
-                    <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
+                    <div className="rounded-xl bg-slate-50/70 p-3.5 border border-slate-100">
                       <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                         Tới quyết định (Accept/Reject)
                       </span>
-                      <div className="mt-1 text-lg font-black text-slate-900">
+                      <div className="mt-1 text-xl font-bold text-slate-900">
                         {formatHours(dashboardData.kpis.avgHoursToDecision)}
                       </div>
                       <span className="text-[10px] text-slate-400 block mt-1">
@@ -409,14 +551,14 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                 </div>
 
                 {/* Phân bố trạng thái tin */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
+                <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="rounded-xl bg-teal-100 p-2 text-teal-700">
+                      <div className="rounded-full bg-teal-50 p-2 text-teal-700">
                         <Briefcase className="h-4 w-4" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-extrabold text-slate-900">
+                        <h3 className="text-sm font-bold text-slate-900">
                           Cơ cấu trạng thái tin tuyển dụng
                         </h3>
                         <p className="text-[11px] text-slate-500">
@@ -427,32 +569,32 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                   </div>
 
                   <div className="grid grid-cols-4 gap-2 text-center">
-                    <div className="rounded-xl bg-emerald-50/80 p-3 border border-emerald-100">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">Đang mở</span>
-                      <div className="mt-1 text-xl font-black text-emerald-950">{dashboardData.kpis.openInternships}</div>
+                    <div className="rounded-xl bg-teal-50/60 p-3 border border-teal-100">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 block">Đang mở</span>
+                      <div className="mt-1 text-xl font-bold text-teal-900">{dashboardData.kpis.openInternships}</div>
                     </div>
-                    <div className="rounded-xl bg-slate-100/80 p-3 border border-slate-200">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 block">Đã đóng</span>
-                      <div className="mt-1 text-xl font-black text-slate-900">{dashboardData.kpis.closedInternships}</div>
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-200/80">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 block">Đã đóng</span>
+                      <div className="mt-1 text-xl font-bold text-slate-800">{dashboardData.kpis.closedInternships}</div>
                     </div>
-                    <div className="rounded-xl bg-amber-50/80 p-3 border border-amber-100">
+                    <div className="rounded-xl bg-amber-50/60 p-3 border border-amber-100">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">Bản nháp</span>
-                      <div className="mt-1 text-xl font-black text-amber-950">{dashboardData.kpis.draftInternships}</div>
+                      <div className="mt-1 text-xl font-bold text-amber-900">{dashboardData.kpis.draftInternships}</div>
                     </div>
-                    <div className="rounded-xl bg-rose-50/80 p-3 border border-rose-100">
+                    <div className="rounded-xl bg-rose-50/60 p-3 border border-rose-100">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-rose-800 block">Đã hủy</span>
-                      <div className="mt-1 text-xl font-black text-rose-950">{dashboardData.kpis.cancelledInternships}</div>
+                      <div className="mt-1 text-xl font-bold text-rose-900">{dashboardData.kpis.cancelledInternships}</div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* 2. Recruitment Funnel (Phễu Tuyển Dụng) */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+              {/* 7. Recruitment Funnel (Phễu Tuyển Dụng) */}
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 mb-4 gap-2">
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-emerald-600" />
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-teal-600" />
                       Phễu tuyển dụng tổng thể (Recruitment Funnel)
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -461,38 +603,38 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                   </div>
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
                     <span>Tổng đơn nộp:</span>
-                    <span className="text-emerald-700 font-black text-sm">{dashboardData.funnel.applied}</span>
+                    <span className="text-teal-700 font-bold text-sm">{dashboardData.funnel.applied}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
                   <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 text-center">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">1. Đã nộp</span>
-                    <div className="mt-1 text-2xl font-black text-slate-900">{dashboardData.funnel.applied}</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900">{dashboardData.funnel.applied}</div>
                     <span className="mt-1.5 inline-block rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700">
                       100%
                     </span>
                   </div>
 
-                  <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-3.5 text-center">
-                    <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">2. Đang/Đã duyệt</span>
-                    <div className="mt-1 text-2xl font-black text-blue-900">{dashboardData.funnel.everReviewing}</div>
-                    <span className="mt-1.5 inline-block rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800">
+                  <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-3.5 text-center">
+                    <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">2. Đang/Đã duyệt</span>
+                    <div className="mt-1 text-2xl font-bold text-sky-900">{dashboardData.funnel.everReviewing}</div>
+                    <span className="mt-1.5 inline-block rounded-md bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
                       {formatPercent(dashboardData.funnel.reviewRate)}
                     </span>
                   </div>
 
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-center">
-                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">3. Được nhận</span>
-                    <div className="mt-1 text-2xl font-black text-emerald-900">{dashboardData.funnel.accepted}</div>
-                    <span className="mt-1.5 inline-block rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                  <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-3.5 text-center">
+                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">3. Được nhận</span>
+                    <div className="mt-1 text-2xl font-bold text-teal-900">{dashboardData.funnel.accepted}</div>
+                    <span className="mt-1.5 inline-block rounded-md bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800">
                       {formatPercent(dashboardData.funnel.acceptRate)}
                     </span>
                   </div>
 
                   <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3.5 text-center">
                     <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">4. Từ chối</span>
-                    <div className="mt-1 text-2xl font-black text-rose-900">{dashboardData.funnel.rejected}</div>
+                    <div className="mt-1 text-2xl font-bold text-rose-900">{dashboardData.funnel.rejected}</div>
                     <span className="mt-1.5 inline-block rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
                       {formatPercent(dashboardData.funnel.rejectRate)}
                     </span>
@@ -500,7 +642,7 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 text-center">
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">5. Rút hồ sơ</span>
-                    <div className="mt-1 text-2xl font-black text-slate-800">{dashboardData.funnel.withdrawn}</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-800">{dashboardData.funnel.withdrawn}</div>
                     <span className="mt-1.5 inline-block rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700">
                       {formatPercent(dashboardData.funnel.withdrawRate)}
                     </span>
@@ -508,49 +650,23 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                 </div>
 
                 {dashboardData.funnel.everReviewing > 0 && (
-                  <div className="mt-3 rounded-xl bg-emerald-50/60 border border-emerald-100 px-4 py-2.5 text-xs text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="mt-3 rounded-xl bg-teal-50/60 border border-teal-100 px-4 py-2.5 text-xs text-teal-900 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span>
                       Tỷ lệ trúng tuyển sau khi vào vòng xem xét (Accept given Reviewing):
                     </span>
-                    <strong className="text-emerald-950 font-black text-sm">
+                    <strong className="text-teal-950 font-bold text-sm">
                       {formatPercent(dashboardData.funnel.acceptGivenReview)}
                     </strong>
                   </div>
                 )}
-
-                {/* Phân bố 5 trạng thái đơn hiện tại */}
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-slate-700">
-                      Phân bổ trạng thái hiện tại ({dashboardData.kpis.totalApplications} hồ sơ):
-                    </span>
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1 font-bold text-amber-800 border border-amber-200">
-                        <Clock className="h-3.5 w-3.5" /> Chờ duyệt: {dashboardData.kpis.applicationsByStatus.PENDING}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 font-bold text-blue-800 border border-blue-200">
-                        <Eye className="h-3.5 w-3.5" /> Đang xem xét: {dashboardData.kpis.applicationsByStatus.REVIEWING}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 font-bold text-emerald-800 border border-emerald-200">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Đã nhận: {dashboardData.kpis.applicationsByStatus.ACCEPTED}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1 font-bold text-rose-800 border border-rose-200">
-                        <XCircle className="h-3.5 w-3.5" /> Từ chối: {dashboardData.kpis.applicationsByStatus.REJECTED}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 font-bold text-slate-700 border border-slate-200">
-                        <Undo2 className="h-3.5 w-3.5" /> Đã rút: {dashboardData.kpis.applicationsByStatus.WITHDRAWN}
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* 3. Top 10 Applicant Skills (Nguồn Kỹ Năng Ứng Viên) */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+              {/* 8. Top 10 Applicant Skills */}
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 mb-4 gap-2">
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-indigo-600" />
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-teal-600" />
                       Top 10 kỹ năng phổ biến của ứng viên
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -558,7 +674,7 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                     </p>
                   </div>
                   <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 border border-slate-200">
-                    Bảo mật: Ẩn danh hoàn toàn (Không PII)
+                    Bảo mật: Ẩn danh hoàn toàn
                   </span>
                 </div>
 
@@ -571,130 +687,118 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                     {dashboardData.applicantSkills.map((skill, index) => (
                       <div
                         key={skill.skillId}
-                        className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 hover:border-indigo-200 hover:bg-indigo-50/30 transition"
+                        className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 hover:border-teal-200 hover:bg-teal-50/20 transition"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-black text-indigo-700">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-[10px] font-bold text-teal-800">
                             #{index + 1}
                           </span>
-                          <span className="text-[11px] font-bold text-indigo-700">
-                            {formatPercent(skill.share)}
+                          <span className="text-[11px] font-bold text-teal-700">
+                            {skill.applicantCount} ứng viên
                           </span>
                         </div>
-                        <h4 className="mt-2 text-xs font-black text-slate-900 truncate" title={skill.name}>
+                        <div className="mt-2 font-bold text-slate-800 text-xs truncate" title={skill.name}>
                           {skill.name}
-                        </h4>
-                        <div className="mt-1 text-[11px] text-slate-500">
-                          {skill.applicantCount} ứng viên có kỹ năng
                         </div>
-                        <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-indigo-600"
-                            style={{ width: `${Math.min(100, Math.max(0, skill.share * 100))}%` }}
-                          />
-                        </div>
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
+                          Tỷ lệ: {formatPercent(skill.share)}
+                        </span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* 4. Thống kê theo từng tin tuyển dụng (perInternship) */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              {/* 9. Performance by Internship Table */}
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-emerald-600" />
-                      Hiệu quả tuyển dụng theo từng vị trí
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-teal-600" />
+                      Hiệu quả theo từng vị trí tuyển dụng
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Theo dõi số lượt xem, hồ sơ nộp, và tỷ lệ tuyển dụng của từng bài đăng
+                      Bảng chi tiết số liệu chuyển đổi từng tin tuyển dụng trong kỳ
                     </p>
                   </div>
-                  <div className="text-xs text-slate-500 font-semibold">
-                    Tổng cộng: <strong>{dashboardData.perInternship.meta.total}</strong> vị trí
-                  </div>
+                  <span className="text-xs text-slate-500">
+                    Tổng <strong>{dashboardData.perInternship.meta.total}</strong> vị trí
+                  </span>
                 </div>
 
                 {dashboardData.perInternship.items.length === 0 ? (
-                  <div className="py-12 text-center text-sm text-slate-400">
-                    Chưa có bài đăng tuyển dụng nào trong bộ lọc này.
+                  <div className="py-8 text-center text-xs text-slate-400 italic">
+                    Chưa có tin tuyển dụng nào trong phạm vi đợt này.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
-                          <th className="py-3 px-3">Vị trí & Đợt thực tập</th>
-                          <th className="py-3 px-3">Trạng thái</th>
-                          <th className="py-3 px-3 text-center">Lượt xem / Người xem</th>
-                          <th className="py-3 px-3 text-center">Đơn ứng tuyển</th>
-                          <th className="py-3 px-3 text-center">Chỉ tiêu / Đã nhận</th>
+                        <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          <th className="py-3 px-3">Vị trí tuyển dụng</th>
+                          <th className="py-3 px-3 text-center">Trạng thái</th>
+                          <th className="py-3 px-3 text-center">Chỉ tiêu</th>
+                          <th className="py-3 px-3 text-center">Đã nhận</th>
+                          <th className="py-3 px-3 text-center">Lượt xem</th>
+                          <th className="py-3 px-3 text-center">Đơn nộp</th>
                           <th className="py-3 px-3 text-center">Tỷ lệ lấp đầy</th>
-                          <th className="py-3 px-3 text-center">Tỷ lệ tuyển</th>
-                          <th className="py-3 px-3 text-right">Thao tác</th>
+                          <th className="py-3 px-3 text-center">Tỷ lệ nhận</th>
+                          <th className="py-3 px-3 text-right">Chi tiết</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {dashboardData.perInternship.items.map((job) => (
                           <tr key={job.id} className="hover:bg-slate-50/80 transition">
                             <td className="py-3.5 px-3">
-                              <div className="font-extrabold text-slate-900 hover:text-emerald-700 transition">
-                                {job.title}
-                              </div>
-                              <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                                <Calendar className="h-3 w-3 text-slate-400" />
-                                {job.semesterName || 'Chưa gán đợt'}
+                              <div className="font-bold text-slate-900 text-xs">{job.title}</div>
+                              <div className="text-[11px] text-slate-400 mt-0.5">
+                                {job.semesterName || '—'}
                               </div>
                             </td>
 
-                            <td className="py-3.5 px-3">
-                              <span
-                                className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-extrabold ${
-                                  job.status === 'OPEN'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : job.status === 'CLOSED'
-                                      ? 'bg-slate-100 text-slate-700'
-                                      : job.status === 'DRAFT'
-                                        ? 'bg-amber-100 text-amber-800'
-                                        : 'bg-rose-100 text-rose-800'
-                                }`}
-                              >
-                                {job.status === 'OPEN'
-                                  ? 'Đang mở'
-                                  : job.status === 'CLOSED'
-                                    ? 'Đã đóng'
-                                    : job.status === 'DRAFT'
-                                      ? 'Bản nháp'
-                                      : 'Đã hủy'}
+                            <td className="py-3.5 px-3 text-center">
+                              {job.status === 'OPEN' && (
+                                <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-800 border border-teal-200">
+                                  Đang mở
+                                </span>
+                              )}
+                              {job.status === 'CLOSED' && (
+                                <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 border border-slate-200">
+                                  Đã đóng
+                                </span>
+                              )}
+                              {job.status === 'DRAFT' && (
+                                <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
+                                  Nháp
+                                </span>
+                              )}
+                              {job.status === 'CANCELLED' && (
+                                <span className="inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-800 border border-rose-200">
+                                  Đã hủy
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="py-3.5 px-3 text-center font-bold text-slate-800">
+                              {job.slots}
+                            </td>
+
+                            <td className="py-3.5 px-3 text-center">
+                              <span className="font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">
+                                {job.filledSlots}
                               </span>
                             </td>
 
-                            <td className="py-3.5 px-3 text-center">
-                              <span className="font-extrabold text-slate-900">{job.views}</span>
-                              <span className="text-slate-400 text-[11px]"> ({job.uniqueViewers} SV)</span>
+                            <td className="py-3.5 px-3 text-center text-slate-600">
+                              {job.views}
+                            </td>
+
+                            <td className="py-3.5 px-3 text-center font-bold text-slate-800">
+                              {job.applications}
                             </td>
 
                             <td className="py-3.5 px-3 text-center">
-                              <span className="font-extrabold text-slate-900">{job.applications}</span>
-                            </td>
-
-                            <td className="py-3.5 px-3 text-center">
-                              <span className="font-bold text-slate-900">
-                                {job.filledSlots} / {job.slots}
-                              </span>
-                            </td>
-
-                            <td className="py-3.5 px-3 text-center">
-                              <span
-                                className={`font-bold ${
-                                  job.fillRate >= 1
-                                    ? 'text-emerald-700'
-                                    : job.fillRate > 0
-                                      ? 'text-amber-700'
-                                      : 'text-slate-400'
-                                }`}
-                              >
+                              <span className="font-semibold text-slate-700">
                                 {formatPercent(job.fillRate)}
                               </span>
                             </td>
@@ -709,9 +813,9 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                               <button
                                 type="button"
                                 onClick={() => setSelectedInternshipIdForStats(job.id)}
-                                className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition"
+                                className="inline-flex items-center gap-1 rounded-xl bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800 hover:bg-teal-100 border border-teal-200 transition cursor-pointer"
                               >
-                                <BarChart3 className="h-3.5 w-3.5" /> Xem thống kê
+                                <BarChart3 className="h-3.5 w-3.5" /> Xem
                               </button>
                             </td>
                           </tr>
@@ -731,14 +835,14 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
                       <button
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                         disabled={dashboardData.perInternship.meta.page <= 1}
-                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition"
+                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition cursor-pointer"
                       >
                         <ChevronLeft className="h-3.5 w-3.5" /> Trước
                       </button>
                       <button
                         onClick={() => setPage((p) => Math.min(dashboardData.perInternship.meta.totalPages, p + 1))}
                         disabled={dashboardData.perInternship.meta.page >= dashboardData.perInternship.meta.totalPages}
-                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition"
+                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition cursor-pointer"
                       >
                         Sau <ChevronRight className="h-3.5 w-3.5" />
                       </button>
@@ -749,8 +853,8 @@ export function CompanyDashboard({ onNavigateTab, onOpenCreatePosting }: Company
             </>
           )}
 
-          {/* Quick Action Cards */}
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          {/* 10. Quick Action Navigation Cards */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <ActionCard
               title="Quản lý bài đăng tuyển dụng"
               body="Xem danh sách bài đăng, cập nhật hạn nộp, lưu làm mẫu tin hoặc đăng lại cho đợt tiếp theo."
@@ -781,30 +885,31 @@ function MetricCard({
   value,
   subtext,
   icon,
-  tone,
+  iconBgColor = 'bg-teal-50',
 }: {
   label: string;
   value: string | number;
   subtext: string;
   icon: React.ReactNode;
-  tone: 'emerald' | 'blue' | 'amber' | 'purple';
+  iconBgColor?: string;
 }) {
-  const tones = {
-    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    blue: 'bg-blue-50 text-blue-600 border-blue-100',
-    amber: 'bg-amber-50 text-amber-600 border-amber-100',
-    purple: 'bg-purple-50 text-purple-600 border-purple-100',
-  };
-
   return (
-    <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-slate-300 transition">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
-        <div className={`rounded-xl p-2.5 border ${tones[tone]}`}>{icon}</div>
-      </div>
-      <div className="mt-2">
-        <h3 className="text-2xl font-black text-slate-900">{value}</h3>
-        <p className="mt-1 text-xs text-slate-500 font-medium truncate">{subtext}</p>
+    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs hover:shadow transition-shadow flex flex-col justify-between">
+      <div className="flex items-start justify-between">
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            {label}
+          </span>
+          <div className="text-3xl font-bold text-slate-900 mt-2 tracking-tight">
+            {value}
+          </div>
+          <p className="text-xs text-slate-500 mt-1 font-normal">
+            {subtext}
+          </p>
+        </div>
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconBgColor}`}>
+          {icon}
+        </div>
       </div>
     </div>
   );
@@ -814,13 +919,13 @@ function ActionCard({ title, body, onClick }: { title: string; body: string; onC
   return (
     <button
       onClick={onClick}
-      className="group rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-xs transition-all hover:border-emerald-300 hover:shadow-md cursor-pointer"
+      className="group rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-xs transition-all hover:border-teal-200 hover:shadow-md cursor-pointer"
     >
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-bold text-slate-900 group-hover:text-teal-800 transition">
           {title}
         </h3>
-        <ArrowUpRight className="h-4 w-4 text-slate-400 group-hover:text-emerald-700 transition" />
+        <ArrowUpRight className="h-4 w-4 text-slate-400 group-hover:text-teal-700 transition" />
       </div>
       <p className="text-xs leading-relaxed text-slate-500">{body}</p>
     </button>
@@ -829,9 +934,9 @@ function ActionCard({ title, body, onClick }: { title: string; body: string; onC
 
 function LoadingState() {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-16 text-center text-sm text-slate-500 shadow-xs">
-      <LoaderCircle className="mx-auto mb-3 h-8 w-8 animate-spin text-emerald-600" />
-      <span className="font-semibold">Đang tải số liệu thống kê doanh nghiệp...</span>
+    <div className="rounded-2xl border border-slate-100 bg-white p-16 text-center text-sm text-slate-500 shadow-xs">
+      <LoaderCircle className="mx-auto mb-3 h-8 w-8 animate-spin text-teal-600" />
+      <span className="font-semibold">Đang tải số liệu thống kê tuyển dụng...</span>
     </div>
   );
 }

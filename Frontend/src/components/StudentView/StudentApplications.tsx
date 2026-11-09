@@ -285,18 +285,22 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex items-center justify-between">
+      {/* Modern SaaS Header */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-bold uppercase tracking-wider mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+            Hồ sơ & Đơn ứng tuyển
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Danh Sách Đơn Ứng Tuyển
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Theo dõi lịch phỏng vấn, xác nhận lời mời thực tập (Offer) và tiến
-            trình xét duyệt theo thời gian thực.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Theo dõi tiến trình xét duyệt CV, lịch phỏng vấn và phản hồi lời mời thực tập (Offer) theo thời gian thực.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold px-3 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span className="text-xs font-bold px-3 py-1.5 bg-teal-50 text-teal-800 rounded-xl border border-teal-200 shadow-2xs">
             Tổng cộng: {visibleApplications.length} đơn
           </span>
         </div>
@@ -369,7 +373,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                 className={`rounded-2xl border p-5 shadow-xs transition-all space-y-4 ${
                   isInactive
                     ? 'bg-slate-50/50 border-slate-200/90 opacity-90'
-                    : 'bg-white border-slate-200 hover:border-blue-200'
+                    : 'bg-white border-slate-200/90 hover:border-teal-300 hover:shadow-md card-interactive'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
@@ -377,7 +381,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                     <h3 className="text-base font-bold text-slate-900">
                       {app.internshipTitle}
                     </h3>
-                    <p className="text-xs font-semibold text-blue-600 flex items-center gap-1 mt-0.5">
+                    <p className="text-xs font-semibold text-teal-700 flex items-center gap-1 mt-0.5">
                       <Building2 className="w-3.5 h-3.5" /> {app.companyName}
                     </p>
                   </div>
@@ -392,7 +396,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                     {!isInactive && (
                       <button
                         onClick={onOpenChat}
-                        className="p-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded-xl text-slate-600 transition-colors"
+                        className="p-2 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 rounded-xl text-slate-600 transition-colors active:scale-95"
                         title="Nhắn tin với Doanh nghiệp"
                       >
                         <MessageSquare className="w-4 h-4" />
@@ -402,7 +406,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                       <button
                         onClick={() => void withdraw(app.id)}
                         disabled={withdrawingId === app.id}
-                        className="px-2.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-xl disabled:opacity-50"
+                        className="px-2.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-xl disabled:opacity-50 active:scale-95 transition-all"
                       >
                         {withdrawingId === app.id ? 'Đang rút...' : 'Rút đơn'}
                       </button>

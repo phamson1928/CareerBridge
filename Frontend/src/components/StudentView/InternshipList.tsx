@@ -217,9 +217,9 @@ export const InternshipList: React.FC<InternshipListProps> = ({
       />
 
       {/* Filter & Search Bar - Tách biệt, nền trắng tương phản cao, dropdown không bị clip */}
-      <div id="tin-tuyen-dung" className="student-search scroll-mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div id="tin-tuyen-dung" className="student-search scroll-mt-6 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-slate-800 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+          <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-slate-800 focus-within:border-teal-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-teal-100 transition-all">
             <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               type="text"
@@ -265,7 +265,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 
         <div className="mt-3 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-3 text-xs">
           <div className="flex items-center gap-1.5 text-slate-500 font-semibold">
-            <GraduationCap className="h-4 w-4 text-indigo-600" />
+            <GraduationCap className="h-4 w-4 text-teal-700" />
             <span>Khoa / Ngành:</span>
           </div>
 
@@ -276,7 +276,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               setSelectedMajorId('');
               setPage(1);
             }}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-700 outline-none focus:border-indigo-500 focus:bg-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-700 outline-none focus:border-teal-600 focus:bg-white transition-all"
           >
             <option value="">Tất cả các Khoa</option>
             {faculties.map((f) => (
@@ -292,7 +292,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               setSelectedMajorId(e.target.value);
               setPage(1);
             }}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-700 outline-none focus:border-indigo-500 focus:bg-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-700 outline-none focus:border-teal-600 focus:bg-white transition-all"
           >
             <option value="">Tất cả các Ngành</option>
             {(selectedFacultyId
@@ -322,9 +322,9 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 }
                 setPage(1);
               }}
-              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 font-semibold transition ${selectedMajorId === studentProfile.majorId
-                ? 'border-indigo-600 bg-indigo-600 text-white shadow-2xs'
-                : 'border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100'
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 font-semibold transition active:scale-95 ${selectedMajorId === studentProfile.majorId
+                ? 'border-teal-700 bg-teal-700 text-white shadow-2xs'
+                : 'border-teal-200 bg-teal-50/70 text-teal-800 hover:bg-teal-100'
                 }`}
             >
               <GraduationCap className="h-3.5 w-3.5" />
@@ -340,7 +340,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 setSelectedMajorId('');
                 setPage(1);
               }}
-              className="text-slate-500 hover:text-rose-600 font-semibold px-2 py-1"
+              className="text-slate-500 hover:text-rose-600 font-semibold px-2 py-1 transition-colors"
             >
               Xóa lọc ngành
             </button>
@@ -395,21 +395,21 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 
       {/* Internship Cards Grid */}
       {!isLoadingInternships && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bento-stagger">
           {filteredInternships.map((job) => {
             const appStatus = getApplicationStatus(job.id);
 
             return (
               <div
                 key={job.id}
-                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden"
+                className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden card-interactive"
               >
                 <div>
                   {/* Top Badges: Semester & Deadline status */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     {job.semester?.name && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700 border border-indigo-200">
-                        <CalendarDays className="w-3 h-3 text-indigo-500" />
+                      <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-teal-800 border border-teal-200">
+                        <CalendarDays className="w-3 h-3 text-teal-600" />
                         {job.semester.name}
                       </span>
                     )}
@@ -421,7 +421,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                     <div className="flex items-center gap-3">
                       <CompanyLogo src={job.companyLogo} name={job.companyName} className="h-12 w-12 rounded-xl border border-slate-200 object-cover shadow-2xs" />
                       <div>
-                        <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                        <h3 className="text-base font-bold text-slate-900 group-hover:text-teal-700 transition-colors">
                           {job.title}
                         </h3>
                         <p className="text-xs font-semibold text-slate-600 flex items-center gap-1 mt-0.5">
@@ -464,8 +464,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                         return (
                           <span
                             key={m.majorId}
-                            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium border ${isStudentMajor
-                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold'
+                            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium border transition-colors ${isStudentMajor
+                              ? 'bg-teal-50 text-teal-800 border-teal-200 font-semibold'
                               : 'bg-slate-50 text-slate-600 border-slate-200'
                               }`}
                           >
@@ -489,8 +489,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                       return (
                         <span
                           key={sk}
-                          className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${isMatched
-                            ? 'bg-blue-50 text-blue-700 border-blue-200 font-semibold'
+                          className={`text-[11px] font-medium px-2 py-0.5 rounded-md border transition-colors ${isMatched
+                            ? 'bg-teal-50 text-teal-800 border-teal-200 font-semibold'
                             : 'bg-slate-100 text-slate-600 border-slate-200'
                             }`}
                         >
@@ -505,7 +505,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
                   <button
                     onClick={() => setActiveModalInternship(job)}
-                    className="text-xs font-semibold text-slate-700 hover:text-blue-600 transition-colors"
+                    className="text-xs font-semibold text-slate-700 hover:text-teal-700 transition-colors"
                   >
                     Xem chi tiết công việc →
                   </button>
@@ -518,7 +518,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                     <button
                       id={`btn-apply-${job.id}`}
                       onClick={() => setApplyModalInternship(job)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
+                      className="px-4 py-2 bg-teal-700 hover:bg-teal-800 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
                     >
                       <Send className="w-3.5 h-3.5" />{' '}
                       {appStatus === 'WITHDRAWN' ? 'Ứng Tuyển Lại' : 'Ứng Tuyển Ngay'}
@@ -557,11 +557,11 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 
       {/* Detail Modal */}
       {activeModalInternship && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs modal-backdrop-appear">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative modal-scale-in border border-slate-100">
             <button
               onClick={() => setActiveModalInternship(null)}
-              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -574,7 +574,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               />
               <div>
                 <h2 className="text-lg font-bold text-slate-900">{activeModalInternship.title}</h2>
-                <p className="text-xs font-semibold text-blue-600">{activeModalInternship.companyName}</p>
+                <p className="text-xs font-semibold text-teal-700">{activeModalInternship.companyName}</p>
                 <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
                   <span>📍 {activeModalInternship.location}</span>
                   <span>💵 {activeModalInternship.stipend}</span>
@@ -585,14 +585,14 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 
             {/* Thông tin Đợt thực tập & Tiến trình học kỳ */}
             {activeModalInternship.semester && (
-              <div className="mt-4 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-blue-50/50 to-white p-3.5 shadow-2xs">
-                <div className="flex items-center justify-between gap-2 border-b border-indigo-100/70 pb-2">
+              <div className="mt-4 rounded-xl border border-teal-100 bg-gradient-to-r from-teal-50/70 via-cyan-50/40 to-white p-3.5 shadow-2xs">
+                <div className="flex items-center justify-between gap-2 border-b border-teal-100/70 pb-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-2xs">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-700 text-white shadow-2xs">
                       <CalendarDays className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Đợt thực tập áp dụng</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-teal-700">Đợt thực tập áp dụng</p>
                       <p className="text-xs font-extrabold text-slate-900">{activeModalInternship.semester.name}</p>
                     </div>
                   </div>
@@ -616,7 +616,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <p className="text-[11px] font-medium text-slate-500">Chỉ tiêu còn lại</p>
-                    <p className="font-bold text-indigo-700">
+                    <p className="font-bold text-teal-800">
                       {Math.max(0, activeModalInternship.slots - activeModalInternship.filledSlots)} / {activeModalInternship.slots} vị trí
                     </p>
                   </div>
@@ -643,7 +643,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 <h4 className="font-bold text-slate-900 text-sm mb-1">Kỹ năng bắt buộc:</h4>
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {activeModalInternship.requiredSkills.map((sk) => (
-                    <span key={sk} className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md font-semibold text-[11px]">
+                    <span key={sk} className="bg-teal-50 text-teal-800 border border-teal-100 px-2.5 py-1 rounded-md font-semibold text-[11px]">
                       {sk}
                     </span>
                   ))}
@@ -657,7 +657,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                     activeModalInternship.majors.map((m) => (
                       <span
                         key={m.majorId}
-                        className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-md font-semibold text-[11px]"
+                        className="bg-teal-50 text-teal-800 border border-teal-200 px-2.5 py-1 rounded-md font-semibold text-[11px]"
                       >
                         {m.name} ({m.faculty.name})
                       </span>
@@ -682,7 +682,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               </button>
               <button
                 onClick={() => setActiveModalInternship(null)}
-                className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95"
               >
                 Đóng
               </button>
@@ -693,17 +693,17 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 
       {/* Apply Modal */}
       {applyModalInternship && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs modal-backdrop-appear">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative modal-scale-in border border-slate-100">
             <button
               onClick={() => setApplyModalInternship(null)}
-              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-blue-100 text-blue-600 rounded-xl">
+              <div className="p-2.5 bg-teal-50 text-teal-700 rounded-xl border border-teal-100">
                 <Send className="w-5 h-5" />
               </div>
               <div>
@@ -717,7 +717,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 <label className="block font-bold text-slate-800 mb-1">Hồ sơ CV đính kèm:</label>
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600" />
+                    <FileText className="w-4 h-4 text-teal-700" />
                     <span className="font-semibold text-slate-800">{selectedCvName}</span>
                   </div>
                   <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -733,7 +733,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   placeholder="Nêu lý do bạn phù hợp với vị trí này, định hướng nghề nghiệp và kinh nghiệm liên quan..."
-                  className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                  className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-600 text-xs transition-all"
                 />
               </div>
 
@@ -741,14 +741,14 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 <button
                   type="button"
                   onClick={() => setApplyModalInternship(null)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl font-semibold text-slate-700 hover:bg-slate-50"
+                  className="px-4 py-2 border border-slate-300 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs flex items-center gap-2 disabled:opacity-50"
+                  className="px-5 py-2 bg-teal-700 hover:bg-teal-800 active:scale-95 text-white font-bold rounded-xl shadow-xs flex items-center gap-2 disabled:opacity-50 transition-all"
                 >
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>{isSubmitting ? 'Đang nộp...' : 'Xác nhận nộp đơn'}</span>

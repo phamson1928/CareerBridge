@@ -55,7 +55,9 @@ export const aiWorkerApi = {
     token?: string;
     workerName?: string;
     modelName?: string;
-    engine?: 'OLLAMA' | 'MOCK';
+    engine?: 'OLLAMA' | 'MOCK' | 'UNIVERSAL';
+    aiBaseUrl?: string;
+    aiApiKey?: string;
   }) => {
     const response = await api.get('/ai-worker/download-client', {
       params,

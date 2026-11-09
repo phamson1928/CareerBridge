@@ -25,36 +25,36 @@ import { AuthenticatedAiWorker } from './guards/ai-worker-auth.guard';
 export type PollJobResult =
   | { hasJob: false }
   | {
-      hasJob: true;
-      job: {
-        jobId: string;
-        applicationId: string;
-        attempts: number;
-        internship: {
-          id: string;
-          title: string;
-          department: string | null;
-          description: string;
-          requirements: string | null;
-          workType: string | null;
-          requiredSkills: Array<{
-            name: string;
-            isRequired: boolean;
-            weight: number;
-          }>;
-        };
-        cvDownloadUrl: string;
-        cvFileName: string;
-        mimeType: string;
+    hasJob: true;
+    job: {
+      jobId: string;
+      applicationId: string;
+      attempts: number;
+      internship: {
+        id: string;
+        title: string;
+        department: string | null;
+        description: string;
+        requirements: string | null;
+        workType: string | null;
+        requiredSkills: Array<{
+          name: string;
+          isRequired: boolean;
+          weight: number;
+        }>;
       };
+      cvDownloadUrl: string;
+      cvFileName: string;
+      mimeType: string;
     };
+  };
 
 @Injectable()
 export class AiWorkerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: SupabaseStorageService,
-  ) {}
+  ) { }
 
   // ==========================================
   // COMPANY PORTAL MANAGEMENT APIS
@@ -547,6 +547,8 @@ export class AiWorkerService {
     modelName?: string;
     engine?: string;
     backendUrl?: string;
+    aiBaseUrl?: string;
+    aiApiKey?: string;
   }): Promise<{ filename: string; buffer: Buffer }> {
     const candidateDirs = [
       path.resolve(process.cwd(), '../ai-worker-client'),
@@ -589,21 +591,44 @@ export class AiWorkerService {
     const workerToken = options?.token?.trim() || '';
     const workerName = options?.workerName?.trim() || 'CareerBridge-Worker';
     const backendUrl =
-      options?.backendUrl?.trim() || 'http://localhost:3000/api/v1';
-    const engine = options?.engine === 'MOCK' ? 'mock' : 'ollama';
-    const model = options?.modelName?.trim() || 'qwen2.5:7b';
+      options?.backendUrl?.trim() || 'http://localhost:3000';
+
+    const rawEngine = (options?.engine || '').toUpperCase();
+    let provider = 'ollama';
+    if (rawEngine === 'MOCK') {
+      provider = 'mock';
+    } else if (rawEngine === 'UNIVERSAL') {
+      provider = 'openai-compatible';
+    }
+
+    const defaultBaseUrl =
+      provider === 'openai-compatible'
+        ? 'http://localhost:8000/v1'
+        : 'http://localhost:11434';
+    const aiBaseUrl = options?.aiBaseUrl?.trim() || defaultBaseUrl;
+    const defaultModel =
+      provider === 'openai-compatible'
+        ? 'mistralai/Mistral-7B-Instruct-v0.3'
+        : provider === 'mock'
+          ? 'heuristic-keyword-v1'
+          : 'qwen2.5:7b';
+    const model = options?.modelName?.trim() || defaultModel;
+    const apiKeyLine = options?.aiApiKey?.trim()
+      ? `AI_API_KEY=${options.aiApiKey.trim()}\n`
+      : '';
 
     const envContent = `# CareerBridge AI Worker Client Configuration
-# Duoc tao tu dong tu he thong CareerBridge
+# Tu dong tao tu Cổng Doanh nghiep CareerBridge
 BACKEND_URL=${backendUrl}
 WORKER_TOKEN=${workerToken}
 WORKER_NAME=${workerName}
-PORT=5050
-AI_PROVIDER=${engine}
-OLLAMA_BASE_URL=http://localhost:11434
+AI_PROVIDER=${provider}
+AI_BASE_URL=${aiBaseUrl}
+AI_MODEL=${model}
+OLLAMA_BASE_URL=${aiBaseUrl}
 OLLAMA_MODEL=${model}
-POLL_INTERVAL_MS=5000
-CONCURRENCY=1
+${apiKeyLine}POLL_INTERVAL_SEC=5
+HEARTBEAT_INTERVAL_SEC=25
 LOG_LEVEL=info
 `;
 
