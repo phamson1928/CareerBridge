@@ -85,7 +85,7 @@ export function CompanyInternshipStatsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+      <div className="modal-scale-in relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden my-auto">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-slate-100 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 px-6 py-5 text-white">
           <div className="space-y-1">

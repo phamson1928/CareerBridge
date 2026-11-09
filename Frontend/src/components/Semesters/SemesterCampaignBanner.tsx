@@ -98,25 +98,25 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
 
   // Days countdown label
   let countdownText = '';
-  let countdownColor = 'bg-blue-50 text-blue-700 border-blue-200';
+  let countdownColor = 'bg-teal-50 text-teal-800 border-teal-200';
 
   if (currentPhase === 'UPCOMING') {
     const days = diffDays(recStart);
     countdownText = days > 0 ? `Còn ${days} ngày nữa mở cổng nhận hồ sơ` : 'Sắp mở cổng nhận hồ sơ';
-    countdownColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    countdownColor = 'bg-cyan-50 text-cyan-800 border-cyan-200';
   } else if (currentPhase === 'RECRUITING') {
     const days = diffDays(semStart);
     countdownText =
       days > 0 ? `Đang mở tuyển: Còn ${days} ngày trước khi chốt đợt` : 'Hôm nay là hạn chốt tuyển dụng';
     countdownColor =
       days <= 5
-        ? 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse'
-        : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        ? 'bg-rose-50 text-rose-800 border-rose-300 animate-pulse'
+        : 'bg-emerald-50 text-emerald-800 border-emerald-300';
   } else if (currentPhase === 'MONITORING') {
     const days = diffDays(semEnd);
     countdownText =
       days > 0 ? `Đang thực tập: Còn ${days} ngày trước khi kết thúc kỳ` : 'Đang trong giai đoạn nghiệm thu';
-    countdownColor = 'bg-sky-50 text-sky-700 border-sky-200';
+    countdownColor = 'bg-amber-50 text-amber-800 border-amber-200';
   } else if (currentPhase === 'COMPLETED') {
     countdownText = 'Đợt thực tập đã hoàn tất';
     countdownColor = 'bg-slate-100 text-slate-700 border-slate-200';
@@ -163,25 +163,66 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
 
   const currentIndex = phaseOrder[currentPhase] ?? 0;
 
+  // Visual meta per milestone
+  const stageMetas = [
+    {
+      stepNum: '01',
+      badge: 'Chuẩn bị',
+      themeColor: 'emerald',
+      futureIconClass: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
+    },
+    {
+      stepNum: '02',
+      badge: 'Tuyển dụng',
+      themeColor: 'teal',
+      futureIconClass: 'bg-teal-50 text-teal-600 border border-teal-200',
+    },
+    {
+      stepNum: '03',
+      badge: 'Thực tập',
+      themeColor: 'amber',
+      futureIconClass: 'bg-amber-50 text-amber-600 border border-amber-200',
+    },
+    {
+      stepNum: '04',
+      badge: 'Về đích',
+      themeColor: 'purple',
+      futureIconClass: 'bg-purple-50 text-purple-600 border border-purple-200',
+    },
+  ];
+
+  const progressPercentage =
+    currentIndex === 0
+      ? 20
+      : currentIndex === 1
+      ? 50
+      : currentIndex === 2
+      ? 78
+      : 100;
+
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-white via-indigo-50/20 to-blue-50/30 p-5 shadow-xs transition-all ${className}`}
+      className={`relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm transition-all ${className}`}
     >
-      {/* Decorative ambient elements */}
-      <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-gradient-to-br from-indigo-200/20 to-blue-300/10 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-gradient-to-tr from-sky-200/20 to-indigo-100/30 blur-xl" />
+      {/* Top Colorful Gradient Accent Line */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500" />
+
+      {/* Decorative ambient subtle background glows */}
+      <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-teal-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl" />
 
       {/* Header bar */}
       <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs shadow-indigo-200">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-600 via-teal-700 to-emerald-600 text-white shadow-md shadow-teal-700/20 shrink-0">
             <CalendarDays className="h-5 w-5" />
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
-                Tiến trình học kỳ
+              <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-800">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                Tiến trình học kỳ & Tuyển dụng
               </span>
 
               {/* Semester switcher dropdown if multiple exist */}
@@ -190,7 +231,7 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
                   <select
                     value={activeSemester.id}
                     onChange={(e) => setSelectedSemesterId(e.target.value)}
-                    className="cursor-pointer appearance-none rounded-lg border border-indigo-200 bg-white/80 py-0.5 pl-2 pr-6 text-xs font-bold text-slate-800 shadow-2xs hover:bg-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                    className="cursor-pointer appearance-none rounded-lg border border-slate-200 bg-slate-50 py-0.5 pl-2.5 pr-6 text-xs font-bold text-slate-800 shadow-2xs hover:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-500/20"
                   >
                     {semesters.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -205,14 +246,14 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 mt-0.5">
-              <h2 className="text-sm font-extrabold text-slate-900 sm:text-base">
+            <div className="flex flex-wrap items-center gap-2.5 mt-1">
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">
                 {activeSemester.name}
               </h2>
               <span
-                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${countdownColor}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-bold shadow-2xs ${countdownColor}`}
               >
-                <Clock className="h-3 w-3" />
+                <Clock className="h-3.5 w-3.5" />
                 {countdownText}
               </span>
             </div>
@@ -225,16 +266,16 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
             <button
               type="button"
               onClick={onExploreJobs}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-indigo-700 hover:shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition"
             >
-              <Send className="h-3 w-3" /> Ứng tuyển ngay
+              <Send className="h-3.5 w-3.5" /> Ứng tuyển ngay
             </button>
           )}
 
           <button
             type="button"
             onClick={() => setIsCollapsed((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs transition cursor-pointer"
             title={isCollapsed ? 'Mở rộng xem chi tiết các giai đoạn' : 'Thu gọn tiến trình'}
           >
             {isCollapsed ? (
@@ -254,101 +295,149 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
 
       {/* Stepper Timeline Body */}
       {!isCollapsed && (
-        <div className="relative mt-6 pt-2">
-          {/* Timeline steps grid */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 sm:gap-2">
+        <div className="relative mt-6 pt-3 border-t border-slate-100">
+          {/* Continuous Progress Track Header */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5">
+              <span className="flex items-center gap-1.5 text-slate-700 font-bold">
+                Lộ trình triển khai
+              </span>
+              <span className="text-teal-800 font-extrabold bg-teal-50 border border-teal-200/80 px-2.5 py-0.5 rounded-full text-[11px]">
+                {currentIndex === 0
+                  ? 'Giai đoạn 1/4 • Lên kế hoạch (20%)'
+                  : currentIndex === 1
+                  ? 'Giai đoạn 2/4 • Mở nhận hồ sơ (50%)'
+                  : currentIndex === 2
+                  ? 'Giai đoạn 3/4 • Thực tập thực tế (78%)'
+                  : 'Giai đoạn 4/4 • Hoàn thành đợt (100%)'}
+              </span>
+            </div>
+            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/70 shadow-inner">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 transition-all duration-700 shadow-xs relative"
+                style={{ width: `${progressPercentage}%` }}
+              >
+                <div className="absolute inset-0 bg-white/20 animate-pulse rounded-full" />
+              </div>
+            </div>
+          </div>
+
+          {/* 4 Creative Bento Milestone Cards */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {stages.map((stage, idx) => {
               const isPast = currentIndex > idx;
               const isCurrent = currentIndex === idx;
               const isFuture = currentIndex < idx;
               const StageIcon = stage.icon;
-
-              let nodeClass = 'border-slate-200 bg-slate-50 text-slate-400';
-              let titleClass = 'text-slate-500 font-medium';
-              let lineClass = 'bg-slate-200';
-
-              if (isPast) {
-                nodeClass = 'border-emerald-500 bg-emerald-50 text-emerald-600';
-                titleClass = 'text-slate-800 font-bold';
-                lineClass = 'bg-emerald-500';
-              } else if (isCurrent) {
-                nodeClass =
-                  'border-indigo-600 bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-4 ring-indigo-100';
-                titleClass = 'text-indigo-900 font-extrabold';
-              }
+              const meta = stageMetas[idx];
 
               return (
-                <div key={stage.key} className="relative flex sm:flex-col sm:items-center text-left sm:text-center group">
-                  {/* Step Connector Line (desktop) */}
-                  {idx < stages.length - 1 && (
-                    <div
-                      className={`hidden sm:block absolute top-4 left-1/2 w-full h-0.5 z-0 ${
-                        isPast ? 'bg-emerald-400' : 'bg-slate-200'
-                      }`}
-                    />
-                  )}
-
-                  {/* Step Icon Node */}
-                  <div
-                    className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-transform duration-200 group-hover:scale-105 ${nodeClass}`}
-                  >
-                    {isPast ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <StageIcon className="h-4 w-4" />
-                    )}
-
-                    {isCurrent && (
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-600" />
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Step Text Info */}
-                  <div className="ml-3 sm:ml-0 sm:mt-2.5">
-                    <div className="flex items-center gap-1.5 sm:justify-center">
-                      <span className={`text-xs ${titleClass}`}>{stage.title}</span>
-                      {isCurrent && (
-                        <span className="rounded-full bg-indigo-100 px-1.5 py-0.2 text-[10px] font-black uppercase text-indigo-700">
-                          Hiện tại
+                <div
+                  key={stage.key}
+                  className={`relative flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 ${
+                    isCurrent
+                      ? 'border-2 border-teal-500 bg-gradient-to-b from-teal-50/70 via-white to-white shadow-md shadow-teal-500/10 ring-4 ring-teal-500/10 transform sm:-translate-y-0.5'
+                      : isPast
+                      ? 'border border-emerald-200/90 bg-gradient-to-b from-emerald-50/40 via-white to-white shadow-2xs hover:border-emerald-300'
+                      : 'border border-slate-200/90 bg-slate-50/60 shadow-2xs hover:border-slate-300 hover:bg-white'
+                  }`}
+                >
+                  {/* Top: Badges and Icon */}
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      {isCurrent ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xs">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-ping" />
+                          HIỆN TẠI
+                        </span>
+                      ) : isPast ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">
+                          ✓ Đã hoàn tất
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[10px] font-bold">
+                          Giai đoạn {meta.stepNum}
                         </span>
                       )}
+
+                      {/* Icon */}
+                      <div
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-transform ${
+                          isCurrent
+                            ? 'bg-gradient-to-br from-teal-600 to-cyan-600 text-white shadow-sm shadow-teal-600/30'
+                            : isPast
+                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                            : meta.futureIconClass
+                        }`}
+                      >
+                        {isPast ? (
+                          <CheckCircle2 className="h-4 w-4" />
+                        ) : (
+                          <StageIcon className="h-4 w-4" />
+                        )}
+                      </div>
                     </div>
-                    <p className="mt-0.5 text-[11px] font-semibold text-slate-500">
-                      {stage.dateLabel}
-                    </p>
-                    <p className="hidden text-[11px] text-slate-400 leading-tight sm:block sm:mt-1 max-w-[170px]">
-                      {stage.subtitle}
-                    </p>
+
+                    {/* Title */}
+                    <h4
+                      className={`text-sm font-extrabold mt-3 tracking-tight leading-tight ${
+                        isCurrent
+                          ? 'text-teal-950 font-black'
+                          : isPast
+                          ? 'text-slate-900 font-bold'
+                          : 'text-slate-700 font-bold'
+                      }`}
+                    >
+                      {stage.title}
+                    </h4>
+
+                    {/* Date Badge */}
+                    <div className="mt-1.5">
+                      <span
+                        className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                          isCurrent
+                            ? 'bg-teal-100/90 text-teal-900 border border-teal-200'
+                            : isPast
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+                            : 'bg-slate-100 text-slate-600 border border-slate-200/70'
+                        }`}
+                      >
+                        {stage.dateLabel}
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Subtitle */}
+                  <p className="mt-3 text-xs text-slate-500 leading-relaxed">
+                    {stage.subtitle}
+                  </p>
                 </div>
               );
             })}
           </div>
 
           {/* Contextual Role Advice Banner */}
-          <div className="mt-5 flex items-start gap-3 rounded-xl border border-indigo-100 bg-white/80 p-3.5 shadow-2xs backdrop-blur-xs">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-              <Sparkles className="h-3 w-3" />
+          <div className="mt-5 flex items-start gap-3.5 rounded-2xl border border-teal-200/90 bg-gradient-to-r from-teal-50/90 via-emerald-50/50 to-cyan-50/60 p-4 shadow-2xs relative overflow-hidden">
+            <div className="pointer-events-none absolute top-0 right-0 h-32 w-32 bg-teal-400/10 rounded-full blur-2xl" />
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 text-white shadow-xs">
+              <Sparkles className="h-4 w-4" />
             </div>
 
-            <div className="text-xs text-slate-600 leading-relaxed">
+            <div className="text-xs text-slate-700 leading-relaxed flex-1">
               {role === 'STUDENT' ? (
                 currentPhase === 'RECRUITING' ? (
                   <span>
-                    <strong className="text-indigo-900 font-bold">Lưu ý sinh viên:</strong> Cổng ứng tuyển đang mở! Các tin tuyển dụng sẽ tự động đóng khi học kỳ bắt đầu vào ngày{' '}
-                    <strong className="text-slate-800">{formatDate(activeSemester.startDate)}</strong>. Hãy nhanh chóng hoàn thiện CV và ứng tuyển để nhận lời mời thực tập sớm.
+                    <strong className="text-teal-950 font-bold">Lưu ý sinh viên:</strong> Cổng ứng tuyển đang mở! Các tin tuyển dụng sẽ tự động đóng khi học kỳ bắt đầu vào ngày{' '}
+                    <strong className="text-slate-900">{formatDate(activeSemester.startDate)}</strong>. Hãy nhanh chóng hoàn thiện CV và ứng tuyển để nhận lời mời thực tập sớm.
                   </span>
                 ) : currentPhase === 'MONITORING' ? (
                   <span>
-                    <strong className="text-sky-900 font-bold">Lưu ý sinh viên:</strong> Đợt tuyển dụng đã kết thúc. Bạn đang trong giai đoạn thực tập và theo dõi học vụ. Hãy chú ý lịch nộp báo cáo định kỳ và liên hệ giảng viên hướng dẫn nếu cần hỗ trợ.
+                    <strong className="text-teal-950 font-bold">Lưu ý sinh viên:</strong> Đợt tuyển dụng đã kết thúc. Bạn đang trong giai đoạn thực tập và theo dõi học vụ. Hãy chú ý lịch nộp báo cáo định kỳ và liên hệ giảng viên hướng dẫn nếu cần hỗ trợ.
                   </span>
                 ) : currentPhase === 'UPCOMING' ? (
                   <span>
-                    <strong className="text-indigo-900 font-bold">Lưu ý sinh viên:</strong> Đợt thực tập sắp tới đang trong giai đoạn chuẩn bị. Cổng nhận hồ sơ sẽ chính thức mở vào ngày{' '}
-                    <strong className="text-slate-800">{formatDate(activeSemester.recruitmentStart)}</strong>. Hãy chuẩn bị sẵn hồ sơ cá nhân và kỹ năng của bạn.
+                    <strong className="text-teal-950 font-bold">Lưu ý sinh viên:</strong> Đợt thực tập sắp tới đang trong giai đoạn chuẩn bị. Cổng nhận hồ sơ sẽ chính thức mở vào ngày{' '}
+                    <strong className="text-slate-900">{formatDate(activeSemester.recruitmentStart)}</strong>. Hãy chuẩn bị sẵn hồ sơ cá nhân và kỹ năng của bạn.
                   </span>
                 ) : (
                   <span>Kỳ thực tập đã kết thúc thành công. Hãy kiểm tra kết quả đánh giá và xác nhận hoàn thành học phần.</span>
@@ -356,17 +445,17 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
               ) : role === 'COMPANY' ? (
                 currentPhase === 'RECRUITING' ? (
                   <span>
-                    <strong className="text-indigo-900 font-bold">Dành cho Doanh nghiệp:</strong> Cổng đăng bài tuyển dụng đang mở. Mọi tin tuyển dụng ở trạng thái <em>Mở (OPEN)</em> sẽ tự động đóng khi kỳ thực tập bắt đầu vào ngày{' '}
-                    <strong className="text-slate-800">{formatDate(activeSemester.startDate)}</strong>. Quý doanh nghiệp vui lòng duyệt hồ sơ và gửi lời mời thực tập sớm.
+                    <strong className="text-teal-950 font-extrabold">Dành cho Doanh nghiệp tuyển dụng:</strong> Cổng tiếp nhận hồ sơ đang mở. Mọi tin tuyển dụng ở trạng thái <em>Mở (OPEN)</em> sẽ tự động chốt khi kỳ thực tập chính thức bắt đầu vào ngày{' '}
+                    <strong className="text-teal-900 font-extrabold underline">{formatDate(activeSemester.startDate)}</strong>. Quý doanh nghiệp vui lòng duyệt CV và gửi lời mời thực tập sớm cho các ứng viên phù hợp.
                   </span>
                 ) : currentPhase === 'MONITORING' ? (
                   <span>
-                    <strong className="text-sky-900 font-bold">Dành cho Doanh nghiệp:</strong> Kỳ thực tập đang diễn ra thực tế tại cơ sở. Quý doanh nghiệp phối hợp cùng nhà trường hướng dẫn và theo dõi sinh viên, chuẩn bị đánh giá cuối kỳ khi hoàn thành.
+                    <strong className="text-teal-950 font-extrabold">Dành cho Doanh nghiệp:</strong> Kỳ thực tập đang diễn ra thực tế tại cơ sở. Quý doanh nghiệp phối hợp cùng nhà trường hướng dẫn và theo dõi sinh viên, chuẩn bị đánh giá cuối kỳ khi hoàn thành.
                   </span>
                 ) : currentPhase === 'UPCOMING' ? (
                   <span>
-                    <strong className="text-indigo-900 font-bold">Dành cho Doanh nghiệp:</strong> Đợt thực tập mới chuẩn bị mở cổng tiếp nhận. Quý doanh nghiệp có thể chuẩn bị sẵn các mẫu tin tuyển dụng (Templates) để đăng tuyển ngay khi đợt mở vào ngày{' '}
-                    <strong className="text-slate-800">{formatDate(activeSemester.recruitmentStart)}</strong>.
+                    <strong className="text-teal-950 font-extrabold">Dành cho Doanh nghiệp:</strong> Đợt thực tập mới chuẩn bị mở cổng tiếp nhận. Quý doanh nghiệp có thể chuẩn bị sẵn các mẫu tin tuyển dụng (Templates) để đăng tuyển ngay khi đợt mở vào ngày{' '}
+                    <strong className="text-slate-900">{formatDate(activeSemester.recruitmentStart)}</strong>.
                   </span>
                 ) : (
                   <span>Đợt thực tập đã hoàn tất. Xin chân thành cảm ơn quý doanh nghiệp đã đồng hành cùng nhà trường và sinh viên.</span>
@@ -374,7 +463,7 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
               ) : (
                 <span>
                   Đợt thực tập <strong className="text-slate-900">{activeSemester.name}</strong> đang ở giai đoạn{' '}
-                  <strong className="text-indigo-700">
+                  <strong className="text-teal-800">
                     {currentPhase === 'RECRUITING'
                       ? 'Tuyển dụng & Ứng tuyển'
                       : currentPhase === 'MONITORING'

@@ -182,44 +182,45 @@ export function EvaluateInternsModal({
 
   return (
     <div className="space-y-6">
-      <header className="rounded-3xl bg-linear-to-br from-emerald-950 via-teal-900 to-slate-900 p-6 text-white shadow-lg sm:p-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-100">
-          <Building2 className="h-3.5 w-3.5" /> Đánh giá doanh nghiệp & Chứng nhận
-        </div>
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-              Đánh giá Thực tập sinh
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm text-emerald-100/85">
-              Chấm điểm tổng kết, nhận xét quá trình làm việc và đính kèm tệp Chứng nhận thực tập (nếu có) cho sinh viên.
-            </p>
+      {/* Page Header (Modern Clean SaaS Style) */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-teal-50 border border-teal-200/60 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-800 mb-2">
+            <Building2 className="h-3.5 w-3.5 text-teal-600" />
+            <span>ĐÁNH GIÁ & CHỨNG NHẬN</span>
           </div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <select
-              value={selectedSemesterId}
-              onChange={(e) => setSelectedSemesterId(e.target.value)}
-              className="rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white outline-none [&>option]:text-slate-900 transition hover:bg-white/15"
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Đánh giá Thực tập sinh
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
+            Chấm điểm tổng kết, nhận xét quá trình làm việc và đính kèm tệp Chứng nhận thực tập (nếu có) cho sinh viên.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <select
+            value={selectedSemesterId}
+            onChange={(e) => setSelectedSemesterId(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 transition shadow-2xs cursor-pointer"
+          >
+            <option value="ALL">Tất cả học kỳ</option>
+            {semesters.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.status})
+              </option>
+            ))}
+          </select>
+          {filteredEvaluable.length > 0 && (
+            <button
+              type="button"
+              onClick={exportCompanyEvaluationsExcel}
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-teal-50 border border-teal-200 px-4 py-2.5 text-xs font-bold text-teal-800 transition hover:bg-teal-100 shadow-2xs cursor-pointer"
             >
-              <option value="ALL">Tất cả học kỳ</option>
-              {semesters.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.status})
-                </option>
-              ))}
-            </select>
-            {filteredEvaluable.length > 0 && (
-              <button
-                type="button"
-                onClick={exportCompanyEvaluationsExcel}
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
-              >
-                <Download className="h-4 w-4" /> Xuất bảng điểm Excel
-              </button>
-            )}
-          </div>
+              <Download className="h-4 w-4 text-teal-700" /> Xuất bảng điểm Excel
+            </button>
+          )}
         </div>
-      </header>
+      </div>
 
       {filteredEvaluable.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
@@ -351,7 +352,7 @@ export function EvaluateInternsModal({
             {!isLocked ? (
               <button
                 disabled={saving}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:bg-slate-400"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-xs font-bold text-white shadow-xs transition hover:bg-teal-800 disabled:bg-slate-400 cursor-pointer"
               >
                 <Save className="h-4 w-4" />
                 {saving

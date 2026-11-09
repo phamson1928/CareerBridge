@@ -10,7 +10,7 @@ import { AiProvider } from './providers/base.provider';
 import { ProviderFactory } from './providers/provider.factory';
 import { Logger } from './utils/logger';
 
-export type WorkerDaemonState = 'RUNNING' | 'PAUSED' | 'CONFIG_PENDING' | 'STOPPED';
+export type WorkerDaemonState = 'RUNNING' | 'PAUSED' | 'STOPPED';
 
 export interface ScannedJobRecord {
   jobId: string;
@@ -72,19 +72,12 @@ export class AiWorkerDaemon {
     this.isStopping = false;
 
     if (!this.config.isConfigured) {
-      this.state = 'CONFIG_PENDING';
       Logger.banner(
-        'CAREERBRIDGE AI WORKER (CHỜ CẤU HÌNH)',
-        `Vui lòng truy cập Giao diện Web: http://localhost:${this.config.webPort} để thiết lập Worker Token`
+        'CAREERBRIDGE AI WORKER (CHƯA CẤU HÌNH TOKEN)',
+        'Vui lòng cấu hình WORKER_TOKEN trong file .env'
       );
-      Logger.warn(`Chưa có WORKER_TOKEN hợp lệ. Đang chờ cấu hình từ Dashboard http://localhost:${this.config.webPort}...`);
-      
-      // Chờ cho đến khi được cập nhật cấu hình qua Web UI
-      while (!this.isStopping && this.state === 'CONFIG_PENDING') {
-        await this.sleep(1000);
-      }
-
-      if (this.isStopping) return;
+      Logger.error('Chưa có WORKER_TOKEN hợp lệ. Vui lòng mở file .env, dán token bắt đầu bằng cwb_... và khởi động lại.');
+      return;
     }
 
     this.state = 'RUNNING';
@@ -99,7 +92,7 @@ export class AiWorkerDaemon {
     Logger.info(`Kết nối Backend: ${this.config.backendUrl}`);
     Logger.info(`Mô hình AI: ${modelName}`);
     Logger.info(`Chu kỳ Polling: ${this.config.pollIntervalMs / 1000}s | Heartbeat: ${this.config.heartbeatIntervalMs / 1000}s`);
-    Logger.info(`Giao diện Web Quản trị: http://localhost:${this.config.webPort}`);
+    Logger.info(`Trạng thái: Đang kết nối và lắng nghe hàng đợi CV từ CareerBridge...`);
 
     // 1. Gửi Heartbeat đầu tiên để báo Online ngay khi khởi động
     await this.sendInitialHeartbeat();
@@ -153,12 +146,11 @@ export class AiWorkerDaemon {
   }
 
   async updateConfig(newConfig: WorkerConfig): Promise<void> {
-    const wasPending = this.state === 'CONFIG_PENDING';
     this.config = newConfig;
     this.client = new BackendApiClient(newConfig);
     this.provider = ProviderFactory.create(newConfig);
 
-    Logger.info(`Cấu hình Worker đã được cập nhật thành công từ Web UI:`);
+    Logger.info(`Cấu hình Worker đã được cập nhật thành công:`);
     Logger.info(`- Backend: ${this.config.backendUrl}`);
     Logger.info(`- Chế độ AI: ${this.provider.name} (${this.provider.modelName})`);
 
@@ -169,10 +161,7 @@ export class AiWorkerDaemon {
     }
     this.startHeartbeatLoop();
 
-    if (wasPending && newConfig.isConfigured) {
-      this.state = 'RUNNING';
-      await this.sendInitialHeartbeat();
-    } else if (this.state === 'RUNNING') {
+    if (this.state === 'RUNNING') {
       await this.sendInitialHeartbeat();
     }
   }
@@ -198,7 +187,6 @@ export class AiWorkerDaemon {
         hasApiKey: Boolean(this.config.aiApiKey),
         pollIntervalSec: this.config.pollIntervalMs / 1000,
         heartbeatIntervalSec: this.config.heartbeatIntervalMs / 1000,
-        webPort: this.config.webPort,
       },
       stats: this.stats,
       recentJobs: this.recentJobs.slice(-30),

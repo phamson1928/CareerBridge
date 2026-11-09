@@ -169,26 +169,28 @@ export const ReviewReports = () => {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-3xl bg-linear-to-br from-violet-950 via-indigo-900 to-slate-900 p-6 text-white shadow-lg sm:p-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-violet-100">
-          <ClipboardCheck className="h-3.5 w-3.5" /> Kiểm duyệt tiến độ & Nghiệm thu học vụ
+      {/* Modern Clean SaaS Page Header */}
+      <header className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
+        <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-800 mb-2">
+          <ClipboardCheck className="h-3.5 w-3.5 text-teal-600" /> Kiểm duyệt tiến độ & Nghiệm thu học vụ
         </div>
-        <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-          Duyệt Nhật ký tuần & Báo cáo tổng kết
+        <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+          Duyệt Nhật Ký Tuần & Báo Cáo Tổng Kết
         </h2>
-        <p className="mt-2 max-w-2xl text-sm text-violet-100/85">
+        <p className="mt-1 max-w-2xl text-xs sm:text-sm text-slate-500">
           Rà soát nhật ký công việc hàng tuần và phê duyệt Cuốn báo cáo tổng kết thực tập cuối kỳ của sinh viên trước khi chấm điểm kết thúc học phần.
         </p>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* 4 Interactive Bento Metric Cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 bento-stagger">
         <button
           type="button"
           onClick={() => {
             setStatusFilter("SUBMITTED");
             setTypeFilter("ALL");
           }}
-          className={`rounded-2xl border p-4 text-left transition ${statusFilter === "SUBMITTED" && typeFilter === "ALL" ? "border-amber-400 bg-amber-50/70" : "border-slate-200 bg-white"}`}
+          className={`rounded-2xl border p-4 text-left shadow-xs transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 card-interactive active:scale-95 ${statusFilter === "SUBMITTED" && typeFilter === "ALL" ? "border-amber-400 bg-amber-50/70 ring-2 ring-amber-400/30" : "border-slate-200/90 bg-white hover:border-amber-300"}`}
         >
           <span className="text-xs font-bold text-amber-700">Đang chờ duyệt</span>
           <p className="mt-2 text-2xl font-black text-slate-900">
@@ -201,9 +203,9 @@ export const ReviewReports = () => {
             setStatusFilter("SUBMITTED");
             setTypeFilter("FINAL");
           }}
-          className={`rounded-2xl border p-4 text-left transition ${typeFilter === "FINAL" ? "border-indigo-400 bg-indigo-50/70" : "border-slate-200 bg-white"}`}
+          className={`rounded-2xl border p-4 text-left shadow-xs transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 card-interactive active:scale-95 ${typeFilter === "FINAL" ? "border-teal-400 bg-teal-50/70 ring-2 ring-teal-400/30" : "border-slate-200/90 bg-white hover:border-teal-300"}`}
         >
-          <span className="text-xs font-bold text-indigo-700">
+          <span className="text-xs font-bold text-teal-800">
             Báo cáo tổng kết chờ duyệt
           </span>
           <p className="mt-2 text-2xl font-black text-slate-900">
@@ -216,7 +218,7 @@ export const ReviewReports = () => {
             setStatusFilter("APPROVED");
             setTypeFilter("ALL");
           }}
-          className={`rounded-2xl border p-4 text-left transition ${statusFilter === "APPROVED" ? "border-emerald-400 bg-emerald-50/70" : "border-slate-200 bg-white"}`}
+          className={`rounded-2xl border p-4 text-left shadow-xs transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 card-interactive active:scale-95 ${statusFilter === "APPROVED" ? "border-emerald-400 bg-emerald-50/70 ring-2 ring-emerald-400/30" : "border-slate-200/90 bg-white hover:border-emerald-300"}`}
         >
           <span className="text-xs font-bold text-emerald-700">Đã phê duyệt</span>
           <p className="mt-2 text-2xl font-black text-slate-900">
@@ -229,7 +231,7 @@ export const ReviewReports = () => {
             setStatusFilter("REJECTED");
             setTypeFilter("ALL");
           }}
-          className={`rounded-2xl border p-4 text-left transition ${statusFilter === "REJECTED" ? "border-rose-400 bg-rose-50/70" : "border-slate-200 bg-white"}`}
+          className={`rounded-2xl border p-4 text-left shadow-xs transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 card-interactive active:scale-95 ${statusFilter === "REJECTED" ? "border-rose-400 bg-rose-50/70 ring-2 ring-rose-400/30" : "border-slate-200/90 bg-white hover:border-rose-300"}`}
         >
           <span className="text-xs font-bold text-rose-700">Yêu cầu sửa lại</span>
           <p className="mt-2 text-2xl font-black text-slate-900">
@@ -418,7 +420,7 @@ export const ReviewReports = () => {
                         setFeedback(report.feedback ?? "");
                         setModalError("");
                       }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-violet-700"
+                      className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-teal-800 active:scale-95"
                     >
                       <ClipboardCheck className="h-4 w-4" />
                       Kiểm duyệt & Nhận xét
@@ -432,11 +434,11 @@ export const ReviewReports = () => {
       )}
 
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs modal-backdrop-appear">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl modal-scale-in border border-slate-100">
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-violet-700">
+                <span className="text-xs font-bold uppercase tracking-wider text-teal-700">
                   {selected.week === 0
                     ? "Nghiệm thu Báo cáo tổng kết cuối kỳ"
                     : `Duyệt báo cáo tuần ${selected.week}`}
@@ -447,7 +449,7 @@ export const ReviewReports = () => {
                 </h3>
                 {(selected.placement.student.majorRef?.name ||
                   selected.placement.student.major) && (
-                  <p className="mt-0.5 text-xs font-semibold text-violet-700">
+                  <p className="mt-0.5 text-xs font-semibold text-teal-700">
                     Ngành:{" "}
                     {selected.placement.student.majorRef?.name ??
                       selected.placement.student.major}
@@ -463,7 +465,7 @@ export const ReviewReports = () => {
               </div>
               <button
                 type="button"
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
                 onClick={() => setSelected(null)}
               >
                 <X className="h-5 w-5" />
@@ -496,7 +498,7 @@ export const ReviewReports = () => {
               </span>
               <textarea
                 rows={4}
-                className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100 transition-all"
                 value={feedback}
                 onChange={(event) => setFeedback(event.target.value)}
                 placeholder="Nhập đánh giá tiến độ hoặc các điểm sinh viên cần bổ sung, chỉnh sửa..."
@@ -508,7 +510,7 @@ export const ReviewReports = () => {
                 type="button"
                 disabled={busy}
                 onClick={() => void review("REJECTED")}
-                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-800 transition hover:bg-rose-100 disabled:opacity-50"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-800 transition hover:bg-rose-100 active:scale-95 disabled:opacity-50"
               >
                 Yêu cầu chỉnh sửa
               </button>
@@ -516,7 +518,7 @@ export const ReviewReports = () => {
                 type="button"
                 disabled={busy}
                 onClick={() => void review("APPROVED")}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
               >
                 <Check className="h-4 w-4" /> Phê duyệt báo cáo
               </button>

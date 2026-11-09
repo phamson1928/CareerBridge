@@ -49,6 +49,7 @@ Hệ thống **CareerBridge** đã được nạp bộ dữ liệu seed chuẩn 
 
 | STT | Mã số SV | Họ và tên | Email đăng nhập | Ngành đào tạo (Khoa) | Tình huống nghiệp vụ kiểm thử |
 |:---:|:---:|---|---|---|---|
+| 0 | `2314282` | **Phạm Hoàng Sơn** | `pson4282@gmail.com` | Kỹ thuật Phần mềm (CSE) | **Tài khoản cá nhân / Fullstack Developer**: Có CV thật `CV_PhamHoangSon_FullStackDeveloper.pdf`, có đơn OFFERED tại FPT Software và đơn REVIEWING. |
 | 1 | `2110234` | **Nguyễn Hoàng Long** | `student.interning@student.hcmut.edu.vn` | Kỹ thuật Phần mềm (CSE) | **Đang thực tập Tuần 8/10** tại FPT Software. Báo cáo tuần 1-7 đã được duyệt, báo cáo tuần 8 đang chờ GVHD duyệt. |
 | 2 | `2011456` | **Trần Thị Mai Anh** | `student.completed@student.hcmut.edu.vn` | Khoa học Máy tính (CSE) | **Đã hoàn thành thực tập** tại Bosch. Điểm Công ty: 9.5, Điểm Giảng viên: 9.2. Đã hoàn thành 10 tuần báo cáo. |
 | 3 | `2112567` | **Lê Minh Tuấn** | `student.unassigned@student.hcmut.edu.vn` | Mạng máy tính & ATTT (CSE) | **Đã được Viettel tiếp nhận nhưng chưa gán GVHD**. Dùng để Admin test chức năng Phân công giảng viên. |

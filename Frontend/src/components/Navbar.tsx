@@ -19,6 +19,7 @@ import {
   LifeBuoy,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { ProfileAvatarPreview } from "./ProfileAvatarUpload";
 import type { AppNotification } from "../notifications/types";
@@ -36,6 +37,7 @@ interface NavbarProps {
   onLogout: () => void;
   avatarFileId?: string | null;
   companyLogo?: string | null;
+  companyName?: string | null;
   companyVerificationStatus?: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED" | null;
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
@@ -54,6 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   avatarFileId,
   companyLogo,
+  companyName,
   companyVerificationStatus,
   isSidebarCollapsed = false,
   onToggleSidebar,
@@ -99,31 +102,44 @@ export const Navbar: React.FC<NavbarProps> = ({
             icon: <User className="w-4 h-4" />,
           },
         ];
-      case "COMPANY":
+      case "COMPANY": {
+        if (companyVerificationStatus !== "APPROVED") {
+          return [
+            {
+              id: "company-profile",
+              label: "Đăng ký doanh nghiệp",
+              icon: <Building className="w-4 h-4" />,
+            },
+          ];
+        }
         return [
           {
-            id: "company-profile",
-            label: companyVerificationStatus === "APPROVED" ? "Hồ sơ doanh nghiệp" : "Đăng ký doanh nghiệp",
-            icon: <Building className="w-4 h-4" />,
-          },
-          ...(companyVerificationStatus === "APPROVED" ? [{
             id: "dashboard",
             label: "Tổng quan",
             icon: <LayoutDashboard className="w-4 h-4" />,
-          }, {
+          },
+          {
             id: "postings",
-            label: "Đăng & Quản lý tin",
+            label: "Tin tuyển dụng",
             icon: <Briefcase className="w-4 h-4" />,
-          }, {
+          },
+          {
             id: "applicants",
-            label: "Ứng viên & Duyệt CV",
+            label: "Ứng viên & CV",
             icon: <Users className="w-4 h-4" />,
-          }, {
+          },
+          {
             id: "interns-evaluation",
-            label: "Thực tập sinh & Đánh giá",
+            label: "Đánh giá thực tập",
             icon: <CheckSquare className="w-4 h-4" />,
-          }] : []),
+          },
+          {
+            id: "company-profile",
+            label: "Hồ sơ công ty",
+            icon: <Building className="w-4 h-4" />,
+          },
         ];
+      }
       case "TEACHER":
         return [
           {
@@ -438,23 +454,38 @@ export const Navbar: React.FC<NavbarProps> = ({
   }
 
   return (
-    <header className="role-navbar sticky top-0 z-40 border-b border-slate-200 bg-white shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-[72px] items-center justify-between">
-          {/* Logo & Brand */}
+    <header className="role-navbar sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-2xs">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between gap-4 lg:gap-8">
+          {/* Left: Brand Identity */}
           <div
-            className="flex items-center gap-3 cursor-pointer"
+            className="flex items-center gap-2.5 cursor-pointer shrink-0"
             onClick={() => setActiveTab(navItems[0]?.id || "")}
+            title="Về trang chính"
           >
-            <img
-              src="/careerbridge-logo.svg"
-              alt="CareerBridge"
-              className="h-14 w-auto object-contain"
-            />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 border border-slate-200/80 p-1 shadow-2xs transition hover:bg-slate-100">
+              <img
+                src="/careerbridge-logo.svg"
+                alt="CareerBridge"
+                className="h-full w-full object-contain"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-base font-extrabold tracking-tight text-slate-900 leading-none">
+                CareerBridge
+              </span>
+              <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-teal-50 text-teal-800 border border-teal-200/70">
+                {currentRole === "COMPANY"
+                  ? "Doanh nghiệp"
+                  : currentRole === "TEACHER"
+                  ? "Giảng viên"
+                  : "Sinh viên"}
+              </span>
+            </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden items-center space-x-1 md:flex">
+          {/* Center: Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-1.5">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -462,31 +493,39 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={item.id}
                   id={`nav-tab-${item.id}`}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center rounded-lg px-3.5 py-2 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? "bg-indigo-50 text-indigo-700 border border-indigo-100/60 shadow-2xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                      ? "bg-teal-700 text-white font-bold shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
                   }`}
                 >
+                  <span className="shrink-0">{item.icon}</span>
                   <span>{item.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          {/* Right Action Icons */}
-          <div className="flex items-center gap-2">
-            {/* A conversation is private to the accepted application's student and company. */}
+          {/* Right Action Icons & Profile */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Quick Search Shortcut */}
+            <div className="hidden 2xl:flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs text-slate-400 w-44 shadow-2xs">
+              <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="flex-1 truncate text-slate-400 text-[11px]">Tìm nhanh...</span>
+              <kbd className="px-1.5 py-0.5 text-[9px] font-bold bg-white rounded border border-slate-200 text-slate-400 shadow-2xs">/</kbd>
+            </div>
+
+            {/* Chat button */}
             {canUseChat && (
               <button
                 id="btn-chat-toggle"
                 onClick={onOpenChat}
-                className="relative rounded-lg border border-transparent p-2 text-slate-600 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-indigo-600"
-                title="Trao đổi Realtime"
+                className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                title="Tin nhắn & Trao đổi"
               >
-                <MessageSquare className="h-5 w-5" />
+                <MessageSquare className="h-4 w-4" />
                 {unreadMessagesCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-600 text-[9px] font-bold text-white ring-2 ring-white px-1">
                     {unreadMessagesCount}
                   </span>
                 )}
@@ -498,47 +537,73 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="btn-notifs-toggle"
                 onClick={onOpenNotifs}
-                className="relative rounded-lg border border-transparent p-2 text-slate-600 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-indigo-600 focus:border-indigo-200 focus:bg-indigo-50 focus:text-indigo-600"
+                className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
                 title="Thông báo"
                 aria-haspopup={showNotificationPreview ? "dialog" : undefined}
               >
-                <Bell className="h-5 w-5" />
+                <Bell className="h-4 w-4" />
                 {unreadNotifsCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white animate-pulse">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white animate-pulse px-1">
                     {unreadNotifsCount}
                   </span>
                 )}
               </button>
               {notificationPreview}
             </div>
+
+            {/* Subtle Divider */}
+            <div className="h-5 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+            {/* User Profile Chip */}
             {showLogoutInNavbar &&
               (currentRole === "COMPANY" ? (
-                <button
-                  id="btn-logout"
-                  type="button"
-                  onClick={onLogout}
-                  className="group relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 hover:ring-2 hover:ring-rose-100"
-                  title="Đăng xuất"
-                  aria-label="Đăng xuất"
-                >
-                  <span className="flex h-full w-full items-center justify-center transition-all duration-150 group-hover:scale-75 group-hover:opacity-0">
-                    {companyLogo ? (
-                      <img
-                        src={companyLogo}
-                        alt="Logo công ty"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <Building className="h-5 w-5" />
-                    )}
-                  </span>
-                  <LogOut className="pointer-events-none absolute h-5 w-5 scale-75 opacity-0 transition-all duration-150 group-hover:scale-100 group-hover:opacity-100" />
-                </button>
+                <div className="group relative">
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 rounded-xl p-1.5 hover:bg-slate-100 transition cursor-pointer"
+                    title="Menu tài khoản doanh nghiệp"
+                  >
+                    <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-teal-50 border border-teal-200/80 text-teal-800 font-bold text-xs">
+                      {companyLogo ? (
+                        <img
+                          src={companyLogo}
+                          alt="Logo công ty"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Building className="h-4 w-4 text-teal-700" />
+                      )}
+                      <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-1.5 ring-white" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-800 hidden sm:block truncate max-w-[130px]">
+                      {companyName || user?.email?.split('@')[0] || "Ban Tuyển Dụng"}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                  </button>
+
+                  <div className="invisible absolute right-0 top-full z-50 mt-2 w-48 translate-y-1 rounded-xl border border-slate-200 bg-white p-1.5 opacity-0 shadow-xl transition-all duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("company-profile")}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-800 transition cursor-pointer"
+                    >
+                      <Building className="h-3.5 w-3.5 text-teal-600" /> Hồ sơ doanh nghiệp
+                    </button>
+                    <button
+                      id="btn-logout"
+                      type="button"
+                      onClick={onLogout}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                    >
+                      <LogOut className="h-3.5 w-3.5" /> Đăng xuất
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="group relative">
                   <button
                     type="button"
-                    className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-black text-slate-600 transition hover:border-indigo-200 hover:ring-2 hover:ring-indigo-100"
+                    className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-black text-slate-600 transition hover:border-indigo-200 hover:ring-2 hover:ring-indigo-100 cursor-pointer"
                     title="Tài khoản của tôi"
                     aria-label="Tài khoản của tôi"
                   >
@@ -578,19 +643,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile Navigation Row */}
-        <div className="md:hidden flex items-center space-x-1 overflow-x-auto pb-2 pt-1 no-scrollbar border-t border-slate-100">
+        <div className="lg:hidden flex items-center space-x-1 overflow-x-auto pb-2.5 pt-1 no-scrollbar border-t border-slate-100">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition ${
                   isActive
-                    ? "bg-indigo-600 text-white font-semibold"
-                    : "text-slate-600 bg-slate-100"
+                    ? "bg-teal-700 text-white shadow-xs"
+                    : "text-slate-600 bg-slate-100 hover:bg-slate-200"
                 }`}
               >
+                <span className="shrink-0">{item.icon}</span>
                 <span>{item.label}</span>
               </button>
             );

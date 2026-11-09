@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Application, ApplicationStatus, CompanyProfile } from '../../types';
 import { getStatusBadge } from '../../utils/matching';
 import { getApiErrorMessage } from '../../auth/api';
 import { downloadPrivateFile } from '../../files/api';
 import {
   applicationsApi,
+  toLegacyApplication,
   type InterviewMode,
 } from '../../applications/api';
 import { formatDate, formatDateTime } from '../../utils/format';
@@ -130,6 +131,60 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
   const [sortBy, setSortBy] = useState<'DATE_DESC' | 'AI_SCORE_DESC' | 'NAME_ASC'>('DATE_DESC');
   const [rescanningAppId, setRescanningAppId] = useState<string | null>(null);
 
+  // Local applications state for real-time reactivity without manual F5
+  const [localApps, setLocalApps] = useState<Application[]>(applications);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    setLocalApps(applications);
+  }, [applications]);
+
+  const refreshApplications = useCallback(async (silent = false) => {
+    if (!silent) setIsRefreshing(true);
+    try {
+      const res = await applicationsApi.listMine({ page: 1, limit: 100 });
+      const mapped = res.items.map(toLegacyApplication);
+      setLocalApps(mapped);
+
+      // Keep detail modal application in sync if open
+      setAiDetailApp((current) => {
+        if (!current) return null;
+        const updated = mapped.find((a) => a.id === current.id);
+        return updated || current;
+      });
+    } catch (err) {
+      if (!silent) {
+        feedback.notify({
+          title: 'Không thể làm mới danh sách',
+          message: getApiErrorMessage(err),
+          tone: 'error',
+        });
+      }
+    } finally {
+      if (!silent) setIsRefreshing(false);
+    }
+  }, [feedback]);
+
+  const companyApps = localApps.filter(
+    (a) => a.companyId === companyProfile.id && !a.hiddenByCompanyAt,
+  );
+
+  const hasActiveAiJobs = companyApps.some(
+    (a) =>
+      a.aiScanJob?.status === 'PENDING' ||
+      a.aiScanJob?.status === 'PROCESSING' ||
+      rescanningAppId === a.id,
+  );
+
+  // Auto-poll in background every 3 seconds while there are active AI scan tasks
+  useEffect(() => {
+    if (!hasActiveAiJobs) return;
+    const interval = setInterval(() => {
+      void refreshApplications(true);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [hasActiveAiJobs, refreshApplications]);
+
   const handleRescanCv = async (applicationId: string) => {
     setRescanningAppId(applicationId);
     try {
@@ -139,7 +194,8 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
         message: 'AI Worker nội bộ sẽ nhận tác vụ và cập nhật kết quả trong giây lát.',
         tone: 'success',
       });
-      onReload?.();
+      // Immediately refresh applications to show pending/processing state
+      void refreshApplications(true);
     } catch (err) {
       feedback.notify({
         title: 'Không thể quét lại CV',
@@ -150,10 +206,6 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
       setRescanningAppId(null);
     }
   };
-
-  const companyApps = applications.filter(
-    (a) => a.companyId === companyProfile.id && !a.hiddenByCompanyAt,
-  );
 
   const totalAppsCount = companyApps.length;
   const pendingCount = companyApps.filter(
@@ -422,96 +474,128 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 1. Header Card with Title and Main Actions */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* 1. Page Header (Modern Clean SaaS Style) */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              Quản Lý Ứng Viên & Tuyển Dụng
-            </h2>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700">
+          <div className="inline-flex items-center gap-2 rounded-full bg-teal-50 border border-teal-200/60 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-800 mb-2">
+            <Users className="h-3.5 w-3.5 text-teal-600" />
+            <span>QUẢN LÝ ỨNG VIÊN & TUYỂN DỤNG</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Hồ sơ ứng viên & Quy trình tuyển dụng
+            </h1>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800">
               {companyApps.length} hồ sơ
             </span>
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
             Sàng lọc CV bằng AI On-Premise, phỏng vấn ứng viên và phát hành lời mời thực tập (Offer).
           </p>
         </div>
 
+        {/* Header Actions */}
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => onReload?.()}
-            className="p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 transition-colors shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 p-2.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors shadow-2xs cursor-pointer text-xs font-bold"
             title="Làm mới danh sách ứng viên"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-4 h-4 text-slate-500" />
+            <span className="hidden sm:inline">Làm mới</span>
           </button>
 
           {/* AI Worker Settings Button */}
           <button
             type="button"
             onClick={() => setIsAiWorkerModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg cursor-pointer hover:scale-[1.02] active:scale-[0.99]"
+            className="px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
             title="Quản lý kết nối AI Worker và cấu hình tự động quét CV"
           >
             <Bot className="w-4 h-4" />
             <span>AI Worker & Quét CV</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white/50 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-300 ring-2 ring-white/50 animate-pulse" />
           </button>
         </div>
       </div>
 
-      {/* 2. KPI Metrics Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold shrink-0">
-            <Users className="w-5 h-5 text-slate-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium text-slate-500 truncate">Tổng ứng viên</p>
-            <p className="text-lg font-black text-slate-900">{totalAppsCount}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 border border-amber-200/80 shadow-2xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold shrink-0">
-            <Clock className="w-5 h-5 text-amber-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium text-amber-800 truncate">Chờ xử lý</p>
-            <p className="text-lg font-black text-amber-900">{pendingCount}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 border border-blue-200/80 shadow-2xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold shrink-0">
-            <Calendar className="w-5 h-5 text-blue-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium text-blue-800 truncate">Phỏng vấn / Offer</p>
-            <p className="text-lg font-black text-blue-900">{interviewingCount}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 border border-purple-200/80 shadow-2xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold shrink-0">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium text-purple-800 truncate">Đã phân tích AI</p>
-            <p className="text-lg font-black text-purple-900">
-              {aiScannedCount} <span className="text-xs font-normal text-purple-600">/ {totalAppsCount}</span>
+      {/* 2. KPI Metrics Bento Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              TỔNG ỨNG VIÊN
+            </span>
+            <div className="text-2xl font-bold text-slate-900 mt-1.5 tracking-tight">
+              {totalAppsCount}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Hồ sơ trong phạm vi
             </p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              CHỜ XỬ LÝ
+            </span>
+            <div className="text-2xl font-bold text-amber-900 mt-1.5 tracking-tight">
+              {pendingCount}
+            </div>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Cần phản hồi sớm
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              PHỎNG VẤN / OFFER
+            </span>
+            <div className="text-2xl font-bold text-teal-800 mt-1.5 tracking-tight">
+              {interviewingCount}
+            </div>
+            <p className="text-xs text-teal-700 mt-0.5">
+              Đang trong quy trình
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+            <Calendar className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              ĐÃ PHÂN TÍCH AI
+            </span>
+            <div className="text-2xl font-bold text-purple-900 mt-1.5 tracking-tight">
+              {aiScannedCount} <span className="text-xs font-normal text-purple-600">/ {totalAppsCount}</span>
+            </div>
+            <p className="text-xs text-purple-700 mt-0.5">
+              Đã trích xuất điểm match
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5" />
           </div>
         </div>
       </div>
 
-      {/* 3. Search & Filter Bar */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs space-y-3">
+      {/* 3. Segmented Search & Filter Toolbar */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs space-y-3">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
           {/* Search Input */}
-          <div className="relative flex-1 flex items-center bg-slate-50 hover:bg-slate-100/70 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 rounded-xl border border-slate-200 transition-all px-3.5 py-2.5 text-xs">
+          <div className="relative flex-1 flex items-center bg-white focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-600 rounded-xl border border-slate-200 transition-all px-3.5 py-2.5 text-xs shadow-2xs">
             <Search className="w-4 h-4 text-slate-400 shrink-0 mr-2.5" />
             <input
               type="text"
@@ -538,7 +622,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
             <select
               value={selectedSemesterId}
               onChange={(e) => setSelectedSemesterId(e.target.value)}
-              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 hover:bg-slate-100 font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 focus:outline-hidden transition-all cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-white font-semibold text-slate-800 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 focus:outline-hidden transition-all cursor-pointer shadow-2xs"
             >
               <option value="ALL">Tất cả đợt tuyển dụng</option>
               {semesters.map((s) => (
@@ -552,7 +636,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 focus:outline-hidden transition-all cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 focus:outline-hidden transition-all cursor-pointer shadow-2xs"
             >
               <option value="ALL">Tất cả trạng thái ({companyApps.length})</option>
               <option value="PENDING">Chờ duyệt</option>
@@ -570,7 +654,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
             <select
               value={aiFilterRec}
               onChange={(e) => setAiFilterRec(e.target.value)}
-              className="px-3.5 py-2.5 rounded-xl border border-purple-200 text-xs bg-purple-50/70 hover:bg-purple-100/70 font-bold text-purple-900 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 focus:outline-hidden transition-all cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl border border-purple-200 text-xs bg-purple-50/70 hover:bg-purple-100/70 font-bold text-purple-900 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-hidden transition-all cursor-pointer shadow-2xs"
             >
               <option value="ALL">Khuyến nghị AI: Tất cả</option>
               <option value="STRONG_HIRE">⭐ Rất phù hợp (Strong Hire)</option>
@@ -584,12 +668,32 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 focus:outline-hidden transition-all cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 focus:outline-hidden transition-all cursor-pointer shadow-2xs"
             >
               <option value="DATE_DESC">Sắp xếp: Mới nhất</option>
               <option value="AI_SCORE_DESC">Sắp xếp: Điểm AI cao nhất</option>
               <option value="NAME_ASC">Sắp xếp: Tên ứng viên (A-Z)</option>
             </select>
+
+            {/* Live AI Progress Indicator */}
+            {hasActiveAiJobs && (
+              <span className="px-3 py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold flex items-center gap-1.5 shadow-2xs animate-pulse">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                <span>Đang tự động cập nhật kết quả AI...</span>
+              </span>
+            )}
+
+            {/* Manual Silent Refresh Button */}
+            <button
+              type="button"
+              onClick={() => void refreshApplications(false)}
+              disabled={isRefreshing}
+              className="px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+              title="Làm mới dữ liệu mà không cần tải lại trang"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{isRefreshing ? 'Đang tải...' : 'Làm mới'}</span>
+            </button>
 
             {/* Reset Filters */}
             {(filterStatus !== 'ALL' || aiFilterRec !== 'ALL' || searchTerm.trim() !== '') && (
@@ -600,7 +704,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                   setAiFilterRec('ALL');
                   setSearchTerm('');
                 }}
-                className="px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                className="px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                 title="Xóa tất cả bộ lọc"
               >
                 <X className="w-3.5 h-3.5" />
@@ -691,12 +795,15 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
 
                   <div className="flex flex-wrap items-center gap-2 self-start sm:self-center shrink-0">
                     {/* AI Scan Evaluation Badge */}
-                    {rescanningAppId === app.id ||
-                    app.aiScanJob?.status === 'PENDING' ||
-                    app.aiScanJob?.status === 'PROCESSING' ? (
-                      <span className="text-xs font-bold px-3 py-1 bg-purple-50 text-purple-700 rounded-full border border-purple-200 flex items-center gap-1.5 animate-pulse">
-                        <RefreshCw className="w-3 h-3 animate-spin text-purple-600" />
+                    {rescanningAppId === app.id || app.aiScanJob?.status === 'PROCESSING' ? (
+                      <span className="text-xs font-bold px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200 flex items-center gap-1.5 animate-pulse">
+                        <RefreshCw className="w-3 h-3 animate-spin text-indigo-600" />
                         Đang quét AI...
+                      </span>
+                    ) : app.aiScanJob?.status === 'PENDING' ? (
+                      <span className="text-xs font-semibold px-3 py-1 bg-amber-50 text-amber-800 rounded-full border border-amber-200 flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        Chờ AI quét...
                       </span>
                     ) : app.aiScanJob?.status === 'COMPLETED' ||
                       (app.aiScore !== null && app.aiScore !== undefined) ? (
@@ -955,17 +1062,62 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                       </span>
                     )}
 
-                    {(app.aiScore !== null || app.aiScanJob) && (
+                    {/* Nút Đánh giá AI - Hiển thị trạng thái thông minh theo tiến trình thực tế */}
+                    {app.aiScanJob?.status === 'COMPLETED' ||
+                    (app.aiScore !== null && app.aiScore !== undefined) ? (
                       <button
                         type="button"
                         onClick={() => setAiDetailApp(app)}
-                        className="px-3.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200/80 text-purple-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title="Xem chi tiết phân tích điểm số & kỹ năng từ AI Worker"
+                        className="px-3.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Xem chi tiết điểm số, kỹ năng và tóm tắt đánh giá năng lực của AI"
                       >
-                        <Bot className="w-3.5 h-3.5 text-purple-600" />
-                        Báo cáo AI
+                        <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                        Đánh giá AI ({app.aiScore ?? app.aiScanJob?.aiScore ?? 0}đ)
                       </button>
-                    )}
+                    ) : app.aiScanJob?.status === 'PROCESSING' ||
+                      rescanningAppId === app.id ? (
+                      <button
+                        type="button"
+                        onClick={() => setAiDetailApp(app)}
+                        className="px-3.5 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-xs flex items-center gap-1.5 animate-pulse cursor-pointer"
+                        title="AI Worker đang phân tích CV... Bấm để theo dõi tiến trình"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                        AI đang phân tích...
+                      </button>
+                    ) : app.aiScanJob?.status === 'PENDING' ? (
+                      <button
+                        type="button"
+                        onClick={() => setAiDetailApp(app)}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-medium text-xs flex items-center gap-1.5 cursor-pointer"
+                        title="Hồ sơ đang trong hàng đợi chờ AI Worker nội bộ xử lý. Bấm để xem"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        Chờ AI quét...
+                      </button>
+                    ) : app.aiScanJob?.status === 'FAILED' ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleRescanCv(app.id)}
+                        disabled={rescanningAppId === app.id}
+                        className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                        title="Lỗi quét AI. Bấm để gửi quét lại"
+                      >
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                        {rescanningAppId === app.id ? 'Đang gửi lại...' : 'Lỗi quét • Quét lại'}
+                      </button>
+                    ) : app.cvFileId ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleRescanCv(app.id)}
+                        disabled={rescanningAppId === app.id}
+                        className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                        title="Kích hoạt phân tích CV bằng AI Worker nội bộ"
+                      >
+                        <Bot className="w-3.5 h-3.5 text-indigo-600" />
+                        {rescanningAppId === app.id ? 'Đang gửi...' : 'Đánh giá AI'}
+                      </button>
+                    ) : null}
 
                     {!isInactive ? (
                       <button

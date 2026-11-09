@@ -146,6 +146,7 @@ export interface Application {
   companyAddress?: string | null;
   cvUrl: string;
   cvFileId?: string;
+  cvName?: string | null;
   coverLetter?: string;
   matchScore: number | null;
   aiScore?: number | null;

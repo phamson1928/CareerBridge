@@ -120,6 +120,8 @@ export class AiWorkerController {
     @Query('workerName') workerName: string,
     @Query('modelName') modelName: string,
     @Query('engine') engine: string,
+    @Query('aiBaseUrl') aiBaseUrl: string,
+    @Query('aiApiKey') aiApiKey: string,
     @Res() res: Response,
   ) {
     const result = await this.aiWorkerService.generateClientZipPackage({
@@ -127,6 +129,8 @@ export class AiWorkerController {
       workerName,
       modelName,
       engine,
+      aiBaseUrl,
+      aiApiKey,
     });
 
     res.setHeader('Content-Type', 'application/zip');

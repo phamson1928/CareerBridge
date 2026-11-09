@@ -185,20 +185,36 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
   if (loading) return <LoadingState />;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Page Header (Modern Clean SaaS Style) */}
+      <div>
+        <div className="inline-flex items-center gap-2 rounded-full bg-teal-50 border border-teal-200/60 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-800 mb-2">
+          <Building2 className="h-3.5 w-3.5 text-teal-600" />
+          <span>HỒ SƠ DOANH NGHIỆP</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          {identityLocked ? "Hồ sơ & Định danh doanh nghiệp" : "Đăng ký hồ sơ doanh nghiệp"}
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
+          {identityLocked
+            ? "Cập nhật thông tin liên hệ, giới thiệu văn hóa và quản lý pháp lý của doanh nghiệp."
+            : "Hoàn thiện thông tin pháp lý và đăng tải giấy phép kinh doanh để gửi hồ sơ xác minh tới Nhà trường."}
+        </p>
+      </div>
+
+      <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
         <div className="flex items-start gap-4">
-          <div className="rounded-2xl bg-indigo-600 p-3 text-white">
+          <div className="rounded-2xl bg-teal-50 border border-teal-200 p-3 text-teal-700 shrink-0">
             <Building2 className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-xl font-extrabold text-slate-900">
-              {identityLocked ? "Hồ sơ doanh nghiệp" : "Đăng ký doanh nghiệp"}
+            <h2 className="text-lg font-bold text-slate-900">
+              Thông tin chi tiết doanh nghiệp
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-0.5 text-xs text-slate-500">
               {identityLocked
-                ? "Cập nhật thông tin liên hệ và giới thiệu doanh nghiệp của bạn."
-                : "Hoàn thiện thông tin để gửi hồ sơ cho hệ thống xác minh."}
+                ? "Các thông tin cơ bản và thông tin liên hệ tuyển dụng."
+                : "Vui lòng nhập chính xác thông tin theo Giấy chứng nhận đăng ký kinh doanh."}
             </p>
           </div>
         </div>
@@ -309,13 +325,13 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
               className="w-full rounded-xl border border-slate-300 p-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
             />
           </div>
-          <div className="md:col-span-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+          <div className="md:col-span-2 rounded-2xl border border-teal-100 bg-teal-50/50 p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-bold text-indigo-950">
+                <p className="text-sm font-bold text-teal-950">
                   Giấy đăng ký doanh nghiệp <span className="text-rose-600">*</span>
                 </p>
-                <p className="mt-1 text-xs leading-5 text-indigo-900/70">
+                <p className="mt-1 text-xs leading-5 text-teal-900/70">
                   PDF, JPG hoặc PNG, tối đa 10 MB. Tài liệu chỉ dành cho doanh nghiệp và quản trị viên.
                 </p>
               </div>
@@ -323,7 +339,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
                 <button
                   type="button"
                   onClick={() => void downloadPrivateFile(profile.registrationDocumentFileId!)}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-indigo-700 shadow-xs border border-indigo-200"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-teal-800 shadow-2xs border border-teal-200 hover:bg-teal-50 transition"
                 >
                   <Download className="h-3.5 w-3.5" /> Xem tài liệu
                 </button>
@@ -337,18 +353,18 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
                 setSuccessMessage(null);
                 setSelectedDocument(event.target.files?.[0] ?? null);
               }}
-              className="mt-3 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-3 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:text-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
             />
             <p className="mt-2 text-xs text-slate-500">
               {selectedDocument?.name || profile?.registrationDocument?.originalName || "Chưa chọn tài liệu"}
               {identityLocked ? " (Đã khóa sau khi xác minh pháp lý)" : ""}
             </p>
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 flex items-center gap-2.5 pt-2">
             <button
               type="submit"
               disabled={saving || submitting || isLocked}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-800 disabled:opacity-50 transition cursor-pointer shadow-xs"
             >
               {saving || uploadingDocument ? (
                 <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -362,7 +378,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
                 type="button"
                 onClick={() => void submitForVerification()}
                 disabled={saving || submitting || uploadingDocument}
-                className="ml-2 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-teal-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-900 disabled:opacity-50 transition cursor-pointer shadow-xs"
               >
                 {submitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Gửi hồ sơ xác minh
@@ -524,7 +540,7 @@ function TextField({
         placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 text-sm font-normal disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+        className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 transition"
       />
       {helperText && (
         <span className="mt-1 block text-[11px] font-normal text-slate-500">

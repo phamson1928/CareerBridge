@@ -6,7 +6,7 @@ cd "$DIR"
 
 echo "======================================================================"
 echo "   CAREERBRIDGE ON-PREMISE AI WORKER CLIENT"
-echo "   Khởi chạy ứng dụng và Giao diện Quản trị Nội bộ (Local Web UI)"
+echo "   Hệ thống quét và đánh giá CV nội bộ tự động (Console Daemon)"
 echo "======================================================================"
 echo ""
 
@@ -20,5 +20,5 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-echo "[INFO] Đang khởi động Web Dashboard và AI Worker..."
+echo "[INFO] Đang khởi động AI Worker Client..."
 npm run dev
