@@ -516,8 +516,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     return (
       <>
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-[#006f72] bg-[#00878a] text-white shadow-2xl transition-[width] duration-200 ease-out will-change-[width] ${
-            isSidebarCollapsed ? "lg:w-20" : "lg:w-72"
+          className={`fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-slate-200/80 bg-white text-slate-700 shadow-[2px_0_12px_rgba(0,0,0,0.03)] transition-[width] duration-200 ease-out will-change-[width] ${
+            isSidebarCollapsed ? "lg:w-20" : "lg:w-[300px]"
           }`}
         >
           {onToggleSidebar && (
@@ -534,7 +534,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ? "Mở rộng thanh điều hướng"
                   : "Thu gọn thanh điều hướng"
               }
-              className="absolute -right-3.5 top-[22px] z-50 hidden h-7 w-7 items-center justify-center rounded-full border border-[#006f72]/30 bg-white text-[#00777a] shadow-md transition-all duration-200 hover:scale-110 hover:bg-[#e6f6f6] lg:flex cursor-pointer"
+              className="absolute -right-3.5 top-[22px] z-50 hidden h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:scale-110 hover:text-[#00878a] hover:bg-slate-50 lg:flex cursor-pointer"
             >
               <ChevronLeft
                 className={`h-4 w-4 transition-transform duration-200 ease-out ${
@@ -548,9 +548,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab(navItems[0]?.id || "")}
-              className="flex h-[72px] items-center justify-start gap-3 overflow-hidden border-b border-white/15 px-3.5 text-left cursor-pointer shrink-0"
+              className="flex h-[72px] items-center justify-start gap-3 overflow-hidden border-b border-slate-100 px-3.5 text-left cursor-pointer shrink-0"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-md">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-50 border border-slate-100 p-1 shadow-xs">
                 <img
                   src="/careerbridge-logo.svg"
                   alt="CareerBridge"
@@ -558,16 +558,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 />
               </span>
               <span className={labelTransitionClass}>
-                <span className="block text-base font-black tracking-tight">
+                <span className="block text-base font-bold tracking-tight text-slate-900">
                   CareerBridge
                 </span>
-                <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">
+                <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
                   {user?.isSuperAdmin ? "Quản trị tối cao" : "Ban quản trị phân hệ"}
                 </span>
               </span>
             </button>
             <div
-              className={`overflow-hidden whitespace-nowrap px-5 pt-5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 transition-opacity duration-150 ${
+              className={`overflow-hidden whitespace-nowrap px-5 pt-5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 transition-opacity duration-150 ${
                 isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
               }`}
             >
@@ -586,11 +586,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => setActiveTab(item.id)}
                     className={`flex w-full items-center justify-start gap-2.5 overflow-hidden rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition-colors duration-150 cursor-pointer ${
                       isActive
-                        ? "bg-white text-[#00777a] shadow-lg"
-                        : "text-white/80 hover:bg-white/10 hover:text-white"
+                        ? "bg-[#e6f6f6] text-[#00777a] shadow-xs"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
-                    <span className="flex h-5 w-6 shrink-0 items-center justify-center">
+                    <span className={`flex h-5 w-6 shrink-0 items-center justify-center ${isActive ? "text-[#00777a]" : "text-slate-400"}`}>
                       {item.icon}
                     </span>
                     <span className={labelTransitionClass}>{item.label}</span>
@@ -613,24 +613,24 @@ export const Navbar: React.FC<NavbarProps> = ({
                       }
                       toggleGroup(group.id);
                     }}
-                    className={`flex w-full items-center justify-between gap-2 overflow-hidden rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition-colors duration-150 cursor-pointer ${
+                    className={`flex w-full items-center justify-between gap-1.5 overflow-hidden rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-colors duration-150 cursor-pointer ${
                       !isOpen && hasActiveChild
-                        ? "bg-white/15 text-white"
+                        ? "bg-[#e6f6f6] text-[#00777a]"
                         : isOpen
-                          ? "text-white"
-                          : "text-white/80 hover:bg-white/10 hover:text-white"
+                          ? "text-slate-900 bg-slate-50/70"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="flex h-5 w-6 shrink-0 items-center justify-center">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <span className={`flex h-5 w-6 shrink-0 items-center justify-center ${hasActiveChild ? "text-[#00777a]" : "text-slate-400"}`}>
                         {group.icon}
                       </span>
                       <span className={labelTransitionClass}>{group.label}</span>
                     </div>
                     {!isSidebarCollapsed && (
                       <ChevronDown
-                        className={`h-4 w-4 shrink-0 text-white/70 transition-transform duration-200 ${
-                          isOpen ? "rotate-180 text-white" : ""
+                        className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ml-1 ${
+                          isOpen ? "rotate-180 text-slate-600" : ""
                         }`}
                       />
                     )}
@@ -654,11 +654,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                             onClick={() => setActiveTab(subItem.id)}
                             className={`flex w-full items-center justify-start gap-2.5 overflow-hidden rounded-xl pl-8 pr-3.5 py-2.5 text-left text-sm font-semibold transition-colors duration-150 cursor-pointer ${
                               isSubActive
-                                ? "bg-white text-[#00777a] shadow-lg"
-                                : "text-white/75 hover:bg-white/10 hover:text-white"
+                                ? "bg-[#e6f6f6] text-[#00777a] shadow-xs"
+                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                             }`}
                           >
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                            <span className={`flex h-5 w-5 shrink-0 items-center justify-center ${isSubActive ? "text-[#00777a]" : "text-slate-400"}`}>
                               {subItem.icon}
                             </span>
                             <span className="truncate">{subItem.label}</span>

@@ -221,3 +221,25 @@
 @keyframes admin-notification-fade-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes admin-notification-dialog-in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes admin-notification-dialog-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(8px) scale(.98); } }
+
+/* Shortcut action button inside admin dashboard cards */
+.admin-theme .admin-page button.admin-shortcut-btn {
+  background-color: #fff0f2 !important;
+  color: #da1c2d !important;
+  border: 1px solid #fbd2d6 !important;
+  box-shadow: none !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.admin-theme .admin-page .group:hover button.admin-shortcut-btn,
+.admin-theme .admin-page button.admin-shortcut-btn:hover {
+  background-color: #da1c2d !important;
+  color: #ffffff !important;
+  border-color: #da1c2d !important;
+  box-shadow: 0 4px 14px rgba(218, 28, 45, 0.28) !important;
+  transform: translateX(3px) !important;
+}
+
+.admin-theme .admin-page button.admin-shortcut-btn:active {
+  transform: scale(0.95) !important;
+}

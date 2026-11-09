@@ -26,6 +26,7 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarClock,
+  Check,
   CheckCircle2,
   ClipboardCheck,
   Download,
@@ -33,8 +34,11 @@ import {
   Layers3,
   LoaderCircle,
   RefreshCw,
+  RotateCcw,
+  Search,
   UsersRound,
   ChevronDown,
+  X,
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
 import { dashboardApi } from "../../dashboard/api";
@@ -85,22 +89,26 @@ function MetricCard({
   return (
     <article
       onClick={onClick}
-      className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all sm:p-5 ${
-        onClick ? "cursor-pointer hover:border-slate-300 hover:shadow-md" : ""
+      className={`rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 sm:p-5 ${
+        onClick
+          ? "group cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-[0.99]"
+          : ""
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-800">
             {value}
           </p>
-          <p className="mt-1 text-xs font-medium text-slate-500">{detail}</p>
+          <p className="mt-1 text-xs text-slate-500">{detail}</p>
         </div>
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-200 ${
+            onClick ? "group-hover:scale-105" : ""
+          } ${tone}`}
         >
           <Icon className="h-5 w-5" />
         </div>
@@ -113,6 +121,166 @@ function EmptyChart({ message }: { message: string }) {
   return (
     <div className="flex h-full items-center justify-center text-center text-sm text-slate-500">
       {message}
+    </div>
+  );
+}
+
+interface DropdownOption {
+  value: string;
+  label: string;
+  group?: string;
+}
+
+function CustomDropdown({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Chọn...",
+  searchable = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  searchable?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && searchable && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen, searchable]);
+
+  const selectedOption = useMemo(
+    () => options.find((opt) => opt.value === value),
+    [options, value],
+  );
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options;
+    const q = search.toLowerCase().trim();
+    return options.filter(
+      (opt) =>
+        opt.label.toLowerCase().includes(q) ||
+        (opt.group && opt.group.toLowerCase().includes(q)),
+    );
+  }, [options, search]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <label className="mb-1 block text-xs font-semibold text-slate-600">
+        {label}
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`group flex w-full items-center justify-between gap-2 rounded-xl bg-[#f3f4f6] hover:bg-[#eceef1] px-3.5 py-2.5 text-left text-xs sm:text-sm font-semibold text-slate-800 transition-all outline-none cursor-pointer ${
+          isOpen
+            ? "ring-2 ring-[#00878a]/30 bg-white shadow-xs"
+            : ""
+        }`}
+      >
+        <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-[#00878a]" : "group-hover:text-slate-600"
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 min-w-full sm:min-w-[280px] max-h-72 overflow-hidden rounded-xl border border-slate-100 bg-white p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-slate-800">
+          {searchable && (
+            <div className="p-1 border-b border-slate-100 mb-1">
+              <div className="flex items-center gap-1.5 rounded-lg bg-[#f3f4f6] px-2.5 py-1.5 text-xs text-slate-700">
+                <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <input
+                  ref={inputRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tìm kiếm..."
+                  className="w-full bg-transparent text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="max-h-52 overflow-y-auto space-y-0.5 pr-0.5 text-xs [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {filteredOptions.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs text-slate-400">
+                Không tìm thấy kết quả phù hợp
+              </div>
+            ) : (
+              (() => {
+                let currentGroup: string | undefined = undefined;
+                return filteredOptions.map((opt) => {
+                  const isSelected = opt.value === value;
+                  const showGroup = opt.group && opt.group !== currentGroup;
+                  if (opt.group) currentGroup = opt.group;
+
+                  return (
+                    <React.Fragment key={opt.value}>
+                      {showGroup && (
+                        <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 rounded-md mt-1.5 mb-0.5">
+                          {opt.group}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onChange(opt.value);
+                          setIsOpen(false);
+                          setSearch("");
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left transition cursor-pointer ${
+                          isSelected
+                            ? "bg-teal-50 font-bold text-[#00878a]"
+                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                        }`}
+                      >
+                        <span className="leading-snug">{opt.label}</span>
+                        {isSelected && (
+                          <Check className="h-3.5 w-3.5 text-[#00878a] stroke-[2.5] shrink-0 ml-2" />
+                        )}
+                      </button>
+                    </React.Fragment>
+                  );
+                });
+              })()
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -175,6 +343,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const placementTotal = placementPie.reduce(
     (sum, item) => sum + item.count,
     0,
+  );
+
+  const hasActiveFilters =
+    semesterId !== "ALL" || Boolean(facultyId) || Boolean(majorId) || months !== 6;
+
+  const handleResetFilters = () => {
+    setSemesterId("ALL");
+    setFacultyId("");
+    setMajorId("");
+    setMonths(6);
+  };
+
+  const semesterOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "ALL", label: "Toàn hệ thống" },
+      ...semesters.map((s) => ({ value: s.id, label: s.name })),
+    ],
+    [semesters],
+  );
+
+  const facultyOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "", label: "Tất cả Khoa" },
+      ...faculties.map((f) => {
+        const cleanName = f.name.trim().toLowerCase().startsWith("khoa")
+          ? f.name.trim()
+          : `Khoa ${f.name.trim()}`;
+        return {
+          value: f.id,
+          label: cleanName,
+        };
+      }),
+    ],
+    [faculties],
+  );
+
+  const majorOptions: DropdownOption[] = useMemo(() => {
+    const result: DropdownOption[] = [{ value: "", label: "Tất cả Ngành" }];
+    const targetFaculties = facultyId
+      ? faculties.filter((f) => f.id === facultyId)
+      : faculties;
+
+    targetFaculties.forEach((f) => {
+      const cleanFacultyName = f.name.trim().toLowerCase().startsWith("khoa")
+        ? f.name.trim()
+        : `Khoa ${f.name.trim()}`;
+
+      f.majors.forEach((m) => {
+        result.push({
+          value: m.id,
+          label: m.name,
+          group: cleanFacultyName,
+        });
+      });
+    });
+    return result;
+  }, [faculties, facultyId]);
+
+  const monthOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "3", label: "3 tháng gần nhất" },
+      { value: "6", label: "6 tháng gần nhất" },
+      { value: "9", label: "9 tháng gần nhất" },
+      { value: "12", label: "12 tháng gần nhất" },
+    ],
+    [],
   );
 
   if (loading && !data)
@@ -258,153 +492,122 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <section className="admin-page admin-page--feature space-y-5">
-      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#005c5f] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/20 sm:p-8">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+    <section className="admin-page admin-page--feature space-y-4">
+      {/* Light, Airy & Compact Header with Subtle Elevation */}
+      <header className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        {/* Top row: Title + Actions */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/80">
-              <BarChart3 className="h-3.5 w-3.5" /> Tổng quan vận hành
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#cbebeb] bg-[#e6f6f6] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#00878a]">
+                <BarChart3 className="h-3 w-3" /> Tổng quan vận hành
+              </span>
+              {loading && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#00878a]">
+                  <LoaderCircle className="h-3 w-3 animate-spin" /> Đang đồng bộ...
+                </span>
+              )}
             </div>
-            <h1 className="admin-page-title mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+            <h1 className="admin-page-title mt-1.5 text-xl font-bold tracking-tight text-[#006f72] sm:text-2xl">
               Trung tâm điều hành thực tập
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80">
-              Theo dõi tuyển dụng, hồ sơ thực tập và tiến độ báo cáo bằng dữ
-              liệu vận hành thực tế.
+            <p className="mt-0.5 text-xs text-slate-500">
+              Theo dõi tuyển dụng, hồ sơ thực tập và tiến độ báo cáo bằng dữ liệu vận hành thời gian thực.
             </p>
           </div>
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="text-xs font-semibold text-white/80">
-              Kỳ thực tập
-              <div className="relative mt-1.5">
-                <select
-                  value={semesterId}
-                  onChange={(event) => setSemesterId(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
-                >
-                  <option className="bg-slate-900 text-white py-1" value="ALL">
-                    Toàn hệ thống
-                  </option>
-                  {semesters.map((semester) => (
-                    <option
-                      className="bg-slate-900 text-white py-1"
-                      key={semester.id}
-                      value={semester.id}
-                    >
-                      {semester.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-              </div>
-            </label>
-            <label className="text-xs font-semibold text-white/80">
-              Khoa
-              <div className="relative mt-1.5">
-                <select
-                  value={facultyId}
-                  onChange={(event) => {
-                    setFacultyId(event.target.value);
-                    setMajorId("");
-                  }}
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
-                >
-                  <option className="bg-slate-900 text-white py-1" value="">
-                    Tất cả Khoa
-                  </option>
-                  {faculties.map((f) => (
-                    <option
-                      className="bg-slate-900 text-white py-1"
-                      key={f.id}
-                      value={f.id}
-                    >
-                      {f.code} — {f.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-              </div>
-            </label>
-            <label className="text-xs font-semibold text-white/80">
-              Ngành đào tạo
-              <div className="relative mt-1.5">
-                <select
-                  value={majorId}
-                  onChange={(event) => setMajorId(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
-                >
-                  <option className="bg-slate-900 text-white py-1" value="">
-                    Tất cả Ngành
-                  </option>
-                  {(facultyId
-                    ? faculties.filter((f) => f.id === facultyId)
-                    : faculties
-                  ).map((f) => (
-                    <optgroup
-                      className="bg-slate-900 text-white"
-                      key={f.id}
-                      label={`Khoa ${f.name}`}
-                    >
-                      {f.majors.map((m) => (
-                        <option
-                          className="bg-slate-900 text-white py-1"
-                          key={m.id}
-                          value={m.id}
-                        >
-                          {m.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-              </div>
-            </label>
-            <label className="text-xs font-semibold text-white/80">
-              Khoảng thời gian
-              <div className="relative mt-1.5">
-                <select
-                  value={months}
-                  onChange={(event) =>
-                    setMonths(Number(event.target.value) as 3 | 6 | 9 | 12)
-                  }
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
-                >
-                  {[3, 6, 9, 12].map((value) => (
-                    <option
-                      className="bg-slate-900 text-white py-1"
-                      key={value}
-                      value={value}
-                    >
-                      {value} tháng gần nhất
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-              </div>
-            </label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void load()}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-[#00878a]/40 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+              title="Làm mới số liệu"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 text-slate-500 ${
+                  loading ? "animate-spin text-[#00878a]" : ""
+                }`}
+              />
+              Làm mới
+            </button>
+            <button
+              type="button"
+              onClick={exportDashboardExcel}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#00878a] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98] cursor-pointer"
+            >
+              <Download className="h-3.5 w-3.5" /> Xuất báo cáo Excel Khoa/Ngành
+            </button>
           </div>
         </div>
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-xs text-white/75">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+
+        {/* Filter Area - Compact & High-Contrast */}
+        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <CustomDropdown
+            label="Kỳ thực tập"
+            value={semesterId}
+            onChange={setSemesterId}
+            options={semesterOptions}
+          />
+
+          <CustomDropdown
+            label="Khoa"
+            value={facultyId}
+            onChange={(val) => {
+              setFacultyId(val);
+              setMajorId("");
+            }}
+            options={facultyOptions}
+            searchable
+          />
+
+          <CustomDropdown
+            label="Ngành đào tạo"
+            value={majorId}
+            onChange={setMajorId}
+            options={majorOptions}
+            searchable
+          />
+
+          <CustomDropdown
+            label="Khoảng thời gian"
+            value={String(months)}
+            onChange={(val) =>
+              setMonths(Number(val) as 3 | 6 | 9 | 12)
+            }
+            options={monthOptions}
+          />
+        </div>
+
+        {/* Footer Metadata */}
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="inline-flex items-center gap-1.5">
-              <CalendarClock className="h-3.5 w-3.5" /> Cập nhật:{" "}
-              {dateTime.format(new Date(scope.generatedAt))}
-            </span>
-            <span>Phạm vi: {scope.semester?.name ?? "Toàn hệ thống"}</span>
-            {loading && (
-              <span className="inline-flex items-center gap-1.5 text-white">
-                <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> Đang đồng bộ
+              <CalendarClock className="h-3.5 w-3.5 text-slate-400" /> Cập nhật:{" "}
+              <span className="font-semibold text-slate-700">
+                {dateTime.format(new Date(scope.generatedAt))}
               </span>
+            </span>
+            <span className="text-slate-300">•</span>
+            <span>
+              Phạm vi:{" "}
+              <span className="font-semibold text-slate-700">
+                {scope.semester?.name ?? "Toàn hệ thống"}
+              </span>
+            </span>
+            {hasActiveFilters && (
+              <>
+                <span className="text-slate-300">•</span>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1 font-bold text-[#00878a] hover:text-[#005c5f] transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" /> Đặt lại mặc định
+                </button>
+              </>
             )}
           </div>
-          <button
-            type="button"
-            onClick={exportDashboardExcel}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/15 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-white/25"
-          >
-            <Download className="h-4 w-4" /> Xuất báo cáo Excel Khoa/Ngành
-          </button>
         </div>
       </header>
       {error && (
@@ -468,55 +671,67 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {[
           {
             label: "Tỷ lệ sinh viên đã có nơi thực tập",
-            value: kpis.placementCoverageRate,
+            value: `${kpis.placementCoverageRate}%`,
             detail: `${number.format(kpis.placedStudents)}/${number.format(kpis.applicantStudents)} sinh viên ứng tuyển`,
-            color: "from-[#00878a] to-[#006f72]",
+            textColor: "text-[#00878a]",
+            accentBorder: "border-l-4 border-[#00878a]",
           },
           {
             label: "Tỷ lệ lấp đầy slot",
-            value: kpis.slotOccupancyRate,
+            value: `${kpis.slotOccupancyRate}%`,
             detail: `${number.format(kpis.filledSlots)}/${number.format(kpis.totalSlots)} vị trí đã dùng`,
-            color: "from-[#006f72] to-[#00878a]",
+            textColor: "text-[#00878a]",
+            accentBorder: "border-l-4 border-[#00878a]",
           },
           {
             label: "Hồ sơ chưa phân công",
-            value: kpis.unassignedPlacements,
+            value: String(kpis.unassignedPlacements),
             detail: "Cần chỉ định giảng viên hướng dẫn",
-            color: "from-[#da1c2d] to-[#b41425]",
+            textColor: "text-[#da1c2d]",
+            accentBorder: "border-l-4 border-[#da1c2d]",
             action: "teacher-assignment",
           },
         ].map((item) => (
           <article
             key={item.label}
-            className={`rounded-2xl bg-gradient-to-br ${item.color} p-5 text-white shadow-lg`}
+            onClick={item.action ? () => onNavigate?.(item.action) : undefined}
+            className={`rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 ${item.accentBorder} ${
+              item.action
+                ? "group cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-[0.99]"
+                : ""
+            }`}
           >
-            <p className="text-xs font-bold uppercase tracking-wider text-white/75">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               {item.label}
             </p>
             <div className="mt-2 flex items-end justify-between gap-4">
-              <p className="text-4xl font-black">
+              <p className={`text-3xl font-bold tracking-tight ${item.textColor}`}>
                 {item.value}
-                {item.action ? "" : "%"}
               </p>
               {item.action && (
                 <button
-                  onClick={() => onNavigate?.(item.action)}
-                  className="rounded-xl bg-white/15 p-2 text-white transition hover:bg-white/25"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigate?.(item.action);
+                  }}
+                  className="admin-shortcut-btn flex h-9 w-9 items-center justify-center rounded-xl cursor-pointer"
                   aria-label="Mở phân công giảng viên"
+                  title="Chuyển đến phân công giảng viên"
                 >
-                  <ArrowRight className="h-5 w-5" />
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200" />
                 </button>
               )}
             </div>
-            <p className="mt-2 text-xs text-white/80">{item.detail}</p>
+            <p className="mt-2 text-xs text-slate-500">{item.detail}</p>
           </article>
         ))}
       </div>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <article className="xl:col-span-2 rounded-3xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+        <article className="xl:col-span-2 rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-black text-slate-900">Nhịp độ tuyển dụng</h2>
+              <h2 className="font-bold text-slate-800">Nhịp độ tuyển dụng</h2>
               <p className="mt-1 text-xs text-slate-500">
                 Lượt ứng tuyển, hồ sơ thực tập mới và hồ sơ hoàn tất theo tháng.
               </p>
@@ -600,8 +815,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
         </article>
-        <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-          <h2 className="font-black text-slate-900">
+        <article className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:p-6">
+          <h2 className="font-bold text-slate-800">
             Trạng thái hồ sơ thực tập
           </h2>
           <p className="mt-1 text-xs text-slate-500">
@@ -636,7 +851,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-black text-slate-950">
+                  <span className="text-2xl font-bold text-slate-800">
                     {number.format(placementTotal)}
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -661,7 +876,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                   {placementLabels[item.status]}
                 </span>
-                <strong className="text-slate-900">
+                <strong className="text-slate-800 font-bold">
                   {number.format(item.count)}
                 </strong>
               </div>
@@ -670,10 +885,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </article>
       </div>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <article className="xl:col-span-2 rounded-3xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+        <article className="xl:col-span-2 rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:p-6">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="font-black text-slate-900">
+              <h2 className="font-bold text-slate-800">
                 Kỹ năng có nhu cầu cao
               </h2>
               <p className="mt-1 text-xs text-slate-500">
@@ -726,8 +941,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
         </article>
-        <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-          <h2 className="font-black text-slate-900">Cần ưu tiên xử lý</h2>
+        <article className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:p-6">
+          <h2 className="font-bold text-slate-800">Cần ưu tiên xử lý</h2>
           <p className="mt-1 text-xs text-slate-500">
             Các việc có thể làm chậm vận hành.
           </p>
@@ -756,12 +971,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 key={item.label}
                 disabled={!item.tab}
                 onClick={() => item.tab && onNavigate?.(item.tab)}
-                className={`flex w-full items-center justify-between rounded-2xl p-3 text-left transition ${item.tab ? "hover:scale-[1.01] hover:shadow-sm" : "cursor-default"} ${item.tone}`}
+                className={`group flex w-full items-center justify-between rounded-2xl p-3 text-left transition duration-200 ${item.tab ? "hover:scale-[1.01] hover:shadow-sm cursor-pointer" : "cursor-default"} ${item.tone}`}
               >
                 <span className="text-xs font-bold">{item.label}</span>
-                <span className="inline-flex items-center gap-2 text-lg font-black">
+                <span className="inline-flex items-center gap-2 text-lg font-bold">
                   {number.format(item.value)}
-                  {item.tab && <ArrowRight className="h-4 w-4" />}
+                  {item.tab && <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />}
                 </span>
               </button>
             ))}
@@ -769,10 +984,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </article>
       </div>
       {facultyBreakdown.length > 0 && (
-        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
+        <article className="overflow-hidden rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
           <div className="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
             <div>
-              <h2 className="font-black text-slate-900">
+              <h2 className="font-bold text-slate-800">
                 Thống kê thực tập theo Khoa &amp; Ngành đào tạo
               </h2>
               <p className="mt-0.5 text-xs text-slate-500">
