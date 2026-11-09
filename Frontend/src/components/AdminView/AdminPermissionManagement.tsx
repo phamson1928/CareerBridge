@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Check,
+  ChevronDown,
   Crown,
   KeyRound,
   LoaderCircle,
   Plus,
-  RefreshCw,
+  RotateCcw,
   Search,
   Shield,
   Trash2,
@@ -25,6 +27,125 @@ const statusLabel: Record<UserStatus, string> = {
   INACTIVE: "Chưa kích hoạt",
   BANNED: "Đã khóa",
 };
+
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+function CustomDropdown({
+  value,
+  onChange,
+  options,
+  placeholder = "Chọn...",
+  className = "",
+  disabled = false,
+  compact = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+  compact?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  const selectedOption = useMemo(
+    () => options.find((opt) => opt.value === value),
+    [options, value]
+  );
+
+  return (
+    <div
+      className={`relative ${compact ? "inline-block" : ""} ${
+        isOpen ? "z-40" : "z-auto"
+      } ${className}`}
+      ref={containerRef}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) setIsOpen((prev) => !prev);
+        }}
+        className={`group flex items-center justify-between gap-1.5 transition outline-none shadow-2xs ${
+          compact
+            ? "h-8 px-2.5 text-xs font-semibold rounded-lg border bg-white min-w-[125px]"
+            : "h-10 w-full px-3.5 text-xs font-semibold rounded-xl border bg-white text-left"
+        } ${
+          isOpen
+            ? "border-[#00878a] ring-2 ring-[#00878a]/20"
+            : "border-slate-200 hover:border-slate-300"
+        } ${disabled ? "cursor-not-allowed opacity-50 bg-slate-50" : "cursor-pointer"}`}
+      >
+        <span className={`truncate ${value ? "text-slate-800" : "text-slate-600"}`}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+            compact ? "h-3.5 w-3.5" : "h-4 w-4"
+          } ${isOpen ? "rotate-180 text-[#00878a]" : "group-hover:text-slate-600"}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className={`absolute top-full left-0 mt-1 z-50 rounded-xl border border-slate-100 bg-white p-1 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-slate-800 ${
+            compact ? "min-w-[145px]" : "min-w-full sm:min-w-[190px]"
+          }`}
+        >
+          <div className="max-h-56 overflow-y-auto space-y-0.5">
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`flex w-full items-center justify-between rounded-lg ${
+                  compact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-xs"
+                } text-left transition-colors cursor-pointer ${
+                  opt.value === value
+                    ? "bg-[#e6f6f6] font-semibold text-[#00878a]"
+                    : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <span className="truncate">{opt.label}</span>
+                {opt.value === value && (
+                  <Check className="h-3.5 w-3.5 shrink-0 text-[#00878a]" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const adminStatusOptions: DropdownOption[] = [
+  { value: "ACTIVE", label: statusLabel.ACTIVE },
+  { value: "INACTIVE", label: statusLabel.INACTIVE },
+  { value: "BANNED", label: statusLabel.BANNED },
+];
 
 export const AdminPermissionManagement: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -84,6 +205,15 @@ export const AdminPermissionManagement: React.FC = () => {
       return true;
     });
   }, [adminList, filterType, search]);
+
+  const adminFilterOptions = useMemo<DropdownOption[]>(
+    () => [
+      { value: "ALL", label: `Tất cả quản trị (${adminList.length})` },
+      { value: "SUPER", label: `Quản trị tối cao (${superAdminCount})` },
+      { value: "SUB", label: `Admin phụ (${subAdminCount})` },
+    ],
+    [adminList.length, superAdminCount, subAdminCount]
+  );
 
   const openEditModal = (admin: ManagedUser) => {
     setEditingUser(admin);
@@ -273,39 +403,52 @@ export const AdminPermissionManagement: React.FC = () => {
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-2">
-          <div className="flex flex-1 items-center gap-2 bg-slate-100 rounded-xl px-3 py-2 text-xs text-slate-700">
-            <Search className="w-4 h-4 text-slate-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+          <div className="flex h-10 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-2xs transition focus-within:border-[#00878a] focus-within:ring-2 focus-within:ring-[#00878a]/20">
+            <Search className="h-4 w-4 shrink-0 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm theo email quản trị viên..."
-              className="bg-transparent focus:outline-none w-full"
+              className="w-full text-xs text-slate-800 outline-none placeholder:text-slate-400"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="cursor-pointer text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
-          <select
+          <CustomDropdown
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as "ALL" | "SUPER" | "SUB")}
-            className="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-semibold text-slate-700"
-          >
-            <option value="ALL">Tất cả quản trị ({adminList.length})</option>
-            <option value="SUPER">Quản trị tối cao ({superAdminCount})</option>
-            <option value="SUB">Admin phụ ({subAdminCount})</option>
-          </select>
+            onChange={(val) => setFilterType(val as "ALL" | "SUPER" | "SUB")}
+            options={adminFilterOptions}
+            className="w-full shrink-0 sm:w-[210px]"
+          />
           <button
-            onClick={() => void loadAdmins()}
-            className="p-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition"
-            aria-label="Tải lại danh sách"
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setFilterType("ALL");
+              void loadAdmins();
+            }}
+            disabled={loading}
+            className="inline-flex h-10 cursor-pointer shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[#cbebeb] bg-[#e6f6f6] px-3.5 text-xs font-semibold text-[#00878a] shadow-2xs transition hover:bg-[#d5eeee] active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+            title="Đặt lại bộ lọc và làm mới dữ liệu"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <RotateCcw className={`h-4 w-4 shrink-0 ${loading ? "animate-spin" : ""}`} />
+            <span>Làm mới</span>
           </button>
         </div>
         {error && <p className="text-xs text-rose-600">{error}</p>}
       </div>
 
       {/* Bảng danh sách Quản trị viên gọn gàng */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-visible">
+        <div className="overflow-x-auto min-h-[220px]">
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
               <tr>
@@ -367,16 +510,15 @@ export const AdminPermissionManagement: React.FC = () => {
 
                       {/* Trạng thái */}
                       <td className="p-4 whitespace-nowrap">
-                        <select
+                        <CustomDropdown
                           disabled={isCurrent || savingId === admin.id}
                           value={admin.status}
-                          onChange={(e) => void handleStatusChange(admin, e.target.value as UserStatus)}
-                          className="border border-slate-200 rounded-lg px-2 py-1 bg-white text-xs font-semibold outline-none cursor-pointer disabled:opacity-50"
-                        >
-                          <option value="ACTIVE">{statusLabel.ACTIVE}</option>
-                          <option value="INACTIVE">{statusLabel.INACTIVE}</option>
-                          <option value="BANNED">{statusLabel.BANNED}</option>
-                        </select>
+                          onChange={(val) =>
+                            void handleStatusChange(admin, val as UserStatus)
+                          }
+                          options={adminStatusOptions}
+                          compact
+                        />
                       </td>
 
                       {/* Phân hệ phụ trách */}

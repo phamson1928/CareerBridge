@@ -2,18 +2,24 @@ import React, { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Ban,
+  Briefcase,
   Building2,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
   Download,
-  Eye,
+  ExternalLink,
+  FileText,
+  Globe,
   LoaderCircle,
-  RefreshCw,
+  Mail,
+  MapPin,
+  Phone,
   Search,
   Send,
   Undo2,
+  User,
   X,
   XCircle,
 } from "lucide-react";
@@ -264,28 +270,15 @@ export const CompanyModeration: React.FC = () => {
     <div className="admin-page admin-page--standard space-y-6">
       {/* Search & Header Section */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="admin-page-title text-xl font-bold text-slate-900">
-              Xác minh doanh nghiệp
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Kiểm tra thông tin pháp lý, đối chiếu giấy phép và xác thực
-              email trước khi cho phép hoạt động. Nhấn vào từng dòng để xem hồ
-              sơ chi tiết.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-200 disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-            />{" "}
-            Tải lại
-          </button>
+        <div>
+          <h2 className="admin-page-title text-xl font-bold text-slate-900">
+            Xác minh doanh nghiệp
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Kiểm tra thông tin pháp lý, đối chiếu giấy phép và xác thực
+            email trước khi cho phép hoạt động. Nhấn vào từng dòng để xem hồ
+            sơ chi tiết.
+          </p>
         </div>
 
         <div className="mt-5 flex flex-col gap-3 lg:flex-row">
@@ -301,7 +294,7 @@ export const CompanyModeration: React.FC = () => {
                 }
               }}
               placeholder="Tìm theo tên doanh nghiệp, mã số ĐKDN hoặc email..."
-              className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-indigo-500"
+              className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-[#00878a]"
             />
           </label>
           <button
@@ -310,7 +303,7 @@ export const CompanyModeration: React.FC = () => {
               setPage(1);
               void load(1);
             }}
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-700"
+            className="rounded-xl bg-[#00878a] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#006f72] cursor-pointer"
           >
             Tìm kiếm
           </button>
@@ -325,9 +318,9 @@ export const CompanyModeration: React.FC = () => {
                 setSelectedStatus(option.value);
                 setPage(1);
               }}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
                 selectedStatus === option.value
-                  ? "bg-indigo-600 text-white shadow-xs"
+                  ? "bg-[#00878a] text-white shadow-xs"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -364,15 +357,14 @@ export const CompanyModeration: React.FC = () => {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-600">
+              <table className="w-full text-left text-xs text-slate-600 table-fixed">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th className="px-4 py-3.5">Doanh nghiệp</th>
-                    <th className="px-4 py-3.5">Mã số DN</th>
-                    <th className="px-4 py-3.5">Liên hệ</th>
-                    <th className="px-4 py-3.5">Địa chỉ</th>
-                    <th className="px-4 py-3.5">Trạng thái</th>
-                    <th className="px-4 py-3.5 text-right">Thao tác</th>
+                    <th className="w-[30%] px-4 py-3.5">Doanh nghiệp</th>
+                    <th className="w-[16%] px-4 py-3.5">Mã số DN</th>
+                    <th className="w-[24%] px-4 py-3.5">Liên hệ</th>
+                    <th className="w-[20%] px-4 py-3.5">Địa chỉ</th>
+                    <th className="w-[10%] px-4 py-3.5 text-right">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -384,11 +376,11 @@ export const CompanyModeration: React.FC = () => {
                       <tr
                         key={company.id}
                         onClick={() => void openDetail(company)}
-                        className="cursor-pointer transition hover:bg-slate-50/90"
+                        className="h-[70px] cursor-pointer transition hover:bg-slate-50/90"
                       >
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-indigo-50 text-xs font-black text-indigo-700">
+                        <td className="px-4 py-2.5 align-middle h-[70px]">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#e6f6f6] border border-[#cbebeb] text-xs font-bold text-[#00878a]">
                               {company.logo ? (
                                 <img
                                   src={company.logo}
@@ -399,42 +391,61 @@ export const CompanyModeration: React.FC = () => {
                                 company.companyName.charAt(0).toUpperCase()
                               )}
                             </div>
-                            <div className="min-w-0 max-w-[220px] xl:max-w-xs">
-                              <p className="truncate text-sm font-bold text-slate-900">
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className="truncate text-xs font-bold text-slate-900 hover:text-[#00878a] transition"
+                                title={company.companyName}
+                              >
                                 {company.companyName}
                               </p>
-                              <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                              <p
+                                className="mt-0.5 truncate text-[11px] text-slate-500"
+                                title={company.industry || "Chưa cập nhật lĩnh vực"}
+                              >
                                 {company.industry || "Chưa cập nhật lĩnh vực"}
                               </p>
                             </div>
                           </div>
                         </td>
 
-                        <td className="whitespace-nowrap px-4 py-3.5 align-middle font-mono text-xs font-semibold text-slate-700">
-                          {company.businessRegistrationNumber || "Chưa cập nhật"}
+                        <td className="whitespace-nowrap px-4 py-2.5 align-middle font-mono text-xs font-semibold text-slate-700 h-[70px]">
+                          <span className="truncate block" title={company.businessRegistrationNumber || ""}>
+                            {company.businessRegistrationNumber || "Chưa cập nhật"}
+                          </span>
                         </td>
 
-                        <td className="max-w-[200px] px-4 py-3.5 align-middle">
-                          <p className="truncate font-semibold text-slate-800">
-                            {company.contactEmail ||
-                              company.user?.email ||
-                              "Chưa cập nhật"}
-                          </p>
-                          <p className="mt-0.5 truncate text-[11px] text-slate-500">
-                            {company.contactPersonName ||
-                              company.contactPhone ||
-                              "Chưa có SĐT / người liên hệ"}
-                          </p>
+                        <td className="px-4 py-2.5 align-middle h-[70px]">
+                          <div className="min-w-0">
+                            <p
+                              className="truncate font-semibold text-slate-800 text-xs"
+                              title={company.contactEmail || company.user?.email || ""}
+                            >
+                              {company.contactEmail ||
+                                company.user?.email ||
+                                "Chưa cập nhật"}
+                            </p>
+                            <p
+                              className="mt-0.5 truncate text-[11px] text-slate-500"
+                              title={company.contactPersonName || company.contactPhone || ""}
+                            >
+                              {company.contactPersonName ||
+                                company.contactPhone ||
+                                "Chưa có SĐT / người liên hệ"}
+                            </p>
+                          </div>
                         </td>
 
-                        <td className="max-w-[220px] px-4 py-3.5 align-middle">
-                          <p className="truncate text-xs text-slate-600">
+                        <td className="px-4 py-2.5 align-middle h-[70px]">
+                          <p
+                            className="truncate text-xs text-slate-600"
+                            title={company.address || "Chưa cập nhật"}
+                          >
                             {company.address || "Chưa cập nhật"}
                           </p>
                         </td>
 
-                        <td className="whitespace-nowrap px-4 py-3.5 align-middle">
-                          <div className="flex flex-col items-start gap-1">
+                        <td className="whitespace-nowrap px-4 py-2.5 align-middle text-right h-[70px]">
+                          <div className="flex flex-col items-end gap-1">
                             <span
                               className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusClass[company.status]}`}
                             >
@@ -453,19 +464,6 @@ export const CompanyModeration: React.FC = () => {
                               </span>
                             )}
                           </div>
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-3.5 text-right align-middle">
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void openDetail(company);
-                            }}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100"
-                          >
-                            <Eye className="h-3.5 w-3.5" /> Xem chi tiết
-                          </button>
                         </td>
                       </tr>
                     );
@@ -514,7 +512,7 @@ export const CompanyModeration: React.FC = () => {
           onClick={closeModals}
         >
           <div
-            className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
@@ -526,35 +524,43 @@ export const CompanyModeration: React.FC = () => {
                     {statusLabel[selected.status]}
                   </span>
                 </div>
-                <h3 className="mt-1.5 text-lg font-bold text-slate-900">
+                <h3 className="mt-1 text-lg font-bold text-slate-900">
                   Hồ sơ xác minh doanh nghiệp
                 </h3>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="mt-0.5 text-xs font-medium text-slate-500">
                   {selected.companyName}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={closeModals}
-                className="rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+            <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto px-6 py-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {/* SLA Alert */}
               {selected.status === "PENDING" && selected.reviewDueAt && (
                 <div
-                  className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-semibold ${
+                  className={`flex items-center gap-3 rounded-xl border p-3.5 text-xs font-semibold ${
                     selected.isOverdue
-                      ? "border-rose-200 bg-rose-50 text-rose-700"
-                      : "border-amber-200 bg-amber-50 text-amber-800"
+                      ? "border-rose-200 bg-rose-50/80 text-rose-700"
+                      : "border-amber-200 bg-amber-50/80 text-amber-800"
                   }`}
                 >
-                  <Clock className="h-4 w-4 shrink-0" />
-                  <div>
-                    <p>
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                      selected.isOverdue
+                        ? "bg-rose-100 text-rose-600"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold">
                       {selected.isOverdue
                         ? "Hồ sơ đã quá thời hạn cam kết SLA!"
                         : `Thời hạn cam kết SLA: còn ${selected.hoursRemaining ?? 0} giờ`}
@@ -574,71 +580,202 @@ export const CompanyModeration: React.FC = () => {
                 </div>
               )}
 
-              {/* Information Grid */}
-              <div className="grid gap-4 rounded-xl border border-slate-200/70 bg-slate-50 p-4 text-xs sm:grid-cols-2">
-                <Info label="Tên pháp lý" value={selected.companyName} />
-                <Info
-                  label="Mã số doanh nghiệp"
-                  value={selected.businessRegistrationNumber}
-                />
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                    Email tài khoản
-                  </p>
-                  <p className="mt-1 break-words text-sm font-medium text-slate-800">
-                    {selected.user?.email || "Chưa có"}
-                  </p>
-                  {selected.user?.emailVerifiedAt ? (
-                    <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-                      <CheckCircle2 className="h-3 w-3" /> Đã xác thực (
-                      {new Date(
-                        selected.user.emailVerifiedAt,
-                      ).toLocaleDateString("vi-VN")}
-                      )
-                    </span>
-                  ) : (
-                    <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
-                      <AlertTriangle className="h-3 w-3" /> Chưa xác thực email
+              {/* Box 1: Thông tin định danh & Pháp lý */}
+              <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                    <Building2 className="h-3.5 w-3.5" />
+                    Thông tin định danh &amp; Pháp lý
+                  </span>
+                  {selected.industry && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                      <Briefcase className="h-3 w-3 text-slate-400" />
+                      {selected.industry}
                     </span>
                   )}
                 </div>
-                <Info label="Email liên hệ" value={selected.contactEmail} />
-                <Info label="Người liên hệ" value={selected.contactPersonName} />
-                <Info label="Số điện thoại" value={selected.contactPhone} />
-                <Info label="Địa chỉ hoạt động" value={selected.address} />
-                <Info label="Website" value={selected.website} />
-                <div className="sm:col-span-2">
-                  <Info label="Lĩnh vực" value={selected.industry} />
-                </div>
-                {selected.description && (
-                  <div className="sm:col-span-2">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                      Giới thiệu doanh nghiệp
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Tên pháp lý
                     </p>
-                    <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-700">
-                      {selected.description}
+                    <p className="mt-0.5 text-sm font-bold text-slate-900 leading-snug">
+                      {selected.companyName}
                     </p>
                   </div>
-                )}
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Mã số doanh nghiệp (MST)
+                    </p>
+                    <p className="mt-0.5 inline-block font-mono text-xs font-bold text-slate-800 bg-slate-50 px-2 py-0.5 rounded border border-slate-200/70">
+                      {selected.businessRegistrationNumber || (
+                        <span className="font-sans font-normal text-slate-400">
+                          Chưa cập nhật
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Box 2: Thông tin liên hệ & Tài khoản */}
+              <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                    <User className="h-3.5 w-3.5" />
+                    Thông tin liên hệ &amp; Đại diện
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Người liên hệ
+                    </p>
+                    <p className="mt-0.5 text-xs font-semibold text-slate-800">
+                      {selected.contactPersonName || (
+                        <span className="font-normal text-slate-400">
+                          Chưa cập nhật
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Số điện thoại
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                      {selected.contactPhone ? (
+                        <>
+                          <Phone className="h-3 w-3 text-slate-400" />
+                          <span>{selected.contactPhone}</span>
+                        </>
+                      ) : (
+                        <span className="font-normal text-slate-400">
+                          Chưa cập nhật
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Email tài khoản
+                    </p>
+                    <p className="mt-0.5 break-all text-xs font-semibold text-slate-800">
+                      {selected.user?.email || "Chưa có"}
+                    </p>
+                    {selected.user?.emailVerifiedAt ? (
+                      <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                        <CheckCircle2 className="h-3 w-3" /> Đã xác thực (
+                        {new Date(
+                          selected.user.emailVerifiedAt,
+                        ).toLocaleDateString("vi-VN")}
+                        )
+                      </span>
+                    ) : (
+                      <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                        <AlertTriangle className="h-3 w-3" /> Chưa xác thực email
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Email liên hệ tiếp nhận
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-slate-800 break-all">
+                      {selected.contactEmail ? (
+                        <>
+                          <Mail className="h-3 w-3 text-slate-400 shrink-0" />
+                          <span>{selected.contactEmail}</span>
+                        </>
+                      ) : (
+                        <span className="font-normal text-slate-400">
+                          Chưa cập nhật
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Box 3: Trụ sở & Giới thiệu */}
+              <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Địa chỉ &amp; Giới thiệu
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Địa chỉ hoạt động
+                    </p>
+                    <p className="mt-0.5 flex items-start gap-1.5 text-xs font-medium text-slate-800 leading-relaxed">
+                      <MapPin className="mt-0.5 h-3.5 w-3.5 text-slate-400 shrink-0" />
+                      <span>{selected.address || "Chưa cập nhật"}</span>
+                    </p>
+                  </div>
+
+                  {selected.website && (
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        Website chính thức
+                      </p>
+                      <a
+                        href={
+                          selected.website.startsWith("http")
+                            ? selected.website
+                            : `https://${selected.website}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-0.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#00878a] hover:underline"
+                      >
+                        <Globe className="h-3.5 w-3.5 shrink-0" />
+                        <span>{selected.website}</span>
+                        <ExternalLink className="h-3 w-3 opacity-70" />
+                      </a>
+                    </div>
+                  )}
+
+                  {selected.description && (
+                    <div className="pt-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        Giới thiệu doanh nghiệp
+                      </p>
+                      <div className="mt-1 rounded-lg border border-slate-100 bg-slate-50/70 p-3 text-xs leading-relaxed text-slate-700 whitespace-pre-wrap">
+                        {selected.description}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Registration Document */}
               {selected.registrationDocumentFileId &&
               selected.registrationDocument ? (
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
-                  <div>
-                    <p className="text-sm font-bold text-indigo-950">
-                      Giấy đăng ký doanh nghiệp
-                    </p>
-                    <p className="mt-0.5 text-xs text-indigo-900/70">
-                      {selected.registrationDocument.originalName} ·{" "}
-                      {(
-                        selected.registrationDocument.sizeBytes /
-                        1024 /
-                        1024
-                      ).toFixed(2)}{" "}
-                      MB
-                    </p>
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-[#cbebeb] bg-[#f0f9f9] p-3.5 shadow-2xs">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#e6f6f6] text-[#00878a]">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-900 truncate">
+                        Giấy đăng ký doanh nghiệp
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                        {selected.registrationDocument.originalName} ·{" "}
+                        {(
+                          selected.registrationDocument.sizeBytes /
+                          1024 /
+                          1024
+                        ).toFixed(2)}{" "}
+                        MB
+                      </p>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -647,38 +784,51 @@ export const CompanyModeration: React.FC = () => {
                         selected.registrationDocumentFileId!,
                       )
                     }
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 shadow-xs transition hover:bg-indigo-50"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#cbebeb] bg-white px-3 py-1.5 text-xs font-bold text-[#00878a] shadow-2xs transition hover:bg-[#e6f6f6] cursor-pointer"
                   >
-                    <Download className="h-4 w-4" /> Xem & Tải về
+                    <Download className="h-3.5 w-3.5" /> Xem &amp; Tải về
                   </button>
                 </div>
               ) : (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                  Doanh nghiệp chưa tải lên tệp Giấy đăng ký doanh nghiệp.
+                <div className="flex items-center gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 p-3.5 text-amber-800 shadow-2xs">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-amber-900">
+                      Chưa nộp Giấy đăng ký doanh nghiệp
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-amber-700">
+                      Doanh nghiệp chưa tải lên tệp Giấy đăng ký doanh nghiệp để đối soát pháp lý.
+                    </p>
+                  </div>
                 </div>
               )}
 
               {/* Checklist Section for Pending Status */}
               {selected.status === "PENDING" && (
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-slate-900">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+                    <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
                       Checklist xác minh bắt buộc (6 tiêu chí)
-                    </p>
-                    <span className="text-xs font-semibold text-slate-500">
-                      {
-                        REQUIRED_CHECKLIST_CODES.filter((c) => checklist[c])
-                          .length
-                      }{" "}
-                      / 6 đã kiểm tra
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                        REQUIRED_CHECKLIST_CODES.filter((c) => checklist[c]).length === 6
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                          : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {REQUIRED_CHECKLIST_CODES.filter((c) => checklist[c]).length} / 6 đã kiểm tra
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="text-xs text-slate-500">
                     Người duyệt cần kiểm tra và tích chọn thủ công từng tiêu
-                    chí. Nút "Duyệt hồ sơ" chỉ mở khi cả 6 mục hợp lệ.
+                    chí. Nút &quot;Duyệt hồ sơ&quot; chỉ mở khi cả 6 mục hợp lệ.
                   </p>
 
-                  <div className="mt-4 space-y-2.5">
+                  <div className="mt-3.5 space-y-2">
                     {REQUIRED_CHECKLIST_CODES.map((code) => {
                       const isEmailCheck = code === "ACCOUNT_EMAIL_VERIFIED";
                       const emailVerified = Boolean(
@@ -688,17 +838,17 @@ export const CompanyModeration: React.FC = () => {
                       return (
                         <label
                           key={code}
-                          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-2.5 transition ${
                             checklist[code]
-                              ? "border-emerald-300 bg-emerald-50/50"
-                              : "border-slate-200 hover:bg-slate-50"
+                              ? "border-[#00878a]/40 bg-[#e6f6f6]/40"
+                              : "border-slate-200/70 hover:bg-slate-50/80"
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={checklist[code]}
                             onChange={() => toggleCheck(code)}
-                            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[#00878a]"
                           />
                           <div className="text-xs">
                             <p className="font-semibold text-slate-800">
@@ -718,42 +868,53 @@ export const CompanyModeration: React.FC = () => {
                 </div>
               )}
 
-              {/* Rejection / Suspension Notice if already set */}
+              {/* Rejection / Suspension Notice */}
               {selected.rejectionReason && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800">
-                  <p className="font-bold">
-                    Yêu cầu bổ sung:{" "}
-                    {selected.rejectionReasonCode
-                      ? REJECTION_REASON_LABELS[selected.rejectionReasonCode]
-                      : ""}
-                  </p>
-                  <p className="mt-1 text-slate-700">
+                <div className="rounded-xl border border-rose-200/80 bg-rose-50/70 p-3.5 shadow-2xs">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                    <p className="text-xs font-bold text-rose-900">
+                      Yêu cầu bổ sung hồ sơ:{" "}
+                      <span className="font-semibold text-rose-700">
+                        {selected.rejectionReasonCode
+                          ? REJECTION_REASON_LABELS[selected.rejectionReasonCode]
+                          : ""}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="mt-2 rounded-lg border border-rose-100 bg-white/80 p-2.5 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
                     {selected.rejectionReason}
-                  </p>
+                  </div>
                 </div>
               )}
+
               {selected.suspensionReason && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800">
-                  <p className="font-bold">
-                    Lý do tạm dừng:{" "}
-                    {selected.suspensionReasonCode
-                      ? SUSPENSION_REASON_LABELS[selected.suspensionReasonCode]
-                      : ""}
-                  </p>
-                  <p className="mt-1 text-slate-700">
+                <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3.5 shadow-2xs">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                    <p className="text-xs font-bold text-amber-900">
+                      Lý do tạm dừng:{" "}
+                      <span className="font-semibold text-amber-800">
+                        {selected.suspensionReasonCode
+                          ? SUSPENSION_REASON_LABELS[selected.suspensionReasonCode]
+                          : ""}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="mt-2 rounded-lg border border-amber-100 bg-white/80 p-2.5 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
                     {selected.suspensionReason}
-                  </p>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Action Buttons */}
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-6 py-3.5">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50 px-6 py-3.5">
               <button
                 type="button"
                 onClick={closeModals}
                 disabled={processingId !== null}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50 cursor-pointer"
               >
                 Đóng
               </button>
@@ -768,7 +929,7 @@ export const CompanyModeration: React.FC = () => {
                       setRejectionDetail("");
                     }}
                     disabled={processingId !== null}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50 cursor-pointer"
                   >
                     <XCircle className="h-4 w-4" /> Yêu cầu bổ sung
                   </button>
@@ -776,7 +937,7 @@ export const CompanyModeration: React.FC = () => {
                     type="button"
                     onClick={() => void handleApprove()}
                     disabled={processingId !== null || !isChecklistComplete}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#00878a] hover:bg-[#006f72] px-4 py-2 text-xs font-bold text-white shadow-xs transition disabled:opacity-50 cursor-pointer"
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     {processingId ? "Đang xử lý..." : "Duyệt hồ sơ (Đạt 6/6)"}
@@ -793,7 +954,7 @@ export const CompanyModeration: React.FC = () => {
                     setSuspensionDetail("");
                   }}
                   disabled={processingId !== null}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50 cursor-pointer"
                 >
                   <Ban className="h-4 w-4" /> Tạm dừng doanh nghiệp
                 </button>
@@ -807,7 +968,7 @@ export const CompanyModeration: React.FC = () => {
                     setUnsuspendDetail("");
                   }}
                   disabled={processingId !== null}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#00878a] hover:bg-[#006f72] px-4 py-2 text-xs font-bold text-white shadow-xs transition disabled:opacity-50 cursor-pointer"
                 >
                   <Undo2 className="h-4 w-4" /> Khôi phục hoạt động
                 </button>
@@ -878,18 +1039,18 @@ export const CompanyModeration: React.FC = () => {
                   value={rejectionDetail}
                   onChange={(event) => setRejectionDetail(event.target.value)}
                   maxLength={1000}
-                  className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-xs outline-none focus:border-indigo-500"
+                  className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-xs outline-none focus:border-[#00878a]"
                   placeholder="Nhập hướng dẫn cụ thể về tài liệu hoặc thông tin cần bổ sung..."
                 />
               </label>
             </div>
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-5 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setRejecting(null)}
                 disabled={processingId !== null}
-                className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 cursor-pointer disabled:opacity-50"
               >
                 Hủy
               </button>
@@ -899,7 +1060,7 @@ export const CompanyModeration: React.FC = () => {
                 disabled={
                   processingId !== null || rejectionDetail.trim().length < 10
                 }
-                className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-700 transition cursor-pointer disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
                 {processingId ? "Đang gửi..." : "Gửi yêu cầu bổ sung"}
@@ -947,7 +1108,7 @@ export const CompanyModeration: React.FC = () => {
                       e.target.value as CompanySuspensionReasonCode,
                     )
                   }
-                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-indigo-500"
+                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-[#00878a]"
                 >
                   {Object.entries(SUSPENSION_REASON_LABELS).map(
                     ([code, label]) => (
@@ -980,18 +1141,18 @@ export const CompanyModeration: React.FC = () => {
                   value={suspensionDetail}
                   onChange={(event) => setSuspensionDetail(event.target.value)}
                   maxLength={1000}
-                  className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-xs outline-none focus:border-indigo-500"
+                  className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-xs outline-none focus:border-[#00878a]"
                   placeholder="Nhập lý do vi phạm hoặc căn cứ pháp lý để tạm dừng..."
                 />
               </label>
             </div>
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-5 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setSuspending(null)}
                 disabled={processingId !== null}
-                className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 cursor-pointer disabled:opacity-50"
               >
                 Hủy
               </button>
@@ -1001,7 +1162,7 @@ export const CompanyModeration: React.FC = () => {
                 disabled={
                   processingId !== null || suspensionDetail.trim().length < 10
                 }
-                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition cursor-pointer disabled:opacity-50"
               >
                 <Ban className="h-4 w-4" />
                 {processingId ? "Đang xử lý..." : "Xác nhận tạm dừng"}
@@ -1051,18 +1212,18 @@ export const CompanyModeration: React.FC = () => {
                   value={unsuspendDetail}
                   onChange={(event) => setUnsuspendDetail(event.target.value)}
                   maxLength={1000}
-                  className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-xs outline-none focus:border-indigo-500"
+                  className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-xs outline-none focus:border-[#00878a]"
                   placeholder="Ghi nhận lý do mở lại quyền hoạt động (ví dụ: đã giải quyết khiếu nại, bổ sung giấy tờ hợp lệ)..."
                 />
               </label>
             </div>
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-5 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setUnsuspending(null)}
                 disabled={processingId !== null}
-                className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 cursor-pointer disabled:opacity-50"
               >
                 Hủy
               </button>
@@ -1072,7 +1233,7 @@ export const CompanyModeration: React.FC = () => {
                 disabled={
                   processingId !== null || unsuspendDetail.trim().length < 10
                 }
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#00878a] hover:bg-[#006f72] px-4 py-2 text-xs font-bold text-white shadow-xs transition cursor-pointer disabled:opacity-50"
               >
                 <Undo2 className="h-4 w-4" />
                 {processingId ? "Đang xử lý..." : "Xác nhận khôi phục"}

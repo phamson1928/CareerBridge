@@ -1,6 +1,8 @@
-import React, { FormEvent, useCallback, useEffect, useState } from "react";
+import React, { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Building2,
+  Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Edit3,
@@ -23,6 +25,137 @@ import { useAppFeedback } from "../Feedback/AppFeedbackProvider";
 
 type SubTab = "FACULTIES" | "MAJORS";
 type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE";
+
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+function CustomDropdown({
+  value,
+  onChange,
+  options,
+  placeholder = "Chọn...",
+  searchable = false,
+  className = "",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  searchable?: boolean;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && searchable && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen, searchable]);
+
+  const selectedOption = useMemo(
+    () => options.find((opt) => opt.value === value),
+    [options, value],
+  );
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options;
+    const q = search.toLowerCase().trim();
+    return options.filter((opt) => opt.label.toLowerCase().includes(q));
+  }, [options, search]);
+
+  return (
+    <div className={`relative ${className} ${isOpen ? "z-40" : ""}`} ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`flex w-full cursor-pointer items-center justify-between rounded-xl border bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition ${
+          isOpen
+            ? "border-[#00878a] ring-2 ring-[#00878a]/20"
+            : "border-slate-300 hover:border-[#00878a]"
+        }`}
+      >
+        <span className="truncate">
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`ml-1.5 h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-[#00878a]" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1.5 z-50 max-h-60 min-w-full sm:min-w-[190px] overflow-auto rounded-xl border border-slate-100 bg-white p-1 shadow-2xl ring-1 ring-black/5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {searchable && (
+            <div className="sticky top-0 z-10 bg-white p-1 border-b border-slate-100 mb-1">
+              <input
+                ref={inputRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Tìm kiếm..."
+                className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#00878a]"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
+          <div className="py-0.5">
+            {filteredOptions.length === 0 ? (
+              <div className="px-3 py-2 text-center text-xs text-slate-400">
+                Không tìm thấy
+              </div>
+            ) : (
+              filteredOptions.map((opt) => {
+                const isSelected = opt.value === value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setIsOpen(false);
+                      setSearch("");
+                    }}
+                    className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition ${
+                      isSelected
+                        ? "bg-[#e6f6f6] font-bold text-[#00878a]"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span className="truncate pr-2">{opt.label}</span>
+                    {isSelected && (
+                      <Check className="h-3.5 w-3.5 shrink-0 text-[#00878a]" />
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const OrganizationManagement: React.FC = () => {
   const { confirm, notify } = useAppFeedback();
@@ -374,10 +507,10 @@ export const OrganizationManagement: React.FC = () => {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="admin-page admin-page--standard rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900">
+          <h2 className="admin-page-title text-xl font-extrabold text-slate-900">
             Quản lý Khoa &amp; Ngành học toàn trường
           </h2>
           <p className="mt-1 text-xs text-slate-500">
@@ -447,21 +580,22 @@ export const OrganizationManagement: React.FC = () => {
                   setFacultyPage(1);
                 }}
                 placeholder="Tìm mã hoặc tên khoa..."
-                className="w-60 rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-xs outline-none focus:border-indigo-500"
+                className="w-60 rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-xs outline-none transition focus:border-[#00878a] focus:ring-1 focus:ring-[#00878a]/20"
               />
             </div>
-            <select
+            <CustomDropdown
               value={facultyStatus}
-              onChange={(event) => {
-                setFacultyStatus(event.target.value as StatusFilter);
+              onChange={(val) => {
+                setFacultyStatus(val as StatusFilter);
                 setFacultyPage(1);
               }}
-              className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="ACTIVE">Đang hoạt động</option>
-              <option value="INACTIVE">Ngừng sử dụng</option>
-            </select>
+              options={[
+                { value: "ALL", label: "Tất cả trạng thái" },
+                { value: "ACTIVE", label: "Đang hoạt động" },
+                { value: "INACTIVE", label: "Ngừng sử dụng" },
+              ]}
+              className="w-44"
+            />
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
@@ -474,37 +608,39 @@ export const OrganizationManagement: React.FC = () => {
                   setMajorPage(1);
                 }}
                 placeholder="Tìm mã ngành, tên ngành..."
-                className="w-60 rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-xs outline-none focus:border-indigo-500"
+                className="w-60 rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-xs outline-none transition focus:border-[#00878a] focus:ring-1 focus:ring-[#00878a]/20"
               />
             </div>
-            <select
+            <CustomDropdown
               value={majorFacultyFilter}
-              onChange={(event) => {
-                setMajorFacultyFilter(event.target.value);
+              onChange={(val) => {
+                setMajorFacultyFilter(val);
                 setMajorPage(1);
               }}
-              className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500"
-            >
-              <option value="">Tất cả các Khoa</option>
-              {facultyOptions.map((f) => (
-                <option key={f.id} value={f.id}>
-                  [{f.code}] {f.name}
-                  {!f.isActive ? " (Ngừng dùng)" : ""}
-                </option>
-              ))}
-            </select>
-            <select
+              options={[
+                { value: "", label: "Tất cả các Khoa" },
+                ...facultyOptions.map((f) => ({
+                  value: f.id,
+                  label: `[${f.code}] ${f.name}${!f.isActive ? " (Ngừng dùng)" : ""}`,
+                })),
+              ]}
+              searchable
+              placeholder="Tất cả các Khoa"
+              className="w-56"
+            />
+            <CustomDropdown
               value={majorStatus}
-              onChange={(event) => {
-                setMajorStatus(event.target.value as StatusFilter);
+              onChange={(val) => {
+                setMajorStatus(val as StatusFilter);
                 setMajorPage(1);
               }}
-              className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="ACTIVE">Đang hoạt động</option>
-              <option value="INACTIVE">Ngừng sử dụng</option>
-            </select>
+              options={[
+                { value: "ALL", label: "Tất cả trạng thái" },
+                { value: "ACTIVE", label: "Đang hoạt động" },
+                { value: "INACTIVE", label: "Ngừng sử dụng" },
+              ]}
+              className="w-44"
+            />
           </div>
         )}
       </div>

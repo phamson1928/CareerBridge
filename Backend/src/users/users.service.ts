@@ -22,6 +22,36 @@ const userSelect = {
   permissions: true,
   createdAt: true,
   updatedAt: true,
+  studentProfile: {
+    select: {
+      fullName: true,
+      studentCode: true,
+      major: true,
+      phone: true,
+      gpa: true,
+      summary: true,
+    },
+  },
+  lecturerProfile: {
+    select: {
+      fullName: true,
+      department: true,
+      title: true,
+    },
+  },
+  companyProfile: {
+    select: {
+      companyName: true,
+      businessRegistrationNumber: true,
+      contactPersonName: true,
+      contactPhone: true,
+      contactEmail: true,
+      address: true,
+      industry: true,
+      website: true,
+      status: true,
+    },
+  },
 } satisfies Prisma.UserSelect;
 
 @Injectable()

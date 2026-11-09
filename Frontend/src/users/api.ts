@@ -12,6 +12,30 @@ export interface ManagedUser {
   permissions?: string[];
   createdAt: string;
   updatedAt: string;
+  studentProfile?: {
+    fullName: string;
+    studentCode: string;
+    major: string;
+    phone?: string | null;
+    gpa?: number | null;
+    summary?: string | null;
+  } | null;
+  lecturerProfile?: {
+    fullName: string;
+    department: string;
+    title?: string | null;
+  } | null;
+  companyProfile?: {
+    companyName: string;
+    businessRegistrationNumber?: string | null;
+    contactPersonName?: string | null;
+    contactPhone?: string | null;
+    contactEmail?: string | null;
+    address?: string | null;
+    industry?: string | null;
+    website?: string | null;
+    status: string;
+  } | null;
 }
 
 export interface UserListResponse {

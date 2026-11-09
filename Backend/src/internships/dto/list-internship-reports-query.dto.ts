@@ -28,4 +28,13 @@ export class ListInternshipReportsQueryDto {
   )
   @IsString()
   internshipId?: string;
+
+  @IsOptional()
+  @Transform((params: TransformFnParams): unknown =>
+    typeof params.value === 'string'
+      ? params.value.trim() || undefined
+      : params.value,
+  )
+  @IsString()
+  semesterId?: string;
 }

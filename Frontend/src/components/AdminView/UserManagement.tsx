@@ -1,15 +1,38 @@
-import React, { FormEvent, useCallback, useEffect, useState } from "react";
+import React, {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
+  Award,
+  Ban,
+  BookOpen,
+  Building2,
+  Calendar,
+  Check,
+  CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Crown,
+  FileText,
+  Globe,
+  GraduationCap,
   Key,
   LoaderCircle,
+  Mail,
+  MapPin,
+  Phone,
   Plus,
-  RefreshCw,
+  RotateCcw,
   Search,
   Shield,
   Trash2,
+  UserCheck,
   X,
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
@@ -26,6 +49,142 @@ import {
 const roles: AuthRole[] = ["STUDENT", "COMPANY", "LECTURER", "ADMIN"];
 const statuses: UserStatus[] = ["ACTIVE", "INACTIVE", "BANNED"];
 
+const roleBadge: Record<AuthRole, { label: string; style: string }> = {
+  STUDENT: { label: "Sinh viên", style: "border-sky-200 bg-sky-50 text-sky-700" },
+  COMPANY: { label: "Doanh nghiệp", style: "border-indigo-200 bg-indigo-50 text-indigo-700" },
+  LECTURER: { label: "Giảng viên", style: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  ADMIN: { label: "Quản trị viên", style: "border-amber-200 bg-amber-50 text-amber-700" },
+};
+
+const statusBadge: Record<UserStatus, { label: string; style: string }> = {
+  ACTIVE: { label: "Hoạt động", style: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  INACTIVE: { label: "Chưa kích hoạt", style: "border-slate-200 bg-slate-100 text-slate-600" },
+  BANNED: { label: "Đã khóa", style: "border-rose-200 bg-rose-50 text-rose-700" },
+};
+
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+function CustomDropdown({
+  value,
+  onChange,
+  options,
+  placeholder = "Chọn...",
+  className = "",
+  disabled = false,
+  compact = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+  compact?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  const selectedOption = useMemo(
+    () => options.find((opt) => opt.value === value),
+    [options, value]
+  );
+
+  return (
+    <div
+      className={`relative ${compact ? "inline-block" : ""} ${
+        isOpen ? "z-40" : "z-auto"
+      } ${className}`}
+      ref={containerRef}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) setIsOpen((prev) => !prev);
+        }}
+        className={`group flex items-center justify-between gap-1.5 transition outline-none shadow-2xs ${
+          compact
+            ? "h-8 px-2.5 text-xs font-semibold rounded-lg border bg-white min-w-[110px]"
+            : "h-10 w-full px-3.5 text-xs font-semibold rounded-xl border bg-white text-left"
+        } ${
+          isOpen
+            ? "border-[#00878a] ring-2 ring-[#00878a]/20"
+            : "border-slate-200 hover:border-slate-300"
+        } ${disabled ? "cursor-not-allowed opacity-50 bg-slate-50" : "cursor-pointer"}`}
+      >
+        <span className={`truncate ${value ? "text-slate-800" : "text-slate-600"}`}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+            compact ? "h-3.5 w-3.5" : "h-4 w-4"
+          } ${isOpen ? "rotate-180 text-[#00878a]" : "group-hover:text-slate-600"}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className={`absolute top-full left-0 mt-1 z-50 rounded-xl border border-slate-100 bg-white p-1 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-slate-800 ${
+            compact ? "min-w-[135px]" : "min-w-full sm:min-w-[190px]"
+          }`}
+        >
+          <div className="max-h-56 overflow-y-auto space-y-0.5">
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`flex w-full items-center justify-between rounded-lg ${
+                  compact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-xs"
+                } text-left transition-colors cursor-pointer ${
+                  opt.value === value
+                    ? "bg-[#e6f6f6] font-semibold text-[#00878a]"
+                    : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <span className="truncate">{opt.label}</span>
+                {opt.value === value && (
+                  <Check className="h-3.5 w-3.5 shrink-0 text-[#00878a]" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const roleOptions: DropdownOption[] = [
+  { value: "", label: "Tất cả vai trò" },
+  ...roles.map((r) => ({ value: r, label: r })),
+];
+
+const statusOptions: DropdownOption[] = [
+  { value: "", label: "Tất cả trạng thái" },
+  ...statuses.map((s) => ({ value: s, label: s })),
+];
+
 export const UserManagement: React.FC = () => {
   const { user: currentUser } = useAuth();
   const { confirm } = useAppFeedback();
@@ -40,6 +199,7 @@ export const UserManagement: React.FC = () => {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
   const [newUser, setNewUser] = useState<{
     email: string;
     password: string;
@@ -105,6 +265,7 @@ export const UserManagement: React.FC = () => {
       setUsers((current) =>
         current.map((item) => (item.id === id ? updated : item)),
       );
+      setSelectedUser((curr) => (curr?.id === id ? updated : curr));
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -179,15 +340,16 @@ export const UserManagement: React.FC = () => {
             </p>
           </div>
           <button
+            type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#00878a] bg-[#00878a] hover:bg-[#007477] px-3.5 py-2 text-xs font-bold text-white transition cursor-pointer shadow-xs"
           >
             <Plus className="w-4 h-4" /> Tạo tài khoản
           </button>
         </div>
-        <div className="flex flex-col md:flex-row gap-2">
-          <div className="flex flex-1 items-center gap-2 bg-slate-100 rounded-xl px-3 py-2 text-xs text-slate-700">
-            <Search className="w-4 h-4 text-slate-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+          <div className="flex h-10 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-2xs transition focus-within:border-[#00878a] focus-within:ring-2 focus-within:ring-[#00878a]/20">
+            <Search className="h-4 w-4 shrink-0 text-slate-400" />
             <input
               value={search}
               onChange={(event) => {
@@ -195,45 +357,54 @@ export const UserManagement: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Tìm email..."
-              className="bg-transparent focus:outline-none w-full"
+              className="w-full text-xs text-slate-800 outline-none placeholder:text-slate-400"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setPage(1);
+                }}
+                className="cursor-pointer text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
-          <select
+          <CustomDropdown
             value={role}
-            onChange={(event) => {
-              setRole(event.target.value as AuthRole | "");
+            onChange={(val) => {
+              setRole(val as AuthRole | "");
               setPage(1);
             }}
-            className="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-semibold"
-          >
-            <option value="">Tất cả vai trò</option>
-            {roles.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-          <select
+            options={roleOptions}
+            className="w-full shrink-0 sm:w-[160px]"
+          />
+          <CustomDropdown
             value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as UserStatus | "");
+            onChange={(val) => {
+              setStatus(val as UserStatus | "");
               setPage(1);
             }}
-            className="p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-semibold"
-          >
-            <option value="">Tất cả trạng thái</option>
-            {statuses.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+            options={statusOptions}
+            className="w-full shrink-0 sm:w-[170px]"
+          />
           <button
-            onClick={() => void loadUsers()}
-            className="p-2 border border-slate-200 rounded-xl text-slate-600"
-            aria-label="Tải lại danh sách"
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setRole("");
+              setStatus("");
+              setPage(1);
+              void loadUsers();
+            }}
+            disabled={loading}
+            className="inline-flex h-10 cursor-pointer shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[#cbebeb] bg-[#e6f6f6] px-3.5 text-xs font-semibold text-[#00878a] shadow-2xs transition hover:bg-[#d5eeee] active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+            title="Đặt lại bộ lọc và làm mới dữ liệu"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RotateCcw className={`h-4 w-4 shrink-0 ${loading ? "animate-spin" : ""}`} />
+            <span>Làm mới</span>
           </button>
         </div>
         {error && <p className="text-xs text-rose-600">{error}</p>}
@@ -487,8 +658,8 @@ export const UserManagement: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-visible">
+        <div className="overflow-x-auto min-h-[220px]">
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
               <tr>
@@ -514,50 +685,46 @@ export const UserManagement: React.FC = () => {
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50">
-                    <td className="p-4 font-mono text-[11px]">{user.email}</td>
-                    <td className="p-4">
-                      <select
+                  <tr
+                    key={user.id}
+                    onClick={() => setSelectedUser(user)}
+                    className="hover:bg-slate-50/90 cursor-pointer transition-colors group"
+                  >
+                    <td className="p-4 font-mono text-xs font-semibold text-[#00878a]">
+                      {user.email}
+                    </td>
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <CustomDropdown
                         disabled={savingId === user.id || user.id === currentUser?.id}
                         value={user.role}
-                        onChange={(event) =>
+                        onChange={(val) =>
                           void updateUser(user.id, {
-                            role: event.target.value as AuthRole,
+                            role: val as AuthRole,
                           })
                         }
-                        className="border border-slate-200 rounded-lg px-2 py-1 bg-white font-medium disabled:opacity-50"
-                      >
-                        {roles.map((item) => (
-                          <option key={item} value={item}>
-                            {item}
-                          </option>
-                        ))}
-                      </select>
+                        options={roleOptions.filter((item) => item.value !== "")}
+                        compact
+                      />
                     </td>
-                    <td className="p-4">
-                      <select
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <CustomDropdown
                         disabled={savingId === user.id}
                         value={user.status}
-                        onChange={(event) =>
+                        onChange={(val) =>
                           void updateUser(user.id, {
-                            status: event.target.value as UserStatus,
+                            status: val as UserStatus,
                           })
                         }
-                        className="border border-slate-200 rounded-lg px-2 py-1 bg-white"
-                      >
-                        {statuses.map((item) => (
-                          <option key={item} value={item}>
-                            {item}
-                          </option>
-                        ))}
-                      </select>
+                        options={statusOptions.filter((item) => item.value !== "")}
+                        compact
+                      />
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 text-slate-600">
                       {new Intl.DateTimeFormat("vi-VN").format(
                         new Date(user.createdAt),
                       )}
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex items-center justify-end gap-1">
                         {user.id !== currentUser?.id && (
                           <button
@@ -603,6 +770,360 @@ export const UserManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal Chi tiết tài khoản người dùng */}
+      {selectedUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-xs transition-opacity"
+          onClick={() => setSelectedUser(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="flex max-h-[calc(100vh-2.5rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/70 p-5">
+              <div className="flex items-center gap-3.5">
+                <div
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-2xs ${
+                    selectedUser.role === "STUDENT"
+                      ? "bg-[#e6f6f6] text-[#00878a]"
+                      : selectedUser.role === "COMPANY"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : selectedUser.role === "LECTURER"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  {selectedUser.role === "STUDENT" ? (
+                    <GraduationCap className="h-6 w-6" />
+                  ) : selectedUser.role === "COMPANY" ? (
+                    <Building2 className="h-6 w-6" />
+                  ) : selectedUser.role === "LECTURER" ? (
+                    <BookOpen className="h-6 w-6" />
+                  ) : (
+                    <Crown className="h-6 w-6" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-extrabold text-slate-900 leading-snug">
+                      {selectedUser.role === "STUDENT"
+                        ? selectedUser.studentProfile?.fullName || selectedUser.email
+                        : selectedUser.role === "COMPANY"
+                        ? selectedUser.companyProfile?.companyName || selectedUser.email
+                        : selectedUser.role === "LECTURER"
+                        ? selectedUser.lecturerProfile?.fullName || selectedUser.email
+                        : selectedUser.email}
+                    </h3>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+                        roleBadge[selectedUser.role].style
+                      }`}
+                    >
+                      {roleBadge[selectedUser.role].label}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+                        statusBadge[selectedUser.status].style
+                      }`}
+                    >
+                      {statusBadge[selectedUser.status].label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500 font-mono flex items-center gap-1.5">
+                    <Mail className="h-3 w-3 text-slate-400 shrink-0" />
+                    {selectedUser.email}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200/70 hover:text-slate-700 transition cursor-pointer"
+                aria-label="Đóng"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 text-xs [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {/* 1. Thông tin hệ thống chung */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                  Thông tin hệ thống
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <span className="text-slate-400 block text-[11px]">Trạng thái tài khoản</span>
+                    <p className="font-semibold text-slate-800 mt-0.5">
+                      {statusBadge[selectedUser.status].label}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[11px]">Ngày tạo</span>
+                    <p className="font-semibold text-slate-800 mt-0.5">
+                      {new Date(selectedUser.createdAt).toLocaleString("vi-VN")}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[11px]">Cập nhật lần cuối</span>
+                    <p className="font-semibold text-slate-800 mt-0.5">
+                      {new Date(selectedUser.updatedAt).toLocaleString("vi-VN")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Thông tin hồ sơ chi tiết theo Vai trò */}
+              {selectedUser.role === "STUDENT" && (
+                <div className="rounded-xl border border-[#cbebeb] bg-[#f2fafb] p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#00878a] flex items-center gap-1.5">
+                      <GraduationCap className="h-4 w-4" /> Hồ sơ sinh viên
+                    </p>
+                    {selectedUser.studentProfile?.studentCode && (
+                      <span className="rounded-lg bg-white px-2 py-0.5 font-mono text-[11px] font-bold text-[#00878a] border border-[#cbebeb]">
+                        MSSV: {selectedUser.studentProfile.studentCode}
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedUser.studentProfile ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-xl border border-[#cbebeb]/70">
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Họ và tên</span>
+                        <p className="font-bold text-slate-900 text-sm mt-0.5">
+                          {selectedUser.studentProfile.fullName}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Chuyên ngành đào tạo</span>
+                        <p className="font-semibold text-slate-800 mt-0.5">
+                          {selectedUser.studentProfile.major || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Số điện thoại</span>
+                        <p className="font-medium text-slate-800 mt-0.5 flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 text-slate-400" />
+                          {selectedUser.studentProfile.phone || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Điểm GPA tích lũy</span>
+                        <p className="font-bold text-slate-900 mt-0.5 flex items-center gap-1.5">
+                          <Award className="h-3.5 w-3.5 text-amber-500" />
+                          {selectedUser.studentProfile.gpa !== null && selectedUser.studentProfile.gpa !== undefined
+                            ? selectedUser.studentProfile.gpa.toFixed(2)
+                            : "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      {selectedUser.studentProfile.summary && (
+                        <div className="sm:col-span-2 pt-2 border-t border-slate-100">
+                          <span className="text-slate-400 block text-[11px]">Mục tiêu nghề nghiệp &amp; Giới thiệu</span>
+                          <p className="text-xs text-slate-700 leading-relaxed mt-1 whitespace-pre-line bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                            {selectedUser.studentProfile.summary}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic bg-white p-3 rounded-lg border border-[#cbebeb]/60">
+                      Tài khoản này chưa hoàn tất biểu mẫu hồ sơ sinh viên ban đầu.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {selectedUser.role === "COMPANY" && (
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                      <Building2 className="h-4 w-4" /> Hồ sơ doanh nghiệp
+                    </p>
+                    {selectedUser.companyProfile?.status && (
+                      <span className="rounded-lg bg-white px-2 py-0.5 text-[11px] font-bold text-indigo-700 border border-indigo-200">
+                        {selectedUser.companyProfile.status}
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedUser.companyProfile ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-xl border border-indigo-100">
+                      <div className="sm:col-span-2">
+                        <span className="text-slate-400 block text-[11px]">Tên doanh nghiệp</span>
+                        <p className="font-bold text-slate-900 text-sm mt-0.5">
+                          {selectedUser.companyProfile.companyName}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Mã số thuế / GPKD</span>
+                        <p className="font-mono font-semibold text-slate-800 mt-0.5">
+                          {selectedUser.companyProfile.businessRegistrationNumber || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Lĩnh vực hoạt động</span>
+                        <p className="font-semibold text-slate-800 mt-0.5">
+                          {selectedUser.companyProfile.industry || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Người đại diện liên hệ</span>
+                        <p className="font-medium text-slate-800 mt-0.5">
+                          {selectedUser.companyProfile.contactPersonName || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Số điện thoại liên hệ</span>
+                        <p className="font-medium text-slate-800 mt-0.5 flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 text-slate-400" />
+                          {selectedUser.companyProfile.contactPhone || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Email liên hệ</span>
+                        <p className="font-medium text-slate-800 mt-0.5 flex items-center gap-1.5 break-all">
+                          <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          {selectedUser.companyProfile.contactEmail || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Website</span>
+                        <p className="font-medium text-[#00878a] mt-0.5 flex items-center gap-1.5 break-all">
+                          <Globe className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          {selectedUser.companyProfile.website ? (
+                            <a
+                              href={selectedUser.companyProfile.website.startsWith("http") ? selectedUser.companyProfile.website : `https://${selectedUser.companyProfile.website}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="hover:underline"
+                            >
+                              {selectedUser.companyProfile.website}
+                            </a>
+                          ) : (
+                            "Chưa cập nhật"
+                          )}
+                        </p>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="text-slate-400 block text-[11px]">Địa chỉ trụ sở</span>
+                        <p className="font-medium text-slate-800 mt-0.5 flex items-start gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
+                          {selectedUser.companyProfile.address || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic bg-white p-3 rounded-lg border border-indigo-100">
+                      Tài khoản này chưa hoàn tất thiết lập hồ sơ doanh nghiệp.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {selectedUser.role === "LECTURER" && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 space-y-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                    <BookOpen className="h-4 w-4" /> Hồ sơ giảng viên
+                  </p>
+
+                  {selectedUser.lecturerProfile ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-xl border border-emerald-100">
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Họ và tên giảng viên</span>
+                        <p className="font-bold text-slate-900 text-sm mt-0.5">
+                          {selectedUser.lecturerProfile.fullName}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Khoa / Đơn vị công tác</span>
+                        <p className="font-semibold text-slate-800 mt-0.5">
+                          {selectedUser.lecturerProfile.department || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Học hàm / Học vị</span>
+                        <p className="font-medium text-slate-800 mt-0.5">
+                          {selectedUser.lecturerProfile.title || "Giảng viên"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic bg-white p-3 rounded-lg border border-emerald-100">
+                      Tài khoản này chưa hoàn tất thiết lập hồ sơ giảng viên.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {selectedUser.role === "ADMIN" && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4 space-y-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                    <Shield className="h-4 w-4" /> Quyền hạn quản trị viên
+                  </p>
+                  <div className="bg-white p-3.5 rounded-xl border border-amber-200/70 space-y-2.5">
+                    <div>
+                      <span className="text-slate-400 block text-[11px]">Cấp độ quản trị</span>
+                      <p className="font-bold text-slate-900 text-sm mt-0.5">
+                        {selectedUser.isSuperAdmin
+                          ? "Quản trị viên tối cao (Super Admin)"
+                          : "Quản trị viên phân hệ"}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {selectedUser.isSuperAdmin
+                          ? "Tài khoản có toàn quyền truy cập và thao tác tại tất cả các phân hệ của hệ thống."
+                          : "Tài khoản chỉ được thao tác tại các phân hệ được chỉ định cụ thể bên dưới."}
+                      </p>
+                    </div>
+
+                    {!selectedUser.isSuperAdmin && (
+                      <div className="pt-2 border-t border-slate-100">
+                        <span className="text-slate-400 block text-[11px] mb-1.5">Danh sách quyền được cấp:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedUser.permissions && selectedUser.permissions.length > 0 ? (
+                            selectedUser.permissions.map((p) => {
+                              const found = ADMIN_PERMISSION_OPTIONS.find((opt) => opt.id === p);
+                              return (
+                                <span
+                                  key={p}
+                                  className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800"
+                                >
+                                  {found ? found.label : p}
+                                </span>
+                              );
+                            })
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Chưa được cấp quyền phân hệ nào</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50/70 px-5 py-3">
+              <span className="text-[11px] text-slate-400">
+                Nhấn vào các ô chọn trong bảng ngoài để thay đổi nhanh vai trò hoặc trạng thái.
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer shadow-2xs"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
   );
