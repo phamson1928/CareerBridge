@@ -243,3 +243,45 @@
 .admin-theme .admin-page button.admin-shortcut-btn:active {
   transform: scale(0.95) !important;
 }
+
+@keyframes modalSmoothIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-smooth-in {
+  animation: modalSmoothIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+/* Smooth heat tile without text shake / subpixel jitter */
+.heat-tile-card {
+  position: relative;
+  border: none !important;
+  outline: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-origin: center center;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.heat-tile-card:hover {
+  transform: scale(1.025) translateZ(0);
+  -webkit-transform: scale(1.025) translateZ(0);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.heat-tile-card:active {
+  transform: scale(0.99) translateZ(0);
+  transition-duration: 0.15s;
+}

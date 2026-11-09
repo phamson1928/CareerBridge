@@ -32,10 +32,12 @@ import {
   Download,
   GraduationCap,
   Layers3,
+  LayoutGrid,
   LoaderCircle,
   RefreshCw,
   RotateCcw,
   Search,
+  Table,
   UsersRound,
   ChevronDown,
   X,
@@ -285,10 +287,71 @@ function CustomDropdown({
   );
 }
 
+function getMajorHeatColor(rate: number, totalStudents: number) {
+  if (totalStudents === 0) {
+    return {
+      bg: "bg-slate-100 hover:bg-slate-200/80 text-slate-600",
+      codeBg: "bg-slate-200/90 text-slate-700",
+      rateText: "text-slate-400",
+      pill: "bg-slate-200 text-slate-600",
+      status: "Chưa có sinh viên",
+    };
+  }
+  if (rate >= 80) {
+    return {
+      bg: "bg-gradient-to-br from-[#00878a] to-[#00676a] hover:from-[#007a7d] hover:to-[#005a5d] text-white shadow-xs",
+      codeBg: "bg-black/25 text-white",
+      rateText: "text-white",
+      pill: "bg-white/20 text-white",
+      status: "Xuất sắc",
+    };
+  }
+  if (rate >= 50) {
+    return {
+      bg: "bg-gradient-to-br from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white shadow-xs",
+      codeBg: "bg-black/25 text-white",
+      rateText: "text-white",
+      pill: "bg-white/20 text-white",
+      status: "Tiến độ tốt",
+    };
+  }
+  if (rate >= 25) {
+    return {
+      bg: "bg-gradient-to-br from-[#d97706] to-[#b45309] hover:from-[#b45309] hover:to-[#92400e] text-white shadow-xs",
+      codeBg: "bg-black/25 text-white",
+      rateText: "text-white",
+      pill: "bg-white/20 text-white",
+      status: "Cần lưu ý",
+    };
+  }
+  return {
+    bg: "bg-gradient-to-br from-[#e11d48] to-[#be123c] hover:from-[#be123c] hover:to-[#9f1239] text-white shadow-xs",
+    codeBg: "bg-black/25 text-white",
+    rateText: "text-white",
+    pill: "bg-white/25 text-white",
+    status: "Báo động: Tỷ lệ thấp",
+  };
+}
+
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigate,
 }) => {
   const [semesterId, setSemesterId] = useState("ALL");
+  const [breakdownView, setBreakdownView] = useState<"heatmap" | "table">("heatmap");
+  const [selectedMajorModal, setSelectedMajorModal] = useState<{
+    facultyCode: string;
+    facultyName: string;
+    major: {
+      majorId: string;
+      code: string;
+      name: string;
+      totalStudents: number;
+      placedStudents: number;
+      activePlacements: number;
+      completedPlacements: number;
+      placementRate: number;
+    };
+  } | null>(null);
   const [facultyId, setFacultyId] = useState("");
   const [majorId, setMajorId] = useState("");
   const [months, setMonths] = useState<3 | 6 | 9 | 12>(6);
@@ -444,6 +507,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   if (!data) return null;
   const { global, kpis, scope } = data;
   const facultyBreakdown = data.facultyBreakdown ?? [];
+
+  const displayFaculties = (() => {
+    let list = facultyBreakdown;
+    if (facultyId) {
+      list = list.filter((f) => f.facultyId === facultyId);
+    }
+    if (majorId) {
+      list = list
+        .map((f) => ({
+          ...f,
+          majors: f.majors.filter((m) => m.majorId === majorId),
+        }))
+        .filter((f) => f.majors.length > 0);
+    }
+    return list;
+  })();
 
   const exportDashboardExcel = () => {
     const majorRows = facultyBreakdown.flatMap((f) =>
@@ -985,110 +1064,411 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
       {facultyBreakdown.length > 0 && (
         <article className="overflow-hidden rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          {/* Card Header with View Switcher & Excel Export */}
           <div className="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
             <div>
               <h2 className="font-bold text-slate-800">
                 Thống kê thực tập theo Khoa &amp; Ngành đào tạo
               </h2>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Tổng hợp quy mô sinh viên, giảng viên và tiến độ phân bố thực tập trên toàn trường.
-              </p>
             </div>
-            <button
-              type="button"
-              onClick={exportDashboardExcel}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
-            >
-              <Download className="h-4 w-4 text-[#00878a]" /> Xuất Excel Khoa/Ngành
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Toggle View Mode */}
+              <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100/80 p-1">
+                <button
+                  type="button"
+                  onClick={() => setBreakdownView("heatmap")}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                    breakdownView === "heatmap"
+                      ? "bg-white text-[#00878a] shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" /> Bản đồ nhiệt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBreakdownView("table")}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                    breakdownView === "table"
+                      ? "bg-white text-[#00878a] shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <Table className="h-3.5 w-3.5" /> Bảng chi tiết
+                </button>
+              </div>
+
+              {/* Excel Export */}
+              <button
+                type="button"
+                onClick={exportDashboardExcel}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 cursor-pointer shadow-2xs"
+              >
+                <Download className="h-4 w-4 text-[#00878a]" /> Xuất Excel Khoa/Ngành
+              </button>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="px-5 py-3.5">Khoa / Ngành đào tạo</th>
-                  <th className="px-4 py-3.5 text-right">Sinh viên</th>
-                  <th className="px-4 py-3.5 text-right">Giảng viên</th>
-                  <th className="px-4 py-3.5 text-right">Đã có nơi TT</th>
-                  <th className="px-4 py-3.5 text-right">Đang TT</th>
-                  <th className="px-4 py-3.5 text-right">Hoàn tất</th>
-                  <th className="px-5 py-3.5 text-right">Tỷ lệ có nơi TT</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {(facultyId
-                  ? facultyBreakdown.filter((f) => f.facultyId === facultyId)
-                  : facultyBreakdown
-                ).map((f) => (
-                  <React.Fragment key={f.facultyId}>
-                    <tr className="bg-slate-50/70 font-bold text-slate-900">
-                      <td className="px-5 py-3">
-                        <span className="mr-2 rounded-md bg-[#e6f6f6] px-2 py-0.5 font-mono text-[10px] font-extrabold text-[#00878a]">
+
+          {/* VIEW 1: HEATMAP TREEMAP */}
+          {breakdownView === "heatmap" ? (
+            <div className="p-5 sm:p-6 space-y-5">
+              {/* Heatmap Legend */}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-2.5 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Chỉ số nhiệt (Tỷ lệ có nơi TT):
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-[#00878a] px-2 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                      ≥ 80% Xuất sắc
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-[#0284c7] px-2 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                      50% - 79% Tiến độ tốt
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-[#d97706] px-2 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                      25% - 49% Cần lưu ý
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-[#e11d48] px-2 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                      &lt; 25% Báo động
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                      0 SV
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Heatmap Grid of Faculties */}
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                {displayFaculties.map((f) => (
+                  <div
+                    key={f.facultyId}
+                    className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition hover:border-slate-300"
+                  >
+                    {/* Faculty Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-lg bg-[#e6f6f6] px-2.5 py-1 font-mono text-[11px] font-black text-[#00878a] shadow-2xs">
                           {f.code}
                         </span>
-                        Khoa {f.name}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {number.format(f.totalStudents)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {number.format(f.totalLecturers)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-[#00878a]">
-                        {number.format(f.placedStudents)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {number.format(f.activePlacements)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {number.format(f.completedPlacements)}
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <span className="rounded-full bg-[#e6f6f6] px-2.5 py-0.5 text-[11px] font-extrabold text-[#00878a]">
+                        <h3 className="font-bold text-slate-800 text-sm">
+                          Khoa {f.name}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-500 font-medium">
+                          {number.format(f.totalStudents)} SV · {number.format(f.totalLecturers)} GV
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-black ${
+                            f.placementRate >= 80
+                              ? "bg-[#e6f6f6] text-[#00878a]"
+                              : f.placementRate >= 50
+                              ? "bg-sky-50 text-sky-700"
+                              : f.placementRate >= 25
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-rose-50 text-rose-700"
+                          }`}
+                        >
                           {f.placementRate}%
                         </span>
-                      </td>
-                    </tr>
-                    {(majorId
-                      ? f.majors.filter((m) => m.majorId === majorId)
-                      : f.majors
-                    ).map((m) => (
-                      <tr
-                        key={m.majorId}
-                        className="text-slate-600 transition hover:bg-slate-50/50"
-                      >
-                        <td className="py-2.5 pl-10 pr-5">
-                          <span className="mr-2 font-mono text-[10px] text-slate-400">
-                            {m.code}
+                      </div>
+                    </div>
+
+                    {/* Majors Treemap Tiles */}
+                    <div className="mt-3 flex flex-1 flex-wrap gap-2.5">
+                      {f.majors.map((m) => {
+                        const style = getMajorHeatColor(m.placementRate, m.totalStudents);
+                        const flexWeight = Math.max(m.totalStudents, 0.7);
+                        return (
+                          <button
+                            type="button"
+                            key={m.majorId}
+                            onClick={() =>
+                              setSelectedMajorModal({
+                                facultyCode: f.code,
+                                facultyName: f.name,
+                                major: m,
+                              })
+                            }
+                            style={{
+                              flex: `${flexWeight} 1 135px`,
+                              minHeight: "110px",
+                            }}
+                            className={`heat-tile-card group flex flex-col justify-between rounded-xl p-3 text-left cursor-pointer ${style.bg}`}
+                          >
+                            {/* Top row */}
+                            <div className="flex items-start justify-between gap-1.5">
+                              <span
+                                className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-black tracking-wide ${style.codeBg}`}
+                              >
+                                {m.code}
+                              </span>
+                              {m.totalStudents > 0 && m.placementRate === 100 ? (
+                                <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                                  ✓ 100%
+                                </span>
+                              ) : null}
+                            </div>
+
+                            {/* Middle: Name */}
+                            <div className="my-1.5 text-xs font-bold leading-snug line-clamp-2">
+                              {m.name}
+                            </div>
+
+                            {/* Bottom: Rate & Counts */}
+                            <div className="flex items-end justify-between pt-2 mt-auto">
+                              <div>
+                                <div className="text-[9px] font-medium opacity-85 leading-none">
+                                  Có nơi TT
+                                </div>
+                                <div className={`mt-0.5 text-lg font-black tracking-tight leading-none ${style.rateText}`}>
+                                  {m.placementRate}%
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-[9px] font-medium opacity-85 leading-none">
+                                  Sinh viên
+                                </div>
+                                <div className="mt-0.5 font-mono text-xs font-bold leading-none">
+                                  {m.placedStudents}/{m.totalStudents}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* VIEW 2: TABLE VIEW */
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="px-5 py-3.5">Khoa / Ngành đào tạo</th>
+                    <th className="px-4 py-3.5 text-right">Sinh viên</th>
+                    <th className="px-4 py-3.5 text-right">Giảng viên</th>
+                    <th className="px-4 py-3.5 text-right">Đã có nơi TT</th>
+                    <th className="px-4 py-3.5 text-right">Đang TT</th>
+                    <th className="px-4 py-3.5 text-right">Hoàn tất</th>
+                    <th className="px-5 py-3.5 text-right">Tỷ lệ có nơi TT</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {displayFaculties.map((f) => (
+                    <React.Fragment key={f.facultyId}>
+                      <tr className="bg-slate-50/70 font-bold text-slate-900">
+                        <td className="px-5 py-3">
+                          <span className="mr-2 rounded-md bg-[#e6f6f6] px-2 py-0.5 font-mono text-[10px] font-extrabold text-[#00878a]">
+                            {f.code}
                           </span>
-                          {m.name}
+                          Khoa {f.name}
                         </td>
-                        <td className="px-4 py-2.5 text-right font-medium">
-                          {number.format(m.totalStudents)}
+                        <td className="px-4 py-3 text-right">
+                          {number.format(f.totalStudents)}
                         </td>
-                        <td className="px-4 py-2.5 text-right text-slate-400">
-                          —
+                        <td className="px-4 py-3 text-right">
+                          {number.format(f.totalLecturers)}
                         </td>
-                        <td className="px-4 py-2.5 text-right font-semibold text-slate-800">
-                          {number.format(m.placedStudents)}
+                        <td className="px-4 py-3 text-right text-[#00878a]">
+                          {number.format(f.placedStudents)}
                         </td>
-                        <td className="px-4 py-2.5 text-right">
-                          {number.format(m.activePlacements)}
+                        <td className="px-4 py-3 text-right">
+                          {number.format(f.activePlacements)}
                         </td>
-                        <td className="px-4 py-2.5 text-right">
-                          {number.format(m.completedPlacements)}
+                        <td className="px-4 py-3 text-right">
+                          {number.format(f.completedPlacements)}
                         </td>
-                        <td className="px-5 py-2.5 text-right font-semibold text-slate-700">
-                          {m.placementRate}%
+                        <td className="px-5 py-3 text-right">
+                          <span className="rounded-full bg-[#e6f6f6] px-2.5 py-0.5 text-[11px] font-extrabold text-[#00878a]">
+                            {f.placementRate}%
+                          </span>
                         </td>
                       </tr>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {f.majors.map((m) => (
+                        <tr
+                          key={m.majorId}
+                          className="text-slate-600 transition hover:bg-slate-50/50"
+                        >
+                          <td className="py-2.5 pl-10 pr-5">
+                            <span className="mr-2 font-mono text-[10px] text-slate-400">
+                              {m.code}
+                            </span>
+                            {m.name}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-medium">
+                            {number.format(m.totalStudents)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right text-slate-400">
+                            —
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-semibold text-slate-800">
+                            {number.format(m.placedStudents)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            {number.format(m.activePlacements)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            {number.format(m.completedPlacements)}
+                          </td>
+                          <td className="px-5 py-2.5 text-right font-semibold text-slate-700">
+                            {m.placementRate}%
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </article>
+      )}
+
+      {/* Modal Chi tiết ngành đào tạo khi click vào ô Heatmap */}
+      {selectedMajorModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px] transition-opacity"
+          onClick={() => setSelectedMajorModal(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="modal-smooth-in flex max-h-[calc(100vh-2.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/70 p-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-[#e6f6f6] px-2 py-0.5 font-mono text-[11px] font-extrabold text-[#00878a]">
+                    {selectedMajorModal.major.code}
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    Khoa {selectedMajorModal.facultyName} ({selectedMajorModal.facultyCode})
+                  </span>
+                </div>
+                <h3 className="mt-1.5 text-base font-bold text-slate-900 leading-snug">
+                  {selectedMajorModal.major.name}
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Chi tiết tiến độ và phân bổ thực tập của ngành
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMajorModal(null)}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200/70 hover:text-slate-700 transition cursor-pointer"
+                aria-label="Đóng"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </header>
+
+            {/* Modal Body */}
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 text-xs [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {/* Insight Banner */}
+              {(() => {
+                const m = selectedMajorModal.major;
+                if (m.totalStudents === 0) {
+                  return (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-slate-600">
+                      <strong>Chưa có sinh viên:</strong> Không có sinh viên nào đăng ký thực tập ngành này trong học kỳ đang chọn.
+                    </div>
+                  );
+                }
+                if (m.placementRate >= 80) {
+                  return (
+                    <div className="rounded-xl border border-teal-200 bg-teal-50/70 p-3.5 text-teal-800">
+                      <strong>Tiến độ xuất sắc (Đạt {m.placementRate}%):</strong> Hầu hết sinh viên đã được tiếp nhận vào các doanh nghiệp đối tác.
+                    </div>
+                  );
+                }
+                if (m.placementRate >= 50) {
+                  return (
+                    <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3.5 text-sky-800">
+                      <strong>Tiến độ khả quan (Đạt {m.placementRate}%):</strong> Hơn một nửa số lượng sinh viên đã có nơi tiếp nhận thực tập.
+                    </div>
+                  );
+                }
+                if (m.placementRate > 0) {
+                  return (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-amber-800">
+                      <strong>Cần theo dõi (Đạt {m.placementRate}%):</strong> Còn {m.totalStudents - m.placedStudents} sinh viên chưa có nơi thực tập. Nhà trường và khoa nên đẩy mạnh giới thiệu việc làm.
+                    </div>
+                  );
+                }
+                return (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-3.5 text-rose-800">
+                    <strong>Báo động đỏ (0%):</strong> Toàn bộ {m.totalStudents} sinh viên của ngành chưa có nơi tiếp nhận thực tập! Cần can thiệp hỗ trợ sớm.
+                  </div>
+                );
+              })()}
+
+              {/* Metric Cards */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+                  <span className="text-[11px] font-medium text-slate-500">Tổng sinh viên</span>
+                  <p className="mt-1 font-mono text-base font-black text-slate-800">
+                    {number.format(selectedMajorModal.major.totalStudents)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-teal-200 bg-[#e6f6f6]/60 p-3 text-center">
+                  <span className="text-[11px] font-medium text-[#00878a]">Đã có nơi TT</span>
+                  <p className="mt-1 font-mono text-base font-black text-[#00878a]">
+                    {number.format(selectedMajorModal.major.placedStudents)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-3 text-center">
+                  <span className="text-[11px] font-medium text-sky-700">Đang thực tập</span>
+                  <p className="mt-1 font-mono text-base font-black text-sky-800">
+                    {number.format(selectedMajorModal.major.activePlacements)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 text-center">
+                  <span className="text-[11px] font-medium text-indigo-700">Hoàn tất</span>
+                  <p className="mt-1 font-mono text-base font-black text-indigo-800">
+                    {number.format(selectedMajorModal.major.completedPlacements)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-700">Tỷ lệ có nơi thực tập</span>
+                  <span className="font-mono font-black text-[#00878a]">
+                    {selectedMajorModal.major.placementRate}%
+                  </span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#00878a] to-[#0ea5e9] transition-all duration-300"
+                    style={{ width: `${Math.min(selectedMajorModal.major.placementRate, 100)}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 text-right">
+                  {selectedMajorModal.major.placedStudents} trên {selectedMajorModal.major.totalStudents} sinh viên
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <footer className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedMajorModal(null)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer shadow-2xs"
+              >
+                Đóng
+              </button>
+            </footer>
+          </div>
+        </div>
       )}
     </section>
   );
