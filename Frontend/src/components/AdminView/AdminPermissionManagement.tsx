@@ -398,7 +398,7 @@ export const AdminPermissionManagement: React.FC = () => {
           </div>
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#00878a] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" /> Thêm Quản trị viên
           </button>
@@ -760,7 +760,7 @@ export const AdminPermissionManagement: React.FC = () => {
                 type="button"
                 onClick={() => void handleSavePermissions()}
                 disabled={savingPermissions}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white transition cursor-pointer disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00878a] hover:bg-[#007477] text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingPermissions && <LoaderCircle className="w-4 h-4 animate-spin" />}
                 Lưu thay đổi
@@ -813,7 +813,7 @@ export const AdminPermissionManagement: React.FC = () => {
                   value={createEmail}
                   onChange={(e) => setCreateEmail(e.target.value)}
                   placeholder="admin.domain@careerbridge.edu.vn"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20 outline-none"
                 />
               </div>
 
@@ -825,7 +825,7 @@ export const AdminPermissionManagement: React.FC = () => {
                   value={createPassword}
                   onChange={(e) => setCreatePassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20 outline-none"
                 />
               </div>
 
@@ -951,7 +951,7 @@ export const AdminPermissionManagement: React.FC = () => {
               <button
                 type="submit"
                 disabled={creating}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white transition cursor-pointer disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00878a] hover:bg-[#007477] text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {creating && <LoaderCircle className="w-4 h-4 animate-spin" />}
                 Tạo tài khoản

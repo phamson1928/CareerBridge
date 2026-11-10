@@ -35,7 +35,7 @@ const statusLabels: Record<SemesterStatus, string> = {
 };
 
 const statusClasses: Record<SemesterStatus, string> = {
-  UPCOMING: "border-indigo-200 bg-indigo-50 text-indigo-700",
+  UPCOMING: "border-[#cbebeb] bg-[#e6f6f6] text-[#00878a]",
   ACTIVE: "border-amber-200 bg-amber-50 text-amber-700",
   RECRUITING: "border-sky-200 bg-sky-50 text-sky-700",
   MONITORING: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -312,7 +312,7 @@ export const SemesterManagement: React.FC = () => {
         </div>
         <button
           onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-700"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#00878a] px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" />
           Tạo đợt thực tập
@@ -436,7 +436,7 @@ export const SemesterManagement: React.FC = () => {
                             <button
                               onClick={() => openEdit(semester)}
                               title="Chỉnh sửa"
-                              className="rounded-lg p-2 text-indigo-600 hover:bg-indigo-50"
+                              className="cursor-pointer rounded-lg p-2 text-[#00878a] hover:bg-[#e6f6f6] transition"
                             >
                               <Edit3 className="h-4 w-4" />
                             </button>
@@ -500,17 +500,24 @@ export const SemesterManagement: React.FC = () => {
 
       {modalOpen && (
         <ModalPortal>
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
+            onClick={closeModal}
+          >
             <form
               onSubmit={(event) => void submit(event)}
-              className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl overflow-hidden"
             >
-            <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between rounded-t-2xl border-b border-slate-100 bg-slate-50/70 p-5">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900">
+                <span className="inline-flex items-center gap-1 rounded-full border border-[#cbebeb] bg-[#e6f6f6] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                  {editing ? "Cập nhật đợt" : "Đợt thực tập mới"}
+                </span>
+                <h3 className="mt-1.5 text-lg font-black text-slate-900">
                   {editing ? "Chỉnh sửa đợt thực tập" : "Tạo đợt thực tập"}
                 </h3>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-0.5 text-xs text-slate-500">
                   {editing && editing.phase !== "UPCOMING"
                     ? "Đợt đã bắt đầu tuyển nên chỉ có thể đổi tên; mốc thời gian được khóa."
                     : "Ngày bắt đầu và kết thúc là khoảng nhà trường theo dõi học vụ."}
@@ -519,13 +526,13 @@ export const SemesterManagement: React.FC = () => {
               <button
                 type="button"
                 onClick={closeModal}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="cursor-pointer rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-200/60 hover:text-slate-700"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-5 space-y-4">
               <div>
                 <label className="mb-1 block text-xs font-bold text-slate-800">
                   Tên đợt thực tập *
@@ -541,7 +548,7 @@ export const SemesterManagement: React.FC = () => {
                     }))
                   }
                   placeholder="Ví dụ: Học kỳ doanh nghiệp 2027"
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20"
                 />
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -560,7 +567,7 @@ export const SemesterManagement: React.FC = () => {
                         startDate: event.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100"
+                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20"
                   />
                 </div>
                 <div>
@@ -578,29 +585,30 @@ export const SemesterManagement: React.FC = () => {
                         endDate: event.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100"
+                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20"
                   />
                 </div>
               </div>
               {formError && (
-                <p className="text-xs text-rose-600">{formError}</p>
+                <p className="text-xs font-semibold text-rose-600">{formError}</p>
               )}
             </div>
 
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="flex items-center justify-end gap-3 rounded-b-2xl border-t border-slate-100 bg-slate-50/60 px-5 py-3">
               <button
                 type="button"
                 onClick={closeModal}
                 disabled={saving}
-                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 disabled:opacity-50"
+                className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
               >
                 Hủy
               </button>
               <button
+                type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#00878a] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {saving && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                {saving && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
                 {editing ? "Lưu thay đổi" : "Tạo đợt thực tập"}
               </button>
             </div>

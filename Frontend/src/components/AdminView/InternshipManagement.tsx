@@ -1932,7 +1932,7 @@ function ModerationModal({
                   ? "Nhập lý do hoặc căn cứ đồng ý cho phép tin tuyển dụng hoạt động trở lại..."
                   : "Nêu rõ điểm vi phạm (ví dụ: mô tả không đúng phụ cấp cam kết, yêu cầu đóng phí đào tạo...) để doanh nghiệp biết lý do bị gỡ."
               }
-              className="w-full rounded-2xl border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition placeholder:text-slate-400 leading-relaxed"
+              className="w-full rounded-2xl border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20 transition placeholder:text-slate-400 leading-relaxed"
             />
           </div>
 
@@ -2186,7 +2186,7 @@ function ReportReviewModal({
               value={adminNote}
               onChange={(e) => setAdminNote(e.target.value)}
               placeholder="Nhập kết quả xác minh hoặc lưu ý xử lý..."
-              className="w-full rounded-2xl border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
+              className="w-full rounded-2xl border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20 transition"
             />
           </div>
 

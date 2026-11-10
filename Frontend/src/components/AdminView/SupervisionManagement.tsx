@@ -344,7 +344,7 @@ function LecturerPicker({
         <div
           className={`absolute z-50 ${
             dropUp ? "bottom-full mb-1.5" : "mt-1"
-          } max-h-64 w-full flex flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-2xl ring-1 ring-black/5`}
+          } max-h-56 w-full flex flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-2xl ring-1 ring-black/5`}
         >
           <div className="shrink-0 border-b border-slate-100 bg-slate-50/70 p-2">
             <div className="relative">
@@ -361,7 +361,7 @@ function LecturerPicker({
             </div>
           </div>
 
-          <div className="max-h-52 overflow-y-auto p-1 divide-y divide-slate-50 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="max-h-[162px] overflow-y-auto p-1 divide-y divide-slate-50 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {filteredLecturers.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-400">
                 Không tìm thấy giảng viên phù hợp
@@ -391,11 +391,11 @@ function LecturerPicker({
                           {lecturer.fullName}
                         </p>
                         {isSameFaculty ? (
-                          <span className="rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700">
+                          <span className="rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
                             Cùng Khoa
                           </span>
                         ) : (
-                          <span className="rounded-md border border-[#cbebeb] bg-[#e6f6f6] px-1.5 py-0.2 text-[9px] font-bold text-[#00878a]">
+                          <span className="rounded-md border border-[#cbebeb] bg-[#e6f6f6] px-1.5 py-0.5 text-[9px] font-bold text-[#00878a]">
                             Liên khoa
                           </span>
                         )}
@@ -924,7 +924,7 @@ export const SupervisionManagement: React.FC = () => {
                                   supervision.lecturer.facultyId && (
                                   <span
                                     title="Giảng viên hướng dẫn thuộc Khoa khác với Khoa của sinh viên (Hướng dẫn liên khoa)"
-                                    className="shrink-0 rounded-md border border-[#cbebeb] bg-[#e6f6f6] px-1 py-0.2 text-[9px] font-bold text-[#00878a]"
+                                    className="shrink-0 rounded-md border border-[#cbebeb] bg-[#e6f6f6] px-1 py-0.5 text-[9px] font-bold text-[#00878a]"
                                   >
                                     Liên khoa
                                   </span>
