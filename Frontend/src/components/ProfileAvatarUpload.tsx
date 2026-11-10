@@ -25,6 +25,10 @@ export function ProfileAvatarPreview({ fileId, fallback, className, imageClassNa
     let active = true;
     let objectUrl: string | null = null;
     if (!fileId) { setPreviewUrl(null); return; }
+    if (fileId.startsWith("data:") || fileId.startsWith("http")) {
+      setPreviewUrl(fileId);
+      return;
+    }
     void (async () => {
       try {
         const { downloadUrl } = await getPrivateFileDownloadUrl(fileId);
@@ -60,6 +64,10 @@ export function ProfileAvatarUpload({
       setPreviewUrl(null);
       return;
     }
+    if (fileId.startsWith("data:") || fileId.startsWith("http")) {
+      setPreviewUrl(fileId);
+      return;
+    }
     void (async () => {
       try {
         const { downloadUrl } = await getPrivateFileDownloadUrl(fileId);
@@ -93,8 +101,18 @@ export function ProfileAvatarUpload({
     try {
       const uploaded = await uploadPrivateFile(file, "AVATAR");
       onChange(uploaded.id);
-    } catch (error) {
-      onError(error instanceof Error ? error.message : "Không thể tải ảnh đại diện lên.");
+    } catch {
+      try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error("Không thể đọc tệp ảnh."));
+          reader.readAsDataURL(file);
+        });
+        onChange(dataUrl);
+      } catch (fallbackError) {
+        onError(fallbackError instanceof Error ? fallbackError.message : "Không thể tải ảnh đại diện lên.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -110,11 +128,11 @@ export function ProfileAvatarUpload({
         <p className="mt-1 text-xs text-slate-500">JPG, PNG hoặc WebP · tối đa 5 MB</p>
         <div className="mt-3 flex gap-2">
           <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => void selectFile(event)} />
-          <button type="button" disabled={disabled || isLoading} onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-50">
+          <button type="button" disabled={disabled || isLoading} onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-50 cursor-pointer">
             {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             {fileId ? "Đổi ảnh" : "Tải ảnh lên"}
           </button>
-          {fileId && <button type="button" disabled={disabled || isLoading} onClick={() => onChange(null)} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50"><Trash2 className="h-4 w-4" />Xóa ảnh</button>}
+          {fileId && <button type="button" disabled={disabled || isLoading} onClick={() => onChange(null)} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50 cursor-pointer"><Trash2 className="h-4 w-4" />Xóa ảnh</button>}
         </div>
       </div>
     </div>

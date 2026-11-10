@@ -142,6 +142,7 @@ export interface InternshipReportRecord {
     id: string;
     title: string;
     status: InternshipStatus;
+    semesterId?: string;
     company: { id: string; companyName: string; logo: string | null };
   };
   reviewedBy?: { id: string; email: string; fullName?: string } | null;
@@ -233,6 +234,7 @@ export type ListInternshipReportsParams = {
   status?: InternshipReportStatus;
   reasonCode?: InternshipReportReasonCode;
   internshipId?: string;
+  semesterId?: string;
 };
 
 const serializeListParams = (params?: ListInternshipsParams) => {

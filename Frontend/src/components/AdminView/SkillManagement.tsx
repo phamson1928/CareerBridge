@@ -178,28 +178,31 @@ export const SkillManagement: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b text-slate-500">
+              <tr className="border-b border-slate-100 text-slate-500 font-semibold">
                 <th className="p-3">Tên</th>
                 <th className="p-3">Sinh viên</th>
                 <th className="p-3">Tin tuyển dụng</th>
                 <th className="p-3">Cập nhật</th>
-                <th className="p-3" />
+                <th className="p-3 text-right pr-4">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {items.map((skill) => (
-                <tr key={skill.id} className="border-b last:border-0">
-                  <td className="p-3 font-bold text-slate-800">{skill.name}</td>
-                  <td className="p-3">{skill.studentCount}</td>
-                  <td className="p-3">{skill.internshipCount}</td>
-                  <td className="p-3">
+                <tr
+                  key={skill.id}
+                  className="border-b border-slate-100 last:border-0 transition-colors hover:bg-slate-50/70"
+                >
+                  <td className="p-3 font-semibold text-slate-800">{skill.name}</td>
+                  <td className="p-3 text-slate-600">{skill.studentCount}</td>
+                  <td className="p-3 text-slate-600">{skill.internshipCount}</td>
+                  <td className="p-3 text-slate-500">
                     {new Date(skill.updatedAt).toLocaleDateString("vi-VN")}
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-right pr-4">
                     <button
                       type="button"
                       onClick={() => openEdit(skill)}
-                      className="mr-1.5 rounded-lg p-2 text-indigo-600"
+                      className="mr-1 rounded-lg p-2 text-teal-600 hover:bg-teal-50 transition cursor-pointer"
                       aria-label={`Sửa ${skill.name}`}
                     >
                       <Edit3 className="h-4 w-4" />
@@ -207,7 +210,7 @@ export const SkillManagement: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => void remove(skill)}
-                      className="rounded-lg p-2 text-rose-600"
+                      className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                       aria-label={`Xóa ${skill.name}`}
                     >
                       <Trash2 className="h-4 w-4" />

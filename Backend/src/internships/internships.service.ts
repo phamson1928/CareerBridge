@@ -1466,6 +1466,7 @@ export class InternshipsService {
     const where: Prisma.InternshipReportWhereInput = {
       ...(query.status ? { status: query.status } : {}),
       ...(query.internshipId ? { internshipId: query.internshipId } : {}),
+      ...(query.semesterId ? { internship: { semesterId: query.semesterId } } : {}),
     };
 
     const [items, total] = await this.prisma.$transaction([
@@ -1500,6 +1501,7 @@ export class InternshipsService {
               id: true,
               title: true,
               status: true,
+              semesterId: true,
               company: { select: { id: true, companyName: true, logo: true } },
             },
           },

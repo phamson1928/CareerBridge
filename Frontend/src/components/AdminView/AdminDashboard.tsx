@@ -26,15 +26,21 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarClock,
+  Check,
   CheckCircle2,
   ClipboardCheck,
   Download,
   GraduationCap,
   Layers3,
+  LayoutGrid,
   LoaderCircle,
   RefreshCw,
+  RotateCcw,
+  Search,
+  Table,
   UsersRound,
   ChevronDown,
+  X,
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
 import { dashboardApi } from "../../dashboard/api";
@@ -85,22 +91,26 @@ function MetricCard({
   return (
     <article
       onClick={onClick}
-      className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all sm:p-5 ${
-        onClick ? "cursor-pointer hover:border-slate-300 hover:shadow-md" : ""
+      className={`rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 sm:p-5 ${
+        onClick
+          ? "group cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-[0.99]"
+          : ""
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-800">
             {value}
           </p>
-          <p className="mt-1 text-xs font-medium text-slate-500">{detail}</p>
+          <p className="mt-1 text-xs text-slate-500">{detail}</p>
         </div>
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-200 ${
+            onClick ? "group-hover:scale-105" : ""
+          } ${tone}`}
         >
           <Icon className="h-5 w-5" />
         </div>
@@ -117,10 +127,231 @@ function EmptyChart({ message }: { message: string }) {
   );
 }
 
+interface DropdownOption {
+  value: string;
+  label: string;
+  group?: string;
+}
+
+function CustomDropdown({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Chọn...",
+  searchable = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  searchable?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && searchable && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen, searchable]);
+
+  const selectedOption = useMemo(
+    () => options.find((opt) => opt.value === value),
+    [options, value],
+  );
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options;
+    const q = search.toLowerCase().trim();
+    return options.filter(
+      (opt) =>
+        opt.label.toLowerCase().includes(q) ||
+        (opt.group && opt.group.toLowerCase().includes(q)),
+    );
+  }, [options, search]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <label className="mb-1 block text-xs font-semibold text-slate-600">
+        {label}
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`group flex w-full items-center justify-between gap-2 rounded-xl bg-[#f3f4f6] hover:bg-[#eceef1] px-3.5 py-2.5 text-left text-xs sm:text-sm font-semibold text-slate-800 transition-all outline-none cursor-pointer ${
+          isOpen
+            ? "ring-2 ring-[#00878a]/30 bg-white shadow-xs"
+            : ""
+        }`}
+      >
+        <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-[#00878a]" : "group-hover:text-slate-600"
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 min-w-full sm:min-w-[280px] max-h-72 overflow-hidden rounded-xl border border-slate-100 bg-white p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-slate-800">
+          {searchable && (
+            <div className="p-1 border-b border-slate-100 mb-1">
+              <div className="flex items-center gap-1.5 rounded-lg bg-[#f3f4f6] px-2.5 py-1.5 text-xs text-slate-700">
+                <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <input
+                  ref={inputRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tìm kiếm..."
+                  className="w-full bg-transparent text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="max-h-52 overflow-y-auto space-y-0.5 pr-0.5 text-xs [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {filteredOptions.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs text-slate-400">
+                Không tìm thấy kết quả phù hợp
+              </div>
+            ) : (
+              (() => {
+                let currentGroup: string | undefined = undefined;
+                return filteredOptions.map((opt) => {
+                  const isSelected = opt.value === value;
+                  const showGroup = opt.group && opt.group !== currentGroup;
+                  if (opt.group) currentGroup = opt.group;
+
+                  return (
+                    <React.Fragment key={opt.value}>
+                      {showGroup && (
+                        <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 rounded-md mt-1.5 mb-0.5">
+                          {opt.group}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onChange(opt.value);
+                          setIsOpen(false);
+                          setSearch("");
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left transition cursor-pointer ${
+                          isSelected
+                            ? "bg-teal-50 font-bold text-[#00878a]"
+                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                        }`}
+                      >
+                        <span className="leading-snug">{opt.label}</span>
+                        {isSelected && (
+                          <Check className="h-3.5 w-3.5 text-[#00878a] stroke-[2.5] shrink-0 ml-2" />
+                        )}
+                      </button>
+                    </React.Fragment>
+                  );
+                });
+              })()
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getMajorHeatColor(rate: number, totalStudents: number) {
+  if (totalStudents === 0) {
+    return {
+      bg: "bg-slate-100 hover:bg-slate-200/80 text-slate-600",
+      codeBg: "bg-slate-200/90 text-slate-700",
+      rateText: "text-slate-400",
+      pill: "bg-slate-200 text-slate-600",
+      status: "Chưa có sinh viên",
+    };
+  }
+  if (rate >= 80) {
+    return {
+      bg: "bg-gradient-to-br from-[#00878a] to-[#00676a] hover:from-[#007a7d] hover:to-[#005a5d] text-white shadow-xs",
+      codeBg: "bg-black/25 text-white",
+      rateText: "text-white",
+      pill: "bg-white/20 text-white",
+      status: "Xuất sắc",
+    };
+  }
+  if (rate >= 50) {
+    return {
+      bg: "bg-gradient-to-br from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white shadow-xs",
+      codeBg: "bg-black/25 text-white",
+      rateText: "text-white",
+      pill: "bg-white/20 text-white",
+      status: "Tiến độ tốt",
+    };
+  }
+  if (rate >= 25) {
+    return {
+      bg: "bg-gradient-to-br from-[#d97706] to-[#b45309] hover:from-[#b45309] hover:to-[#92400e] text-white shadow-xs",
+      codeBg: "bg-black/25 text-white",
+      rateText: "text-white",
+      pill: "bg-white/20 text-white",
+      status: "Cần lưu ý",
+    };
+  }
+  return {
+    bg: "bg-gradient-to-br from-[#e11d48] to-[#be123c] hover:from-[#be123c] hover:to-[#9f1239] text-white shadow-xs",
+    codeBg: "bg-black/25 text-white",
+    rateText: "text-white",
+    pill: "bg-white/25 text-white",
+    status: "Báo động: Tỷ lệ thấp",
+  };
+}
+
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigate,
 }) => {
   const [semesterId, setSemesterId] = useState("ALL");
+  const [breakdownView, setBreakdownView] = useState<"heatmap" | "table">("heatmap");
+  const [selectedMajorModal, setSelectedMajorModal] = useState<{
+    facultyCode: string;
+    facultyName: string;
+    major: {
+      majorId: string;
+      code: string;
+      name: string;
+      totalStudents: number;
+      placedStudents: number;
+      activePlacements: number;
+      completedPlacements: number;
+      placementRate: number;
+    };
+  } | null>(null);
   const [facultyId, setFacultyId] = useState("");
   const [majorId, setMajorId] = useState("");
   const [months, setMonths] = useState<3 | 6 | 9 | 12>(6);
@@ -177,6 +408,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     0,
   );
 
+  const hasActiveFilters =
+    semesterId !== "ALL" || Boolean(facultyId) || Boolean(majorId) || months !== 6;
+
+  const handleResetFilters = () => {
+    setSemesterId("ALL");
+    setFacultyId("");
+    setMajorId("");
+    setMonths(6);
+  };
+
+  const semesterOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "ALL", label: "Toàn hệ thống" },
+      ...semesters.map((s) => ({ value: s.id, label: s.name })),
+    ],
+    [semesters],
+  );
+
+  const facultyOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "", label: "Tất cả Khoa" },
+      ...faculties.map((f) => {
+        const cleanName = f.name.trim().toLowerCase().startsWith("khoa")
+          ? f.name.trim()
+          : `Khoa ${f.name.trim()}`;
+        return {
+          value: f.id,
+          label: cleanName,
+        };
+      }),
+    ],
+    [faculties],
+  );
+
+  const majorOptions: DropdownOption[] = useMemo(() => {
+    const result: DropdownOption[] = [{ value: "", label: "Tất cả Ngành" }];
+    const targetFaculties = facultyId
+      ? faculties.filter((f) => f.id === facultyId)
+      : faculties;
+
+    targetFaculties.forEach((f) => {
+      const cleanFacultyName = f.name.trim().toLowerCase().startsWith("khoa")
+        ? f.name.trim()
+        : `Khoa ${f.name.trim()}`;
+
+      f.majors.forEach((m) => {
+        result.push({
+          value: m.id,
+          label: m.name,
+          group: cleanFacultyName,
+        });
+      });
+    });
+    return result;
+  }, [faculties, facultyId]);
+
+  const monthOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "3", label: "3 tháng gần nhất" },
+      { value: "6", label: "6 tháng gần nhất" },
+      { value: "9", label: "9 tháng gần nhất" },
+      { value: "12", label: "12 tháng gần nhất" },
+    ],
+    [],
+  );
+
   if (loading && !data)
     return (
       <section className="space-y-5" aria-busy="true">
@@ -210,6 +507,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   if (!data) return null;
   const { global, kpis, scope } = data;
   const facultyBreakdown = data.facultyBreakdown ?? [];
+
+  const displayFaculties = (() => {
+    let list = facultyBreakdown;
+    if (facultyId) {
+      list = list.filter((f) => f.facultyId === facultyId);
+    }
+    if (majorId) {
+      list = list
+        .map((f) => ({
+          ...f,
+          majors: f.majors.filter((m) => m.majorId === majorId),
+        }))
+        .filter((f) => f.majors.length > 0);
+    }
+    return list;
+  })();
 
   const exportDashboardExcel = () => {
     const majorRows = facultyBreakdown.flatMap((f) =>
@@ -258,153 +571,122 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <section className="admin-page admin-page--feature space-y-5">
-      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#005c5f] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/20 sm:p-8">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+    <section className="admin-page admin-page--feature space-y-4">
+      {/* Light, Airy & Compact Header with Subtle Elevation */}
+      <header className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        {/* Top row: Title + Actions */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/80">
-              <BarChart3 className="h-3.5 w-3.5" /> Tổng quan vận hành
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#cbebeb] bg-[#e6f6f6] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#00878a]">
+                <BarChart3 className="h-3 w-3" /> Tổng quan vận hành
+              </span>
+              {loading && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#00878a]">
+                  <LoaderCircle className="h-3 w-3 animate-spin" /> Đang đồng bộ...
+                </span>
+              )}
             </div>
-            <h1 className="admin-page-title mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+            <h1 className="admin-page-title mt-1.5 text-xl font-bold tracking-tight text-[#006f72] sm:text-2xl">
               Trung tâm điều hành thực tập
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80">
-              Theo dõi tuyển dụng, hồ sơ thực tập và tiến độ báo cáo bằng dữ
-              liệu vận hành thực tế.
+            <p className="mt-0.5 text-xs text-slate-500">
+              Theo dõi tuyển dụng, hồ sơ thực tập và tiến độ báo cáo bằng dữ liệu vận hành thời gian thực.
             </p>
           </div>
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="text-xs font-semibold text-white/80">
-              Kỳ thực tập
-              <div className="relative mt-1.5">
-                <select
-                  value={semesterId}
-                  onChange={(event) => setSemesterId(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
-                >
-                  <option className="bg-slate-900 text-white py-1" value="ALL">
-                    Toàn hệ thống
-                  </option>
-                  {semesters.map((semester) => (
-                    <option
-                      className="bg-slate-900 text-white py-1"
-                      key={semester.id}
-                      value={semester.id}
-                    >
-                      {semester.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-              </div>
-            </label>
-            <label className="text-xs font-semibold text-white/80">
-              Khoa
-              <div className="relative mt-1.5">
-                <select
-                  value={facultyId}
-                  onChange={(event) => {
-                    setFacultyId(event.target.value);
-                    setMajorId("");
-                  }}
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
-                >
-                  <option className="bg-slate-900 text-white py-1" value="">
-                    Tất cả Khoa
-                  </option>
-                  {faculties.map((f) => (
-                    <option
-                      className="bg-slate-900 text-white py-1"
-                      key={f.id}
-                      value={f.id}
-                    >
-                      {f.code} — {f.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-              </div>
-            </label>
-            <label className="text-xs font-semibold text-white/80">
-              Ngành đào tạo
-              <div className="relative mt-1.5">
-                <select
-                  value={majorId}
-                  onChange={(event) => setMajorId(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
-                >
-                  <option className="bg-slate-900 text-white py-1" value="">
-                    Tất cả Ngành
-                  </option>
-                  {(facultyId
-                    ? faculties.filter((f) => f.id === facultyId)
-                    : faculties
-                  ).map((f) => (
-                    <optgroup
-                      className="bg-slate-900 text-white"
-                      key={f.id}
-                      label={`Khoa ${f.name}`}
-                    >
-                      {f.majors.map((m) => (
-                        <option
-                          className="bg-slate-900 text-white py-1"
-                          key={m.id}
-                          value={m.id}
-                        >
-                          {m.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-              </div>
-            </label>
-            <label className="text-xs font-semibold text-white/80">
-              Khoảng thời gian
-              <div className="relative mt-1.5">
-                <select
-                  value={months}
-                  onChange={(event) =>
-                    setMonths(Number(event.target.value) as 3 | 6 | 9 | 12)
-                  }
-                  className="w-full appearance-none rounded-xl border border-white/25 bg-[#00686b] px-3.5 py-2.5 pr-9 text-sm font-semibold text-white outline-none backdrop-blur transition hover:border-white/40 focus:border-white focus:ring-2 focus:ring-white/30 cursor-pointer"
-                >
-                  {[3, 6, 9, 12].map((value) => (
-                    <option
-                      className="bg-slate-900 text-white py-1"
-                      key={value}
-                      value={value}
-                    >
-                      {value} tháng gần nhất
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-              </div>
-            </label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void load()}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-[#00878a]/40 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+              title="Làm mới số liệu"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 text-slate-500 ${
+                  loading ? "animate-spin text-[#00878a]" : ""
+                }`}
+              />
+              Làm mới
+            </button>
+            <button
+              type="button"
+              onClick={exportDashboardExcel}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#00878a] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98] cursor-pointer"
+            >
+              <Download className="h-3.5 w-3.5" /> Xuất báo cáo Excel Khoa/Ngành
+            </button>
           </div>
         </div>
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-xs text-white/75">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+
+        {/* Filter Area - Compact & High-Contrast */}
+        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <CustomDropdown
+            label="Kỳ thực tập"
+            value={semesterId}
+            onChange={setSemesterId}
+            options={semesterOptions}
+          />
+
+          <CustomDropdown
+            label="Khoa"
+            value={facultyId}
+            onChange={(val) => {
+              setFacultyId(val);
+              setMajorId("");
+            }}
+            options={facultyOptions}
+            searchable
+          />
+
+          <CustomDropdown
+            label="Ngành đào tạo"
+            value={majorId}
+            onChange={setMajorId}
+            options={majorOptions}
+            searchable
+          />
+
+          <CustomDropdown
+            label="Khoảng thời gian"
+            value={String(months)}
+            onChange={(val) =>
+              setMonths(Number(val) as 3 | 6 | 9 | 12)
+            }
+            options={monthOptions}
+          />
+        </div>
+
+        {/* Footer Metadata */}
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="inline-flex items-center gap-1.5">
-              <CalendarClock className="h-3.5 w-3.5" /> Cập nhật:{" "}
-              {dateTime.format(new Date(scope.generatedAt))}
-            </span>
-            <span>Phạm vi: {scope.semester?.name ?? "Toàn hệ thống"}</span>
-            {loading && (
-              <span className="inline-flex items-center gap-1.5 text-white">
-                <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> Đang đồng bộ
+              <CalendarClock className="h-3.5 w-3.5 text-slate-400" /> Cập nhật:{" "}
+              <span className="font-semibold text-slate-700">
+                {dateTime.format(new Date(scope.generatedAt))}
               </span>
+            </span>
+            <span className="text-slate-300">•</span>
+            <span>
+              Phạm vi:{" "}
+              <span className="font-semibold text-slate-700">
+                {scope.semester?.name ?? "Toàn hệ thống"}
+              </span>
+            </span>
+            {hasActiveFilters && (
+              <>
+                <span className="text-slate-300">•</span>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1 font-bold text-[#00878a] hover:text-[#005c5f] transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" /> Đặt lại mặc định
+                </button>
+              </>
             )}
           </div>
-          <button
-            type="button"
-            onClick={exportDashboardExcel}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/15 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-white/25"
-          >
-            <Download className="h-4 w-4" /> Xuất báo cáo Excel Khoa/Ngành
-          </button>
         </div>
       </header>
       {error && (
@@ -468,55 +750,67 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {[
           {
             label: "Tỷ lệ sinh viên đã có nơi thực tập",
-            value: kpis.placementCoverageRate,
+            value: `${kpis.placementCoverageRate}%`,
             detail: `${number.format(kpis.placedStudents)}/${number.format(kpis.applicantStudents)} sinh viên ứng tuyển`,
-            color: "from-[#00878a] to-[#006f72]",
+            textColor: "text-[#00878a]",
+            accentBorder: "border-l-4 border-[#00878a]",
           },
           {
             label: "Tỷ lệ lấp đầy slot",
-            value: kpis.slotOccupancyRate,
+            value: `${kpis.slotOccupancyRate}%`,
             detail: `${number.format(kpis.filledSlots)}/${number.format(kpis.totalSlots)} vị trí đã dùng`,
-            color: "from-[#006f72] to-[#00878a]",
+            textColor: "text-[#00878a]",
+            accentBorder: "border-l-4 border-[#00878a]",
           },
           {
             label: "Hồ sơ chưa phân công",
-            value: kpis.unassignedPlacements,
+            value: String(kpis.unassignedPlacements),
             detail: "Cần chỉ định giảng viên hướng dẫn",
-            color: "from-[#da1c2d] to-[#b41425]",
+            textColor: "text-[#da1c2d]",
+            accentBorder: "border-l-4 border-[#da1c2d]",
             action: "teacher-assignment",
           },
         ].map((item) => (
           <article
             key={item.label}
-            className={`rounded-2xl bg-gradient-to-br ${item.color} p-5 text-white shadow-lg`}
+            onClick={item.action ? () => onNavigate?.(item.action) : undefined}
+            className={`rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 ${item.accentBorder} ${
+              item.action
+                ? "group cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-[0.99]"
+                : ""
+            }`}
           >
-            <p className="text-xs font-bold uppercase tracking-wider text-white/75">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               {item.label}
             </p>
             <div className="mt-2 flex items-end justify-between gap-4">
-              <p className="text-4xl font-black">
+              <p className={`text-3xl font-bold tracking-tight ${item.textColor}`}>
                 {item.value}
-                {item.action ? "" : "%"}
               </p>
               {item.action && (
                 <button
-                  onClick={() => onNavigate?.(item.action)}
-                  className="rounded-xl bg-white/15 p-2 text-white transition hover:bg-white/25"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigate?.(item.action);
+                  }}
+                  className="admin-shortcut-btn flex h-9 w-9 items-center justify-center rounded-xl cursor-pointer"
                   aria-label="Mở phân công giảng viên"
+                  title="Chuyển đến phân công giảng viên"
                 >
-                  <ArrowRight className="h-5 w-5" />
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200" />
                 </button>
               )}
             </div>
-            <p className="mt-2 text-xs text-white/80">{item.detail}</p>
+            <p className="mt-2 text-xs text-slate-500">{item.detail}</p>
           </article>
         ))}
       </div>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <article className="xl:col-span-2 rounded-3xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+        <article className="xl:col-span-2 rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-black text-slate-900">Nhịp độ tuyển dụng</h2>
+              <h2 className="font-bold text-slate-800">Nhịp độ tuyển dụng</h2>
               <p className="mt-1 text-xs text-slate-500">
                 Lượt ứng tuyển, hồ sơ thực tập mới và hồ sơ hoàn tất theo tháng.
               </p>
@@ -532,7 +826,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 item.placements ||
                 item.completedPlacements,
             ) ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={300}>
                 <AreaChart
                   data={data.monthlyTrend}
                   margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
@@ -600,8 +894,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
         </article>
-        <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-          <h2 className="font-black text-slate-900">
+        <article className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:p-6">
+          <h2 className="font-bold text-slate-800">
             Trạng thái hồ sơ thực tập
           </h2>
           <p className="mt-1 text-xs text-slate-500">
@@ -610,7 +904,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="relative mt-4 h-52">
             {placementTotal > 0 ? (
               <>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" debounce={300}>
                   <PieChart>
                     <Pie
                       data={placementPie}
@@ -636,7 +930,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-black text-slate-950">
+                  <span className="text-2xl font-bold text-slate-800">
                     {number.format(placementTotal)}
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -661,7 +955,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                   {placementLabels[item.status]}
                 </span>
-                <strong className="text-slate-900">
+                <strong className="text-slate-800 font-bold">
                   {number.format(item.count)}
                 </strong>
               </div>
@@ -670,10 +964,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </article>
       </div>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <article className="xl:col-span-2 rounded-3xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+        <article className="xl:col-span-2 rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:p-6">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="font-black text-slate-900">
+              <h2 className="font-bold text-slate-800">
                 Kỹ năng có nhu cầu cao
               </h2>
               <p className="mt-1 text-xs text-slate-500">
@@ -684,7 +978,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <div className="mt-5 h-64">
             {data.topSkills.length ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={300}>
                 <BarChart
                   data={data.topSkills}
                   layout="vertical"
@@ -726,8 +1020,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
         </article>
-        <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
-          <h2 className="font-black text-slate-900">Cần ưu tiên xử lý</h2>
+        <article className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:p-6">
+          <h2 className="font-bold text-slate-800">Cần ưu tiên xử lý</h2>
           <p className="mt-1 text-xs text-slate-500">
             Các việc có thể làm chậm vận hành.
           </p>
@@ -756,12 +1050,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 key={item.label}
                 disabled={!item.tab}
                 onClick={() => item.tab && onNavigate?.(item.tab)}
-                className={`flex w-full items-center justify-between rounded-2xl p-3 text-left transition ${item.tab ? "hover:scale-[1.01] hover:shadow-sm" : "cursor-default"} ${item.tone}`}
+                className={`group flex w-full items-center justify-between rounded-2xl p-3 text-left transition duration-200 ${item.tab ? "hover:scale-[1.01] hover:shadow-sm cursor-pointer" : "cursor-default"} ${item.tone}`}
               >
                 <span className="text-xs font-bold">{item.label}</span>
-                <span className="inline-flex items-center gap-2 text-lg font-black">
+                <span className="inline-flex items-center gap-2 text-lg font-bold">
                   {number.format(item.value)}
-                  {item.tab && <ArrowRight className="h-4 w-4" />}
+                  {item.tab && <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />}
                 </span>
               </button>
             ))}
@@ -769,111 +1063,412 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </article>
       </div>
       {facultyBreakdown.length > 0 && (
-        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
+        <article className="overflow-hidden rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          {/* Card Header with View Switcher & Excel Export */}
           <div className="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
             <div>
-              <h2 className="font-black text-slate-900">
+              <h2 className="font-bold text-slate-800">
                 Thống kê thực tập theo Khoa &amp; Ngành đào tạo
               </h2>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Tổng hợp quy mô sinh viên, giảng viên và tiến độ phân bố thực tập trên toàn trường.
-              </p>
             </div>
-            <button
-              type="button"
-              onClick={exportDashboardExcel}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
-            >
-              <Download className="h-4 w-4 text-[#00878a]" /> Xuất Excel Khoa/Ngành
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Toggle View Mode */}
+              <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100/80 p-1">
+                <button
+                  type="button"
+                  onClick={() => setBreakdownView("heatmap")}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                    breakdownView === "heatmap"
+                      ? "bg-white text-[#00878a] shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" /> Bản đồ nhiệt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBreakdownView("table")}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                    breakdownView === "table"
+                      ? "bg-white text-[#00878a] shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <Table className="h-3.5 w-3.5" /> Bảng chi tiết
+                </button>
+              </div>
+
+              {/* Excel Export */}
+              <button
+                type="button"
+                onClick={exportDashboardExcel}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 cursor-pointer shadow-2xs"
+              >
+                <Download className="h-4 w-4 text-[#00878a]" /> Xuất Excel Khoa/Ngành
+              </button>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="px-5 py-3.5">Khoa / Ngành đào tạo</th>
-                  <th className="px-4 py-3.5 text-right">Sinh viên</th>
-                  <th className="px-4 py-3.5 text-right">Giảng viên</th>
-                  <th className="px-4 py-3.5 text-right">Đã có nơi TT</th>
-                  <th className="px-4 py-3.5 text-right">Đang TT</th>
-                  <th className="px-4 py-3.5 text-right">Hoàn tất</th>
-                  <th className="px-5 py-3.5 text-right">Tỷ lệ có nơi TT</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {(facultyId
-                  ? facultyBreakdown.filter((f) => f.facultyId === facultyId)
-                  : facultyBreakdown
-                ).map((f) => (
-                  <React.Fragment key={f.facultyId}>
-                    <tr className="bg-slate-50/70 font-bold text-slate-900">
-                      <td className="px-5 py-3">
-                        <span className="mr-2 rounded-md bg-[#e6f6f6] px-2 py-0.5 font-mono text-[10px] font-extrabold text-[#00878a]">
+
+          {/* VIEW 1: HEATMAP TREEMAP */}
+          {breakdownView === "heatmap" ? (
+            <div className="p-5 sm:p-6 space-y-5">
+              {/* Heatmap Legend */}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-2.5 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Chỉ số nhiệt (Tỷ lệ có nơi TT):
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-[#00878a] px-2 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                      ≥ 80% Xuất sắc
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-[#0284c7] px-2 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                      50% - 79% Tiến độ tốt
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-[#d97706] px-2 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                      25% - 49% Cần lưu ý
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-[#e11d48] px-2 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                      &lt; 25% Báo động
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                      0 SV
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Heatmap Grid of Faculties */}
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                {displayFaculties.map((f) => (
+                  <div
+                    key={f.facultyId}
+                    className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition hover:border-slate-300"
+                  >
+                    {/* Faculty Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-lg bg-[#e6f6f6] px-2.5 py-1 font-mono text-[11px] font-black text-[#00878a] shadow-2xs">
                           {f.code}
                         </span>
-                        Khoa {f.name}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {number.format(f.totalStudents)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {number.format(f.totalLecturers)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-[#00878a]">
-                        {number.format(f.placedStudents)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {number.format(f.activePlacements)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {number.format(f.completedPlacements)}
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <span className="rounded-full bg-[#e6f6f6] px-2.5 py-0.5 text-[11px] font-extrabold text-[#00878a]">
+                        <h3 className="font-bold text-slate-800 text-sm">
+                          Khoa {f.name}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-500 font-medium">
+                          {number.format(f.totalStudents)} SV · {number.format(f.totalLecturers)} GV
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-black ${
+                            f.placementRate >= 80
+                              ? "bg-[#e6f6f6] text-[#00878a]"
+                              : f.placementRate >= 50
+                              ? "bg-sky-50 text-sky-700"
+                              : f.placementRate >= 25
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-rose-50 text-rose-700"
+                          }`}
+                        >
                           {f.placementRate}%
                         </span>
-                      </td>
-                    </tr>
-                    {(majorId
-                      ? f.majors.filter((m) => m.majorId === majorId)
-                      : f.majors
-                    ).map((m) => (
-                      <tr
-                        key={m.majorId}
-                        className="text-slate-600 transition hover:bg-slate-50/50"
-                      >
-                        <td className="py-2.5 pl-10 pr-5">
-                          <span className="mr-2 font-mono text-[10px] text-slate-400">
-                            {m.code}
+                      </div>
+                    </div>
+
+                    {/* Majors Treemap Tiles */}
+                    <div className="mt-3 flex flex-1 flex-wrap gap-2.5">
+                      {f.majors.map((m) => {
+                        const style = getMajorHeatColor(m.placementRate, m.totalStudents);
+                        const flexWeight = Math.max(m.totalStudents, 0.7);
+                        return (
+                          <button
+                            type="button"
+                            key={m.majorId}
+                            onClick={() =>
+                              setSelectedMajorModal({
+                                facultyCode: f.code,
+                                facultyName: f.name,
+                                major: m,
+                              })
+                            }
+                            style={{
+                              flex: `${flexWeight} 1 135px`,
+                              minHeight: "110px",
+                            }}
+                            className={`heat-tile-card group flex flex-col justify-between rounded-xl p-3 text-left cursor-pointer ${style.bg}`}
+                          >
+                            {/* Top row */}
+                            <div className="flex items-start justify-between gap-1.5">
+                              <span
+                                className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-black tracking-wide ${style.codeBg}`}
+                              >
+                                {m.code}
+                              </span>
+                              {m.totalStudents > 0 && m.placementRate === 100 ? (
+                                <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                                  ✓ 100%
+                                </span>
+                              ) : null}
+                            </div>
+
+                            {/* Middle: Name */}
+                            <div className="my-1.5 text-xs font-bold leading-snug line-clamp-2">
+                              {m.name}
+                            </div>
+
+                            {/* Bottom: Rate & Counts */}
+                            <div className="flex items-end justify-between pt-2 mt-auto">
+                              <div>
+                                <div className="text-[9px] font-medium opacity-85 leading-none">
+                                  Có nơi TT
+                                </div>
+                                <div className={`mt-0.5 text-lg font-black tracking-tight leading-none ${style.rateText}`}>
+                                  {m.placementRate}%
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-[9px] font-medium opacity-85 leading-none">
+                                  Sinh viên
+                                </div>
+                                <div className="mt-0.5 font-mono text-xs font-bold leading-none">
+                                  {m.placedStudents}/{m.totalStudents}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* VIEW 2: TABLE VIEW */
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="px-5 py-3.5">Khoa / Ngành đào tạo</th>
+                    <th className="px-4 py-3.5 text-right">Sinh viên</th>
+                    <th className="px-4 py-3.5 text-right">Giảng viên</th>
+                    <th className="px-4 py-3.5 text-right">Đã có nơi TT</th>
+                    <th className="px-4 py-3.5 text-right">Đang TT</th>
+                    <th className="px-4 py-3.5 text-right">Hoàn tất</th>
+                    <th className="px-5 py-3.5 text-right">Tỷ lệ có nơi TT</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {displayFaculties.map((f) => (
+                    <React.Fragment key={f.facultyId}>
+                      <tr className="bg-slate-50/70 font-bold text-slate-900">
+                        <td className="px-5 py-3">
+                          <span className="mr-2 rounded-md bg-[#e6f6f6] px-2 py-0.5 font-mono text-[10px] font-extrabold text-[#00878a]">
+                            {f.code}
                           </span>
-                          {m.name}
+                          Khoa {f.name}
                         </td>
-                        <td className="px-4 py-2.5 text-right font-medium">
-                          {number.format(m.totalStudents)}
+                        <td className="px-4 py-3 text-right">
+                          {number.format(f.totalStudents)}
                         </td>
-                        <td className="px-4 py-2.5 text-right text-slate-400">
-                          —
+                        <td className="px-4 py-3 text-right">
+                          {number.format(f.totalLecturers)}
                         </td>
-                        <td className="px-4 py-2.5 text-right font-semibold text-slate-800">
-                          {number.format(m.placedStudents)}
+                        <td className="px-4 py-3 text-right text-[#00878a]">
+                          {number.format(f.placedStudents)}
                         </td>
-                        <td className="px-4 py-2.5 text-right">
-                          {number.format(m.activePlacements)}
+                        <td className="px-4 py-3 text-right">
+                          {number.format(f.activePlacements)}
                         </td>
-                        <td className="px-4 py-2.5 text-right">
-                          {number.format(m.completedPlacements)}
+                        <td className="px-4 py-3 text-right">
+                          {number.format(f.completedPlacements)}
                         </td>
-                        <td className="px-5 py-2.5 text-right font-semibold text-slate-700">
-                          {m.placementRate}%
+                        <td className="px-5 py-3 text-right">
+                          <span className="rounded-full bg-[#e6f6f6] px-2.5 py-0.5 text-[11px] font-extrabold text-[#00878a]">
+                            {f.placementRate}%
+                          </span>
                         </td>
                       </tr>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {f.majors.map((m) => (
+                        <tr
+                          key={m.majorId}
+                          className="text-slate-600 transition hover:bg-slate-50/50"
+                        >
+                          <td className="py-2.5 pl-10 pr-5">
+                            <span className="mr-2 font-mono text-[10px] text-slate-400">
+                              {m.code}
+                            </span>
+                            {m.name}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-medium">
+                            {number.format(m.totalStudents)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right text-slate-400">
+                            —
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-semibold text-slate-800">
+                            {number.format(m.placedStudents)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            {number.format(m.activePlacements)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            {number.format(m.completedPlacements)}
+                          </td>
+                          <td className="px-5 py-2.5 text-right font-semibold text-slate-700">
+                            {m.placementRate}%
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </article>
+      )}
+
+      {/* Modal Chi tiết ngành đào tạo khi click vào ô Heatmap */}
+      {selectedMajorModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px] transition-opacity"
+          onClick={() => setSelectedMajorModal(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="modal-smooth-in flex max-h-[calc(100vh-2.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/70 p-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-[#e6f6f6] px-2 py-0.5 font-mono text-[11px] font-extrabold text-[#00878a]">
+                    {selectedMajorModal.major.code}
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    Khoa {selectedMajorModal.facultyName} ({selectedMajorModal.facultyCode})
+                  </span>
+                </div>
+                <h3 className="mt-1.5 text-base font-bold text-slate-900 leading-snug">
+                  {selectedMajorModal.major.name}
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Chi tiết tiến độ và phân bổ thực tập của ngành
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMajorModal(null)}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200/70 hover:text-slate-700 transition cursor-pointer"
+                aria-label="Đóng"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </header>
+
+            {/* Modal Body */}
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 text-xs [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {/* Insight Banner */}
+              {(() => {
+                const m = selectedMajorModal.major;
+                if (m.totalStudents === 0) {
+                  return (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-slate-600">
+                      <strong>Chưa có sinh viên:</strong> Không có sinh viên nào đăng ký thực tập ngành này trong học kỳ đang chọn.
+                    </div>
+                  );
+                }
+                if (m.placementRate >= 80) {
+                  return (
+                    <div className="rounded-xl border border-teal-200 bg-teal-50/70 p-3.5 text-teal-800">
+                      <strong>Tiến độ xuất sắc (Đạt {m.placementRate}%):</strong> Hầu hết sinh viên đã được tiếp nhận vào các doanh nghiệp đối tác.
+                    </div>
+                  );
+                }
+                if (m.placementRate >= 50) {
+                  return (
+                    <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3.5 text-sky-800">
+                      <strong>Tiến độ khả quan (Đạt {m.placementRate}%):</strong> Hơn một nửa số lượng sinh viên đã có nơi tiếp nhận thực tập.
+                    </div>
+                  );
+                }
+                if (m.placementRate > 0) {
+                  return (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-amber-800">
+                      <strong>Cần theo dõi (Đạt {m.placementRate}%):</strong> Còn {m.totalStudents - m.placedStudents} sinh viên chưa có nơi thực tập. Nhà trường và khoa nên đẩy mạnh giới thiệu việc làm.
+                    </div>
+                  );
+                }
+                return (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-3.5 text-rose-800">
+                    <strong>Báo động đỏ (0%):</strong> Toàn bộ {m.totalStudents} sinh viên của ngành chưa có nơi tiếp nhận thực tập! Cần can thiệp hỗ trợ sớm.
+                  </div>
+                );
+              })()}
+
+              {/* Metric Cards */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+                  <span className="text-[11px] font-medium text-slate-500">Tổng sinh viên</span>
+                  <p className="mt-1 font-mono text-base font-black text-slate-800">
+                    {number.format(selectedMajorModal.major.totalStudents)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-teal-200 bg-[#e6f6f6]/60 p-3 text-center">
+                  <span className="text-[11px] font-medium text-[#00878a]">Đã có nơi TT</span>
+                  <p className="mt-1 font-mono text-base font-black text-[#00878a]">
+                    {number.format(selectedMajorModal.major.placedStudents)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-3 text-center">
+                  <span className="text-[11px] font-medium text-sky-700">Đang thực tập</span>
+                  <p className="mt-1 font-mono text-base font-black text-sky-800">
+                    {number.format(selectedMajorModal.major.activePlacements)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 text-center">
+                  <span className="text-[11px] font-medium text-indigo-700">Hoàn tất</span>
+                  <p className="mt-1 font-mono text-base font-black text-indigo-800">
+                    {number.format(selectedMajorModal.major.completedPlacements)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-700">Tỷ lệ có nơi thực tập</span>
+                  <span className="font-mono font-black text-[#00878a]">
+                    {selectedMajorModal.major.placementRate}%
+                  </span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#00878a] to-[#0ea5e9] transition-all duration-300"
+                    style={{ width: `${Math.min(selectedMajorModal.major.placementRate, 100)}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 text-right">
+                  {selectedMajorModal.major.placedStudents} trên {selectedMajorModal.major.totalStudents} sinh viên
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <footer className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedMajorModal(null)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer shadow-2xs"
+              >
+                Đóng
+              </button>
+            </footer>
+          </div>
+        </div>
       )}
     </section>
   );
