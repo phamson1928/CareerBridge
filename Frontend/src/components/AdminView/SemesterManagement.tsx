@@ -1,6 +1,8 @@
-import React, { FormEvent, useEffect, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
+  Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleX,
@@ -50,6 +52,100 @@ function toStartOfDay(value: string) {
 
 function toEndOfDay(value: string) {
   return `${value}T23:59:59.999Z`;
+}
+
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+function CustomDropdown({
+  value,
+  onChange,
+  options,
+  placeholder = "Chọn...",
+  className = "",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  const selectedOption = useMemo(
+    () => options.find((opt) => opt.value === value),
+    [options, value],
+  );
+
+  return (
+    <div className={`relative ${className} ${isOpen ? "z-40" : ""}`} ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`flex w-full cursor-pointer items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition sm:text-sm ${
+          isOpen
+            ? "border-[#00878a] ring-2 ring-[#00878a]/20"
+            : "border-slate-300 hover:border-[#00878a]"
+        }`}
+      >
+        <span className="truncate">
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`ml-1.5 h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-[#00878a]" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1.5 z-50 max-h-60 min-w-full sm:min-w-[200px] overflow-auto rounded-xl border border-slate-100 bg-white p-1 shadow-2xl ring-1 ring-black/5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="py-0.5">
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition ${
+                    isSelected
+                      ? "bg-[#e6f6f6] font-bold text-[#00878a]"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="truncate pr-2">{opt.label}</span>
+                  {isSelected && (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-[#00878a]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export const SemesterManagement: React.FC = () => {
@@ -224,7 +320,7 @@ export const SemesterManagement: React.FC = () => {
 
       <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px]">
         <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             value={search}
             onChange={(event) => {
@@ -232,24 +328,24 @@ export const SemesterManagement: React.FC = () => {
               setSearch(event.target.value);
             }}
             placeholder="Tìm theo tên đợt thực tập..."
-            className="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm text-slate-800 outline-none transition focus:border-[#00878a] focus:ring-1 focus:ring-[#00878a]/20"
           />
         </div>
-        <select
+        <CustomDropdown
           value={status}
-          onChange={(event) => {
+          onChange={(val) => {
             setPage(1);
-            setStatus(event.target.value as SemesterStatus | "");
+            setStatus(val as SemesterStatus | "");
           }}
-          className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-        >
-          <option value="">Tất cả trạng thái</option>
-          {Object.entries(statusLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "", label: "Tất cả trạng thái" },
+            ...Object.entries(statusLabels).map(([val, lbl]) => ({
+              value: val,
+              label: lbl,
+            })),
+          ]}
+          className="w-full"
+        />
       </div>
 
       {error && <p className="mb-4 text-sm text-rose-600">{error}</p>}

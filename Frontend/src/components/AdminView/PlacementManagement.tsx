@@ -1,19 +1,24 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
   BriefcaseBusiness,
+  Building2,
+  MapPin,
   CalendarDays,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
   Download,
-  Eye,
   FileText,
   LoaderCircle,
   Pencil,
+  ChevronDown,
+  RotateCcw,
   Search,
+  SlidersHorizontal,
   UsersRound,
   X,
   XCircle,
@@ -42,7 +47,7 @@ const statusLabel: Record<PlacementStatus, string> = {
 };
 const statusClass: Record<PlacementStatus, string> = {
   PENDING: "border-amber-200 bg-amber-50 text-amber-700",
-  ACTIVE: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  ACTIVE: "border-[#cbebeb] bg-[#e6f6f6] text-[#00878a]",
   COMPLETED: "border-slate-200 bg-slate-100 text-slate-700",
   CANCELLED: "border-rose-200 bg-rose-50 text-rose-700",
 };
@@ -62,11 +67,30 @@ const formatDate = (value: string | null) =>
 const formatDateTime = (value: string | null, fallback = "Chưa cập nhật") =>
   value
     ? new Intl.DateTimeFormat("vi-VN", {
-        dateStyle: "short",
-        timeStyle: "short",
-      }).format(new Date(value))
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(value))
     : fallback;
 const isoDay = (value: string | null) => (value ? value.slice(0, 10) : "");
+
+function cleanSemesterName(name?: string | null): string {
+  if (!name) return "";
+  const match = name.match(/^(Học kỳ\s*\d+\s*\([^)]+\))/i);
+  if (match) return match[1];
+  return name.replace(/\s*\[.*?\]/g, "").split(" - Kỳ")[0].trim();
+}
+
+function formatFacultyName(name?: string | null): string {
+  if (!name) return "";
+  const trimmed = name.trim();
+  if (/^khoa\s+khoa\s*học/i.test(trimmed)) {
+    return trimmed.replace(/^khoa\s+khoa\s*học/i, "Khoa KH");
+  }
+  if (/^khoa\s+/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `Khoa ${trimmed}`;
+}
 
 function hasInternshipStartedOrProgress(placement: PlacementRecord): boolean {
   return (
@@ -86,8 +110,8 @@ function getPlacementBadge(placement: PlacementRecord): {
     !hasInternshipStartedOrProgress(placement)
   ) {
     return {
-      label: "Đã phân công · Chờ bắt đầu",
-      className: "border-blue-200 bg-blue-50 text-blue-700",
+      label: "Chờ bắt đầu",
+      className: "border-[#cbebeb] bg-[#e6f6f6] text-[#00878a]",
     };
   }
   return {
@@ -107,7 +131,7 @@ function hasFinalReportOrEvaluations(placement: PlacementRecord): boolean {
     (placement.progress?.evaluationCount ?? 0) > 0 ||
     Boolean(
       placement.progress?.finalReportStatus &&
-        placement.progress.finalReportStatus !== "DRAFT",
+      placement.progress.finalReportStatus !== "DRAFT",
     )
   );
 }
@@ -125,6 +149,177 @@ const MID_INTERNSHIP_STOP_REASONS = [
   "Sinh viên xin dừng thực tập vì lý do sức khỏe / bất khả kháng",
   "Thỏa thuận chấm dứt thực tập sớm giữa Sinh viên và Doanh nghiệp",
 ];
+
+interface DropdownOption {
+  value: string;
+  label: string;
+  group?: string;
+}
+
+function CustomDropdown({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Chọn...",
+  searchable = false,
+  align = "left",
+  className = "",
+}: {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  searchable?: boolean;
+  align?: "left" | "right";
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && searchable && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen, searchable]);
+
+  const selectedOption = useMemo(
+    () => options.find((opt) => opt.value === value),
+    [options, value],
+  );
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options;
+    const q = search.toLowerCase().trim();
+    return options.filter(
+      (opt) =>
+        opt.label.toLowerCase().includes(q) ||
+        (opt.group && opt.group.toLowerCase().includes(q)),
+    );
+  }, [options, search]);
+
+  return (
+    <div className={`relative ${className}`} ref={containerRef}>
+      {label && (
+        <label className="mb-1 block text-xs font-semibold text-slate-600">
+          {label}
+        </label>
+      )}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`group flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs sm:text-sm text-slate-700 transition-all outline-none ${isOpen
+          ? "border-[#00878a] ring-2 ring-[#00878a]/20 bg-white shadow-xs"
+          : "hover:border-[#00878a]/40"
+          }`}
+      >
+        <span
+          className={`truncate ${value ? "font-semibold text-slate-900" : "text-slate-600"
+            }`}
+        >
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-[#00878a]" : "group-hover:text-slate-600"
+            }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className={`absolute top-full mt-1.5 z-50 min-w-full sm:min-w-[240px] max-w-[340px] max-h-72 overflow-hidden rounded-xl border border-slate-100 bg-white p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-slate-800 ${align === "right" ? "right-0 left-auto" : "left-0"
+            }`}
+        >
+          {searchable && (
+            <div className="mb-1 border-b border-slate-100 p-1">
+              <div className="flex items-center gap-1.5 rounded-lg bg-[#f3f4f6] px-2.5 py-1.5 text-xs text-slate-700">
+                <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                <input
+                  ref={inputRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tìm kiếm..."
+                  className="w-full bg-transparent text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="max-h-52 overflow-y-auto space-y-0.5 pr-0.5 text-xs [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {filteredOptions.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs text-slate-400">
+                Không tìm thấy kết quả phù hợp
+              </div>
+            ) : (
+              (() => {
+                let currentGroup: string | undefined = undefined;
+                return filteredOptions.map((opt) => {
+                  const isSelected = opt.value === value;
+                  const showGroup = opt.group && opt.group !== currentGroup;
+                  if (opt.group) currentGroup = opt.group;
+
+                  return (
+                    <React.Fragment key={opt.value + "-" + opt.label}>
+                      {showGroup && (
+                        <div className="mb-0.5 mt-1.5 rounded-md bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          {opt.group}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onChange(opt.value);
+                          setIsOpen(false);
+                          setSearch("");
+                        }}
+                        className={`flex w-full cursor-pointer items-center justify-between rounded-xl px-2.5 py-2 text-left transition ${isSelected
+                          ? "bg-teal-50 font-bold text-[#00878a]"
+                          : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                          }`}
+                      >
+                        <span className="leading-snug">{opt.label}</span>
+                        {isSelected && (
+                          <Check className="ml-2 h-3.5 w-3.5 shrink-0 stroke-[2.5] text-[#00878a]" />
+                        )}
+                      </button>
+                    </React.Fragment>
+                  );
+                });
+              })()
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const PlacementManagement: React.FC<{
   onOpenAssignment?: () => void;
@@ -369,37 +564,134 @@ export const PlacementManagement: React.FC<{
     }
   };
 
+  const semesterOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "", label: "Tất cả kỳ thực tập" },
+      ...semesters.map((s) => ({ value: s.id, label: s.name })),
+    ],
+    [semesters],
+  );
+
+  const statusOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "", label: "Tất cả trạng thái" },
+      ...Object.entries(statusLabel).map(([key, label]) => ({
+        value: key,
+        label,
+      })),
+    ],
+    [],
+  );
+
+  const facultyOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "", label: "Tất cả Khoa sinh viên" },
+      ...faculties.map((f) => {
+        const cleanName = formatFacultyName(f.name);
+        return {
+          value: f.id,
+          label: `${f.code} — ${cleanName}`,
+        };
+      }),
+    ],
+    [faculties],
+  );
+
+  const majorOptions: DropdownOption[] = useMemo(() => {
+    const result: DropdownOption[] = [
+      { value: "", label: "Tất cả Ngành đào tạo" },
+    ];
+    const targetFaculties = facultyId
+      ? faculties.filter((f) => f.id === facultyId)
+      : faculties;
+
+    targetFaculties.forEach((f) => {
+      const cleanFacultyName = formatFacultyName(f.name);
+
+      f.majors.forEach((m) => {
+        result.push({
+          value: m.id,
+          label: m.name,
+          group: cleanFacultyName,
+        });
+      });
+    });
+    return result;
+  }, [faculties, facultyId]);
+
+  const lecturerOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "", label: "Tất cả giảng viên" },
+      ...lecturers.map((l) => ({
+        value: l.id,
+        label: l.fullName,
+        group: l.faculty
+          ? l.faculty.name.trim().toLowerCase().startsWith("khoa")
+            ? l.faculty.name.trim()
+            : `Khoa ${l.faculty.name.trim()}`
+          : l.department || undefined,
+      })),
+    ],
+    [lecturers],
+  );
+
+  const assignmentStatusOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "", label: "Mọi trạng thái phân công" },
+      { value: "ASSIGNED", label: "Đã phân công" },
+      { value: "UNASSIGNED", label: "Chưa phân công" },
+    ],
+    [],
+  );
+
+  const reportStatusOptions: DropdownOption[] = useMemo(
+    () => [
+      { value: "", label: "Mọi trạng thái báo cáo" },
+      ...Object.entries(reportLabel).map(([key, label]) => ({
+        value: key,
+        label,
+      })),
+    ],
+    [],
+  );
+
   return (
-    <section className="admin-page admin-page--feature space-y-5">
-      <header className="rounded-3xl bg-gradient-to-br from-[#004f52] via-[#00878a] to-[#006f72] p-6 text-white shadow-xl shadow-[#00878a]/25 sm:p-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+    <section className="admin-page space-y-4">
+      <header className="relative rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/90">
-              <BriefcaseBusiness className="h-3.5 w-3.5" /> Theo dõi hồ sơ thực
-              tập
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#cbebeb] bg-[#e6f6f6] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#00878a]">
+                <BriefcaseBusiness className="h-3 w-3" /> Theo dõi hồ sơ thực tập
+              </span>
+              {loading && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#00878a]">
+                  <LoaderCircle className="h-3 w-3 animate-spin" /> Đang đồng bộ...
+                </span>
+              )}
             </div>
-            <h1 className="admin-page-title mt-4 text-3xl font-black tracking-tight">
+            <h1 className="mt-1.5 text-2xl font-black tracking-tight text-[#006f72] sm:text-[26px]">
               Quản lý hồ sơ thực tập
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/85">
-              Theo dõi lịch học vụ, tiến độ báo cáo và vòng đời của từng hồ sơ
-              thực tập.
+            <p className="mt-0.5 text-xs text-slate-500">
+              Theo dõi lịch học vụ, tiến độ báo cáo và vòng đời của từng hồ sơ thực tập.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => void exportPlacementsExcel()}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-[#00878a]/40 hover:bg-slate-50"
             >
-              <Download className="h-4 w-4" /> Xuất danh sách Excel
+              <Download className="h-3.5 w-3.5 text-slate-500" /> Xuất danh sách Excel
             </button>
             <button
+              type="button"
               onClick={onOpenAssignment}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#00878a] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98]"
             >
-              <UsersRound className="h-4 w-4" /> Mở phân công giảng viên{" "}
-              <ArrowRight className="h-4 w-4" />
+              <UsersRound className="h-3.5 w-3.5" /> Mở phân công giảng viên{" "}
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -409,7 +701,7 @@ export const PlacementManagement: React.FC<{
           {
             label: "Tổng hồ sơ thực tập",
             value: total,
-            tone: "bg-indigo-50 text-indigo-700",
+            tone: "bg-[#e6f6f6] text-[#00878a]",
           },
           {
             label: "Chờ phân công",
@@ -419,7 +711,7 @@ export const PlacementManagement: React.FC<{
           {
             label: "Đang thực tập",
             value: metrics.active,
-            tone: "bg-emerald-50 text-emerald-700",
+            tone: "bg-[#e6f6f6] text-[#00878a]",
           },
           {
             label: "Hoàn tất",
@@ -429,28 +721,29 @@ export const PlacementManagement: React.FC<{
           {
             label: "Đã hủy",
             value: metrics.cancelled,
-            tone: "bg-rose-50 text-rose-700",
+            tone: "bg-[#fff0f2] text-[#da1c2d]",
           },
         ].map((item) => (
           <div
             key={item.label}
-            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs"
+            className="rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200"
           >
             <span
               className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-bold ${item.tone}`}
             >
               {item.label}
             </span>
-            <p className="mt-3 text-2xl font-black text-slate-950">
+            <p className="mt-3 text-2xl font-bold tracking-tight text-slate-800">
               {item.value}
             </p>
           </div>
         ))}
       </div>
-      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <label className="relative xl:col-span-2">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:p-5 space-y-3">
+        {/* Row 1: Search + Semester + Status + Reset Button */}
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
+          <div className="relative min-w-[240px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(event) => {
@@ -458,127 +751,92 @@ export const PlacementManagement: React.FC<{
                 setPage(1);
               }}
               placeholder="Tìm sinh viên, mã số, công ty hoặc vị trí..."
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#00878a] focus:ring-1 focus:ring-[#00878a]/20 sm:text-sm"
             />
-          </label>
-          <select
+          </div>
+
+          <CustomDropdown
             value={semesterId}
-            onChange={(event) => {
-              setSemesterId(event.target.value);
+            onChange={(val) => {
+              setSemesterId(val);
               setPage(1);
             }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-          >
-            <option value="">Tất cả kỳ thực tập</option>
-            {semesters.map((semester) => (
-              <option key={semester.id} value={semester.id}>
-                {semester.name}
-              </option>
-            ))}
-          </select>
-          <select
+            options={semesterOptions}
+            className="w-full shrink-0 sm:w-[200px] lg:w-[220px]"
+          />
+
+          <CustomDropdown
             value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as PlacementStatus | "");
+            onChange={(val) => {
+              setStatus(val as PlacementStatus | "");
               setPage(1);
             }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+            options={statusOptions}
+            className="w-full shrink-0 sm:w-[160px] lg:w-[180px]"
+          />
+
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="inline-flex cursor-pointer shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[#cbebeb] bg-[#e6f6f6] px-4 py-2 text-xs font-semibold text-[#00878a] transition hover:bg-[#d5eeee] active:scale-[0.98] sm:text-sm"
+            title="Đặt lại tất cả bộ lọc"
           >
-            <option value="">Tất cả trạng thái</option>
-            {Object.entries(statusLabel).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={lecturerId}
-            onChange={(event) => {
-              setLecturerId(event.target.value);
-              setPage(1);
-            }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-          >
-            <option value="">Tất cả giảng viên</option>
-            {lecturers.map((lecturer) => (
-              <option key={lecturer.id} value={lecturer.id}>
-                {lecturer.fullName}
-              </option>
-            ))}
-          </select>
-          <select
-            value={assignmentStatus}
-            onChange={(event) => {
-              setAssignmentStatus(
-                event.target.value as typeof assignmentStatus,
-              );
-              setPage(1);
-            }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-          >
-            <option value="">Mọi trạng thái phân công</option>
-            <option value="ASSIGNED">Đã phân công</option>
-            <option value="UNASSIGNED">Chưa phân công</option>
-          </select>
-          <select
-            value={reportStatus}
-            onChange={(event) => {
-              setReportStatus(event.target.value as ReportStatus | "");
-              setPage(1);
-            }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-          >
-            <option value="">Mọi trạng thái báo cáo</option>
-            {Object.entries(reportLabel).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <select
+            <RotateCcw className="h-4 w-4" />
+            <span>Làm mới</span>
+          </button>
+        </div>
+
+        {/* Row 2: 5 Filter Dropdowns flat & neat */}
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+          <CustomDropdown
             value={facultyId}
-            onChange={(event) => {
-              setFacultyId(event.target.value);
+            onChange={(val) => {
+              setFacultyId(val);
               setMajorId("");
               setPage(1);
             }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-          >
-            <option value="">Tất cả Khoa sinh viên</option>
-            {faculties.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.code} — {f.name}
-              </option>
-            ))}
-          </select>
-          <select
+            options={facultyOptions}
+            searchable
+          />
+
+          <CustomDropdown
             value={majorId}
-            onChange={(event) => {
-              setMajorId(event.target.value);
+            onChange={(val) => {
+              setMajorId(val);
               setPage(1);
             }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
-          >
-            <option value="">Tất cả Ngành đào tạo</option>
-            {(facultyId
-              ? faculties.filter((f) => f.id === facultyId)
-              : faculties
-            ).map((f) => (
-              <optgroup key={f.id} label={`Khoa ${f.name}`}>
-                {f.majors.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          <button
-            onClick={resetFilters}
-            className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-700 transition"
-          >
-            Xóa bộ lọc
-          </button>
+            options={majorOptions}
+            searchable
+          />
+
+          <CustomDropdown
+            value={lecturerId}
+            onChange={(val) => {
+              setLecturerId(val);
+              setPage(1);
+            }}
+            options={lecturerOptions}
+            searchable
+          />
+
+          <CustomDropdown
+            value={assignmentStatus}
+            onChange={(val) => {
+              setAssignmentStatus(val as typeof assignmentStatus);
+              setPage(1);
+            }}
+            options={assignmentStatusOptions}
+          />
+
+          <CustomDropdown
+            value={reportStatus}
+            onChange={(val) => {
+              setReportStatus(val as ReportStatus | "");
+              setPage(1);
+            }}
+            options={reportStatusOptions}
+            align="right"
+          />
         </div>
       </div>
       {error && (
@@ -587,51 +845,43 @@ export const PlacementManagement: React.FC<{
           {error}
         </div>
       )}
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
+      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
         {loading ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs table-fixed">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="px-5 py-3.5">Sinh viên</th>
-                  <th className="px-5 py-3.5">Vị trí / Doanh nghiệp</th>
-                  <th className="px-5 py-3.5">Học kỳ &amp; Lịch</th>
-                  <th className="px-5 py-3.5">Giảng viên hướng dẫn</th>
-                  <th className="px-5 py-3.5">Tiến độ</th>
-                  <th className="px-5 py-3.5">Trạng thái</th>
-                  <th className="px-5 py-3.5 text-right">Thao tác</th>
+                <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="w-[23%] px-3.5 py-3">Sinh viên</th>
+                  <th className="w-[27%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
+                  <th className="w-[16%] px-3.5 py-3">Học kỳ &amp; Lịch</th>
+                  <th className="w-[16%] px-3.5 py-3">Giảng viên hướng dẫn</th>
+                  <th className="w-[8%] px-2 py-3 text-center">Tiến độ</th>
+                  <th className="w-[10%] px-3.5 py-3 text-right">Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
                 {[1, 2, 3, 4, 5].map((skeletonId) => (
                   <tr key={skeletonId} className="border-b border-slate-100">
-                    <td className="px-5 py-4">
-                      <div className="mb-2 h-4 w-32 animate-pulse rounded bg-slate-200"></div>
+                    <td className="px-3.5 py-3">
+                      <div className="mb-1.5 h-3.5 w-32 animate-pulse rounded bg-slate-200"></div>
                       <div className="h-3 w-24 animate-pulse rounded bg-slate-100"></div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="mb-2 h-4 w-40 animate-pulse rounded bg-slate-200"></div>
-                      <div className="h-3 w-32 animate-pulse rounded bg-slate-100"></div>
+                    <td className="px-3.5 py-3">
+                      <div className="mb-1.5 h-3.5 w-36 animate-pulse rounded bg-slate-200"></div>
+                      <div className="h-3 w-28 animate-pulse rounded bg-slate-100"></div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="mb-2 h-4 w-24 animate-pulse rounded bg-slate-200"></div>
-                      <div className="h-3 w-32 animate-pulse rounded bg-slate-100"></div>
+                    <td className="px-3.5 py-3">
+                      <div className="mb-1.5 h-3.5 w-24 animate-pulse rounded bg-slate-200"></div>
+                      <div className="h-3 w-28 animate-pulse rounded bg-slate-100"></div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="mb-2 h-4 w-32 animate-pulse rounded bg-slate-200"></div>
-                      <div className="h-3 w-24 animate-pulse rounded bg-slate-100"></div>
+                    <td className="px-3.5 py-3">
+                      <div className="h-5 w-24 animate-pulse rounded-full bg-slate-200"></div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex gap-2">
-                        <div className="h-6 w-12 animate-pulse rounded-lg bg-slate-200"></div>
-                        <div className="h-6 w-12 animate-pulse rounded-lg bg-slate-200"></div>
-                      </div>
+                    <td className="px-2 py-3 text-center">
+                      <div className="mx-auto h-5 w-14 animate-pulse rounded-md bg-slate-200"></div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="h-6 w-24 animate-pulse rounded-full bg-slate-200"></div>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="inline-block h-8 w-20 animate-pulse rounded-lg bg-slate-200"></div>
+                    <td className="px-3.5 py-3 text-right">
+                      <div className="ml-auto inline-block h-6 w-20 animate-pulse rounded-full bg-slate-200"></div>
                     </td>
                   </tr>
                 ))}
@@ -650,16 +900,15 @@ export const PlacementManagement: React.FC<{
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs table-fixed">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="px-5 py-3.5">Sinh viên</th>
-                  <th className="px-5 py-3.5">Vị trí / Doanh nghiệp</th>
-                  <th className="px-5 py-3.5">Học kỳ &amp; Lịch</th>
-                  <th className="px-5 py-3.5">Giảng viên hướng dẫn</th>
-                  <th className="px-5 py-3.5">Tiến độ</th>
-                  <th className="px-5 py-3.5">Trạng thái</th>
-                  <th className="px-5 py-3.5 text-right">Thao tác</th>
+                <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="w-[23%] px-3.5 py-3">Sinh viên</th>
+                  <th className="w-[27%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
+                  <th className="w-[16%] px-3.5 py-3">Học kỳ &amp; Lịch</th>
+                  <th className="w-[16%] px-3.5 py-3">Giảng viên hướng dẫn</th>
+                  <th className="w-[8%] px-2 py-3 text-center">Tiến độ</th>
+                  <th className="w-[10%] px-3.5 py-3 text-right">Trạng thái</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -667,117 +916,117 @@ export const PlacementManagement: React.FC<{
                   <tr
                     key={placement.id}
                     onClick={() => void openDetail(placement)}
-                    className="cursor-pointer transition hover:bg-slate-50/70"
+                    className="group cursor-pointer transition hover:bg-slate-50/80 h-[70px]"
                   >
-                    <td className="px-5 py-4 align-middle">
-                      <div className="flex items-center gap-3">
+                    {/* Sinh viên */}
+                    <td className="px-3.5 py-2.5 align-middle h-[70px]">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <ProfileAvatarPreview
                           fileId={placement.student.avatarFileId}
                           fallback={placement.student.fullName.charAt(0)}
-                          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 font-black text-indigo-700"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#e6f6f6] text-xs font-bold text-[#00878a]"
                           imageClassName="h-full w-full object-cover"
                         />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-slate-900">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-bold text-slate-900 group-hover:text-[#00878a] transition-colors" title={placement.student.fullName}>
                             {placement.student.fullName}
                           </p>
                           <p className="mt-0.5 truncate text-[11px] text-slate-500">
-                            <span className="font-mono font-semibold text-slate-600">
-                              {placement.student.studentCode}
-                            </span>{" "}
-                            · {placement.student.major}
-                            {placement.student.faculty?.name
-                              ? ` (${placement.student.faculty.name})`
-                              : ""}
+                            <span className="font-mono font-semibold text-slate-700">{placement.student.studentCode}</span>
+                            {" "}•{" "}
+                            <span>{placement.student.major}</span>
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 align-middle">
-                      <p className="font-bold text-slate-800">
-                        {placement.internship.title}
+
+                    {/* Vị trí & Doanh nghiệp */}
+                    <td className="px-3.5 py-2.5 align-middle h-[70px]">
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-slate-800 leading-snug" title={placement.internship.title}>
+                          {placement.internship.title}
+                        </p>
+                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 truncate" title={placement.company.companyName}>
+                          <Building2 className="h-3 w-3 shrink-0 text-slate-400" />
+                          <span className="truncate">{placement.company.companyName}</span>
+                        </p>
+                      </div>
+                    </td>
+
+                    {/* Học kỳ & Lịch */}
+                    <td className="px-3.5 py-2.5 align-middle whitespace-nowrap h-[70px]">
+                      <p className="truncate text-xs font-semibold text-slate-700" title={placement.semester.name}>
+                        {cleanSemesterName(placement.semester.name)}
                       </p>
                       <p className="mt-0.5 text-[11px] text-slate-500">
-                        {placement.company.companyName}
+                        {formatDate(placement.startDate)} — {formatDate(placement.endDate)}
                       </p>
                     </td>
-                    <td className="whitespace-nowrap px-5 py-4 align-middle">
-                      <p className="font-semibold text-slate-700">
-                        {placement.semester.name}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-slate-500">
-                        {formatDate(placement.startDate)} —{" "}
-                        {formatDate(placement.endDate)}
-                      </p>
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-4 align-middle">
-                      {placement.supervision?.status === "ACTIVE" ? (
-                        <div>
+
+                    {/* Giảng viên hướng dẫn */}
+                    <td className="px-3.5 py-2.5 align-middle whitespace-nowrap h-[70px]">
+                      {placement.supervision && placement.supervision.status !== "CANCELLED" ? (
+                        <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className="font-bold text-slate-800">
+                            <p className="truncate text-xs font-bold text-slate-800">
                               {placement.supervision.lecturer.fullName}
                             </p>
                             {placement.student.faculty?.id &&
                               placement.supervision.lecturer.facultyId &&
-                              placement.student.faculty.id !==
-                                placement.supervision.lecturer.facultyId && (
-                                <span className="rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                              placement.student.faculty.id !== placement.supervision.lecturer.facultyId && (
+                                <span className="shrink-0 rounded-md border border-[#cbebeb] bg-[#e6f6f6] px-1 py-0.2 text-[9px] font-bold text-[#00878a]">
                                   Liên khoa
                                 </span>
                               )}
                           </div>
-                          <p className="mt-0.5 text-[11px] text-slate-500">
-                            {placement.supervision.lecturer.faculty?.name ??
-                              placement.supervision.lecturer.department}
+                          <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                            {formatFacultyName(placement.supervision.lecturer.faculty?.name) || placement.supervision.lecturer.department}
                           </p>
                         </div>
+                      ) : onOpenAssignment ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenAssignment();
+                          }}
+                          className="inline-flex cursor-pointer items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 transition hover:bg-amber-100"
+                          title="Nhấp để chuyển đến trang Phân công giảng viên"
+                        >
+                          Chưa phân công
+                        </button>
                       ) : (
-                        <span className="inline-flex whitespace-nowrap rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+                        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
                           Chưa phân công
                         </span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-4 align-middle">
-                      <div className="flex items-center gap-1.5">
+
+                    {/* Tiến độ */}
+                    <td className="px-2 py-2.5 align-middle text-center whitespace-nowrap h-[70px]">
+                      <div className="inline-flex items-center justify-center gap-1.5">
                         <span
-                          title="Số báo cáo đã nộp"
-                          className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600"
+                          title="Báo cáo đã duyệt / tổng báo cáo đã nộp"
+                          className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
                         >
-                          <FileText className="h-3.5 w-3.5" />{" "}
-                          {placement.progress.reportCount}
-                        </span>
-                        <span
-                          title="Số bản đánh giá"
-                          className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />{" "}
-                          {placement.progress.evaluationCount}
+                          <FileText className="h-3 w-3 text-slate-400" />
+                          <span>{placement.progress.approvedReports ?? 0}/{placement.progress.reportCount}</span>
                         </span>
                         {placement.progress.reportsAwaitingReview > 0 && (
-                          <span className="whitespace-nowrap rounded-lg bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-700">
-                            {placement.progress.reportsAwaitingReview} chờ duyệt
+                          <span className="inline-flex items-center rounded-full bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[9px] font-bold text-rose-700" title="Báo cáo chờ duyệt">
+                            {placement.progress.reportsAwaitingReview} chờ
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-5 py-4 align-middle">
+
+                    {/* Trạng thái */}
+                    <td className="px-3.5 py-2.5 text-right align-middle whitespace-nowrap h-[70px]">
                       <span
-                        className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold ${getPlacementBadge(placement).className}`}
+                        className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getPlacementBadge(placement).className}`}
                       >
                         {getPlacementBadge(placement).label}
                       </span>
-                    </td>
-                    <td
-                      className="whitespace-nowrap px-5 py-4 text-right align-middle"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => void openDetail(placement)}
-                        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-50"
-                      >
-                        <Eye className="h-3.5 w-3.5" /> Chi tiết
-                      </button>
                     </td>
                   </tr>
                 ))}
@@ -815,335 +1064,314 @@ export const PlacementManagement: React.FC<{
       </div>
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
           onClick={closeDetail}
         >
           <div
-            className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl sm:max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/70 px-6 py-4">
               <div className="flex min-w-0 items-center gap-3.5">
                 <ProfileAvatarPreview
                   fileId={selected.student.avatarFileId}
                   fallback={selected.student.fullName.charAt(0)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-indigo-100 text-sm font-black text-indigo-700"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#e6f6f6] text-base font-bold text-[#00878a] shadow-2xs"
                   imageClassName="h-full w-full object-cover"
                 />
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h2 className="text-base font-black text-slate-900 sm:text-lg">
+                      {selected.student.fullName}
+                    </h2>
                     <span
                       className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${getPlacementBadge(selected).className}`}
                     >
                       {getPlacementBadge(selected).label}
                     </span>
                   </div>
-                  <h2 className="mt-1 truncate text-lg font-bold text-slate-900">
-                    {selected.student.fullName}
-                  </h2>
-                  <p className="mt-0.5 truncate text-xs text-slate-500">
-                    <span className="font-mono font-semibold text-slate-600">
-                      {selected.student.studentCode}
-                    </span>{" "}
-                    · {selected.student.major}
-                    {selected.student.faculty?.name
-                      ? ` · Khoa ${selected.student.faculty.name}`
-                      : ""}
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    <span className="font-mono font-semibold text-slate-700">{selected.student.studentCode}</span>
+                    {" "}•{" "}
+                    <span>{selected.student.major}</span>
+                    {selected.student.faculty?.name ? (
+                      <>
+                        {" "}•{" "}
+                        <span>{formatFacultyName(selected.student.faculty.name)}</span>
+                      </>
+                    ) : null}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={closeDetail}
-                className="rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                className="cursor-pointer rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-200/60 hover:text-slate-700"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+              {/* Notice if cancelled or completed with note */}
               {selected.status === "CANCELLED" && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3.5 text-xs text-rose-900">
+                <div className="mb-3.5 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-900">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-bold text-rose-800">
-                      Hồ sơ thực tập đã bị hủy
-                    </p>
+                    <p className="font-bold text-rose-800">Hồ sơ thực tập đã bị hủy</p>
                     <span className="text-[11px] font-medium text-rose-600">
-                      {formatDateTime(
-                        selected.progress.statusChangedAt ??
-                          selected.academicClosedAt ??
-                          selected.updatedAt,
-                      )}
+                      {formatDateTime(selected.progress.statusChangedAt ?? selected.academicClosedAt ?? selected.updatedAt)}
                     </span>
                   </div>
                   <p className="mt-1 leading-relaxed text-rose-700">
-                    <span className="font-semibold">Lý do:</span>{" "}
-                    {selected.progress.statusNote ||
-                      "Không có ghi chú lý do hủy."}
+                    <span className="font-semibold">Lý do:</span> {selected.progress.statusNote || "Không có ghi chú lý do hủy."}
                   </p>
                 </div>
               )}
 
-              {selected.status === "COMPLETED" &&
-                selected.progress.statusNote && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-xs text-emerald-900">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-bold text-emerald-800">
-                        Đã hoàn tất thực tập
-                      </p>
-                      {selected.progress.statusChangedAt && (
-                        <span className="text-[11px] font-medium text-emerald-600">
-                          {formatDateTime(selected.progress.statusChangedAt)}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 leading-relaxed text-emerald-700">
-                      <span className="font-semibold">Ghi chú:</span>{" "}
-                      {selected.progress.statusNote}
-                    </p>
-                  </div>
-                )}
-
-              {/* Position, Company & Supervisor */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                    Vị trí &amp; Doanh nghiệp
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-slate-900">
-                    {selected.internship.title}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-600">
-                    {selected.company.companyName}
-                    {selected.internship.location
-                      ? ` · ${selected.internship.location}`
-                      : ""}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                    Giảng viên hướng dẫn
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-slate-900">
-                    {selected.supervision?.lecturer.fullName ??
-                      "Chưa phân công"}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-600">
-                    {selected.supervision?.lecturer.faculty?.name ??
-                      selected.supervision?.lecturer.department ??
-                      "Mở trang Phân công giảng viên để chỉ định"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Schedule Section */}
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">
-                      Lịch thực tập thực tế
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {selected.semester.name} (Khung học kỳ:{" "}
-                      {formatDate(selected.semester.startDate)} —{" "}
-                      {formatDate(selected.semester.endDate)})
-                    </p>
-                  </div>
-                  {selected.academicStatus === "PENDING" && !editingSchedule ? (
-                    <button
-                      type="button"
-                      onClick={startScheduleEdit}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100"
-                    >
-                      <Pencil className="h-3.5 w-3.5" /> Chỉnh lịch
-                    </button>
-                  ) : null}
-                </div>
-                {editingSchedule ? (
-                  <div className="mt-3.5 grid gap-3 border-t border-slate-100 pt-3.5 sm:grid-cols-2">
-                    <label className="text-xs font-bold text-slate-600">
-                      Ngày bắt đầu
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(event) => setStartDate(event.target.value)}
-                        min={isoDay(selected.semester.startDate)}
-                        max={isoDay(selected.semester.endDate)}
-                        className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs outline-none focus:border-indigo-500"
-                      />
-                    </label>
-                    <label className="text-xs font-bold text-slate-600">
-                      Ngày kết thúc
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(event) => setEndDate(event.target.value)}
-                        min={isoDay(selected.semester.startDate)}
-                        max={isoDay(selected.semester.endDate)}
-                        className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs outline-none focus:border-indigo-500"
-                      />
-                    </label>
-                    <div className="flex justify-end gap-2 sm:col-span-2">
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={() => setEditingSchedule(false)}
-                        className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700"
-                      >
-                        Hủy
-                      </button>
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={() => void saveSchedule()}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-                      >
-                        {saving && (
-                          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                        )}
-                        Lưu lịch
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className={`mt-3 flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-semibold ${
-                      selected.startDate && selected.endDate
-                        ? "bg-slate-50 text-slate-800"
-                        : "border border-amber-200 bg-amber-50 text-amber-800"
-                    }`}
-                  >
-                    <CalendarDays className="h-4 w-4 shrink-0 text-indigo-600" />
-                    {selected.startDate && selected.endDate ? (
-                      <span>
-                        Từ <strong>{formatDate(selected.startDate)}</strong> đến{" "}
-                        <strong>{formatDate(selected.endDate)}</strong>
-                      </span>
-                    ) : (
-                      <span>
-                        Chưa có lịch thực tập. Hãy đặt ngày bắt đầu và kết thúc
-                        trước khi phân công giảng viên.
+              {selected.status === "COMPLETED" && selected.progress.statusNote && (
+                <div className="mb-3.5 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-900">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-bold text-emerald-800">Đã hoàn tất thực tập</p>
+                    {selected.progress.statusChangedAt && (
+                      <span className="text-[11px] font-medium text-emerald-600">
+                        {formatDateTime(selected.progress.statusChangedAt)}
                       </span>
                     )}
                   </div>
-                )}
-              </div>
-
-              {/* Progress & Evaluation Section */}
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-slate-900">
-                    Tiến độ báo cáo &amp; Điểm đánh giá
+                  <p className="mt-1 leading-relaxed text-emerald-700">
+                    <span className="font-semibold">Ghi chú:</span> {selected.progress.statusNote}
                   </p>
-                  {selected.progress.lastReportAt && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-                      <Clock3 className="h-3 w-3" /> Cập nhật:{" "}
-                      {formatDate(selected.progress.lastReportAt)}
-                    </span>
-                  )}
                 </div>
+              )}
 
-                <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                  <div className="flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/80 p-3">
-                    <p className="text-[11px] font-semibold text-slate-500">
-                      Báo cáo đã duyệt
+              {/* 2 Symmetrical Columns: Left (Internship details) | Right (Progress & Scores) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {/* Column 1: Thông tin thực tập */}
+                <div className="space-y-3">
+                  {/* Vị trí & Doanh nghiệp */}
+                  <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                      Vị trí &amp; Doanh nghiệp
+                    </span>
+                    <h3 className="mt-1 text-sm font-bold text-slate-900">
+                      {selected.internship.title}
+                    </h3>
+                    <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                      <Building2 className="h-3.5 w-3.5 text-[#00878a] shrink-0" />
+                      {selected.company.companyName}
                     </p>
-                    <p className="mt-1.5 text-base font-bold text-slate-900">
-                      {selected.progress.approvedReports ?? 0}
-                      <span className="text-xs font-semibold text-slate-400">
-                        /{selected.progress.reportCount}
+                    {selected.internship.location && (
+                      <p className="mt-1 flex items-start gap-1 text-[11px] text-slate-500 leading-relaxed">
+                        <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-slate-400" />
+                        <span>{selected.internship.location}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Khung thời gian thực tập */}
+                  <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                        Khung thời gian thực tập
                       </span>
-                    </p>
+                      {selected.academicStatus === "PENDING" && !editingSchedule ? (
+                        <button
+                          type="button"
+                          onClick={startScheduleEdit}
+                          className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#cbebeb] bg-[#e6f6f6] px-2 py-0.5 text-[11px] font-bold text-[#00878a] transition hover:bg-[#d5eeee]"
+                        >
+                          <Pencil className="h-3 w-3" /> Chỉnh lịch
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {editingSchedule ? (
+                      <div className="mt-2.5 space-y-2 border-t border-slate-100 pt-2.5">
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="text-[11px] font-semibold text-slate-600">
+                            Bắt đầu
+                            <input
+                              type="date"
+                              value={startDate}
+                              onChange={(event) => setStartDate(event.target.value)}
+                              min={isoDay(selected.semester.startDate)}
+                              max={isoDay(selected.semester.endDate)}
+                              className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1 text-xs outline-none focus:border-[#00878a]"
+                            />
+                          </label>
+                          <label className="text-[11px] font-semibold text-slate-600">
+                            Kết thúc
+                            <input
+                              type="date"
+                              value={endDate}
+                              onChange={(event) => setEndDate(event.target.value)}
+                              min={isoDay(selected.semester.startDate)}
+                              max={isoDay(selected.semester.endDate)}
+                              className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1 text-xs outline-none focus:border-[#00878a]"
+                            />
+                          </label>
+                        </div>
+                        <div className="flex justify-end gap-1.5 pt-1">
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => setEditingSchedule(false)}
+                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 cursor-pointer"
+                          >
+                            Hủy
+                          </button>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => void saveSchedule()}
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-[#00878a] px-3 py-1 text-xs font-bold text-white shadow-2xs transition hover:bg-[#007477] disabled:opacity-50"
+                          >
+                            {saving && <LoaderCircle className="h-3 w-3 animate-spin" />} Lưu
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-2 space-y-1">
+                        <p className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                          <CalendarDays className="h-3.5 w-3.5 text-[#00878a] shrink-0" />
+                          {selected.startDate && selected.endDate
+                            ? `${formatDate(selected.startDate)} — ${formatDate(selected.endDate)}`
+                            : "Chưa đặt lịch thực tập"}
+                        </p>
+                        <p className="text-[11px] text-slate-500 pl-5">
+                          {cleanSemesterName(selected.semester.name)}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/80 p-3">
-                    <p className="text-[11px] font-semibold text-slate-500">
-                      Báo cáo tổng kết
+                  {/* Giảng viên hướng dẫn: Nhấp trực tiếp để chuyển sang phân công, không rườm rà */}
+                  <div
+                    onClick={onOpenAssignment ? () => { closeDetail(); onOpenAssignment(); } : undefined}
+                    className={`rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs transition ${
+                      onOpenAssignment ? "cursor-pointer hover:border-[#00878a]/50 hover:bg-[#e6f6f6]/20" : ""
+                    }`}
+                    title={onOpenAssignment ? "Nhấp để chuyển đến trang Phân công giảng viên" : undefined}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                        Giảng viên hướng dẫn
+                      </span>
+                      {selected.supervision && selected.supervision.status !== "CANCELLED" ? (
+                        <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                          {selected.supervision.status === "COMPLETED" ? "Đã hoàn tất" : "Đã phân công"}
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                          Chưa phân công
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm font-bold text-slate-900">
+                      {selected.supervision && selected.supervision.status !== "CANCELLED"
+                        ? selected.supervision.lecturer.fullName
+                        : "Chưa chỉ định giảng viên"}
                     </p>
-                    <p
-                      className={`mt-1.5 text-sm font-bold ${
-                        selected.progress.finalReportStatus
-                          ? "text-slate-900"
-                          : "text-slate-400"
-                      }`}
-                    >
-                      {selected.progress.finalReportStatus
-                        ? reportLabel[selected.progress.finalReportStatus]
-                        : "Chưa nộp"}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/80 p-3">
-                    <p className="text-[11px] font-semibold text-slate-500">
-                      Điểm Doanh nghiệp
-                    </p>
-                    <p
-                      className={`mt-1.5 ${
-                        selected.progress.companyScore !== null &&
-                        selected.progress.companyScore !== undefined
-                          ? "text-base font-bold text-indigo-700"
-                          : "text-sm font-bold text-slate-400"
-                      }`}
-                    >
-                      {selected.progress.companyScore !== null &&
-                      selected.progress.companyScore !== undefined
-                        ? `${selected.progress.companyScore}/10`
-                        : "Chưa chấm"}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/80 p-3">
-                    <p className="text-[11px] font-semibold text-slate-500">
-                      Điểm Giảng viên
-                    </p>
-                    <p
-                      className={`mt-1.5 ${
-                        selected.progress.lecturerScore !== null &&
-                        selected.progress.lecturerScore !== undefined
-                          ? "text-base font-bold text-indigo-700"
-                          : "text-sm font-bold text-slate-400"
-                      }`}
-                    >
-                      {selected.progress.lecturerScore !== null &&
-                      selected.progress.lecturerScore !== undefined
-                        ? `${selected.progress.lecturerScore}/10`
-                        : "Chưa chấm"}
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {selected.supervision && selected.supervision.status !== "CANCELLED"
+                        ? (formatFacultyName(selected.supervision.lecturer.faculty?.name) || selected.supervision.lecturer.department)
+                        : "Chưa có người hướng dẫn"}
                     </p>
                   </div>
                 </div>
 
-                {selected.progress.finalScore !== null &&
-                selected.progress.finalScore !== undefined ? (
-                  <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/70 px-3.5 py-2.5 text-xs">
-                    <span className="font-bold text-indigo-900">
-                      Điểm tổng kết (50% DN + 50% GVHD):
-                    </span>
-                    <span className="font-black text-indigo-700">
-                      {selected.progress.finalScore.toFixed(2)}/10{" "}
-                      {selected.progress.hasCompanyCertificate
-                        ? "· Đã có Chứng nhận DN"
-                        : ""}
-                    </span>
+                {/* Column 2: Tiến độ & Điểm số */}
+                <div className="space-y-3">
+                  {/* Tiến độ báo cáo */}
+                  <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                        Tiến độ báo cáo
+                      </span>
+                      {selected.progress.lastReportAt && (
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                          <Clock3 className="h-3 w-3" /> Cập nhật {formatDate(selected.progress.lastReportAt)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-2.5 grid grid-cols-2 gap-2">
+                      <div className="rounded-lg bg-slate-50 p-2.5 text-center">
+                        <p className="text-[10px] font-medium text-slate-500">Báo cáo định kỳ</p>
+                        <p className="mt-0.5 text-base font-bold text-slate-900">
+                          {selected.progress.approvedReports ?? 0}
+                          <span className="text-xs font-normal text-slate-400">/{selected.progress.reportCount}</span>
+                        </p>
+                        <p className="text-[10px] text-slate-400">Đã duyệt</p>
+                      </div>
+
+                      <div className="rounded-lg bg-slate-50 p-2.5 text-center">
+                        <p className="text-[10px] font-medium text-slate-500">Báo cáo tổng kết</p>
+                        <p className={`mt-0.5 text-xs font-bold leading-6 ${selected.progress.finalReportStatus ? "text-emerald-700" : "text-slate-400"}`}>
+                          {selected.progress.finalReportStatus ? reportLabel[selected.progress.finalReportStatus] : "Chưa nộp"}
+                        </p>
+                        <p className="text-[10px] text-slate-400">Trạng thái</p>
+                      </div>
+                    </div>
+
+                    {selected.progress.reportsAwaitingReview > 0 && (
+                      <div className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                        <span>Có <strong>{selected.progress.reportsAwaitingReview}</strong> báo cáo đang chờ GVHD duyệt</span>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  selected.status === "ACTIVE" && (
-                    <p className="mt-3 rounded-xl bg-slate-50 px-3.5 py-2.5 text-xs leading-relaxed text-slate-500">
-                      Hồ sơ sẽ tự động chuyển sang <strong>Đã hoàn tất</strong>{" "}
-                      khi có báo cáo được giảng viên duyệt (không còn báo cáo
-                      chờ duyệt) và đủ điểm từ Doanh nghiệp &amp; Giảng viên.
-                    </p>
-                  )
-                )}
+
+                  {/* Điểm đánh giá thực tập */}
+                  <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                      Điểm đánh giá thực tập
+                    </span>
+
+                    <div className="mt-2.5 grid grid-cols-2 gap-2 text-center">
+                      <div className="rounded-lg bg-slate-50 p-2.5">
+                        <p className="text-[10px] font-medium text-slate-500">Doanh nghiệp (50%)</p>
+                        <p className={`mt-0.5 text-sm font-bold ${selected.progress.companyScore !== null && selected.progress.companyScore !== undefined ? "text-[#00878a]" : "text-slate-400 text-xs"}`}>
+                          {selected.progress.companyScore !== null && selected.progress.companyScore !== undefined ? `${selected.progress.companyScore} / 10` : "Chưa chấm"}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 p-2.5">
+                        <p className="text-[10px] font-medium text-slate-500">Giảng viên (50%)</p>
+                        <p className={`mt-0.5 text-sm font-bold ${selected.progress.lecturerScore !== null && selected.progress.lecturerScore !== undefined ? "text-[#00878a]" : "text-slate-400 text-xs"}`}>
+                          {selected.progress.lecturerScore !== null && selected.progress.lecturerScore !== undefined ? `${selected.progress.lecturerScore} / 10` : "Chưa chấm"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selected.progress.finalScore !== null && selected.progress.finalScore !== undefined ? (
+                      <div className="mt-2 flex items-center justify-between rounded-lg border border-[#cbebeb] bg-[#e6f6f6] px-3 py-1.5 text-xs">
+                        <span className="font-bold text-[#006f72]">Điểm tổng kết:</span>
+                        <span className="text-sm font-black text-[#00878a]">
+                          {selected.progress.finalScore.toFixed(2)} / 10
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-center text-[10px] text-slate-400">
+                        Tự động tổng hợp khi cả 2 bên hoàn tất chấm điểm
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Hướng dẫn hoàn tất */}
+                  <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-[11px] text-slate-500 leading-relaxed">
+                    Hồ sơ sẽ tự động chuyển sang <strong className="text-slate-700">Đã hoàn tất</strong> khi có báo cáo được giảng viên duyệt và đủ điểm từ Doanh nghiệp &amp; Giảng viên.
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Action Confirmation Panel */}
             {action && (
-              <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-4">
+              <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-3.5">
                 <p className="text-sm font-bold text-slate-900">
                   {action === "COMPLETED"
                     ? "Xác nhận nghiệm thu & hoàn tất thực tập"
@@ -1155,12 +1383,12 @@ export const PlacementManagement: React.FC<{
                   {action === "COMPLETED"
                     ? "Xác nhận sinh viên đã hoàn thành kỳ thực tập tại doanh nghiệp và đủ điều kiện nghiệm thu."
                     : isMidInternship(selected)
-                      ? "Sinh viên đang trong kỳ thực tập. Việc dừng hồ sơ chỉ áp dụng khi doanh nghiệp bị tạm dừng, sinh viên tự ý bỏ thực tập hoặc sự cố bất khả kháng. Chỉ tiêu hướng dẫn của giảng viên và suất tuyển dụng của doanh nghiệp sẽ được hoàn lại."
-                      : "Hồ sơ chưa bắt đầu kỳ thực tập. Sau khi hủy, suất tuyển dụng sẽ được hoàn lại cho doanh nghiệp và sinh viên có thể ứng tuyển vị trí khác trong đợt này."}
+                      ? "Sinh viên đang trong kỳ thực tập. Việc dừng hồ sơ chỉ áp dụng khi doanh nghiệp bị tạm dừng, sinh viên tự ý bỏ thực tập hoặc sự cố bất khả kháng."
+                      : "Hồ sơ chưa bắt đầu kỳ thực tập. Sau khi hủy, suất tuyển dụng sẽ được hoàn lại cho doanh nghiệp."}
                 </p>
 
                 {action === "CANCELLED" && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
                     {(isMidInternship(selected)
                       ? MID_INTERNSHIP_STOP_REASONS
                       : PRE_START_CANCEL_REASONS
@@ -1169,10 +1397,10 @@ export const PlacementManagement: React.FC<{
                         key={preset}
                         type="button"
                         onClick={() => setNote(preset)}
-                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition ${
+                        className={`rounded-lg border px-2 py-0.5 text-[10px] font-medium transition cursor-pointer ${
                           note === preset
                             ? "border-rose-300 bg-rose-100 text-rose-800"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
                         }`}
                       >
                         {preset}
@@ -1193,10 +1421,10 @@ export const PlacementManagement: React.FC<{
                         : "Nhập hoặc chọn lý do hủy hồ sơ thực tập (bắt buộc)..."
                       : "Ghi chú nghiệm thu (không bắt buộc)..."
                   }
-                  className="mt-2.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500"
+                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-[#00878a]"
                 />
                 <div className="mt-1 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[10px] text-slate-400">
                     {note.length}/500
                   </span>
                   <div className="flex items-center gap-2">
@@ -1204,25 +1432,21 @@ export const PlacementManagement: React.FC<{
                       type="button"
                       disabled={saving}
                       onClick={() => setAction(null)}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                      className="cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                     >
                       Quay lại
                     </button>
                     <button
                       type="button"
-                      disabled={
-                        saving || (action === "CANCELLED" && !note.trim())
-                      }
+                      disabled={saving || (action === "CANCELLED" && !note.trim())}
                       onClick={() => void submitStatus()}
-                      className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white disabled:opacity-50 ${
+                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-50 ${
                         action === "COMPLETED"
                           ? "bg-emerald-600 hover:bg-emerald-700"
                           : "bg-rose-600 hover:bg-rose-700"
                       }`}
                     >
-                      {saving && (
-                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                      )}
+                      {saving && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
                       {action === "COMPLETED"
                         ? "Xác nhận hoàn tất"
                         : isMidInternship(selected)
@@ -1236,13 +1460,12 @@ export const PlacementManagement: React.FC<{
 
             {/* Modal Footer */}
             {!action && (
-              <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-6 py-3.5">
+              <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50/60 px-6 py-3">
                 <div>
-                  {(selected.status === "PENDING" ||
-                    selected.status === "ACTIVE") &&
-                    (hasFinalReportOrEvaluations(selected) ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
-                        Đã có báo cáo tổng kết / điểm đánh giá (Không thể hủy)
+                  {(selected.status === "PENDING" || selected.status === "ACTIVE") && (
+                    hasFinalReportOrEvaluations(selected) ? (
+                      <span className="text-xs text-slate-400">
+                        Đã có báo cáo tổng kết / điểm (Không thể hủy)
                       </span>
                     ) : (
                       <button
@@ -1251,20 +1474,19 @@ export const PlacementManagement: React.FC<{
                           setAction("CANCELLED");
                           setNote("");
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
                       >
-                        <XCircle className="h-4 w-4" />{" "}
-                        {isMidInternship(selected)
-                          ? "Dừng thực tập giữa kỳ"
-                          : "Hủy hồ sơ thực tập"}
+                        <XCircle className="h-3.5 w-3.5" />
+                        {isMidInternship(selected) ? "Dừng thực tập giữa kỳ" : "Hủy hồ sơ"}
                       </button>
-                    ))}
+                    )
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={closeDetail}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                    className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                   >
                     Đóng
                   </button>

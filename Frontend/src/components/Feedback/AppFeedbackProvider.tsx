@@ -189,17 +189,14 @@ const ToastCard: React.FC<{ toast: Toast; onClose: () => void }> = ({ toast, onC
   const isError = toast.tone === "error";
   return (
     <div
-      className={`flex items-center gap-3.5 rounded-[22px] border border-white/90 px-4 py-3.5 text-[#172a3d] shadow-[0_18px_40px_rgba(0,0,0,0.18)] ${
-        isError
-          ? "bg-gradient-to-b from-white to-[#fff5f6]"
-          : "bg-gradient-to-b from-white to-[#eefbfb]"
-      }`}
+      role="status"
+      className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-slate-100/90 bg-white/98 p-3 sm:p-3.5 shadow-[0_10px_28px_rgba(0,0,0,0.08)] backdrop-blur-sm transition-all duration-200 animate-in fade-in slide-in-from-top-2"
     >
-      <span
-        className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border ${
+      <div
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
           isError
-            ? "border-[#f4b9c0] bg-[#fff0f2] text-[#da1c2d]"
-            : "border-[#96d9d7] bg-[#e7f8f6] text-[#00878a]"
+            ? "bg-[#fff0f2] text-[#da1c2d]"
+            : "bg-[#e6f6f6] text-[#00878a]"
         }`}
       >
         {toast.tone === "success" ? (
@@ -209,11 +206,13 @@ const ToastCard: React.FC<{ toast: Toast; onClose: () => void }> = ({ toast, onC
         ) : (
           <BellRing className="h-5 w-5" />
         )}
-      </span>
+      </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-black text-[#172a3d]">{toast.title}</p>
+        <p className="text-xs sm:text-[13px] font-bold text-slate-800 leading-tight">
+          {toast.title}
+        </p>
         {toast.message && (
-          <p className="mt-0.5 text-xs leading-relaxed text-[#4b5968]">
+          <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
             {toast.message}
           </p>
         )}
@@ -221,10 +220,10 @@ const ToastCard: React.FC<{ toast: Toast; onClose: () => void }> = ({ toast, onC
       <button
         type="button"
         onClick={onClose}
-        className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
         aria-label="Đóng"
       >
-        <X className="h-4 w-4" />
+        <X className="h-3.5 w-3.5" />
       </button>
     </div>
   );

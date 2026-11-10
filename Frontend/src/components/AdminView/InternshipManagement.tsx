@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   Ban,
   Briefcase,
+  Building2,
   Calendar,
   Check,
   CheckCircle2,
@@ -49,6 +50,11 @@ import {
 } from "../../internships/api";
 import { semestersApi } from "../../semesters/api";
 import type { SemesterRecord } from "../../semesters/types";
+
+function cleanSemesterName(name?: string | null): string {
+  if (!name) return "";
+  return name.replace(/\s*\[.*?\]/g, "").trim();
+}
 
 // ==========================================
 // 1. CUSTOM POP-OVER SELECT COMPONENT (NO NATIVE <select>)
@@ -142,9 +148,9 @@ export function CustomSelect<T extends string>({
         onClick={() => {
           if (!disabled) setIsOpen((prev) => !prev);
         }}
-        className={`group flex w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-xs font-medium transition outline-none cursor-pointer ${
+        className={`group flex h-10 w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 text-left text-xs font-medium transition outline-none cursor-pointer ${
           isOpen
-            ? "border-indigo-500 ring-2 ring-indigo-100 shadow-xs"
+            ? "border-[#00878a] ring-2 ring-[#00878a]/20 shadow-xs"
             : "border-slate-200 hover:border-slate-300 shadow-2xs"
         } ${disabled ? "cursor-not-allowed opacity-60 bg-slate-50" : ""}`}
       >
@@ -164,7 +170,7 @@ export function CustomSelect<T extends string>({
         </div>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
-            isOpen ? "rotate-180 text-indigo-600" : ""
+            isOpen ? "rotate-180 text-[#00878a]" : ""
           }`}
         />
       </button>
@@ -173,7 +179,7 @@ export function CustomSelect<T extends string>({
         <div className="absolute left-0 right-0 z-50 mt-1.5 min-w-[200px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl transition-all animate-in fade-in zoom-in-95">
           {searchable && (
             <div className="mb-1.5 border-b border-slate-100 px-2 pb-1.5">
-              <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
+              <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1.5 text-xs text-slate-600 focus-within:ring-1 focus-within:ring-[#00878a]/30">
                 <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 <input
                   ref={inputRef}
@@ -195,7 +201,7 @@ export function CustomSelect<T extends string>({
             </div>
           )}
 
-          <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
+          <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {filteredOptions.length === 0 ? (
               <div className="px-3 py-4 text-center text-xs text-slate-400">
                 Không tìm thấy kết quả phù hợp
@@ -212,9 +218,9 @@ export function CustomSelect<T extends string>({
                       setIsOpen(false);
                       setFilterText("");
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-xs transition ${
+                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-xs transition cursor-pointer ${
                       isSelected
-                        ? "bg-indigo-50 font-bold text-indigo-900"
+                        ? "bg-[#e6f6f6] font-bold text-[#00878a]"
                         : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
@@ -232,7 +238,7 @@ export function CustomSelect<T extends string>({
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
                       {opt.badge}
                       {isSelected && (
-                        <Check className="h-3.5 w-3.5 text-indigo-600 stroke-[2.5]" />
+                        <Check className="h-3.5 w-3.5 text-[#00878a] stroke-[2.5]" />
                       )}
                     </div>
                   </button>
@@ -449,6 +455,8 @@ export function InternshipManagement() {
           selectedReportReason === "ALL"
             ? undefined
             : (selectedReportReason as InternshipReportReasonCode),
+        semesterId:
+          selectedSemesterId === "ALL" ? undefined : selectedSemesterId,
       });
 
       // Filter locally by search if student/job keywords typed
@@ -492,6 +500,7 @@ export function InternshipManagement() {
     reportPage,
     selectedReportStatus,
     selectedReportReason,
+    selectedSemesterId,
     reportSearch,
     notify,
   ]);
@@ -506,20 +515,32 @@ export function InternshipManagement() {
   }, [loadReports]);
 
   // Open Full Job Detail Drawer
-  const handleOpenDetail = async (jobId: string) => {
-    setLoadingDetail(true);
-    try {
-      const fullJob = await internshipsApi.get(jobId);
-      setDetailInternship(fullJob);
-    } catch (err) {
-      notify({
-        title: "Không thể tải chi tiết",
-        message: getApiErrorMessage(err),
-        tone: "error",
-      });
-    } finally {
-      setLoadingDetail(false);
+  const handleOpenDetail = (jobOrId: InternshipRecord | string) => {
+    if (typeof jobOrId !== "string") {
+      setDetailInternship(jobOrId);
+      return;
     }
+    const found = internships.find((j) => j.id === jobOrId);
+    if (found) {
+      setDetailInternship(found);
+      return;
+    }
+    setLoadingDetail(true);
+    internshipsApi
+      .get(jobOrId)
+      .then((fullJob) => {
+        setDetailInternship(fullJob);
+      })
+      .catch((err) => {
+        notify({
+          title: "Không thể tải chi tiết",
+          message: getApiErrorMessage(err),
+          tone: "error",
+        });
+      })
+      .finally(() => {
+        setLoadingDetail(false);
+      });
   };
 
   // Semester dropdown options
@@ -610,44 +631,20 @@ export function InternshipManagement() {
 
   return (
     <div className="space-y-6">
-      {/* 1. Header Banner */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl">
-        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-300">
-              <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
-              Kiểm soát chất lượng tuyển dụng
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Quản lý &amp; Hậu kiểm Tin tuyển dụng
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Theo dõi toàn diện các vị trí thực tập trong hệ thống, tiếp nhận phản
-              hồi phản ánh từ sinh viên và chủ động gỡ bỏ các tin vi phạm để bảo
-              vệ quyền lợi người học.
-            </p>
-          </div>
-
-          {/* Quick Refresh & Tabs */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                void loadInternships();
-                void loadReports();
-              }}
-              disabled={loadingInternships || loadingReports}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/10 disabled:opacity-50 cursor-pointer"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${
-                  loadingInternships || loadingReports ? "animate-spin" : ""
-                }`}
-              />
-              Cập nhật dữ liệu
-            </button>
-          </div>
+      {/* 1. Header Section */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-[#cbebeb] bg-[#e6f6f6] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#00878a]">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Kiểm soát chất lượng tuyển dụng
         </div>
+        <h1 className="mt-2 text-2xl sm:text-[26px] font-black tracking-tight text-[#006f72]">
+          Quản lý &amp; Hậu kiểm Tin tuyển dụng
+        </h1>
+        <p className="mt-1 text-xs text-slate-500">
+          Theo dõi toàn diện các vị trí thực tập trong hệ thống, tiếp nhận phản
+          hồi phản ánh từ sinh viên và chủ động gỡ bỏ các tin vi phạm để bảo
+          vệ quyền lợi người học.
+        </p>
       </section>
 
       {/* 2. KPI Metrics Bar */}
@@ -657,7 +654,7 @@ export function InternshipManagement() {
             <span className="text-xs font-semibold text-slate-500">
               Tổng số bài đăng
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e6f6f6] text-[#00878a]">
               <Briefcase className="h-4 w-4" />
             </div>
           </div>
@@ -731,182 +728,174 @@ export function InternshipManagement() {
         </article>
       </section>
 
-      {/* 3. Segmented Navigation Tabs */}
-      <section className="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab("INTERNSHIPS")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
-            activeTab === "INTERNSHIPS"
-              ? "bg-indigo-600 text-white shadow-xs"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <Briefcase className="h-4 w-4" />
-          <span>Danh sách tin tuyển dụng</span>
-          <span
-            className={`rounded-full px-2 py-0.5 text-[10px] ${
-              activeTab === "INTERNSHIPS"
-                ? "bg-white/20 text-white"
-                : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {jobTotalCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("REPORTS")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
-            activeTab === "REPORTS"
-              ? "bg-indigo-600 text-white shadow-xs"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <ShieldAlert className="h-4 w-4 text-amber-400" />
-          <span>Báo cáo vi phạm từ sinh viên</span>
-          {pendingReportsCount > 0 ? (
-            <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white animate-pulse">
-              {pendingReportsCount}
-            </span>
-          ) : (
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] ${
-                activeTab === "REPORTS"
-                  ? "bg-white/20 text-white"
-                  : "bg-slate-100 text-slate-600"
+      {/* 3. Unified Workspace Container (Tabs + Filter Toolbar + Table) */}
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+        {/* Unified Card Header: Underline Tabs Bar */}
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/75 px-4 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button
+              type="button"
+              onClick={() => setActiveTab("INTERNSHIPS")}
+              className={`group relative flex items-center gap-2 border-b-2 px-3 sm:px-4 py-3.5 text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "INTERNSHIPS"
+                  ? "border-[#00878a] text-[#00878a]"
+                  : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
               }`}
             >
-              {reportTotalCount}
-            </span>
-          )}
-        </button>
-      </section>
+              <Briefcase
+                className={`h-4 w-4 ${
+                  activeTab === "INTERNSHIPS"
+                    ? "text-[#00878a]"
+                    : "text-slate-400 group-hover:text-slate-600"
+                }`}
+              />
+              <span>Danh sách tin tuyển dụng</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  activeTab === "INTERNSHIPS"
+                    ? "bg-[#e6f6f6] text-[#00878a]"
+                    : "bg-slate-200/80 text-slate-600"
+                }`}
+              >
+                {jobTotalCount}
+              </span>
+            </button>
 
-      {/* 4. TAB 1: INTERNSHIPS MODERATION & MANAGEMENT */}
-      {activeTab === "INTERNSHIPS" && (
-        <div className="space-y-4">
-          {/* Filters Bar */}
-          <section className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs md:grid-cols-12">
-            {/* Search Input */}
-            <div className="md:col-span-4">
-              <label className="mb-1 block text-xs font-semibold text-slate-700">
-                Tìm kiếm tin
-              </label>
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-2xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition">
-                <Search className="h-4 w-4 text-slate-400 shrink-0" />
-                <input
-                  value={jobSearch}
-                  onChange={(e) => {
-                    setJobSearch(e.target.value);
-                    setJobPage(1);
-                  }}
-                  placeholder="Tiêu đề tin, công ty, vị trí..."
-                  className="w-full text-xs text-slate-800 outline-none placeholder:text-slate-400"
-                />
-                {jobSearch && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setJobSearch("");
+            <button
+              type="button"
+              onClick={() => setActiveTab("REPORTS")}
+              className={`group relative flex items-center gap-2 border-b-2 px-3 sm:px-4 py-3.5 text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "REPORTS"
+                  ? "border-amber-600 text-amber-700"
+                  : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
+              }`}
+            >
+              <ShieldAlert
+                className={`h-4 w-4 ${
+                  activeTab === "REPORTS"
+                    ? "text-amber-600"
+                    : "text-slate-400 group-hover:text-amber-500"
+                }`}
+              />
+              <span>Báo cáo vi phạm từ sinh viên</span>
+              {pendingReportsCount > 0 ? (
+                <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white animate-pulse">
+                  {pendingReportsCount}
+                </span>
+              ) : (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    activeTab === "REPORTS"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-slate-200/80 text-slate-600"
+                  }`}
+                >
+                  {reportTotalCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {activeTab === "INTERNSHIPS" ? (
+          <>
+            {/* Toolbar Filters Bar */}
+            <div className="border-b border-slate-100 bg-white p-4 sm:p-5">
+              <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
+                {/* Search Input */}
+                <div className="flex h-10 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-2xs transition focus-within:border-[#00878a] focus-within:ring-2 focus-within:ring-[#00878a]/20">
+                  <Search className="h-4 w-4 shrink-0 text-slate-400" />
+                  <input
+                    value={jobSearch}
+                    onChange={(e) => {
+                      setJobSearch(e.target.value);
                       setJobPage(1);
                     }}
-                    className="text-slate-400 hover:text-slate-600"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
+                    placeholder="Tìm kiếm tin tuyển dụng, công ty, vị trí..."
+                    className="w-full text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                  />
+                  {jobSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setJobSearch("");
+                        setJobPage(1);
+                      }}
+                      className="cursor-pointer text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
 
-            {/* Semester Custom Dropdown */}
-            <div className="md:col-span-3">
-              <CustomSelect
-                label="Kỳ thực tập"
-                value={selectedSemesterId}
-                onChange={(val) => {
-                  setSelectedSemesterId(val);
-                  setJobPage(1);
-                }}
-                options={semesterOptions}
-                searchable
-              />
-            </div>
+                {/* Semester Custom Dropdown */}
+                <div className="w-full shrink-0 sm:w-[200px] lg:w-[220px]">
+                  <CustomSelect
+                    value={selectedSemesterId}
+                    onChange={(val) => {
+                      setSelectedSemesterId(val);
+                      setJobPage(1);
+                    }}
+                    options={semesterOptions}
+                    searchable
+                  />
+                </div>
 
-            {/* Status Custom Dropdown */}
-            <div className="md:col-span-2">
-              <CustomSelect
-                label="Trạng thái tin"
-                value={selectedStatus}
-                onChange={(val) => {
-                  setSelectedStatus(val);
-                  setJobPage(1);
-                }}
-                options={statusOptions}
-              />
-            </div>
+                {/* Status Custom Dropdown */}
+                <div className="w-full shrink-0 sm:w-[150px] lg:w-[165px]">
+                  <CustomSelect
+                    value={selectedStatus}
+                    onChange={(val) => {
+                      setSelectedStatus(val);
+                      setJobPage(1);
+                    }}
+                    options={statusOptions}
+                  />
+                </div>
 
-            {/* Moderation Reason Code Dropdown */}
-            <div className="md:col-span-3">
-              <CustomSelect
-                label="Lý do kiểm duyệt"
-                value={selectedReasonCode}
-                onChange={(val) => {
-                  setSelectedReasonCode(val);
-                  setJobPage(1);
-                }}
-                options={moderationReasonOptions}
-              />
-            </div>
+                {/* Moderation Reason Code Dropdown */}
+                <div className="w-full shrink-0 sm:w-[160px] lg:w-[180px]">
+                  <CustomSelect
+                    value={selectedReasonCode}
+                    onChange={(val) => {
+                      setSelectedReasonCode(val);
+                      setJobPage(1);
+                    }}
+                    options={moderationReasonOptions}
+                  />
+                </div>
 
-            {/* Secondary Filter Row: Has Reports Toggle & Clear */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 md:col-span-12 border-t border-slate-100">
-              <div className="flex items-center gap-3">
+                {/* Refresh Button */}
                 <button
                   type="button"
                   onClick={() => {
-                    setOnlyHasReports((prev) => !prev);
+                    setJobSearch("");
+                    setSelectedSemesterId("ALL");
+                    setSelectedStatus("ALL");
+                    setSelectedReasonCode("ALL");
+                    setOnlyHasReports(false);
                     setJobPage(1);
+                    void loadInternships();
+                    void loadReports();
                   }}
-                  className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                    onlyHasReports
-                      ? "bg-rose-100 text-rose-800 border border-rose-300"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent"
-                  }`}
+                  disabled={loadingInternships || loadingReports}
+                  className="inline-flex h-10 cursor-pointer shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[#cbebeb] bg-[#e6f6f6] px-3.5 text-xs font-semibold text-[#00878a] shadow-2xs transition hover:bg-[#d5eeee] active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+                  title="Đặt lại bộ lọc và làm mới dữ liệu"
                 >
-                  <ShieldAlert
-                    className={`h-3.5 w-3.5 ${
-                      onlyHasReports ? "text-rose-600" : "text-slate-500"
+                  <RotateCcw
+                    className={`h-4 w-4 shrink-0 ${
+                      loadingInternships || loadingReports ? "animate-spin" : ""
                     }`}
                   />
-                  <span>Chỉ hiện tin có báo cáo vi phạm</span>
+                  <span>Làm mới</span>
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setJobSearch("");
-                  setSelectedSemesterId("ALL");
-                  setSelectedStatus("ALL");
-                  setSelectedReasonCode("ALL");
-                  setOnlyHasReports(false);
-                  setJobPage(1);
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
-              >
-                <FilterX className="h-3.5 w-3.5" />
-                Xóa tất cả bộ lọc
-              </button>
             </div>
-          </section>
 
-          {/* Internships Table */}
-          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+            {/* Internships Table */}
             {loadingInternships ? (
               <div className="p-16 text-center text-xs text-slate-500">
-                <LoaderCircle className="mx-auto mb-3 h-6 w-6 animate-spin text-indigo-600" />
+                <LoaderCircle className="mx-auto mb-3 h-6 w-6 animate-spin text-[#00878a]" />
                 Đang tải danh sách tin tuyển dụng...
               </div>
             ) : internships.length === 0 ? (
@@ -921,14 +910,13 @@ export function InternshipManagement() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
+                <table className="w-full text-left border-collapse text-xs table-fixed">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                      <th className="px-4 py-3.5">Vị trí &amp; Doanh nghiệp</th>
-                      <th className="px-4 py-3.5">Kỳ tuyển &amp; Hạn chót</th>
-                      <th className="px-4 py-3.5">Chỉ tiêu &amp; Ứng viên</th>
-                      <th className="px-4 py-3.5">Trạng thái &amp; Cảnh báo</th>
-                      <th className="px-4 py-3.5 text-right">Thao tác</th>
+                    <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="w-[40%] px-4 py-3">Vị trí &amp; Doanh nghiệp</th>
+                      <th className="w-[26%] px-4 py-3">Kỳ tuyển &amp; Hạn chót</th>
+                      <th className="w-[20%] px-4 py-3">Chỉ tiêu &amp; Ứng tuyển</th>
+                      <th className="w-[14%] px-4 py-3 text-right">Trạng thái</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -951,11 +939,12 @@ export function InternshipManagement() {
                       return (
                         <tr
                           key={job.id}
-                          className="hover:bg-slate-50/80 transition"
+                          onClick={() => handleOpenDetail(job)}
+                          className="h-[70px] cursor-pointer hover:bg-slate-50/90 transition group"
                         >
                           {/* Col 1: Job & Company */}
-                          <td className="px-4 py-3.5 align-top">
-                            <div className="flex items-start gap-3">
+                          <td className="px-4 py-2.5 align-middle h-[70px]">
+                            <div className="flex items-center gap-3 min-w-0">
                               {job.company.logo ? (
                                 <img
                                   src={job.company.logo}
@@ -963,166 +952,86 @@ export function InternshipManagement() {
                                   className="h-9 w-9 rounded-xl object-contain border border-slate-200 p-0.5 shrink-0 bg-white"
                                 />
                               ) : (
-                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 font-bold text-indigo-700 shrink-0 text-sm">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e6f6f6] border border-[#cbebeb] font-bold text-[#00878a] shrink-0 text-xs">
                                   {job.company.companyName.charAt(0).toUpperCase()}
                                 </div>
                               )}
-                              <div className="space-y-0.5">
-                                <div className="font-bold text-slate-900 leading-snug line-clamp-1 hover:text-indigo-600 cursor-pointer"
-                                  onClick={() => void handleOpenDetail(job.id)}
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className="truncate text-xs font-bold text-slate-900 leading-snug group-hover:text-[#00878a] transition-colors"
+                                  title={job.title}
                                 >
                                   {job.title}
-                                </div>
-                                <div className="text-slate-600 font-medium">
-                                  {job.company.companyName}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                  {job.workType && (
-                                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
-                                      {workTypeLabels[job.workType] || job.workType}
-                                    </span>
-                                  )}
-                                  {job.department && (
-                                    <span className="text-[10px] text-slate-400">
-                                      • {job.department}
-                                    </span>
-                                  )}
-                                </div>
+                                </p>
+                                <p
+                                  className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 font-medium truncate"
+                                  title={job.company.companyName}
+                                >
+                                  <Building2 className="h-3 w-3 shrink-0 text-slate-400" />
+                                  <span className="truncate">{job.company.companyName}</span>
+                                </p>
                               </div>
                             </div>
                           </td>
 
                           {/* Col 2: Semester & Timeline */}
-                          <td className="px-4 py-3.5 align-top space-y-1">
-                            <div className="font-semibold text-slate-800">
-                              {job.semester.name}
+                          <td className="px-4 py-2.5 align-middle h-[70px] whitespace-nowrap">
+                            <div className="min-w-0">
+                              <p
+                                className="truncate font-semibold text-slate-800 text-xs leading-snug"
+                                title={job.semester.name}
+                              >
+                                {cleanSemesterName(job.semester.name)}
+                              </p>
+                              <p className="mt-0.5 flex items-center gap-1 text-slate-500 text-[11px] truncate">
+                                <Clock className="h-3 w-3 text-slate-400 shrink-0" />
+                                <span className="truncate">
+                                  Hạn: {job.deadline ? new Date(job.deadline).toLocaleDateString("vi-VN") : "Không thời hạn"}
+                                </span>
+                              </p>
                             </div>
-                            <div className="flex items-center gap-1 text-slate-500 text-[11px]">
-                              <Clock className="h-3 w-3 text-slate-400" />
-                              <span>
-                                Hạn:{" "}
-                                {job.deadline
-                                  ? new Date(job.deadline).toLocaleDateString(
-                                      "vi-VN"
-                                    )
-                                  : "Không thời hạn"}
-                              </span>
-                            </div>
-                            {job.startDate && job.endDate && (
-                              <div className="text-[10px] text-slate-400">
-                                Thực tập:{" "}
-                                {new Date(job.startDate).toLocaleDateString(
-                                  "vi-VN"
-                                )}{" "}
-                                –{" "}
-                                {new Date(job.endDate).toLocaleDateString(
-                                  "vi-VN"
-                                )}
-                              </div>
-                            )}
                           </td>
 
                           {/* Col 3: Slots & Applicants */}
-                          <td className="px-4 py-3.5 align-top space-y-1">
-                            <div className="flex items-center justify-between text-[11px]">
-                              <span className="font-semibold text-slate-700">
-                                {job.filledSlots}/{job.slots} slot
-                              </span>
-                              <span className="font-bold text-emerald-600">
-                                {occupancyRate}%
-                              </span>
-                            </div>
-                            <div className="h-1.5 w-24 rounded-full bg-slate-100 overflow-hidden">
-                              <div
-                                className="h-full bg-emerald-500 rounded-full"
-                                style={{ width: `${occupancyRate}%` }}
-                              />
-                            </div>
-                            <div className="flex items-center gap-2 pt-0.5 text-[10px] text-slate-500">
-                              <span className="flex items-center gap-1 font-medium text-indigo-700">
-                                <Users className="h-3 w-3" />
-                                {appsCount} ứng tuyển
-                              </span>
-                              <span>•</span>
-                              <span>{job.viewCount || 0} xem</span>
+                          <td className="px-4 py-2.5 align-middle h-[70px] whitespace-nowrap">
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-semibold text-slate-800 leading-snug">
+                                <span>{job.filledSlots}/{job.slots} slot</span>
+                                {job.slots > 0 && (
+                                  <span className="text-slate-400 font-normal ml-1">({occupancyRate}%)</span>
+                                )}
+                              </p>
+                              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 truncate">
+                                <Users className="h-3 w-3 text-slate-400 shrink-0" />
+                                <span>{appsCount} ứng tuyển</span>
+                              </p>
                             </div>
                           </td>
 
                           {/* Col 4: Status & Warnings */}
-                          <td className="px-4 py-3.5 align-top space-y-1.5">
-                            <span
-                              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${statusConf.className}`}
-                            >
-                              {statusConf.label}
-                            </span>
-
-                            {/* Moderation details if rejected or moderated */}
-                            {job.status === "REJECTED" && (
-                              <div className="rounded-lg bg-rose-50 border border-rose-100 p-2 text-[10px] text-rose-800 space-y-0.5">
-                                <div className="font-bold text-rose-900">
-                                  {job.moderationReasonCode
-                                    ? MODERATION_REASON_LABELS[
-                                        job.moderationReasonCode
-                                      ] || job.moderationReasonCode
-                                    : "Vi phạm quy chế"}
-                                </div>
-                                <div className="line-clamp-2 text-rose-700">
-                                  {job.moderationReason || "Không có lý do chi tiết"}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Active Reports Indicator */}
-                            {reportsCount > 0 && (
-                              <div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedReportReason("ALL");
-                                    setSelectedReportStatus("ALL");
-                                    setReportSearch(job.title);
-                                    setActiveTab("REPORTS");
-                                  }}
-                                  className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 hover:bg-amber-100 transition cursor-pointer"
-                                  title="Xem danh sách báo cáo của tin này"
+                          <td className="px-4 py-2.5 align-middle h-[70px] whitespace-nowrap text-right">
+                            <div className="flex flex-col items-end gap-1 min-w-0">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${statusConf.className}`}
+                              >
+                                {statusConf.label}
+                              </span>
+                              {reportsCount > 0 ? (
+                                <span
+                                  className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 truncate"
+                                  title={`${reportsCount} sinh viên phản ánh vi phạm`}
                                 >
-                                  <ShieldAlert className="h-3 w-3 text-amber-600" />
-                                  <span>{reportsCount} SV báo cáo vi phạm</span>
-                                </button>
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Col 5: Actions */}
-                          <td className="px-4 py-3.5 align-top text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => void handleOpenDetail(job.id)}
-                                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition cursor-pointer shadow-2xs"
-                                title="Xem đầy đủ thông tin bài đăng"
-                              >
-                                <Eye className="h-3.5 w-3.5" />
-                                <span>Chi tiết</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => setModeratingJob(job)}
-                                className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition cursor-pointer shadow-2xs ${
-                                  job.status === "REJECTED"
-                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                                    : "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
-                                }`}
-                                title="Kiểm duyệt hoặc gỡ tin"
-                              >
-                                <ShieldAlert className="h-3.5 w-3.5" />
-                                <span>
-                                  {job.status === "REJECTED"
-                                    ? "Khôi phục"
-                                    : "Kiểm duyệt"}
+                                  <ShieldAlert className="h-3 w-3 text-amber-600 shrink-0" />
+                                  <span>{reportsCount} phản ánh</span>
                                 </span>
-                              </button>
+                              ) : job.status === "REJECTED" && job.moderationReasonCode ? (
+                                <span
+                                  className="truncate text-[10px] text-rose-600 font-medium max-w-[130px]"
+                                  title={MODERATION_REASON_LABELS[job.moderationReasonCode] || job.moderationReasonCode}
+                                >
+                                  {MODERATION_REASON_LABELS[job.moderationReasonCode] || job.moderationReasonCode}
+                                </span>
+                              ) : null}
                             </div>
                           </td>
                         </tr>
@@ -1133,108 +1042,134 @@ export function InternshipManagement() {
               </div>
             )}
 
-            {/* Pagination */}
+            {/* Pagination for Internships */}
             {!loadingInternships && internships.length > 0 && (
-              <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
-                <div>
-                  Trang <strong>{jobPage}</strong> /{" "}
-                  <strong>{jobTotalPages}</strong> (Tổng cộng{" "}
-                  <strong>{jobTotalCount}</strong> bài đăng)
-                </div>
+              <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5 text-xs text-slate-600">
+                <span className="font-medium text-slate-500">
+                  Tổng: <strong className="text-slate-700">{jobTotalCount}</strong> bài đăng
+                </span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    disabled={jobPage <= 1}
+                    disabled={jobPage <= 1 || loadingInternships}
                     onClick={() => setJobPage((p) => Math.max(1, p - 1))}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition cursor-pointer"
+                    className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer hover:bg-slate-50 transition"
                   >
-                    <ChevronLeft className="h-3.5 w-3.5" /> Trước
+                    <ChevronLeft className="h-4 w-4" />
                   </button>
+                  <span>
+                    Trang {jobPage}/{jobTotalPages}
+                  </span>
                   <button
                     type="button"
-                    disabled={jobPage >= jobTotalPages}
+                    disabled={jobPage >= jobTotalPages || loadingInternships}
                     onClick={() =>
                       setJobPage((p) => Math.min(jobTotalPages, p + 1))
                     }
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition cursor-pointer"
+                    className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer hover:bg-slate-50 transition"
                   >
-                    Sau <ChevronRight className="h-3.5 w-3.5" />
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               </div>
             )}
-          </section>
-        </div>
-      )}
-
-      {/* 5. TAB 2: STUDENT REPORTS QUEUE */}
-      {activeTab === "REPORTS" && (
-        <div className="space-y-4">
-          {/* Filters Bar */}
-          <section className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs md:grid-cols-12">
-            {/* Search Input */}
-            <div className="md:col-span-5">
-              <label className="mb-1 block text-xs font-semibold text-slate-700">
-                Tìm kiếm phản ánh
-              </label>
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-2xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition">
-                <Search className="h-4 w-4 text-slate-400 shrink-0" />
-                <input
-                  value={reportSearch}
-                  onChange={(e) => {
-                    setReportSearch(e.target.value);
-                    setReportPage(1);
-                  }}
-                  placeholder="Tên sinh viên, MSSV, tên công ty, tiêu đề tin..."
-                  className="w-full text-xs text-slate-800 outline-none placeholder:text-slate-400"
-                />
-                {reportSearch && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReportSearch("");
+          </>
+        ) : (
+          <>
+            {/* Toolbar Filters Bar for Reports */}
+            <div className="border-b border-slate-100 bg-white p-4 sm:p-5">
+              <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
+                {/* Search Input */}
+                <div className="flex h-10 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-2xs transition focus-within:border-[#00878a] focus-within:ring-2 focus-within:ring-[#00878a]/20">
+                  <Search className="h-4 w-4 shrink-0 text-slate-400" />
+                  <input
+                    value={reportSearch}
+                    onChange={(e) => {
+                      setReportSearch(e.target.value);
                       setReportPage(1);
                     }}
-                    className="text-slate-400 hover:text-slate-600"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
+                    placeholder="Tìm sinh viên, MSSV, tên công ty, tiêu đề tin..."
+                    className="w-full text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                  />
+                  {reportSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReportSearch("");
+                        setReportPage(1);
+                      }}
+                      className="cursor-pointer text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Semester Custom Dropdown */}
+                <div className="w-full shrink-0 sm:w-[200px] lg:w-[220px]">
+                  <CustomSelect
+                    value={selectedSemesterId}
+                    onChange={(val) => {
+                      setSelectedSemesterId(val);
+                      setJobPage(1);
+                      setReportPage(1);
+                    }}
+                    options={semesterOptions}
+                    searchable
+                  />
+                </div>
+
+                {/* Status Custom Dropdown */}
+                <div className="w-full shrink-0 sm:w-[150px] lg:w-[165px]">
+                  <CustomSelect
+                    value={selectedReportStatus}
+                    onChange={(val) => {
+                      setSelectedReportStatus(val);
+                      setReportPage(1);
+                    }}
+                    options={reportStatusOptions}
+                  />
+                </div>
+
+                {/* Reason Custom Dropdown */}
+                <div className="w-full shrink-0 sm:w-[160px] lg:w-[180px]">
+                  <CustomSelect
+                    value={selectedReportReason}
+                    onChange={(val) => {
+                      setSelectedReportReason(val);
+                      setReportPage(1);
+                    }}
+                    options={reportReasonOptions}
+                  />
+                </div>
+
+                {/* Refresh Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReportSearch("");
+                    setSelectedReportStatus("ALL");
+                    setSelectedReportReason("ALL");
+                    setSelectedSemesterId("ALL");
+                    setReportPage(1);
+                    void loadReports();
+                  }}
+                  disabled={loadingReports}
+                  className="inline-flex h-10 cursor-pointer shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[#cbebeb] bg-[#e6f6f6] px-3.5 text-xs font-semibold text-[#00878a] shadow-2xs transition hover:bg-[#d5eeee] active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+                  title="Đặt lại bộ lọc và làm mới dữ liệu"
+                >
+                  <RotateCcw
+                    className={`h-4 w-4 shrink-0 ${loadingReports ? "animate-spin" : ""}`}
+                  />
+                  <span>Làm mới</span>
+                </button>
               </div>
             </div>
 
-            {/* Status Custom Dropdown */}
-            <div className="md:col-span-3">
-              <CustomSelect
-                label="Trạng thái xử lý"
-                value={selectedReportStatus}
-                onChange={(val) => {
-                  setSelectedReportStatus(val);
-                  setReportPage(1);
-                }}
-                options={reportStatusOptions}
-              />
-            </div>
-
-            {/* Reason Custom Dropdown */}
-            <div className="md:col-span-4">
-              <CustomSelect
-                label="Loại vi phạm"
-                value={selectedReportReason}
-                onChange={(val) => {
-                  setSelectedReportReason(val);
-                  setReportPage(1);
-                }}
-                options={reportReasonOptions}
-              />
-            </div>
-          </section>
-
-          {/* Reports Table */}
-          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+            {/* Reports Table */}
             {loadingReports ? (
               <div className="p-16 text-center text-xs text-slate-500">
-                <LoaderCircle className="mx-auto mb-3 h-6 w-6 animate-spin text-indigo-600" />
+                <LoaderCircle className="mx-auto mb-3 h-6 w-6 animate-spin text-[#00878a]" />
                 Đang tải danh sách báo cáo vi phạm...
               </div>
             ) : reports.length === 0 ? (
@@ -1249,14 +1184,13 @@ export function InternshipManagement() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
+                <table className="w-full text-left border-collapse text-xs table-fixed">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                      <th className="px-4 py-3.5">Sinh viên phản ánh</th>
-                      <th className="px-4 py-3.5">Tin tuyển dụng bị báo cáo</th>
-                      <th className="px-4 py-3.5">Lý do &amp; Nội dung</th>
-                      <th className="px-4 py-3.5">Trạng thái xử lý</th>
-                      <th className="px-4 py-3.5 text-right">Thao tác</th>
+                    <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="w-[26%] px-4 py-3">Sinh viên phản ánh</th>
+                      <th className="w-[32%] px-4 py-3">Tin tuyển dụng bị báo cáo</th>
+                      <th className="w-[28%] px-4 py-3">Lý do &amp; Nội dung</th>
+                      <th className="w-[14%] px-4 py-3 text-right">Trạng thái xử lý</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1270,122 +1204,65 @@ export function InternshipManagement() {
                       return (
                         <tr
                           key={report.id}
-                          className="hover:bg-slate-50/80 transition"
+                          onClick={() => setReviewingReport(report)}
+                          className="h-[70px] cursor-pointer hover:bg-slate-50/90 transition group"
                         >
                           {/* Col 1: Student info */}
-                          <td className="px-4 py-3.5 align-top">
-                            <div className="space-y-0.5">
-                              <div className="font-bold text-slate-900">
+                          <td className="px-4 py-2.5 align-middle h-[70px] whitespace-nowrap">
+                            <div className="min-w-0">
+                              <p className="truncate font-bold text-slate-900 group-hover:text-[#00878a] transition-colors" title={report.student?.fullName || "Sinh viên"}>
                                 {report.student?.fullName || "Sinh viên"}
-                              </div>
-                              <div className="text-[11px] text-slate-500">
-                                MSSV: {report.student?.studentCode || "—"}
-                              </div>
-                              <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                                <Mail className="h-3 w-3 text-slate-400" />
-                                {report.student?.email}
-                              </div>
-                              {report.student?.phone && (
-                                <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                                  <Phone className="h-3 w-3 text-slate-400" />
-                                  {report.student?.phone}
-                                </div>
-                              )}
+                              </p>
+                              <p className="mt-0.5 truncate text-[11px] text-slate-500 flex items-center gap-1">
+                                <span className="font-mono font-semibold text-slate-700">{report.student?.studentCode || "—"}</span>
+                                {report.student?.email && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="truncate">{report.student.email}</span>
+                                  </>
+                                )}
+                              </p>
                             </div>
                           </td>
 
                           {/* Col 2: Job & Company */}
-                          <td className="px-4 py-3.5 align-top space-y-1">
-                            <div
-                              onClick={() => void handleOpenDetail(report.internshipId)}
-                              className="font-bold text-slate-900 hover:text-indigo-600 cursor-pointer line-clamp-1"
-                            >
-                              {report.internship?.title || "Bài đăng tuyển dụng"}
+                          <td className="px-4 py-2.5 align-middle h-[70px] whitespace-nowrap">
+                            <div className="min-w-0">
+                              <p
+                                className="truncate font-bold text-slate-800 leading-snug group-hover:text-[#00878a] transition-colors"
+                                title={report.internship?.title || "Bài đăng tuyển dụng"}
+                              >
+                                {report.internship?.title || "Bài đăng tuyển dụng"}
+                              </p>
+                              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 font-medium truncate" title={report.internship?.company?.companyName}>
+                                <Building2 className="h-3 w-3 shrink-0 text-slate-400" />
+                                <span className="truncate">
+                                  {report.internship?.company?.companyName || "Doanh nghiệp"}
+                                </span>
+                              </p>
                             </div>
-                            <div className="text-[11px] text-slate-600 font-medium">
-                              {report.internship?.company?.companyName || "Doanh nghiệp"}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => void handleOpenDetail(report.internshipId)}
-                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
-                            >
-                              <ExternalLink className="h-3 w-3" /> Xem tin tuyển dụng
-                            </button>
                           </td>
 
                           {/* Col 3: Reason & Details */}
-                          <td className="px-4 py-3.5 align-top space-y-1 max-w-xs">
-                            <span className="inline-block rounded-md bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-bold text-rose-800">
-                              {REPORT_REASON_LABELS[report.reasonCode] ||
-                                report.reasonCode}
-                            </span>
-                            <p className="text-slate-700 leading-relaxed text-[11px] line-clamp-3">
-                              {report.reasonDetail || "Không có mô tả chi tiết."}
-                            </p>
-                            <div className="text-[10px] text-slate-400">
-                              Gửi lúc:{" "}
-                              {new Date(report.createdAt).toLocaleString("vi-VN")}
+                          <td className="px-4 py-2.5 align-middle h-[70px] whitespace-nowrap">
+                            <div className="min-w-0">
+                              <span className="inline-block rounded-md bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-bold text-rose-800 truncate max-w-[200px]">
+                                {REPORT_REASON_LABELS[report.reasonCode] ||
+                                  report.reasonCode}
+                              </span>
+                              <p className="truncate text-slate-600 text-[11px] mt-0.5" title={report.reasonDetail || ""}>
+                                {report.reasonDetail || "Không có mô tả chi tiết."}
+                              </p>
                             </div>
                           </td>
 
-                          {/* Col 4: Status & Admin Note */}
-                          <td className="px-4 py-3.5 align-top space-y-1.5">
+                          {/* Col 4: Status */}
+                          <td className="px-4 py-2.5 align-middle h-[70px] whitespace-nowrap text-right">
                             <span
                               className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${repConf.className}`}
                             >
                               {repConf.label}
                             </span>
-                            {report.adminNotes && (
-                              <div className="rounded-lg bg-slate-50 border border-slate-200 p-2 text-[10px] text-slate-700 space-y-0.5">
-                                <span className="font-bold text-slate-800">
-                                  Ghi chú xử lý:
-                                </span>
-                                <p className="text-slate-600 line-clamp-2">
-                                  {report.adminNotes}
-                                </p>
-                              </div>
-                            )}
-                            {report.reviewedBy && (
-                              <div className="text-[10px] text-slate-400">
-                                Duyệt bởi: {report.reviewedBy.fullName || report.reviewedBy.email}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Col 5: Actions */}
-                          <td className="px-4 py-3.5 align-top text-right space-y-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setReviewingReport(report)}
-                              className="inline-flex items-center gap-1 rounded-xl bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer shadow-2xs"
-                            >
-                              <Edit3 className="h-3.5 w-3.5" />
-                              <span>Xử lý báo cáo</span>
-                            </button>
-
-                            <div>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  try {
-                                    const fullJob = await internshipsApi.get(
-                                      report.internshipId
-                                    );
-                                    setModeratingJob(fullJob);
-                                  } catch (err) {
-                                    notify({
-                                      title: "Lỗi",
-                                      message: getApiErrorMessage(err),
-                                      tone: "error",
-                                    });
-                                  }
-                                }}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 hover:text-rose-800"
-                              >
-                                <Ban className="h-3 w-3" /> Gỡ tin vi phạm
-                              </button>
-                            </div>
                           </td>
                         </tr>
                       );
@@ -1397,37 +1274,36 @@ export function InternshipManagement() {
 
             {/* Pagination for reports */}
             {!loadingReports && reports.length > 0 && (
-              <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
-                <div>
-                  Trang <strong>{reportPage}</strong> /{" "}
-                  <strong>{reportTotalPages}</strong> (Tổng cộng{" "}
-                  <strong>{reportTotalCount}</strong> báo cáo)
-                </div>
+              <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5 text-xs text-slate-600">
+                <span className="font-medium text-slate-500">
+                  Tổng: <strong className="text-slate-700">{reportTotalCount}</strong> báo cáo
+                </span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    disabled={reportPage <= 1}
+                    disabled={reportPage <= 1 || loadingReports}
                     onClick={() => setReportPage((p) => Math.max(1, p - 1))}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition cursor-pointer"
+                    className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer hover:bg-slate-50 transition"
                   >
-                    <ChevronLeft className="h-3.5 w-3.5" /> Trước
+                    <ChevronLeft className="h-4 w-4" />
                   </button>
+                  <span>
+                    Trang {reportPage}/{reportTotalPages}
+                  </span>
                   <button
                     type="button"
-                    disabled={reportPage >= reportTotalPages}
-                    onClick={() =>
-                      setReportPage((p) => Math.min(reportTotalPages, p + 1))
-                    }
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition cursor-pointer"
+                    disabled={reportPage >= reportTotalPages || loadingReports}
+                    onClick={() => setReportPage((p) => Math.min(reportTotalPages, p + 1))}
+                    className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer hover:bg-slate-50 transition"
                   >
-                    Sau <ChevronRight className="h-3.5 w-3.5" />
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               </div>
             )}
-          </section>
-        </div>
-      )}
+          </>
+        )}
+      </section>
 
       {/* 6. JOB DETAIL SLIDE-OVER / MODAL */}
       {detailInternship && (
@@ -1493,45 +1369,51 @@ function JobDetailModal({
     };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div
         className="relative flex flex-col max-h-[90vh] w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
         role="dialog"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/75 px-6 py-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-6 py-4">
+          <div className="flex items-center gap-3.5 min-w-0">
             {job.company.logo ? (
               <img
                 src={job.company.logo}
                 alt={job.company.companyName}
-                className="h-10 w-10 rounded-xl object-contain border border-slate-200 p-0.5 bg-white shrink-0"
+                className="h-11 w-11 rounded-2xl object-contain border border-slate-200 p-1 bg-white shrink-0 shadow-2xs"
               />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 font-bold text-indigo-700 shrink-0 text-base">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e6f6f6] border border-[#cbebeb] font-black text-[#00878a] shrink-0 text-base shadow-2xs">
                 {job.company.companyName.charAt(0).toUpperCase()}
               </div>
             )}
-            <div>
-              <h2 className="text-base font-bold text-slate-900 leading-tight">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug truncate" title={job.title}>
                 {job.title}
               </h2>
-              <p className="text-xs text-slate-500 font-medium">
-                {job.company.companyName} • {job.semester.name}
+              <p className="mt-0.5 text-xs text-slate-500 font-medium truncate flex items-center gap-1.5">
+                <span className="font-semibold text-slate-700">{job.company.companyName}</span>
+                <span>•</span>
+                <span>{cleanSemesterName(job.semester.name)}</span>
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition cursor-pointer"
+            className="rounded-xl p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition cursor-pointer shrink-0"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-slate-700">
+        <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs text-slate-700 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {/* Moderation Alert Box if Rejected */}
           {job.status === "REJECTED" && (
             <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-rose-900 shadow-2xs space-y-2">
@@ -1562,85 +1444,106 @@ function JobDetailModal({
           )}
 
           {/* Key Info Strip */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 rounded-2xl bg-slate-50 border border-slate-200 p-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 p-4">
             <div>
               <span className="text-[11px] text-slate-400 block font-medium">
                 Trạng thái bài đăng
               </span>
-              <span
-                className={`mt-1 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusConf.className}`}
-              >
-                {statusConf.label}
-              </span>
+              <div className="mt-1">
+                <span
+                  className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusConf.className}`}
+                >
+                  {statusConf.label}
+                </span>
+              </div>
             </div>
             <div>
               <span className="text-[11px] text-slate-400 block font-medium">
                 Chỉ tiêu tuyển dụng
               </span>
-              <span className="mt-1 text-sm font-bold text-slate-900 block">
-                {job.filledSlots} / {job.slots} slot ({Math.max(0, job.slots - job.filledSlots)} còn lại)
-              </span>
+              <p className="mt-1 text-sm font-bold text-slate-900">
+                {job.filledSlots} / {job.slots} slot
+                <span className="text-[11px] font-normal text-slate-500 ml-1">
+                  ({Math.max(0, job.slots - job.filledSlots)} còn lại)
+                </span>
+              </p>
             </div>
             <div>
               <span className="text-[11px] text-slate-400 block font-medium">
                 Hạn nộp hồ sơ
               </span>
-              <span className="mt-1 text-xs font-bold text-slate-900 block">
-                {job.deadline
-                  ? new Date(job.deadline).toLocaleDateString("vi-VN")
-                  : "Không thời hạn"}
-              </span>
+              <p className="mt-1 text-xs font-bold text-slate-900 flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <span>
+                  {job.deadline
+                    ? new Date(job.deadline).toLocaleDateString("vi-VN")
+                    : "Không thời hạn"}
+                </span>
+              </p>
             </div>
             <div>
               <span className="text-[11px] text-slate-400 block font-medium">
                 Hình thức &amp; Phụ cấp
               </span>
-              <span className="mt-1 text-xs font-bold text-slate-900 block">
-                {workTypeLabels[job.workType || ""] || "Linh hoạt"}
-                {job.stipend ? ` • ${job.stipend}` : " • Không lương"}
-              </span>
+              <p className="mt-1 text-xs font-bold text-slate-900 truncate" title={`${workTypeLabels[job.workType || ""] || "Linh hoạt"}${job.stipend ? ` • ${job.stipend}` : ""}`}>
+                <span>{workTypeLabels[job.workType || ""] || "Linh hoạt"}</span>
+                <span className="text-emerald-600 font-semibold ml-1">
+                  {job.stipend ? `• ${job.stipend}` : "• Không lương"}
+                </span>
+              </p>
             </div>
           </div>
 
           {/* Company Details */}
-          <div className="rounded-2xl border border-slate-200 p-4 space-y-2">
-            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-              Thông tin Doanh nghiệp tuyển dụng
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
-              <div>
-                <strong>Công ty:</strong> {job.company.companyName}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+              <Building2 className="h-4 w-4 text-[#00878a]" />
+              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+                Thông tin Doanh nghiệp tuyển dụng
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="flex items-start gap-2 text-slate-700">
+                <span className="text-slate-400 shrink-0">Tên pháp lý:</span>
+                <span className="font-semibold text-slate-900">{job.company.companyName}</span>
               </div>
               {job.company.taxCode && (
-                <div>
-                  <strong>Mã số thuế:</strong> {job.company.taxCode}
+                <div className="flex items-start gap-2 text-slate-700">
+                  <span className="text-slate-400 shrink-0">Mã số thuế:</span>
+                  <span className="font-mono font-semibold text-slate-900">{job.company.taxCode}</span>
                 </div>
               )}
               {job.company.contactEmail && (
-                <div>
-                  <strong>Email liên hệ:</strong> {job.company.contactEmail}
+                <div className="flex items-start gap-2 text-slate-700">
+                  <span className="text-slate-400 shrink-0">Email liên hệ:</span>
+                  <a href={`mailto:${job.company.contactEmail}`} className="font-medium text-[#00878a] hover:underline">
+                    {job.company.contactEmail}
+                  </a>
                 </div>
               )}
               {job.company.contactPhone && (
-                <div>
-                  <strong>Số điện thoại:</strong> {job.company.contactPhone}
+                <div className="flex items-start gap-2 text-slate-700">
+                  <span className="text-slate-400 shrink-0">Số điện thoại:</span>
+                  <span className="font-medium text-slate-900">{job.company.contactPhone}</span>
                 </div>
               )}
               {job.company.address && (
-                <div className="sm:col-span-2">
-                  <strong>Địa chỉ:</strong> {job.company.address}
+                <div className="flex items-start gap-2 text-slate-700 sm:col-span-2">
+                  <span className="text-slate-400 shrink-0">Địa chỉ hoạt động:</span>
+                  <span className="font-medium text-slate-800">{job.company.address}</span>
                 </div>
               )}
               {job.company.website && (
-                <div className="sm:col-span-2">
-                  <strong>Website:</strong>{" "}
+                <div className="flex items-start gap-2 text-slate-700 sm:col-span-2">
+                  <span className="text-slate-400 shrink-0">Website:</span>
                   <a
                     href={job.company.website}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-indigo-600 underline"
+                    className="inline-flex items-center gap-1 font-semibold text-[#00878a] hover:underline"
                   >
-                    {job.company.website}
+                    <span>{job.company.website}</span>
+                    <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
               )}
@@ -1648,51 +1551,61 @@ function JobDetailModal({
           </div>
 
           {/* Job Description */}
-          <div className="space-y-1.5">
-            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-              Mô tả công việc &amp; Nhiệm vụ
-            </h3>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-xs leading-relaxed text-slate-800 whitespace-pre-line">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-2.5">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <FileText className="h-4 w-4 text-[#00878a]" />
+              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+                Mô tả công việc &amp; Nhiệm vụ
+              </h3>
+            </div>
+            <div className="text-xs leading-relaxed text-slate-700 whitespace-pre-line bg-slate-50/50 rounded-xl p-3 border border-slate-100">
               {job.description || "Chưa có mô tả công việc."}
             </div>
           </div>
 
           {/* Requirements */}
           {job.requirements && (
-            <div className="space-y-1.5">
-              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-                Yêu cầu ứng viên
-              </h3>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-xs leading-relaxed text-slate-800 whitespace-pre-line">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-2.5">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <CheckCircle2 className="h-4 w-4 text-[#00878a]" />
+                <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+                  Yêu cầu ứng viên
+                </h3>
+              </div>
+              <div className="text-xs leading-relaxed text-slate-700 whitespace-pre-line bg-slate-50/50 rounded-xl p-3 border border-slate-100">
                 {job.requirements}
               </div>
             </div>
           )}
 
           {/* Skills Matrix */}
-          <div className="space-y-1.5">
-            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-              Kỹ năng &amp; Trọng số đánh giá ({job.skills.length})
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {job.skills.map((skill) => (
-                <span
-                  key={skill.skillId}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800"
-                >
-                  <span>{skill.name}</span>
-                  <span className="rounded bg-emerald-200/70 px-1.5 py-0.5 text-[10px] font-bold text-emerald-900">
-                    Trọng số: {skill.weight}
-                  </span>
-                  {skill.isRequired && (
-                    <span className="text-[10px] text-rose-600 font-bold">
-                      *Bắt buộc
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <Sparkles className="h-4 w-4 text-[#00878a]" />
+              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+                Kỹ năng &amp; Trọng số đánh giá ({job.skills?.length || 0})
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              {job.skills && job.skills.length > 0 ? (
+                job.skills.map((skill) => (
+                  <div
+                    key={skill.skillId}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-xs shadow-2xs"
+                  >
+                    <span className="font-semibold text-slate-800">{skill.name}</span>
+                    <span className="rounded-md bg-[#e6f6f6] border border-[#cbebeb] px-1.5 py-0.5 text-[10px] font-bold text-[#00878a]">
+                      Trọng số: {skill.weight}
                     </span>
-                  )}
-                </span>
-              ))}
-              {job.skills.length === 0 && (
-                <span className="text-slate-400 italic">
+                    {skill.isRequired && (
+                      <span className="rounded-md bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                        Bắt buộc
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <span className="text-slate-400 italic text-xs">
                   Chưa gán kỹ năng đánh giá
                 </span>
               )}
@@ -1701,10 +1614,10 @@ function JobDetailModal({
 
           {/* Reports on this job if any */}
           {job.reports && job.reports.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-slate-200">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-rose-600" />
-                <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/30 p-4 space-y-3">
+              <div className="flex items-center gap-2 border-b border-amber-200/60 pb-2">
+                <ShieldAlert className="h-4 w-4 text-amber-600" />
+                <h3 className="font-bold text-amber-900 text-xs uppercase tracking-wider">
                   Phản ánh vi phạm từ sinh viên ({job.reports.length})
                 </h3>
               </div>
@@ -1712,7 +1625,7 @@ function JobDetailModal({
                 {job.reports.map((rep) => (
                   <div
                     key={rep.id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs space-y-1"
+                    className="rounded-xl border border-slate-200 bg-white p-3 text-xs space-y-1 shadow-2xs"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900">
@@ -1736,7 +1649,7 @@ function JobDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/75 px-6 py-4">
+        <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/80 px-6 py-4">
           <button
             type="button"
             onClick={onClose}
@@ -2044,12 +1957,12 @@ function ModerationModal({
           )}
 
           {/* Submit Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
             <button
               type="button"
               disabled={submitting}
               onClick={onClose}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
             >
               Hủy
             </button>
@@ -2286,19 +2199,19 @@ function ReportReviewModal({
           </div>
 
           {/* Buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
             <button
               type="button"
               disabled={submitting}
               onClick={onClose}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition cursor-pointer shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#00878a] px-5 py-2 text-xs font-bold text-white hover:bg-[#006f72] transition cursor-pointer shadow-xs disabled:opacity-50"
             >
               {submitting && <LoaderCircle className="h-4 w-4 animate-spin" />}
               <span>Lưu trạng thái</span>

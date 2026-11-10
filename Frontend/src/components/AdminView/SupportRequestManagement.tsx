@@ -6,10 +6,13 @@ import {
   Clock,
   Edit3,
   Eye,
+  FileText,
   LifeBuoy,
   LoaderCircle,
+  Mail,
   MessageSquareReply,
-  RefreshCw,
+  Phone,
+  RotateCcw,
   Search,
   Send,
   X,
@@ -135,28 +138,17 @@ export const SupportRequestManagement: React.FC = () => {
     <div className="admin-page admin-page--standard space-y-6">
       {/* Header & Bộ lọc */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="admin-page-title text-xl font-bold text-slate-900">
-              Hỗ trợ &amp; Báo cáo từ sinh viên
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Tiếp nhận và phản hồi trực tiếp các yêu cầu hỗ trợ hoặc báo cáo
-              từ sinh viên.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Tải lại
-          </button>
+        <div>
+          <h2 className="admin-page-title text-xl font-bold text-slate-900">
+            Hỗ trợ &amp; Báo cáo từ sinh viên
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Tiếp nhận và phản hồi trực tiếp các yêu cầu hỗ trợ hoặc báo cáo
+            từ sinh viên.
+          </p>
         </div>
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -167,9 +159,36 @@ export const SupportRequestManagement: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Tìm theo tên sinh viên, MSSV, email, tiêu đề hoặc nội dung..."
-              className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm text-slate-800 outline-none transition focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/15"
+              className="w-full h-10 rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-9 text-xs text-slate-800 outline-none transition focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/15 shadow-2xs"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setPage(1);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setStatus("");
+              setPage(1);
+              void load();
+            }}
+            disabled={loading}
+            className="inline-flex h-10 cursor-pointer shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[#cbebeb] bg-[#e6f6f6] px-3.5 text-xs font-semibold text-[#00878a] shadow-2xs transition hover:bg-[#d5eeee] active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+            title="Đặt lại bộ lọc và làm mới dữ liệu"
+          >
+            <RotateCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <span>Làm mới</span>
+          </button>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -181,9 +200,9 @@ export const SupportRequestManagement: React.FC = () => {
                 setStatus(tab.value);
                 setPage(1);
               }}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
                 status === tab.value
-                  ? "bg-indigo-600 text-white"
+                  ? "bg-[#00878a] text-white shadow-xs"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -238,7 +257,7 @@ export const SupportRequestManagement: React.FC = () => {
                     >
                       <td className="px-4 py-3.5 align-middle">
                         <div className="flex items-center gap-2.5">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-xs font-black text-indigo-700">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e6f6f6] text-xs font-black text-[#00878a]">
                             {item.student.fullName.charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0">
@@ -285,7 +304,7 @@ export const SupportRequestManagement: React.FC = () => {
                             e.stopPropagation();
                             openModal(item);
                           }}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#cbebeb] bg-[#e6f6f6] px-3 py-1.5 text-xs font-bold text-[#00878a] shadow-2xs transition hover:bg-[#d5eeee] cursor-pointer"
                         >
                           <Eye className="h-3.5 w-3.5" />
                           {item.status === "PENDING"
@@ -333,40 +352,44 @@ export const SupportRequestManagement: React.FC = () => {
       {/* Modal Box Chi tiết & Phản hồi khi nhấn vào báo cáo */}
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[1px]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-xs transition-opacity"
           onClick={closeModal}
         >
           <div
-            className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 bg-slate-50/70 px-6 py-4">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h3 className="text-lg font-extrabold text-slate-900">
-                    Chi tiết yêu cầu hỗ trợ
-                  </h3>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusStyle[selected.status]}`}
-                  >
-                    {selected.status === "RESOLVED" ? (
-                      <CheckCircle2 className="h-3 w-3" />
-                    ) : (
-                      <Clock className="h-3 w-3" />
-                    )}
-                    {statusLabel[selected.status]}
-                  </span>
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/70 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e6f6f6] font-extrabold text-[#00878a] text-sm shadow-2xs">
+                  {selected.student.fullName ? selected.student.fullName.charAt(0).toUpperCase() : "S"}
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  Gửi lúc:{" "}
-                  {new Date(selected.createdAt).toLocaleString("vi-VN")}
-                </p>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-extrabold text-slate-900">
+                      Chi tiết yêu cầu hỗ trợ
+                    </h3>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusStyle[selected.status]}`}
+                    >
+                      {selected.status === "RESOLVED" ? (
+                        <CheckCircle2 className="h-3 w-3" />
+                      ) : (
+                        <Clock className="h-3 w-3" />
+                      )}
+                      {statusLabel[selected.status]}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Gửi lúc: {new Date(selected.createdAt).toLocaleString("vi-VN")}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={closeModal}
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200/70 hover:text-slate-700"
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200/70 hover:text-slate-700 transition cursor-pointer"
                 aria-label="Đóng"
               >
                 <X className="h-5 w-5" />
@@ -374,144 +397,159 @@ export const SupportRequestManagement: React.FC = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
-              {/* Thông tin sinh viên */}
-              <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                    Sinh viên gửi
-                  </p>
-                  <p className="mt-0.5 text-sm font-bold text-slate-900">
-                    {selected.student.fullName} ({selected.student.studentCode})
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                    Chuyên ngành
-                  </p>
-                  <p className="mt-0.5 text-sm font-semibold text-slate-700">
-                    {selected.student.major}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                    Email tài khoản
-                  </p>
-                  <p className="mt-0.5 break-all text-sm text-slate-700">
-                    {selected.student.user.email}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                    Số điện thoại
-                  </p>
-                  <p className="mt-0.5 text-sm text-slate-700">
-                    {selected.student.phone || "Chưa cập nhật"}
-                  </p>
+            <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-4 sm:p-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {/* 1. Thông tin sinh viên */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  Thông tin sinh viên gửi yêu cầu
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">Họ và tên &amp; MSSV</span>
+                    <p className="font-bold text-slate-900 text-sm mt-0.5">
+                      {selected.student.fullName}{" "}
+                      <span className="font-mono text-xs font-semibold text-slate-500">({selected.student.studentCode})</span>
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">Chuyên ngành</span>
+                    <p className="font-semibold text-slate-800 text-xs mt-0.5">
+                      {selected.student.major}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">Email tài khoản</span>
+                    <a
+                      href={`mailto:${selected.student.user.email}`}
+                      className="font-medium text-[#00878a] hover:underline flex items-center gap-1.5 mt-0.5 break-all"
+                    >
+                      <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      {selected.student.user.email}
+                    </a>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">Số điện thoại</span>
+                    <p className="font-medium text-slate-700 flex items-center gap-1.5 mt-0.5">
+                      <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      {selected.student.phone || "Chưa cập nhật"}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Nội dung báo cáo */}
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                  Tiêu đề báo cáo
+              {/* 2. Nội dung báo cáo */}
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 text-[#00878a]" /> Nội dung phản ánh từ sinh viên
                 </p>
-                <h4 className="mt-1 text-base font-bold text-slate-900">
+                <h4 className="text-sm font-bold text-slate-900 leading-snug">
                   {selected.title}
                 </h4>
-
-                <p className="mt-4 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                  Nội dung chi tiết
-                </p>
-                <div className="mt-1.5 max-h-56 overflow-y-auto rounded-lg bg-slate-50 p-3.5 text-sm leading-relaxed text-slate-800 whitespace-pre-line">
+                <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 text-xs text-slate-800 leading-relaxed whitespace-pre-line">
                   {selected.content}
                 </div>
               </div>
 
-              {/* Khu vực phản hồi của Admin */}
+              {/* 3. Khu vực phản hồi của Admin */}
               {isEditingReply ? (
-                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                <div className="rounded-xl border border-[#cbebeb] bg-[#f2fafb] p-3.5 space-y-2">
                   <label
                     htmlFor="admin-reply-input"
-                    className="block text-xs font-bold text-slate-800"
+                    className="block text-xs font-bold text-slate-800 flex items-center gap-1.5"
                   >
-                    Phản hồi từ Quản trị viên
+                    <MessageSquareReply className="h-4 w-4 text-[#00878a]" />
+                    Nội dung phản hồi cho sinh viên
                   </label>
                   <textarea
                     id="admin-reply-input"
                     autoFocus
-                    rows={4}
+                    rows={3}
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Nhập nội dung phản hồi hoặc hướng giải quyết cho sinh viên..."
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-800 outline-none transition focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/15"
+                    placeholder="Nhập nội dung phản hồi hướng dẫn hoặc hướng giải quyết cho sinh viên..."
+                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-800 outline-none transition focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20 resize-y min-h-[76px]"
                   />
-                  <div className="mt-3 flex justify-end gap-2">
-                    {selected.status === "RESOLVED" && (
-                      <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={() => {
-                          setReplyText(selected.adminReply ?? "");
-                          setIsEditingReply(false);
-                        }}
-                        className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700"
-                      >
-                        Hủy sửa
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      disabled={submitting}
-                      onClick={() => void handleReplySubmit()}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
-                    >
-                      {submitting ? (
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                      {submitting ? "Đang gửi..." : "Gửi phản hồi"}
-                    </button>
-                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Sinh viên sẽ nhận được phản hồi này trực tiếp trong phân hệ Hỗ trợ của tài khoản sinh viên.
+                  </p>
                 </div>
               ) : (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-800">
-                      <MessageSquareReply className="h-4 w-4" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                       Phản hồi của Quản trị viên
                       {selected.repliedAt && (
                         <span className="font-normal text-emerald-700">
-                          •{" "}
-                          {new Date(selected.repliedAt).toLocaleString("vi-VN")}
+                          • {new Date(selected.repliedAt).toLocaleString("vi-VN")}
                         </span>
                       )}
                     </span>
                     <button
                       type="button"
                       onClick={() => setIsEditingReply(true)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 cursor-pointer shadow-2xs"
                     >
                       <Edit3 className="h-3.5 w-3.5" /> Sửa phản hồi
                     </button>
                   </div>
-                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-emerald-950">
+                  <p className="mt-2.5 whitespace-pre-line text-xs font-medium leading-relaxed text-emerald-950 bg-white/70 p-3 rounded-lg border border-emerald-100">
                     {selected.adminReply}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex shrink-0 justify-end border-t border-slate-100 bg-slate-50/50 px-6 py-3.5">
-              <button
-                type="button"
-                onClick={closeModal}
-                className="rounded-xl bg-slate-200/80 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-300"
-              >
-                Đóng
-              </button>
+            {/* Modal Footer - Fixed at bottom */}
+            <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50/70 px-6 py-3.5">
+              <div>
+                {isEditingReply && selected.status === "RESOLVED" && (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => {
+                      setReplyText(selected.adminReply ?? "");
+                      setIsEditingReply(false);
+                    }}
+                    className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer transition shadow-2xs"
+                  >
+                    Hủy chỉnh sửa
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer shadow-2xs"
+                >
+                  Đóng
+                </button>
+                {isEditingReply ? (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => void handleReplySubmit()}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#00878a] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                  >
+                    {submitting ? (
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-3.5 w-3.5" />
+                    )}
+                    <span>{submitting ? "Đang gửi..." : selected.status === "RESOLVED" ? "Lưu phản hồi" : "Gửi phản hồi"}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingReply(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[#cbebeb] bg-[#e6f6f6] px-4 py-2 text-xs font-bold text-[#00878a] shadow-2xs transition hover:bg-[#d5eeee] active:scale-[0.98] cursor-pointer"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    <span>Sửa phản hồi</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
