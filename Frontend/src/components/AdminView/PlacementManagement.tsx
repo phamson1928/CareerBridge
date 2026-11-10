@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   AlertCircle,
   ArrowRight,
@@ -848,11 +849,11 @@ export const PlacementManagement: React.FC<{
       <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
         {loading ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs table-fixed">
+            <table className="w-full text-left text-xs table-fixed min-w-[1150px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="w-[23%] px-3.5 py-3">Sinh viên</th>
-                  <th className="w-[27%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
+                  <th className="w-[22%] px-3.5 py-3">Sinh viên</th>
+                  <th className="w-[28%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
                   <th className="w-[16%] px-3.5 py-3">Học kỳ &amp; Lịch</th>
                   <th className="w-[16%] px-3.5 py-3">Giảng viên hướng dẫn</th>
                   <th className="w-[8%] px-2 py-3 text-center">Tiến độ</th>
@@ -900,11 +901,11 @@ export const PlacementManagement: React.FC<{
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs table-fixed">
+            <table className="w-full text-left text-xs table-fixed min-w-[1150px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="w-[23%] px-3.5 py-3">Sinh viên</th>
-                  <th className="w-[27%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
+                  <th className="w-[22%] px-3.5 py-3">Sinh viên</th>
+                  <th className="w-[28%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
                   <th className="w-[16%] px-3.5 py-3">Học kỳ &amp; Lịch</th>
                   <th className="w-[16%] px-3.5 py-3">Giảng viên hướng dẫn</th>
                   <th className="w-[8%] px-2 py-3 text-center">Tiến độ</th>
@@ -916,10 +917,10 @@ export const PlacementManagement: React.FC<{
                   <tr
                     key={placement.id}
                     onClick={() => void openDetail(placement)}
-                    className="group cursor-pointer transition hover:bg-slate-50/80 h-[70px]"
+                    className="group cursor-pointer transition hover:bg-slate-50/80 min-h-[70px]"
                   >
                     {/* Sinh viên */}
-                    <td className="px-3.5 py-2.5 align-middle h-[70px]">
+                    <td className="px-3.5 py-2.5 align-middle">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <ProfileAvatarPreview
                           fileId={placement.student.avatarFileId}
@@ -941,9 +942,9 @@ export const PlacementManagement: React.FC<{
                     </td>
 
                     {/* Vị trí & Doanh nghiệp */}
-                    <td className="px-3.5 py-2.5 align-middle h-[70px]">
+                    <td className="px-3.5 py-2.5 align-middle">
                       <div className="min-w-0">
-                        <p className="truncate text-xs font-bold text-slate-800 leading-snug" title={placement.internship.title}>
+                        <p className="line-clamp-2 text-xs font-bold text-slate-800 leading-snug break-words" title={placement.internship.title}>
                           {placement.internship.title}
                         </p>
                         <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 truncate" title={placement.company.companyName}>
@@ -954,7 +955,7 @@ export const PlacementManagement: React.FC<{
                     </td>
 
                     {/* Học kỳ & Lịch */}
-                    <td className="px-3.5 py-2.5 align-middle whitespace-nowrap h-[70px]">
+                    <td className="px-3.5 py-2.5 align-middle whitespace-nowrap">
                       <p className="truncate text-xs font-semibold text-slate-700" title={placement.semester.name}>
                         {cleanSemesterName(placement.semester.name)}
                       </p>
@@ -964,7 +965,7 @@ export const PlacementManagement: React.FC<{
                     </td>
 
                     {/* Giảng viên hướng dẫn */}
-                    <td className="px-3.5 py-2.5 align-middle whitespace-nowrap h-[70px]">
+                    <td className="px-3.5 py-2.5 align-middle whitespace-nowrap">
                       {placement.supervision && placement.supervision.status !== "CANCELLED" ? (
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
@@ -1003,25 +1004,20 @@ export const PlacementManagement: React.FC<{
                     </td>
 
                     {/* Tiến độ */}
-                    <td className="px-2 py-2.5 align-middle text-center whitespace-nowrap h-[70px]">
-                      <div className="inline-flex items-center justify-center gap-1.5">
+                    <td className="px-2 py-2.5 align-middle text-center whitespace-nowrap">
+                      <div className="inline-flex items-center justify-center">
                         <span
                           title="Báo cáo đã duyệt / tổng báo cáo đã nộp"
-                          className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                          className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
                         >
                           <FileText className="h-3 w-3 text-slate-400" />
                           <span>{placement.progress.approvedReports ?? 0}/{placement.progress.reportCount}</span>
                         </span>
-                        {placement.progress.reportsAwaitingReview > 0 && (
-                          <span className="inline-flex items-center rounded-full bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[9px] font-bold text-rose-700" title="Báo cáo chờ duyệt">
-                            {placement.progress.reportsAwaitingReview} chờ
-                          </span>
-                        )}
                       </div>
                     </td>
 
                     {/* Trạng thái */}
-                    <td className="px-3.5 py-2.5 text-right align-middle whitespace-nowrap h-[70px]">
+                    <td className="px-3.5 py-2.5 text-right align-middle whitespace-nowrap">
                       <span
                         className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getPlacementBadge(placement).className}`}
                       >
@@ -1063,12 +1059,13 @@ export const PlacementManagement: React.FC<{
         )}
       </div>
       {selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeDetail}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
+            role="dialog"
+            aria-modal="true"
+            onClick={closeDetail}
+          >
           <div
             className="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl sm:max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
@@ -1495,6 +1492,7 @@ export const PlacementManagement: React.FC<{
             )}
           </div>
         </div>
+        </ModalPortal>
       )}
     </section>
   );

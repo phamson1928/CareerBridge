@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   AlertCircle,
   AlertTriangle,
@@ -910,13 +911,13 @@ export function InternshipManagement() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs table-fixed">
+                <table className="w-full text-left border-collapse text-xs table-fixed min-w-[1050px]">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      <th className="w-[40%] px-4 py-3">Vị trí &amp; Doanh nghiệp</th>
+                      <th className="w-[38%] px-4 py-3">Vị trí &amp; Doanh nghiệp</th>
                       <th className="w-[26%] px-4 py-3">Kỳ tuyển &amp; Hạn chót</th>
                       <th className="w-[20%] px-4 py-3">Chỉ tiêu &amp; Ứng tuyển</th>
-                      <th className="w-[14%] px-4 py-3 text-right">Trạng thái</th>
+                      <th className="w-[16%] px-4 py-3 text-right whitespace-nowrap min-w-[120px]">Trạng thái</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1184,13 +1185,13 @@ export function InternshipManagement() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs table-fixed">
+                <table className="w-full text-left border-collapse text-xs table-fixed min-w-[1050px]">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       <th className="w-[26%] px-4 py-3">Sinh viên phản ánh</th>
                       <th className="w-[32%] px-4 py-3">Tin tuyển dụng bị báo cáo</th>
-                      <th className="w-[28%] px-4 py-3">Lý do &amp; Nội dung</th>
-                      <th className="w-[14%] px-4 py-3 text-right">Trạng thái xử lý</th>
+                      <th className="w-[26%] px-4 py-3">Lý do &amp; Nội dung</th>
+                      <th className="w-[16%] px-4 py-3 text-right whitespace-nowrap min-w-[120px]">Trạng thái xử lý</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1369,10 +1370,11 @@ function JobDetailModal({
     };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
-      onClick={onClose}
-    >
+    <ModalPortal>
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+        onClick={onClose}
+      >
       <div
         className="relative flex flex-col max-h-[90vh] w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
         role="dialog"
@@ -1677,6 +1679,7 @@ function JobDetailModal({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 
@@ -1747,7 +1750,8 @@ function ModerationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div
         className="relative flex flex-col max-h-[90vh] w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
         role="dialog"
@@ -1990,6 +1994,7 @@ function ModerationModal({
         </form>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 
@@ -2038,7 +2043,8 @@ function ReportReviewModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div
         className="relative flex flex-col max-h-[90vh] w-full max-w-xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
         role="dialog"
@@ -2220,5 +2226,6 @@ function ReportReviewModal({
         </form>
       </div>
     </div>
+    </ModalPortal>
   );
 }

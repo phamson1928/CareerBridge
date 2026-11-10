@@ -1,3 +1,4 @@
+import { ModalPortal } from "../ModalPortal";
 import React, { useEffect, useState } from 'react';
 import {
   Bot,
@@ -273,8 +274,9 @@ HEARTBEAT_INTERVAL_SEC=25`;
 
   const onlineWorkersCount = data?.workers.filter((w) => w.isOnline).length || 0;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+  return (
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-indigo-950/30">
@@ -315,7 +317,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
 
           {/* Token Generated Dedicated Modal Overlay */}
           {createdTokenData && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
               <div className="bg-white rounded-3xl shadow-2xl border-2 border-indigo-300 w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 text-slate-800">
                 {/* Sticky Header - Always visible with Close Button */}
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
@@ -921,5 +923,6 @@ HEARTBEAT_INTERVAL_SEC=25`;
         </div>
       </div>
     </div>
+      </ModalPortal>
   );
 };

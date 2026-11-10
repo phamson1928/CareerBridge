@@ -1,3 +1,4 @@
+import { ModalPortal } from "../ModalPortal";
 import React, { useEffect, useState } from 'react';
 import { Internship, StudentProfile, Application } from '../../types';
 import { getApiErrorMessage } from '../../auth/api';
@@ -557,7 +558,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 
       {/* Detail Modal */}
       {activeModalInternship && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs modal-backdrop-appear">
+        <ModalPortal>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs modal-backdrop-appear">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative modal-scale-in border border-slate-100">
             <button
               onClick={() => setActiveModalInternship(null)}
@@ -689,11 +691,13 @@ export const InternshipList: React.FC<InternshipListProps> = ({
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Apply Modal */}
       {applyModalInternship && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs modal-backdrop-appear">
+        <ModalPortal>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs modal-backdrop-appear">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative modal-scale-in border border-slate-100">
             <button
               onClick={() => setApplyModalInternship(null)}
@@ -758,6 +762,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Report Modal */}

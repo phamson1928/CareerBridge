@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   Award,
   Ban,
@@ -410,18 +411,19 @@ export const UserManagement: React.FC = () => {
         {error && <p className="text-xs text-rose-600">{error}</p>}
       </div>
 
-      {isCreateOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
-          onClick={() => {
-            if (savingId !== "create") setIsCreateOpen(false);
-          }}
-        >
-          <form
-            onSubmit={(event) => void createUser(event)}
-            onClick={(event) => event.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+      {isCreateOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+            onClick={() => {
+              if (savingId !== "create") setIsCreateOpen(false);
+            }}
           >
+            <form
+              onSubmit={(event) => void createUser(event)}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+            >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-extrabold text-slate-900">
@@ -655,12 +657,13 @@ export const UserManagement: React.FC = () => {
               </button>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body,
       )}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-visible">
         <div className="overflow-x-auto min-h-[220px]">
-          <table className="w-full text-left text-xs text-slate-600">
+          <table className="w-full text-left text-xs text-slate-600 min-w-[850px]">
             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
               <tr>
                 <th className="p-4">Email</th>
@@ -772,17 +775,18 @@ export const UserManagement: React.FC = () => {
       </div>
 
       {/* Modal Chi tiết tài khoản người dùng */}
-      {selectedUser && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-xs transition-opacity"
-          onClick={() => setSelectedUser(null)}
-          role="dialog"
-          aria-modal="true"
-        >
+      {selectedUser &&
+        createPortal(
           <div
-            className="flex max-h-[calc(100vh-2.5rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs transition-opacity"
+            onClick={() => setSelectedUser(null)}
+            role="dialog"
+            aria-modal="true"
           >
+            <div
+              className="flex max-h-[calc(100vh-2.5rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Modal Header */}
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/70 p-5">
               <div className="flex items-center gap-3.5">
@@ -1122,7 +1126,8 @@ export const UserManagement: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       </div>

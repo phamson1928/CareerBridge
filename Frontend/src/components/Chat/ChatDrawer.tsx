@@ -220,7 +220,7 @@ export function ChatDrawer({
     : startablePlacements;
 
   return (
-    <div className="chat-backdrop fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs">
+    <div className="chat-backdrop fixed inset-0 z-[100] flex justify-end bg-slate-900/40 backdrop-blur-xs">
       <aside className="chat-drawer flex h-full w-full max-w-[54rem] flex-col border-l border-slate-200 bg-white shadow-2xl">
         {/* Modern Clean Header */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">

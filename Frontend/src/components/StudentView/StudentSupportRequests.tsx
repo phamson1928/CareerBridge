@@ -1,3 +1,4 @@
+import { ModalPortal } from "../ModalPortal";
 import React, { FormEvent, useEffect, useState } from "react";
 import {
   CheckCircle2,
@@ -259,8 +260,8 @@ export const StudentSupportRequests: React.FC = () => {
 
       {/* Modal Box Chi tiết báo cáo cho Sinh viên */}
       {selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[1px]"
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-xs transition-opacity"
           onClick={() => setSelected(null)}
         >
           <div
@@ -352,6 +353,7 @@ export const StudentSupportRequests: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

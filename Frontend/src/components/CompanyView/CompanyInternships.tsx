@@ -1,3 +1,4 @@
+import { ModalPortal } from "../ModalPortal";
 import { FormEvent, useEffect, useState } from "react";
 import {
   AlertCircle,
@@ -1221,7 +1222,8 @@ export function CompanyInternships() {
 
       {/* ================= MODAL: CREATE JOB (TRADITIONAL) ================= */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+        <ModalPortal>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
           <form
             onSubmit={(event) => void submitNewJob(event)}
             className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
@@ -1437,11 +1439,13 @@ export function CompanyInternships() {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* ================= MODAL: SAVE AS TEMPLATE ================= */}
       {saveAsTemplateJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+        <ModalPortal>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
           <form
             onSubmit={(e) => void handleSaveAsTemplateSubmit(e)}
             className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
@@ -1509,11 +1513,13 @@ export function CompanyInternships() {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* ================= MODAL: REPOST TO ANOTHER SEMESTER ================= */}
       {repostJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+        <ModalPortal>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
           <form
             onSubmit={(e) => void handleRepostSubmit(e)}
             className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
@@ -1650,11 +1656,13 @@ export function CompanyInternships() {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* ================= MODAL: CREATE / EDIT TEMPLATE ================= */}
       {isTemplateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+        <ModalPortal>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
           <form
             onSubmit={(e) => void handleTemplateFormSubmit(e)}
             className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
@@ -1788,11 +1796,13 @@ export function CompanyInternships() {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* ================= MODAL: CREATE JOB FROM TEMPLATE ================= */}
       {instantiatingTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+        <ModalPortal>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
           <form
             onSubmit={(e) => void handleFromTemplateSubmit(e)}
             className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
@@ -1920,6 +1930,7 @@ export function CompanyInternships() {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* Modal thống kê chi tiết tuyển dụng */}

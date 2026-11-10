@@ -1,3 +1,4 @@
+import { ModalPortal } from "../ModalPortal";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import type { JobPreferences } from "../../recommendations/types";
@@ -38,8 +39,9 @@ export function JobPreferenceForm({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+  return (
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
       <form
         onSubmit={(event) => void save(event)}
         className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
@@ -110,6 +112,7 @@ export function JobPreferenceForm({
         </div>
       </form>
     </div>
+    </ModalPortal>
   );
 }
 
