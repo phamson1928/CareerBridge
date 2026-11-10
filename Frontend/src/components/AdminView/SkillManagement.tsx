@@ -1,4 +1,5 @@
 import React, { FormEvent, useEffect, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   ChevronLeft,
   ChevronRight,
@@ -176,7 +177,7 @@ export const SkillManagement: React.FC = () => {
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[700px]">
             <thead>
               <tr className="border-b border-slate-100 text-slate-500 font-semibold">
                 <th className="p-3">Tên</th>
@@ -250,10 +251,11 @@ export const SkillManagement: React.FC = () => {
       )}
 
       {modalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
-          onClick={closeModal}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+            onClick={closeModal}
+          >
           <form
             onSubmit={(event) => void submitSkill(event)}
             onClick={(event) => event.stopPropagation()}
@@ -319,6 +321,7 @@ export const SkillManagement: React.FC = () => {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
     </section>
   );

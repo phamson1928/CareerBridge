@@ -1,3 +1,4 @@
+import { ModalPortal } from "../ModalPortal";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Application, ApplicationStatus, CompanyProfile } from '../../types';
 import { getStatusBadge } from '../../utils/matching';
@@ -1215,8 +1216,9 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
       </div>
 
       {/* Modal: Interview / Offer / Reject */}
-      {selectedApp && modalMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+      {selectedApp && modalMode && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <form
             onSubmit={(e) => void handleSubmitModal(e)}
             className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-4 text-xs"
@@ -1467,6 +1469,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* AI Worker & Quét CV Modals */}

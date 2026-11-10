@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   CheckCircle2,
   ChevronLeft,
@@ -238,7 +239,7 @@ export const SupportRequestManagement: React.FC = () => {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-600">
+              <table className="w-full text-left text-xs text-slate-600 min-w-[850px]">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   <tr>
                     <th className="px-4 py-3.5">Sinh viên</th>
@@ -351,10 +352,11 @@ export const SupportRequestManagement: React.FC = () => {
 
       {/* Modal Box Chi tiết & Phản hồi khi nhấn vào báo cáo */}
       {selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-xs transition-opacity"
-          onClick={closeModal}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-xs transition-opacity"
+            onClick={closeModal}
+          >
           <div
             className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
@@ -553,6 +555,7 @@ export const SupportRequestManagement: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

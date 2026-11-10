@@ -123,7 +123,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = (
   if (!shouldRender) return null;
   return (
     <div
-      className={`fixed inset-0 z-50 flex bg-slate-950/35 backdrop-blur-[2px] ${props.variant === "admin" ? `items-center justify-center p-4 admin-notification-backdrop ${props.isOpen ? "is-open" : "is-closing"}` : "justify-end"}`}
+      className={`fixed inset-0 z-[100] flex bg-slate-950/35 backdrop-blur-[2px] ${props.variant === "admin" ? `items-center justify-center p-4 admin-notification-backdrop ${props.isOpen ? "is-open" : "is-closing"}` : "justify-end"}`}
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) props.onClose();

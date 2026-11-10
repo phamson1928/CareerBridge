@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   AlertCircle,
   BriefcaseBusiness,
@@ -769,15 +770,15 @@ export const SupervisionManagement: React.FC = () => {
       <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
         {loading ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs table-fixed">
+            <table className="w-full text-left text-xs table-fixed min-w-[1180px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="w-[23%] px-3.5 py-3">Sinh viên</th>
-                  <th className="w-[27%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
+                  <th className="w-[20%] px-3.5 py-3">Sinh viên</th>
+                  <th className="w-[25%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
                   <th className="w-[15%] px-3.5 py-3">Học kỳ &amp; Lịch</th>
-                  <th className="w-[9%] px-3.5 py-3 text-center">Trạng thái</th>
-                  <th className="w-[16%] px-3.5 py-3">Giảng viên hướng dẫn</th>
-                  <th className="w-[10%] px-3.5 py-3 text-right">Thao tác</th>
+                  <th className="w-[18%] px-3.5 py-3">Giảng viên hướng dẫn</th>
+                  <th className="w-[10%] px-2 py-3 text-center">Trạng thái</th>
+                  <th className="w-[12%] px-3.5 py-3 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -795,11 +796,11 @@ export const SupervisionManagement: React.FC = () => {
                       <div className="mb-1.5 h-3.5 w-24 animate-pulse rounded bg-slate-200"></div>
                       <div className="h-3 w-28 animate-pulse rounded bg-slate-100"></div>
                     </td>
-                    <td className="px-3.5 py-3 text-center">
-                      <div className="mx-auto h-6 w-20 animate-pulse rounded-full bg-slate-200"></div>
-                    </td>
                     <td className="px-3.5 py-3">
                       <div className="h-5 w-24 animate-pulse rounded-full bg-slate-200"></div>
+                    </td>
+                    <td className="px-3.5 py-3 text-center">
+                      <div className="mx-auto h-6 w-20 animate-pulse rounded-full bg-slate-200"></div>
                     </td>
                     <td className="px-3.5 py-3 text-right">
                       <div className="ml-auto inline-block h-6 w-16 animate-pulse rounded-lg bg-slate-200"></div>
@@ -821,15 +822,15 @@ export const SupervisionManagement: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs table-fixed">
+            <table className="w-full text-left text-xs table-fixed min-w-[1180px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="w-[23%] px-3.5 py-3">Sinh viên</th>
-                  <th className="w-[27%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
-                  <th className="w-[16%] px-3.5 py-3">Học kỳ &amp; Lịch</th>
-                  <th className="w-[16%] px-3.5 py-3">Giảng viên hướng dẫn</th>
-                  <th className="w-[8%] px-2 py-3 text-center">Trạng thái</th>
-                  <th className="w-[10%] px-3.5 py-3 text-right">Thao tác</th>
+                  <th className="w-[20%] px-3.5 py-3">Sinh viên</th>
+                  <th className="w-[25%] px-3.5 py-3">Vị trí &amp; Doanh nghiệp</th>
+                  <th className="w-[15%] px-3.5 py-3">Học kỳ &amp; Lịch</th>
+                  <th className="w-[18%] px-3.5 py-3">Giảng viên hướng dẫn</th>
+                  <th className="w-[10%] px-2 py-3 text-center">Trạng thái</th>
+                  <th className="w-[12%] px-3.5 py-3 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -848,10 +849,10 @@ export const SupervisionManagement: React.FC = () => {
                   return (
                     <tr
                       key={placement.id}
-                      className="group transition hover:bg-slate-50/80 h-[70px]"
+                      className="group transition hover:bg-slate-50/80 min-h-[70px]"
                     >
                       {/* Sinh viên */}
-                      <td className="px-3.5 py-2.5 align-middle h-[70px]">
+                      <td className="px-3.5 py-2.5 align-middle">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <ProfileAvatarPreview
                             fileId={placement.student.avatarFileId}
@@ -878,10 +879,10 @@ export const SupervisionManagement: React.FC = () => {
                       </td>
 
                       {/* Vị trí & Doanh nghiệp */}
-                      <td className="px-3.5 py-2.5 align-middle h-[70px]">
+                      <td className="px-3.5 py-2.5 align-middle">
                         <div className="min-w-0">
                           <p
-                            className="truncate text-xs font-bold text-slate-800 leading-snug"
+                            className="line-clamp-2 text-xs font-bold text-slate-800 leading-snug break-words"
                             title={placement.internship.title}
                           >
                             {placement.internship.title}
@@ -897,7 +898,7 @@ export const SupervisionManagement: React.FC = () => {
                       </td>
 
                       {/* Học kỳ & Lịch */}
-                      <td className="px-3.5 py-2.5 align-middle whitespace-nowrap h-[70px]">
+                      <td className="px-3.5 py-2.5 align-middle whitespace-nowrap">
                         <p
                           className="truncate text-xs font-semibold text-slate-700"
                           title={placement.semester.name}
@@ -910,7 +911,7 @@ export const SupervisionManagement: React.FC = () => {
                       </td>
 
                       {/* Giảng viên hướng dẫn (Cố định vị trí đồng bộ với trang Quản lý thực tập) */}
-                      <td className="px-3.5 py-2.5 align-middle whitespace-nowrap h-[70px]">
+                      <td className="px-3.5 py-2.5 align-middle whitespace-nowrap">
                         {supervision ? (
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
@@ -942,7 +943,7 @@ export const SupervisionManagement: React.FC = () => {
                       </td>
 
                       {/* Trạng thái */}
-                      <td className="px-2 py-2.5 align-middle text-center whitespace-nowrap h-[70px]">
+                      <td className="px-2 py-2.5 align-middle text-center whitespace-nowrap">
                         <span
                           className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${badge.className}`}
                         >
@@ -951,35 +952,25 @@ export const SupervisionManagement: React.FC = () => {
                       </td>
 
                       {/* Thao tác */}
-                      <td className="px-3.5 py-2.5 text-right align-middle whitespace-nowrap h-[70px]">
+                      <td className="px-3.5 py-2.5 text-right align-middle whitespace-nowrap min-w-[110px]">
                         <div className="flex items-center justify-end gap-1.5 min-h-[30px]">
                           {canModifySupervision && (
                             <button
                               type="button"
                               onClick={() => openAssign(placement)}
-                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-[#00878a] px-2.5 py-1 text-xs font-bold text-white shadow-2xs transition hover:bg-[#007477] active:scale-[0.98]"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-[#00878a] px-2.5 py-1 text-xs font-bold text-white shadow-2xs transition hover:bg-[#007477] active:scale-[0.98] shrink-0"
                             >
                               <GraduationCap className="h-3.5 w-3.5" />
                               <span>{supervision ? "Đổi GV" : "Phân công"}</span>
                             </button>
                           )}
                           {!placement.startDate || !placement.endDate ? (
-                            <span className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                            <span className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 shrink-0">
                               Cần đặt lịch trước
                             </span>
                           ) : null}
-                          {canModifySupervision &&
-                            supervision?.status === "ACTIVE" && (
-                              <button
-                                type="button"
-                                onClick={() => void cancelSupervision(placement)}
-                                className="cursor-pointer rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
-                              >
-                                Bỏ phân công
-                              </button>
-                            )}
                           {supervision?.status === "ACTIVE" && isLocked && (
-                            <span className="text-[11px] font-semibold text-slate-400">
+                            <span className="text-[11px] font-semibold text-slate-400 shrink-0">
                               Đã khóa
                             </span>
                           )}
@@ -1025,12 +1016,13 @@ export const SupervisionManagement: React.FC = () => {
 
       {/* Modal Phân công: 2 ô tùy chỉnh, không dùng select mặc định, dropdown lồi ra ngoài không bị che */}
       {modalPlacement && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeModal}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
+            role="dialog"
+            aria-modal="true"
+            onClick={closeModal}
+          >
           <div
             className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
@@ -1102,27 +1094,46 @@ export const SupervisionManagement: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 rounded-b-2xl border-t border-slate-100 bg-slate-50/60 px-5 py-3">
-              <button
-                type="button"
-                onClick={closeModal}
-                disabled={saving}
-                className="cursor-pointer rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100/80 disabled:opacity-50"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                disabled={!selectedLecturer || saving}
-                onClick={() => void saveAssignment()}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#00878a] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {saving && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
-                Lưu phân công
-              </button>
+            <div className="flex items-center justify-between gap-3 rounded-b-2xl border-t border-slate-100 bg-slate-50/60 px-5 py-3">
+              <div>
+                {modalPlacement.supervision?.status === "ACTIVE" && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const target = modalPlacement;
+                      closeModal();
+                      await cancelSupervision(target);
+                    }}
+                    disabled={saving}
+                    className="cursor-pointer rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50 inline-flex items-center gap-1.5"
+                  >
+                    <span>Bỏ phân công</span>
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={saving}
+                  className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="button"
+                  disabled={!selectedLecturer || saving}
+                  onClick={() => void saveAssignment()}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#00878a] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {saving && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
+                  Lưu phân công
+                </button>
+              </div>
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </section>
   );

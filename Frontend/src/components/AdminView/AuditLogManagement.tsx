@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   Activity,
   AlertTriangle,
@@ -43,16 +44,19 @@ const ACTION_MAP: Record<
   COMPANY_REJECTED: { label: "Từ chối doanh nghiệp", category: "Doanh nghiệp", tone: "rose" },
   COMPANY_SUSPENDED: { label: "Tạm dừng doanh nghiệp", category: "Doanh nghiệp", tone: "rose" },
   COMPANY_UNSUSPENDED: { label: "Khôi phục doanh nghiệp", category: "Doanh nghiệp", tone: "emerald" },
+  COMPANY_REVIEW_REQUESTED: { label: "Yêu cầu duyệt hồ sơ", category: "Doanh nghiệp", tone: "amber" },
   COMPANY_PROFILE_CREATED: { label: "Tạo hồ sơ doanh nghiệp", category: "Doanh nghiệp", tone: "emerald" },
   COMPANY_PROFILE_UPDATED: { label: "Cập nhật hồ sơ công ty", category: "Doanh nghiệp", tone: "blue" },
-  COMPANY_PROFILE_SUBMITTED: { label: "Gửi duyệt hồ sơ", category: "Doanh nghiệp", tone: "amber" },
+  COMPANY_PROFILE_SUBMITTED: { label: "Gửi duyệt hồ sơ doanh nghiệp", category: "Doanh nghiệp", tone: "amber" },
   COMPANY_PROFILE_DELETED: { label: "Xóa hồ sơ công ty", category: "Doanh nghiệp", tone: "rose" },
 
   // Internship
   INTERNSHIP_CREATED: { label: "Đăng tin tuyển dụng", category: "Tin tuyển dụng", tone: "emerald" },
   INTERNSHIP_MODERATED: { label: "Kiểm duyệt / Gỡ tin", category: "Tin tuyển dụng", tone: "rose" },
+  INTERNSHIP_APPROVED: { label: "Duyệt tin tuyển dụng", category: "Tin tuyển dụng", tone: "emerald" },
+  INTERNSHIP_REJECTED: { label: "Từ chối / Gỡ tin tuyển dụng", category: "Tin tuyển dụng", tone: "rose" },
   INTERNSHIP_DELETED: { label: "Xóa tin tuyển dụng", category: "Tin tuyển dụng", tone: "rose" },
-  INTERNSHIP_REPOSTED: { label: "Đăng lại tin", category: "Tin tuyển dụng", tone: "blue" },
+  INTERNSHIP_REPOSTED: { label: "Đăng lại tin tuyển dụng", category: "Tin tuyển dụng", tone: "blue" },
   INTERNSHIP_CREATED_FROM_TEMPLATE: { label: "Tạo tin từ mẫu", category: "Tin tuyển dụng", tone: "emerald" },
   INTERNSHIP_REPORTED: { label: "Báo cáo tin vi phạm", category: "Tin tuyển dụng", tone: "amber" },
   INTERNSHIP_REPORT_REVIEWED: { label: "Xử lý báo cáo vi phạm", category: "Tin tuyển dụng", tone: "blue" },
@@ -82,7 +86,7 @@ const ACTION_MAP: Record<
   APPLICATION_OFFER_SENT: { label: "Gửi đề nghị tiếp nhận", category: "Ứng tuyển", tone: "emerald" },
   APPLICATION_OFFER_ACCEPTED: { label: "Đồng ý nhận offer", category: "Ứng tuyển", tone: "emerald" },
   APPLICATION_OFFER_DECLINED: { label: "Từ chối nhận offer", category: "Ứng tuyển", tone: "rose" },
-  APPLICATION_REJECTED: { label: "Từ chối hồ sơ", category: "Ứng tuyển", tone: "rose" },
+  APPLICATION_REJECTED: { label: "Từ chối hồ sơ ứng tuyển", category: "Ứng tuyển", tone: "rose" },
   APPLICATION_HIDDEN: { label: "Ẩn đơn ứng tuyển", category: "Ứng tuyển", tone: "slate" },
   APPLICATION_STATUS_CHANGED: { label: "Đổi trạng thái ứng tuyển", category: "Ứng tuyển", tone: "amber" },
 
@@ -93,28 +97,144 @@ const ACTION_MAP: Record<
   EVALUATION_DELETED: { label: "Xóa phiếu đánh giá", category: "Đánh giá", tone: "rose" },
 
   // Faculty & Major
-  FACULTY_CREATED: { label: "Thêm mới Khoa", category: "Tổ chức", tone: "emerald" },
-  FACULTY_UPDATED: { label: "Cập nhật Khoa", category: "Tổ chức", tone: "blue" },
-  FACULTY_DELETED: { label: "Xóa Khoa", category: "Tổ chức", tone: "rose" },
-  MAJOR_CREATED: { label: "Thêm mới Ngành", category: "Tổ chức", tone: "emerald" },
-  MAJOR_UPDATED: { label: "Cập nhật Ngành", category: "Tổ chức", tone: "blue" },
-  MAJOR_DELETED: { label: "Xóa Ngành", category: "Tổ chức", tone: "rose" },
+  FACULTY_CREATED: { label: "Thêm mới Khoa", category: "Khoa & Ngành", tone: "emerald" },
+  FACULTY_UPDATED: { label: "Cập nhật Khoa", category: "Khoa & Ngành", tone: "blue" },
+  FACULTY_DELETED: { label: "Xóa Khoa", category: "Khoa & Ngành", tone: "rose" },
+  FACULTY_ACTIVATED: { label: "Kích hoạt khoa", category: "Khoa & Ngành", tone: "emerald" },
+  FACULTY_DEACTIVATED: { label: "Ngừng kích hoạt khoa", category: "Khoa & Ngành", tone: "rose" },
+  MAJOR_CREATED: { label: "Thêm mới Ngành", category: "Khoa & Ngành", tone: "emerald" },
+  MAJOR_UPDATED: { label: "Cập nhật Ngành", category: "Khoa & Ngành", tone: "blue" },
+  MAJOR_DELETED: { label: "Xóa Ngành", category: "Khoa & Ngành", tone: "rose" },
+  MAJOR_ACTIVATED: { label: "Kích hoạt ngành", category: "Khoa & Ngành", tone: "emerald" },
+  MAJOR_DEACTIVATED: { label: "Ngừng kích hoạt ngành", category: "Khoa & Ngành", tone: "rose" },
 
   // Support
   SUPPORT_REQUEST_CREATED: { label: "Gửi yêu cầu hỗ trợ", category: "Hỗ trợ", tone: "amber" },
   SUPPORT_REQUEST_REPLIED: { label: "Phản hồi yêu cầu", category: "Hỗ trợ", tone: "emerald" },
 };
 
+const ENTITY_NAME_MAP: Record<string, string> = {
+  Semester: "Học kỳ & Đợt thực tập",
+  CompanyProfile: "Doanh nghiệp",
+  Company: "Doanh nghiệp",
+  Internship: "Tin tuyển dụng",
+  User: "Tài khoản người dùng",
+  Placement: "Hồ sơ thực tập",
+  InternshipPlacement: "Hồ sơ thực tập",
+  Application: "Đơn ứng tuyển",
+  Faculty: "Khoa đào tạo",
+  Major: "Chuyên ngành",
+  Supervision: "Phân công hướng dẫn",
+  Report: "Báo cáo thực tập",
+  InternshipReport: "Báo cáo thực tập",
+  Evaluation: "Đánh giá thực tập",
+  SupportRequest: "Yêu cầu hỗ trợ",
+  InternshipTemplate: "Mẫu tin tuyển dụng",
+};
+
+const STATUS_MAP: Record<string, string> = {
+  ACTIVE: "Đang hoạt động",
+  INACTIVE: "Ngừng hoạt động",
+  PENDING: "Chờ xét duyệt",
+  APPROVED: "Đã phê duyệt",
+  REJECTED: "Đã từ chối",
+  SUSPENDED: "Tạm dừng hoạt động",
+  BANNED: "Đã khóa",
+  DRAFT: "Bản nháp",
+  OPEN: "Đang mở tuyển",
+  CLOSED: "Đã đóng",
+  ARCHIVED: "Đã lưu trữ",
+  CANCELLED: "Đã hủy",
+  COMPLETED: "Đã hoàn thành",
+  PASSED: "Đạt",
+  FAILED: "Không đạt",
+  INTERVIEWING: "Đang phỏng vấn",
+  OFFERED: "Đã gửi đề nghị",
+  ACCEPTED: "Đã chấp nhận",
+  DECLINED: "Đã từ chối",
+  SUBMITTED: "Đã nộp",
+  REVIEWED: "Đã duyệt",
+  WAITING: "Đang chờ",
+  CONFIRMED: "Đã xác nhận",
+  UNAUTHORIZED_FEE: "Thu phí sinh viên trái quy định",
+  INAPPROPRIATE_CONTENT: "Nội dung không phù hợp",
+  MISLEADING_INFO: "Thông tin sai lệch",
+  OTHER: "Khác",
+};
+
+function formatEntityCategory(entity?: string): string {
+  if (!entity) return "Hệ thống";
+  const key = entity.toUpperCase();
+  if (key.includes("FACULTY") || key.includes("MAJOR")) return "Khoa & Ngành";
+  if (key.includes("SEMESTER")) return "Học kỳ";
+  if (key.includes("COMPANY")) return "Doanh nghiệp";
+  if (key.includes("INTERNSHIP") || key.includes("TEMPLATE")) return "Tin tuyển dụng";
+  if (key.includes("USER") || key.includes("ACCOUNT")) return "Tài khoản";
+  if (key.includes("PLACEMENT") || key.includes("SUPERVISION")) return "Hồ sơ thực tập";
+  if (key.includes("APPLICATION")) return "Ứng tuyển";
+  if (key.includes("REPORT")) return "Báo cáo";
+  if (key.includes("EVALUATION")) return "Đánh giá";
+  if (key.includes("SUPPORT")) return "Hỗ trợ";
+  return ENTITY_NAME_MAP[entity] || entity;
+}
+
+function formatActionLabel(
+  action: string,
+  entity?: string
+): { label: string; category: string; tone: "emerald" | "rose" | "blue" | "amber" | "slate" } {
+  if (ACTION_MAP[action]) return ACTION_MAP[action];
+
+  const category = formatEntityCategory(entity);
+  const entityName = (entity && ENTITY_NAME_MAP[entity]) || entity || "đối tượng";
+  let label = action.replace(/_/g, " ");
+  let tone: "emerald" | "rose" | "blue" | "amber" | "slate" = "slate";
+
+  if (action.endsWith("_ACTIVATED")) {
+    label = `Kích hoạt ${entityName.toLowerCase()}`;
+    tone = "emerald";
+  } else if (action.endsWith("_DEACTIVATED")) {
+    label = `Ngừng kích hoạt ${entityName.toLowerCase()}`;
+    tone = "rose";
+  } else if (action.endsWith("_CREATED")) {
+    label = `Tạo mới ${entityName.toLowerCase()}`;
+    tone = "emerald";
+  } else if (action.endsWith("_UPDATED")) {
+    label = `Cập nhật ${entityName.toLowerCase()}`;
+    tone = "blue";
+  } else if (action.endsWith("_DELETED")) {
+    label = `Xóa ${entityName.toLowerCase()}`;
+    tone = "rose";
+  } else if (action.endsWith("_REJECTED")) {
+    label = `Từ chối ${entityName.toLowerCase()}`;
+    tone = "rose";
+  } else if (action.endsWith("_APPROVED")) {
+    label = `Duyệt ${entityName.toLowerCase()}`;
+    tone = "emerald";
+  } else if (action.endsWith("_REVIEW_REQUESTED")) {
+    label = `Yêu cầu duyệt ${entityName.toLowerCase()}`;
+    tone = "amber";
+  } else if (action.endsWith("_STATUS_CHANGED")) {
+    label = `Đổi trạng thái ${entityName.toLowerCase()}`;
+    tone = "amber";
+  }
+
+  return { label, category, tone };
+}
+
 const ENTITY_OPTIONS = [
-  { value: "", label: "Tất cả đối tượng" },
-  { value: "Semester", label: "Học kỳ (Semester)" },
-  { value: "CompanyProfile", label: "Doanh nghiệp (Company)" },
-  { value: "Internship", label: "Tin tuyển dụng (Job)" },
-  { value: "User", label: "Tài khoản người dùng" },
+  { value: "", label: "Tất cả phân hệ tác động" },
+  { value: "CompanyProfile", label: "Doanh nghiệp" },
+  { value: "Internship", label: "Tin tuyển dụng" },
   { value: "Placement", label: "Hồ sơ thực tập" },
+  { value: "Supervision", label: "Phân công hướng dẫn" },
   { value: "Application", label: "Đơn ứng tuyển" },
-  { value: "Faculty", label: "Khoa / Bộ môn" },
+  { value: "Semester", label: "Học kỳ & Đợt thực tập" },
+  { value: "Faculty", label: "Khoa đào tạo" },
   { value: "Major", label: "Chuyên ngành đào tạo" },
+  { value: "User", label: "Tài khoản người dùng" },
+  { value: "Report", label: "Báo cáo thực tập" },
+  { value: "Evaluation", label: "Đánh giá thực tập" },
+  { value: "SupportRequest", label: "Yêu cầu hỗ trợ" },
 ];
 
 function formatDateTime(value: string) {
@@ -148,6 +268,8 @@ const FIELD_LABELS: Record<string, string> = {
   to: "Sang",
   reasonDetail: "Lý do chi tiết",
   reasonCode: "Mã lý do",
+  reason: "Lý do",
+  details: "Chi tiết",
   changedFields: "Các trường cập nhật",
   code: "Mã",
   semester: "Học kỳ",
@@ -162,6 +284,22 @@ const FIELD_LABELS: Record<string, string> = {
   quota: "Chỉ tiêu",
   startDate: "Ngày bắt đầu",
   endDate: "Ngày kết thúc",
+  student: "Sinh viên",
+  lecturer: "Giảng viên",
+  description: "Mô tả",
+  location: "Địa điểm",
+  stipend: "Mức hỗ trợ",
+  totalSlots: "Tổng chỉ tiêu",
+  maxSupervision: "Chỉ tiêu hướng dẫn tối đa",
+  academicStatus: "Trạng thái học vụ",
+  isActive: "Hoạt động",
+  action: "Hành động thực hiện",
+  companyId: "Mã doanh nghiệp",
+  studentId: "Mã sinh viên",
+  lecturerId: "Mã giảng viên",
+  placementId: "Mã hồ sơ thực tập",
+  semesterId: "Mã học kỳ",
+  internshipId: "Mã tin tuyển dụng",
 };
 
 function formatMetadataValue(val: any): string {
@@ -169,6 +307,7 @@ function formatMetadataValue(val: any): string {
   if (typeof val === "boolean") return val ? "Có" : "Không";
   if (typeof val === "object") return JSON.stringify(val);
   const str = String(val);
+  if (STATUS_MAP[str]) return STATUS_MAP[str];
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(str)) {
     const d = new Date(str);
     if (!isNaN(d.getTime())) {
@@ -182,11 +321,7 @@ function formatMetadataValue(val: any): string {
 }
 
 function getAuditLogSummary(log: AuditLogRecord) {
-  const meta = ACTION_MAP[log.action] || {
-    label: log.action.replace(/_/g, " "),
-    category: log.entity || "Hệ thống",
-    tone: "slate" as const,
-  };
+  const meta = formatActionLabel(log.action, log.entity);
 
   const md = (log.metadata && typeof log.metadata === "object" ? log.metadata : {}) as Record<string, any>;
 
@@ -200,34 +335,51 @@ function getAuditLogSummary(log: AuditLogRecord) {
     primaryText = String(md.title);
   } else if (md.companyName) {
     primaryText = String(md.companyName);
+  } else if (md.internshipTitle) {
+    primaryText = String(md.internshipTitle);
+  } else if (md.student && md.lecturer) {
+    primaryText = `SV: ${md.student} — GV: ${md.lecturer}`;
+  } else if (md.student) {
+    primaryText = `Sinh viên: ${md.student}`;
+  } else if (md.lecturer) {
+    primaryText = `Giảng viên: ${md.lecturer}`;
   } else if (md.email) {
     primaryText = String(md.email);
   } else if (md.before?.name) {
     primaryText = String(md.before.name);
-  } else if (md.internshipTitle) {
-    primaryText = String(md.internshipTitle);
   } else if (md.code) {
     primaryText = `${md.code}${md.name ? ` — ${md.name}` : ""}`;
+  } else if (md.details) {
+    primaryText = String(md.details);
   }
 
   // Extract context/diff
   if (md.from !== undefined && md.to !== undefined) {
-    subText = `Chuyển trạng thái: ${md.from} ➔ ${md.to}`;
+    const fromStr = STATUS_MAP[String(md.from)] || md.from;
+    const toStr = STATUS_MAP[String(md.to)] || md.to;
+    subText = `Chuyển trạng thái: ${fromStr} ➔ ${toStr}`;
   } else if (md.fromStatus !== undefined && md.toStatus !== undefined) {
-    subText = `Trạng thái: ${md.fromStatus} ➔ ${md.toStatus}`;
-  } else if (md.reasonDetail) {
-    subText = `Lý do: ${String(md.reasonDetail)}`;
-  } else if (md.reasonCode) {
-    subText = `Lý do: ${String(md.reasonCode)}`;
+    const fromStr = STATUS_MAP[String(md.fromStatus)] || md.fromStatus;
+    const toStr = STATUS_MAP[String(md.toStatus)] || md.toStatus;
+    subText = `Trạng thái: ${fromStr} ➔ ${toStr}`;
+  } else if (md.reasonDetail || md.details) {
+    if (primaryText !== md.details && primaryText !== md.reasonDetail) {
+      subText = `Lý do: ${String(md.reasonDetail || md.details)}`;
+    }
+  } else if (md.reasonCode || md.reason) {
+    const reasonStr = STATUS_MAP[String(md.reasonCode || md.reason)] || String(md.reasonCode || md.reason);
+    subText = `Lý do: ${reasonStr}`;
   } else if (md.changedFields && Array.isArray(md.changedFields)) {
-    subText = `Cập nhật: ${md.changedFields.join(", ")}`;
+    const vietnameseFields = md.changedFields.map((f: string) => FIELD_LABELS[f] || f);
+    subText = `Cập nhật: ${vietnameseFields.join(", ")}`;
   } else if (md.status) {
-    subText = `Trạng thái: ${md.status}`;
+    const statusStr = STATUS_MAP[String(md.status)] || md.status;
+    subText = `Trạng thái: ${statusStr}`;
   }
 
   if (!primaryText) {
     if (log.entity) {
-      primaryText = `${log.entity}`;
+      primaryText = ENTITY_NAME_MAP[log.entity] || log.entity;
     } else {
       primaryText = meta.label;
     }
@@ -613,7 +765,7 @@ export const AuditLogManagement: React.FC = () => {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600">
+          <table className="w-full text-left text-xs text-slate-600 min-w-[900px]">
             <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-600">
               <tr>
                 <th className="px-5 py-3.5">Thời điểm</th>
@@ -742,12 +894,13 @@ export const AuditLogManagement: React.FC = () => {
 
       {/* Modal Chi tiết nhật ký - Căn giữa màn hình */}
       {selectedLog && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-xs transition-opacity"
-          onClick={() => setSelectedLog(null)}
-          role="dialog"
-          aria-modal="true"
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-xs transition-opacity"
+            onClick={() => setSelectedLog(null)}
+            role="dialog"
+            aria-modal="true"
+          >
           <div
             className="flex max-h-[calc(100vh-2.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
@@ -828,7 +981,7 @@ export const AuditLogManagement: React.FC = () => {
                     <span className="text-slate-400 block text-[11px]">Phân hệ tác động</span>
                     <p className="font-semibold text-slate-800 mt-0.5">
                       {selectedLog.entity
-                        ? (ENTITY_OPTIONS.find((o) => o.value === selectedLog.entity)?.label.replace(/\s*\(.*\)/, "") || selectedLog.entity)
+                        ? (ENTITY_NAME_MAP[selectedLog.entity] || ENTITY_OPTIONS.find((o) => o.value === selectedLog.entity)?.label || selectedLog.entity)
                         : "Hệ thống"}
                     </p>
                   </div>
@@ -919,6 +1072,7 @@ export const AuditLogManagement: React.FC = () => {
             </footer>
           </div>
         </div>
+        </ModalPortal>
       )}
     </section>
   );
