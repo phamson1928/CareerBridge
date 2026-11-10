@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   Check,
   ChevronDown,
@@ -583,10 +584,11 @@ export const AdminPermissionManagement: React.FC = () => {
 
       {/* ================= MODAL: PHÂN QUYỀN GỌN GÀNG ================= */}
       {editingUser && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
-          onClick={closeEditModal}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+            onClick={closeEditModal}
+          >
           <div
             className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl space-y-4"
             onClick={(e) => e.stopPropagation()}
@@ -766,16 +768,18 @@ export const AdminPermissionManagement: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* ================= MODAL: THÊM QUẢN TRỊ VIÊN MỚI ================= */}
       {isCreateOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
-          onClick={() => {
-            if (!creating) setIsCreateOpen(false);
-          }}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+            onClick={() => {
+              if (!creating) setIsCreateOpen(false);
+            }}
+          >
           <form
             onSubmit={(e) => void handleCreateAdmin(e)}
             onClick={(e) => e.stopPropagation()}
@@ -955,6 +959,7 @@ export const AdminPermissionManagement: React.FC = () => {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

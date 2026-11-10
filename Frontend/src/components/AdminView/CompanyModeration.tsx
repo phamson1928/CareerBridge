@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   AlertTriangle,
   Ban,
@@ -357,14 +358,14 @@ export const CompanyModeration: React.FC = () => {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-600 table-fixed">
+              <table className="w-full text-left text-xs text-slate-600 table-fixed min-w-[1050px]">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th className="w-[30%] px-4 py-3.5">Doanh nghiệp</th>
-                    <th className="w-[16%] px-4 py-3.5">Mã số DN</th>
+                    <th className="w-[29%] px-4 py-3.5">Doanh nghiệp</th>
+                    <th className="w-[15%] px-4 py-3.5">Mã số DN</th>
                     <th className="w-[24%] px-4 py-3.5">Liên hệ</th>
                     <th className="w-[20%] px-4 py-3.5">Địa chỉ</th>
-                    <th className="w-[10%] px-4 py-3.5 text-right">Trạng thái</th>
+                    <th className="w-[12%] px-4 py-3.5 text-right whitespace-nowrap min-w-[120px]">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -507,10 +508,11 @@ export const CompanyModeration: React.FC = () => {
 
       {/* Detail Modal */}
       {selected && !rejecting && !suspending && !unsuspending && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
-          onClick={closeModals}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
+            onClick={closeModals}
+          >
           <div
             className="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
@@ -976,14 +978,16 @@ export const CompanyModeration: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Reject Modal */}
       {rejecting && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
-          onClick={closeModals}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
+            onClick={closeModals}
+          >
           <div
             className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
@@ -1068,14 +1072,16 @@ export const CompanyModeration: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Suspend Modal */}
       {suspending && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
-          onClick={closeModals}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
+            onClick={closeModals}
+          >
           <div
             className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
@@ -1170,14 +1176,16 @@ export const CompanyModeration: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Unsuspend Modal */}
       {unsuspending && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
-          onClick={closeModals}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
+            onClick={closeModals}
+          >
           <div
             className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
@@ -1241,6 +1249,7 @@ export const CompanyModeration: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

@@ -576,7 +576,7 @@ export default function App() {
         currentRole === "ADMIN" ? "bg-slate-100/70" : "bg-[#edf0f4]"
       } text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${
         currentRole === "ADMIN"
-          ? `admin-theme pl-20 will-change-[padding-left] transition-[padding-left] duration-200 ease-out ${
+          ? `admin-theme pl-20 transition-[padding-left] duration-200 ease-out ${
               isAdminSidebarCollapsed ? "lg:pl-20" : "lg:pl-[300px]"
             }`
           : ""

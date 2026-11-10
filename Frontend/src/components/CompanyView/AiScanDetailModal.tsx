@@ -1,3 +1,4 @@
+import { ModalPortal } from "../ModalPortal";
 import React, { useEffect, useState } from 'react';
 import {
   Sparkles,
@@ -183,8 +184,9 @@ export const AiScanDetailModal: React.FC<AiScanDetailModalProps> = ({
   const scoreTheme = getScoreColor(aiScore ?? 0);
   const recBadge = getRecommendationBadge(job?.recommendation);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+  return (
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-indigo-900/40">
@@ -586,5 +588,6 @@ export const AiScanDetailModal: React.FC<AiScanDetailModalProps> = ({
         </div>
       </div>
     </div>
+      </ModalPortal>
   );
 };

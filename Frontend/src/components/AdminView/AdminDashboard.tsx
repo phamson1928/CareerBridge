@@ -1,3 +1,4 @@
+import { ModalPortal } from "../ModalPortal";
 import React, {
   useCallback,
   useEffect,
@@ -1246,16 +1247,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           ) : (
             /* VIEW 2: TABLE VIEW */
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[850px]">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <th className="px-5 py-3.5">Khoa / Ngành đào tạo</th>
-                    <th className="px-4 py-3.5 text-right">Sinh viên</th>
-                    <th className="px-4 py-3.5 text-right">Giảng viên</th>
-                    <th className="px-4 py-3.5 text-right">Đã có nơi TT</th>
-                    <th className="px-4 py-3.5 text-right">Đang TT</th>
-                    <th className="px-4 py-3.5 text-right">Hoàn tất</th>
-                    <th className="px-5 py-3.5 text-right">Tỷ lệ có nơi TT</th>
+                    <th className="px-5 py-3.5 min-w-[220px]">Khoa / Ngành đào tạo</th>
+                    <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[80px]">Sinh viên</th>
+                    <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[80px]">Giảng viên</th>
+                    <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[90px]">Đã có nơi TT</th>
+                    <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[80px]">Đang TT</th>
+                    <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[80px]">Hoàn tất</th>
+                    <th className="px-5 py-3.5 text-right whitespace-nowrap min-w-[110px]">Tỷ lệ có nơi TT</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1331,12 +1332,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Modal Chi tiết ngành đào tạo khi click vào ô Heatmap */}
       {selectedMajorModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px] transition-opacity"
-          onClick={() => setSelectedMajorModal(null)}
-          role="dialog"
-          aria-modal="true"
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px] transition-opacity"
+            onClick={() => setSelectedMajorModal(null)}
+            role="dialog"
+            aria-modal="true"
+          >
           <div
             className="modal-smooth-in flex max-h-[calc(100vh-2.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
@@ -1469,6 +1471,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </footer>
           </div>
         </div>
+        </ModalPortal>
       )}
     </section>
   );

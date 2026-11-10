@@ -1,4 +1,5 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   CalendarDays,
   Check,
@@ -498,11 +499,12 @@ export const SemesterManagement: React.FC = () => {
       )}
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <form
-            onSubmit={(event) => void submit(event)}
-            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
-          >
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+            <form
+              onSubmit={(event) => void submit(event)}
+              className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+            >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-extrabold text-slate-900">
@@ -604,6 +606,7 @@ export const SemesterManagement: React.FC = () => {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
     </section>
   );

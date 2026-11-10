@@ -1,3 +1,4 @@
+import { ModalPortal } from "../ModalPortal";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Award,
@@ -657,8 +658,9 @@ export const StudentReports: React.FC<{ onNavigateTab?: (tab: string) => void }>
       )}
 
       {/* CREATE / EDIT MODAL */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs modal-backdrop-appear">
+      {isOpen && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs modal-backdrop-appear">
           <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl modal-scale-in border border-slate-100">
             <header className="flex items-start justify-between border-b border-slate-100 px-6 py-5 sm:px-8">
               <div>
@@ -901,6 +903,7 @@ export const StudentReports: React.FC<{ onNavigateTab?: (tab: string) => void }>
             </footer>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

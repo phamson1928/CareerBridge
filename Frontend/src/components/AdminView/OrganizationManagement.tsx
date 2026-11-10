@@ -1,4 +1,5 @@
 import React, { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   Building2,
   Check,
@@ -664,22 +665,22 @@ export const OrganizationManagement: React.FC = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-sm min-w-[1000px]">
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase text-slate-600">
                   <tr>
-                    <th className="px-4 py-3">Mã khoa</th>
-                    <th className="px-4 py-3">Tên khoa</th>
-                    <th className="px-4 py-3">Ngành trực thuộc</th>
-                    <th className="px-4 py-3 text-center">Giảng viên</th>
-                    <th className="px-4 py-3 text-center">Sinh viên</th>
-                    <th className="px-4 py-3 text-center">Trạng thái</th>
-                    <th className="px-4 py-3 text-right">Thao tác</th>
+                    <th className="px-4 py-3 whitespace-nowrap min-w-[100px]">Mã khoa</th>
+                    <th className="px-4 py-3 min-w-[220px]">Tên khoa</th>
+                    <th className="px-4 py-3 min-w-[260px]">Ngành trực thuộc</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap min-w-[90px]">Giảng viên</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap min-w-[90px]">Sinh viên</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap min-w-[130px]">Trạng thái</th>
+                    <th className="px-4 py-3 text-right whitespace-nowrap min-w-[130px]">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {faculties.map((faculty) => (
                     <tr key={faculty.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 font-mono text-xs font-bold text-indigo-700">
+                      <td className="px-4 py-3 font-mono text-xs font-bold text-indigo-700 whitespace-nowrap min-w-[100px]">
                         {faculty.code}
                       </td>
                       <td className="px-4 py-3">
@@ -716,13 +717,13 @@ export const OrganizationManagement: React.FC = () => {
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-center font-semibold text-slate-700">
+                      <td className="px-4 py-3 text-center whitespace-nowrap font-semibold text-slate-700 min-w-[90px]">
                         {faculty.lecturerCount}
                       </td>
-                      <td className="px-4 py-3 text-center font-semibold text-slate-700">
+                      <td className="px-4 py-3 text-center whitespace-nowrap font-semibold text-slate-700 min-w-[90px]">
                         {faculty.studentCount}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center whitespace-nowrap min-w-[130px]">
                         <span
                           className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${
                             faculty.isActive
@@ -733,46 +734,48 @@ export const OrganizationManagement: React.FC = () => {
                           {faculty.isActive ? "Đang hoạt động" : "Ngừng dùng"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => openEditFaculty(faculty)}
-                          className="mr-1 rounded-lg p-2 text-indigo-600 hover:bg-indigo-50"
-                          title="Chỉnh sửa khoa"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void toggleFacultyActive(faculty)}
-                          className={`mr-1 rounded-lg p-2 ${
-                            faculty.isActive
-                              ? "text-amber-600 hover:bg-amber-50"
-                              : "text-emerald-600 hover:bg-emerald-50"
-                          }`}
-                          title={
-                            faculty.isActive
-                              ? "Ngừng sử dụng khoa"
-                              : "Kích hoạt lại khoa"
-                          }
-                        >
-                          <Power className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void removeFaculty(faculty)}
-                          disabled={
-                            faculty.majorCount > 0 || faculty.lecturerCount > 0
-                          }
-                          className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-30"
-                          title={
-                            faculty.majorCount > 0 || faculty.lecturerCount > 0
-                              ? "Khoa đã có ngành/giảng viên — hãy dùng nút Ngừng sử dụng"
-                              : "Xóa khoa"
-                          }
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      <td className="px-4 py-3 text-right whitespace-nowrap min-w-[130px]">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditFaculty(faculty)}
+                            className="rounded-lg p-2 text-indigo-600 hover:bg-indigo-50"
+                            title="Chỉnh sửa khoa"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void toggleFacultyActive(faculty)}
+                            className={`rounded-lg p-2 ${
+                              faculty.isActive
+                                ? "text-amber-600 hover:bg-amber-50"
+                                : "text-emerald-600 hover:bg-emerald-50"
+                            }`}
+                            title={
+                              faculty.isActive
+                                ? "Ngừng sử dụng khoa"
+                                : "Kích hoạt lại khoa"
+                            }
+                          >
+                            <Power className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void removeFaculty(faculty)}
+                            disabled={
+                              faculty.majorCount > 0 || faculty.lecturerCount > 0
+                            }
+                            className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-30"
+                            title={
+                              faculty.majorCount > 0 || faculty.lecturerCount > 0
+                                ? "Khoa đã có ngành/giảng viên — hãy dùng nút Ngừng sử dụng"
+                                : "Xóa khoa"
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -816,22 +819,22 @@ export const OrganizationManagement: React.FC = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-sm min-w-[1000px]">
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase text-slate-600">
                   <tr>
-                    <th className="px-4 py-3">Mã ngành</th>
-                    <th className="px-4 py-3">Tên ngành học</th>
-                    <th className="px-4 py-3">Thuộc Khoa</th>
-                    <th className="px-4 py-3 text-center">Sinh viên</th>
-                    <th className="px-4 py-3 text-center">Tin tuyển dụng</th>
-                    <th className="px-4 py-3 text-center">Trạng thái</th>
-                    <th className="px-4 py-3 text-right">Thao tác</th>
+                    <th className="px-4 py-3 whitespace-nowrap min-w-[100px]">Mã ngành</th>
+                    <th className="px-4 py-3 min-w-[220px]">Tên ngành học</th>
+                    <th className="px-4 py-3 min-w-[200px]">Thuộc Khoa</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap min-w-[90px]">Sinh viên</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap min-w-[110px]">Tin tuyển dụng</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap min-w-[130px]">Trạng thái</th>
+                    <th className="px-4 py-3 text-right whitespace-nowrap min-w-[130px]">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {majors.map((major) => (
                     <tr key={major.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 font-mono text-xs font-bold text-indigo-700">
+                      <td className="px-4 py-3 font-mono text-xs font-bold text-indigo-700 whitespace-nowrap min-w-[100px]">
                         {major.code}
                       </td>
                       <td className="px-4 py-3">
@@ -850,13 +853,13 @@ export const OrganizationManagement: React.FC = () => {
                         </span>{" "}
                         {major.faculty.name}
                       </td>
-                      <td className="px-4 py-3 text-center font-semibold text-slate-700">
+                      <td className="px-4 py-3 text-center whitespace-nowrap font-semibold text-slate-700 min-w-[90px]">
                         {major.studentCount}
                       </td>
-                      <td className="px-4 py-3 text-center font-semibold text-slate-700">
+                      <td className="px-4 py-3 text-center whitespace-nowrap font-semibold text-slate-700 min-w-[110px]">
                         {major.internshipCount}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center whitespace-nowrap min-w-[130px]">
                         <span
                           className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${
                             major.isActive
@@ -867,46 +870,48 @@ export const OrganizationManagement: React.FC = () => {
                           {major.isActive ? "Đang hoạt động" : "Ngừng dùng"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => openEditMajor(major)}
-                          className="mr-1 rounded-lg p-2 text-indigo-600 hover:bg-indigo-50"
-                          title="Chỉnh sửa ngành"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void toggleMajorActive(major)}
-                          className={`mr-1 rounded-lg p-2 ${
-                            major.isActive
-                              ? "text-amber-600 hover:bg-amber-50"
-                              : "text-emerald-600 hover:bg-emerald-50"
-                          }`}
-                          title={
-                            major.isActive
-                              ? "Ngừng sử dụng ngành"
-                              : "Kích hoạt lại ngành"
-                          }
-                        >
-                          <Power className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void removeMajor(major)}
-                          disabled={
-                            major.studentCount > 0 || major.internshipCount > 0
-                          }
-                          className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-30"
-                          title={
-                            major.studentCount > 0 || major.internshipCount > 0
-                              ? "Ngành đã có sinh viên/tin tuyển dụng — hãy dùng nút Ngừng sử dụng"
-                              : "Xóa ngành"
-                          }
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      <td className="px-4 py-3 text-right whitespace-nowrap min-w-[130px]">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditMajor(major)}
+                            className="rounded-lg p-2 text-indigo-600 hover:bg-indigo-50"
+                            title="Chỉnh sửa ngành"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void toggleMajorActive(major)}
+                            className={`rounded-lg p-2 ${
+                              major.isActive
+                                ? "text-amber-600 hover:bg-amber-50"
+                                : "text-emerald-600 hover:bg-emerald-50"
+                            }`}
+                            title={
+                              major.isActive
+                                ? "Ngừng sử dụng ngành"
+                                : "Kích hoạt lại ngành"
+                            }
+                          >
+                            <Power className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void removeMajor(major)}
+                            disabled={
+                              major.studentCount > 0 || major.internshipCount > 0
+                            }
+                            className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-30"
+                            title={
+                              major.studentCount > 0 || major.internshipCount > 0
+                                ? "Ngành đã có sinh viên/tin tuyển dụng — hãy dùng nút Ngừng sử dụng"
+                                : "Xóa ngành"
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -946,10 +951,11 @@ export const OrganizationManagement: React.FC = () => {
 
       {/* Faculty Modal */}
       {facultyModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
-          onClick={() => !saving && setFacultyModalOpen(false)}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+            onClick={() => !saving && setFacultyModalOpen(false)}
+          >
           <form
             onSubmit={(e) => void submitFaculty(e)}
             onClick={(e) => e.stopPropagation()}
@@ -1056,14 +1062,16 @@ export const OrganizationManagement: React.FC = () => {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* Major Modal */}
       {majorModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
-          onClick={() => !saving && setMajorModalOpen(false)}
-        >
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+            onClick={() => !saving && setMajorModalOpen(false)}
+          >
           <form
             onSubmit={(e) => void submitMajor(e)}
             onClick={(e) => e.stopPropagation()}
@@ -1188,6 +1196,7 @@ export const OrganizationManagement: React.FC = () => {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
     </section>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ModalPortal } from "../ModalPortal";
 import {
   AlertCircle,
   BookOpenCheck,
@@ -434,7 +435,8 @@ export const ReviewReports = () => {
       )}
 
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs modal-backdrop-appear">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs modal-backdrop-appear">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl modal-scale-in border border-slate-100">
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
@@ -525,6 +527,7 @@ export const ReviewReports = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );
