@@ -12,8 +12,9 @@ export class OllamaAiProvider implements AiProvider {
   private readonly baseUrl: string;
 
   constructor(baseUrl: string, modelName: string) {
-    this.baseUrl = baseUrl;
-    this.modelName = modelName;
+    // Chuẩn hóa baseUrl: tự động loại bỏ trailing slash, /v1, /api để luôn gọi đúng endpoint Ollama
+    this.baseUrl = baseUrl.trim().replace(/\/+$/, '').replace(/\/(v1|api)$/, '');
+    this.modelName = modelName.trim();
   }
 
   async analyze(cvText: string, jobInfo: InternshipJobInfo): Promise<AiAnalysisResult> {
@@ -24,23 +25,42 @@ export class OllamaAiProvider implements AiProvider {
       sanitization.hasSuspiciousContent,
     );
 
-    const response = await axios.post(
-      `${this.baseUrl}/api/generate`,
-      {
-        model: this.modelName,
-        prompt,
-        stream: false,
-        format: 'json',
-        options: {
-          temperature: 0.2,
-          top_p: 0.9,
-          num_predict: 600,
+    let response;
+    try {
+      response = await axios.post(
+        `${this.baseUrl}/api/generate`,
+        {
+          model: this.modelName,
+          prompt,
+          stream: false,
+          format: 'json',
+          options: {
+            temperature: 0.2,
+            top_p: 0.9,
+            num_predict: 600,
+          },
         },
-      },
-      {
-        timeout: 240000, // 4 phút cho mô hình local suy nghĩ
+        {
+          timeout: 240000, // 4 phút cho mô hình local suy nghĩ
+        }
+      );
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        const ollamaErr = err.response?.data?.error || '';
+        throw new Error(
+          `Mô hình '${this.modelName}' chưa có trong Ollama (${ollamaErr || 'Not Found'}). ` +
+          `Vui lòng mở CMD chạy lệnh: 'ollama pull ${this.modelName}' hoặc đổi AI_PROVIDER=mock trong .env để test nhanh!`
+        );
       }
-    );
+      if (err.code === 'ECONNREFUSED') {
+        throw new Error(
+          `Không thể kết nối đến Ollama tại ${this.baseUrl}. ` +
+          `Vui lòng khởi động Ollama (mở ứng dụng Ollama hoặc gõ 'ollama serve' trong CMD).`
+        );
+      }
+      const detailedErr = err.response?.data?.error || err.message;
+      throw new Error(`Lỗi gọi Ollama API: ${detailedErr}`);
+    }
 
     const rawOutput = response.data?.response;
     if (!rawOutput || typeof rawOutput !== 'string') {
