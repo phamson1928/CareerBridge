@@ -985,7 +985,7 @@ export const OrganizationManagement: React.FC = () => {
           <form
             onSubmit={(e) => void submitFaculty(e)}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl overflow-hidden"
+            className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl"
           >
             <div className="flex items-start justify-between rounded-t-2xl border-b border-slate-100 bg-slate-50/70 p-5">
               <div>
@@ -1104,7 +1104,7 @@ export const OrganizationManagement: React.FC = () => {
           <form
             onSubmit={(e) => void submitMajor(e)}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl overflow-hidden"
+            className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl"
           >
             <div className="flex items-start justify-between rounded-t-2xl border-b border-slate-100 bg-slate-50/70 p-5">
               <div>

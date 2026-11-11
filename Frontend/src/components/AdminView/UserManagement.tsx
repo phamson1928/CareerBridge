@@ -86,6 +86,7 @@ function CustomDropdown({
   compact?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -100,6 +101,21 @@ function CustomDropdown({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !containerRef.current) return;
+    const updateDirection = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        setDropUp(spaceBelow < 220 && spaceAbove > spaceBelow);
+      }
+    };
+    updateDirection();
+    window.addEventListener("resize", updateDirection);
+    return () => window.removeEventListener("resize", updateDirection);
   }, [isOpen]);
 
   const selectedOption = useMemo(
@@ -142,7 +158,9 @@ function CustomDropdown({
 
       {isOpen && (
         <div
-          className={`absolute top-full left-0 mt-1 z-50 rounded-xl border border-slate-100 bg-white p-1 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-slate-800 ${
+          className={`absolute ${
+            dropUp ? "bottom-full mb-1" : "top-full mt-1"
+          } left-0 z-50 rounded-xl border border-slate-100 bg-white p-1 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-slate-800 ${
             compact ? "min-w-[135px]" : "min-w-full sm:min-w-[190px]"
           }`}
         >
@@ -183,7 +201,7 @@ const roleOptions: DropdownOption[] = [
 
 const modalRoleOptions: DropdownOption[] = roles.map((r) => ({
   value: r,
-  label: roleBadge[r]?.label ? `${roleBadge[r].label} (${r})` : r,
+  label: roleBadge[r]?.label || r,
 }));
 
 const statusOptions: DropdownOption[] = [
@@ -419,16 +437,17 @@ export const UserManagement: React.FC = () => {
       {isCreateOpen &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
+            className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/40 p-4 backdrop-blur-xs"
             onClick={() => {
               if (savingId !== "create") setIsCreateOpen(false);
             }}
           >
-            <form
-              onSubmit={(event) => void createUser(event)}
-              onClick={(event) => event.stopPropagation()}
-              className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl overflow-hidden"
-            >
+            <div className="flex min-h-full items-center justify-center">
+              <form
+                onSubmit={(event) => void createUser(event)}
+                onClick={(event) => event.stopPropagation()}
+                className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl"
+              >
             <div className="flex items-start justify-between rounded-t-2xl border-b border-slate-100 bg-slate-50/70 p-5">
               <div>
                 <span className="inline-flex items-center gap-1 rounded-full border border-[#cbebeb] bg-[#e6f6f6] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
@@ -658,6 +677,7 @@ export const UserManagement: React.FC = () => {
               </button>
             </div>
           </form>
+          </div>
         </div>,
         document.body,
       )}

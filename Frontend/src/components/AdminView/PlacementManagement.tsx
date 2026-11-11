@@ -218,7 +218,7 @@ function CustomDropdown({
   }, [options, search]);
 
   return (
-    <div className={`relative ${className}`} ref={containerRef}>
+    <div className={`relative ${isOpen ? "z-30" : ""} ${className}`} ref={containerRef}>
       {label && (
         <label className="mb-1 block text-xs font-semibold text-slate-600">
           {label}
