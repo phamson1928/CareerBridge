@@ -5,10 +5,12 @@ export function AuthLayout({
   children,
   ctaTo = '/register',
   ctaLabel = 'Đăng ký',
+  hideMobileSwitch = false,
 }: {
   children: ReactNode;
   ctaTo?: string;
   ctaLabel?: string;
+  hideMobileSwitch?: boolean;
 }) {
   return (
     <div className="auth-screen">
@@ -19,6 +21,14 @@ export function AuthLayout({
               <img src="/careerbridge-logo.svg" alt="CareerBridge" className="auth-logo" />
             </div>
             {children}
+            {!hideMobileSwitch && ctaTo && ctaLabel && (
+              <div className="auth-mobile-switch">
+                <span>{ctaTo === '/register' ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}</span>
+                <Link to={ctaTo} className="auth-mobile-switch-link">
+                  {ctaLabel}
+                </Link>
+              </div>
+            )}
           </div>
         </section>
 

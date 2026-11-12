@@ -7,9 +7,9 @@ export function RecommendationExplanation({
   explanation: RecommendationExplanationData;
 }) {
   return (
-    <section className="mt-4 rounded-xl border border-violet-200 bg-violet-50/70 p-3 text-xs text-slate-700">
-      <p className="flex items-center gap-1.5 font-bold text-violet-900">
-        <Sparkles className="h-3.5 w-3.5" /> Phân tích chi tiết
+    <section className="mt-4 rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50/80 via-white to-cyan-50/60 p-4 text-xs text-slate-700 shadow-2xs">
+      <p className="flex items-center gap-1.5 font-bold text-teal-900">
+        <Sparkles className="h-3.5 w-3.5 text-teal-600" /> Phân tích chi tiết AI
       </p>
       <p className="mt-2 leading-relaxed text-slate-700">{explanation.reason}</p>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -34,7 +34,7 @@ function ExplanationList({
   return (
     <div>
       <p className="flex items-center gap-1 font-bold text-slate-800">
-        <Icon className="h-3.5 w-3.5 text-violet-700" /> {label}
+        <Icon className="h-3.5 w-3.5 text-teal-700" /> {label}
       </p>
       <ul className="mt-1.5 space-y-1 text-slate-600">
         {values.map((value) => (

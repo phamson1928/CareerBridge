@@ -1,6 +1,8 @@
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import {
+  Check,
+  ChevronDown,
   Edit3,
   ExternalLink,
   FileText,
@@ -449,36 +451,38 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
     : profile?.major || "Chưa cập nhật";
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
+    <div className="space-y-6 w-full">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
+        <div className="student-profile-cover flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left gap-4 border-b border-slate-100 pb-6">
+          <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:text-left gap-4">
             <ProfileAvatarPreview
               fileId={profile?.avatarFileId}
               fallback={profile?.fullName.charAt(0) || "S"}
-              className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-tr from-indigo-600 to-emerald-500 text-xl font-black text-white"
+              className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-tr from-[#008b8f] to-emerald-500 text-xl font-black text-white shadow-md shadow-teal-900/20 shrink-0"
               imageClassName="h-full w-full object-cover"
             />
             <div>
               <h2 className="text-xl font-extrabold text-slate-900">
                 {profile?.fullName || "Hoàn thiện hồ sơ sinh viên"}
               </h2>
-              <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-indigo-600">
-                <GraduationCap className="h-4 w-4" />
-                {profile
-                  ? `${majorDisplay} · ${facultyDisplay}`
-                  : "Thông tin hồ sơ được lưu trực tiếp trên hệ thống."}
+              <p className="mt-1 flex items-center justify-center sm:justify-start gap-1 text-xs font-semibold text-teal-600">
+                <GraduationCap className="h-4 w-4 shrink-0" />
+                <span>
+                  {profile
+                    ? `${majorDisplay} · ${facultyDisplay}`
+                    : "Thông tin hồ sơ được lưu trực tiếp trên hệ thống."}
+                </span>
               </p>
             </div>
           </div>
-
           {profile && !isEditing && (
             <button
+              type="button"
               onClick={() => setIsEditing(true)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-800 hover:bg-slate-200"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-800 transition cursor-pointer shadow-2xs self-center sm:self-auto shrink-0"
             >
-              <Edit3 className="h-4 w-4" />
-              Chỉnh sửa
+              <Edit3 className="h-4 w-4 text-teal-600" />
+              Chỉnh sửa hồ sơ
             </button>
           )}
         </div>
@@ -593,10 +597,10 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
                 className="w-full rounded-xl border border-slate-300 p-2.5"
               />
             </div>
-            <div className="flex gap-2 md:col-span-2">
+            <div className="flex gap-2.5 md:col-span-2 pt-2">
               <button
                 disabled={isSaving}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[#00a3a6] to-[#006d72] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 disabled:opacity-50 transition-all"
               >
                 <Save className="h-4 w-4" />
                 {profile ? "Lưu thay đổi" : "Tạo hồ sơ"}
@@ -608,7 +612,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
                     applyProfile(profile);
                     setIsEditing(false);
                   }}
-                  className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold"
+                  className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-2xs"
                 >
                   Hủy
                 </button>
@@ -649,7 +653,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
 
       {profile && (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-          <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="mb-5 flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left gap-3">
             <div>
               <h3 className="text-lg font-extrabold text-slate-900">
                 Dự án cá nhân
@@ -665,7 +669,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
                   setProjectForm(emptyProject);
                   setShowProjectForm(true);
                 }}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white"
+                className="inline-flex items-center gap-2 rounded-xl bg-teal-700 hover:bg-teal-800 px-3.5 py-2 text-xs font-bold text-white transition self-center sm:self-auto cursor-pointer"
               >
                 <Plus className="h-4 w-4" /> Thêm dự án
               </button>
@@ -835,8 +839,8 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
       )}
 
       {profile && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-          <div className="mb-4">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
+          <div className="mb-4 text-center sm:text-left">
             <h3 className="text-lg font-extrabold text-slate-900">Kỹ năng</h3>
             <p className="text-xs text-slate-500">
               Chọn kỹ năng và cấp độ thực tế của bạn.
@@ -869,46 +873,42 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
                 className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2"
               >
                 <span className="text-sm font-semibold">{item.name}</span>
-                <select
+                <SkillLevelDropdown
                   value={item.level}
-                  onChange={(e) =>
+                  onChange={(level) =>
                     setStudentSkills((prev) =>
                       prev.map((current) =>
                         current.skillId === item.skillId
-                          ? { ...current, level: e.target.value as SkillLevel }
+                          ? { ...current, level }
                           : current,
                       ),
                     )
                   }
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs"
-                >
-                  <option value="BEGINNER">Beginner</option>
-                  <option value="INTERMEDIATE">Intermediate</option>
-                  <option value="ADVANCED">Advanced</option>
-                  <option value="EXPERT">Expert</option>
-                </select>
+                />
               </div>
             ))}
           </div>
-          <button
-            onClick={() => void saveSkills()}
-            disabled={savingSkills}
-            className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-          >
-            {savingSkills ? "Đang lưu..." : "Lưu kỹ năng"}
-          </button>
+          <div className="mt-4 flex justify-center sm:justify-start">
+            <button
+              onClick={() => void saveSkills()}
+              disabled={savingSkills}
+              className="rounded-xl bg-teal-700 hover:bg-teal-800 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-50 cursor-pointer"
+            >
+              {savingSkills ? "Đang lưu..." : "Lưu kỹ năng"}
+            </button>
+          </div>
         </section>
       )}
 
       {profile && (
-        <section className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="rounded-xl bg-indigo-600 p-2.5 text-white">
+        <section className="rounded-2xl border border-teal-200/80 bg-teal-50/40 p-5 sm:p-6">
+          <div className="mb-4 flex flex-col items-center text-center sm:flex-row sm:items-center sm:text-left gap-3">
+            <div className="rounded-xl bg-teal-700 p-2.5 text-white">
               <FileText className="h-5 w-5" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">CV của bạn</h3>
-              <p className="text-xs text-indigo-900">
+              <p className="text-xs text-teal-800">
                 File được lưu riêng tư và truy cập bằng signed URL.
               </p>
             </div>
@@ -921,7 +921,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
             onRemove={() => void removeCv()}
           />
           {isSaving && (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-slate-500 text-center sm:text-left">
               Đang lưu liên kết CV...
             </p>
           )}
@@ -929,18 +929,117 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
       )}
 
       {profile && (
-        <button
-          onClick={() => void deleteProfile()}
-          disabled={isSaving}
-          className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-        >
-          <Trash2 className="h-4 w-4" />
-          Xóa hồ sơ
-        </button>
+        <div className="flex justify-center sm:justify-start pt-2">
+          <button
+            onClick={() => void deleteProfile()}
+            disabled={isSaving}
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50 cursor-pointer"
+          >
+            <Trash2 className="h-4 w-4" />
+            Xóa hồ sơ
+          </button>
+        </div>
       )}
     </div>
   );
 };
+
+const SKILL_LEVEL_OPTIONS: Array<{
+  value: SkillLevel;
+  label: string;
+  dotColor: string;
+}> = [
+  { value: "BEGINNER", label: "Beginner", dotColor: "bg-sky-500" },
+  { value: "INTERMEDIATE", label: "Intermediate", dotColor: "bg-teal-500" },
+  { value: "ADVANCED", label: "Advanced", dotColor: "bg-indigo-500" },
+  { value: "EXPERT", label: "Expert", dotColor: "bg-emerald-500" },
+];
+
+function SkillLevelDropdown({
+  value,
+  onChange,
+}: {
+  value: SkillLevel;
+  onChange: (level: SkillLevel) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectedOption =
+    SKILL_LEVEL_OPTIONS.find((opt) => opt.value === value) ??
+    SKILL_LEVEL_OPTIONS[0];
+
+  useEffect(() => {
+    function handleDocumentClick(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleDocumentClick);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block text-left" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="inline-flex items-center justify-between gap-2.5 rounded-full border border-teal-200/90 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-teal-400 hover:bg-teal-50/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20 active:scale-95 transition-all cursor-pointer"
+      >
+        <span className="flex items-center gap-1.5">
+          <span className={`h-2 w-2 rounded-full ${selectedOption.dotColor}`} />
+          {selectedOption.label}
+        </span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-teal-600" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1.5 z-40 w-44 origin-top-right rounded-2xl border border-slate-200 !bg-white p-1.5 shadow-2xl shadow-slate-900/15 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
+            Trình độ kỹ năng
+          </div>
+          {SKILL_LEVEL_OPTIONS.map((opt) => {
+            const isSelected = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`flex w-full items-center justify-between !rounded-xl !border-0 px-2.5 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+                  isSelected
+                    ? "!bg-teal-50 text-teal-900 font-bold"
+                    : "text-slate-600 hover:!bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${opt.dotColor}`} />
+                  <span>{opt.label}</span>
+                </span>
+                {isSelected && (
+                  <Check className="h-3.5 w-3.5 text-teal-600 shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Field({
   label,

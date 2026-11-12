@@ -90,7 +90,7 @@ export const CvUpload: React.FC<CvUploadProps> = ({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-indigo-900 font-semibold">
+      <p className="text-xs text-teal-900 font-bold">
         {fileName || "Chưa tải CV lên hệ thống"}
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -98,12 +98,12 @@ export const CvUpload: React.FC<CvUploadProps> = ({
           type="file"
           accept=".pdf,.doc,.docx"
           onChange={selectFile}
-          className="w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-700"
+          className="w-full text-xs text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-teal-50 file:px-3.5 file:py-2 file:text-xs file:font-bold file:text-teal-700"
         />
         <button
           onClick={() => void uploadCv()}
           disabled={!selectedFile || isUploading}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[#00a3a6] to-[#006d72] px-4 py-2 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
         >
           {isUploading ? (
             <LoaderCircle className="w-4 h-4 animate-spin" />
@@ -118,7 +118,7 @@ export const CvUpload: React.FC<CvUploadProps> = ({
               <button
                 onClick={() => void previewCv()}
                 disabled={isPreviewing}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 disabled:opacity-50"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-teal-200 bg-white px-4 py-2 text-xs font-bold text-teal-800 hover:bg-teal-50 shadow-2xs transition-all disabled:opacity-50"
               >
                 {isPreviewing ? (
                   <LoaderCircle className="w-4 h-4 animate-spin" />
@@ -131,7 +131,7 @@ export const CvUpload: React.FC<CvUploadProps> = ({
             <button
               onClick={() => void downloadCv()}
               disabled={isDownloading}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 disabled:opacity-50"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-teal-200 bg-white px-4 py-2 text-xs font-bold text-teal-800 hover:bg-teal-50 shadow-2xs transition-all disabled:opacity-50"
             >
               {isDownloading ? (
                 <LoaderCircle className="w-4 h-4 animate-spin" />
@@ -144,7 +144,7 @@ export const CvUpload: React.FC<CvUploadProps> = ({
               <button
                 type="button"
                 onClick={onRemove}
-                className="inline-flex shrink-0 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700"
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all"
               >
                 Gỡ CV
               </button>

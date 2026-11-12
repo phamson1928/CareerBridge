@@ -13,6 +13,7 @@ interface SkillPickerProps {
   multiple?: boolean;
   placeholder?: string;
   className?: string;
+  variant?: 'indigo' | 'teal';
 }
 
 export const SkillPicker: React.FC<SkillPickerProps> = ({
@@ -21,6 +22,7 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
   multiple = false,
   placeholder = "Tìm kỹ năng...",
   className = "",
+  variant = 'indigo',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
@@ -29,6 +31,8 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const isTeal = variant === 'teal';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,24 +92,38 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
 
   return (
     <div ref={containerRef} className={`relative min-w-0 ${className}`}>
-      <div className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2 py-1.5 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
+      <div
+        className={`flex min-h-11 flex-wrap items-center gap-1.5 px-3 py-1.5 transition-all ${
+          isTeal
+            ? "rounded-xl border border-slate-200 bg-slate-50/70 hover:border-slate-300 focus-within:border-teal-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-teal-500/10"
+            : "rounded-xl border border-slate-300 bg-white focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100"
+        }`}
+      >
         {selected.map((skill) => (
           <span
             key={skill.id}
-            className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-2 py-1 text-[11px] font-bold text-indigo-700"
+            className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold ${
+              isTeal
+                ? "border border-teal-200/80 bg-teal-50 text-teal-800"
+                : "bg-indigo-50 text-indigo-700"
+            }`}
           >
             {skill.name}
             <button
               type="button"
               onClick={() => onChange(selected.filter((item) => item.id !== skill.id))}
-              className="rounded p-0.5 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-700"
+              className={`rounded p-0.5 ${
+                isTeal
+                  ? "text-teal-600 hover:bg-teal-100 hover:text-teal-900"
+                  : "text-indigo-400 hover:bg-indigo-100 hover:text-indigo-700"
+              }`}
               aria-label={`Bỏ kỹ năng ${skill.name}`}
             >
               <X className="h-3 w-3" />
             </button>
           </span>
         ))}
-        <Search className="ml-1 h-4 w-4 shrink-0 text-slate-400" />
+        <Search className={`ml-1 h-4 w-4 shrink-0 ${isTeal ? "text-teal-600" : "text-slate-400"}`} />
         <input
           value={query}
           onFocus={() => setIsOpen(true)}
@@ -114,16 +132,29 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
             setIsOpen(true);
           }}
           placeholder={selected.length && !multiple ? "Đổi kỹ năng..." : placeholder}
-          className="min-w-32 flex-1 bg-transparent py-1 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+          style={{ border: 'none', boxShadow: 'none', outline: 'none' }}
+          className="sb-bare-input min-w-32 flex-1 bg-transparent py-1 text-sm text-slate-800 outline-none placeholder:text-slate-400"
           aria-label={placeholder}
         />
       </div>
       {isOpen && (
-        <div className="absolute left-0 top-full z-[100] mt-1.5 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/10">
+        <div
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="no-scrollbar absolute left-0 top-full z-[100] mt-1.5 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/10"
+        >
           {isLoading ? (
             <p className="px-3 py-2 text-xs text-slate-500">Đang tìm kỹ năng...</p>
           ) : loadError ? (
-            <div className="px-3 py-2 text-xs text-rose-700"><p>{loadError}</p><button type="button" onClick={() => setReloadKey((value) => value + 1)} className="mt-2 font-bold text-indigo-700 hover:text-indigo-900">Thử lại</button></div>
+            <div className="px-3 py-2 text-xs text-rose-700">
+              <p>{loadError}</p>
+              <button
+                type="button"
+                onClick={() => setReloadKey((value) => value + 1)}
+                className={`mt-2 font-bold ${isTeal ? "text-teal-700 hover:text-teal-900" : "text-indigo-700 hover:text-indigo-900"}`}
+              >
+                Thử lại
+              </button>
+            </div>
           ) : options.length === 0 ? (
             <p className="px-3 py-2 text-xs text-slate-500">Không có kỹ năng phù hợp.</p>
           ) : (
@@ -134,10 +165,18 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
                   key={skill.id}
                   type="button"
                   onClick={() => toggle(skill)}
-                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${selectedOption ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-50"}`}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
+                    selectedOption
+                      ? isTeal
+                        ? "bg-teal-50 text-teal-800 font-bold"
+                        : "bg-indigo-50 text-indigo-700"
+                      : isTeal
+                        ? "text-slate-700 hover:bg-teal-50/50"
+                        : "text-slate-700 hover:bg-slate-50"
+                  }`}
                 >
                   {skill.name}
-                  {selectedOption && <Check className="h-4 w-4" />}
+                  {selectedOption && <Check className={`h-4 w-4 ${isTeal ? "text-teal-700" : ""}`} />}
                 </button>
               );
             })

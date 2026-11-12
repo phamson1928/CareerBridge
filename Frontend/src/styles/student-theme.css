@@ -1,0 +1,521 @@
+/* ==========================================================================
+   CareerBridge – Student workspace design system ("Aurora Bento")
+   Inspired by modern SaaS layouts (glass navbar, aurora glow, bento cards,
+   pill controls) while keeping the CareerBridge teal palette.
+   Everything here is scoped to `.role-student` so Teacher / Company / Admin
+   workspaces keep their current look. Presentation only – no logic changes.
+   ========================================================================== */
+
+.role-student {
+  --sb-teal: #008b8f;
+  --sb-teal-600: #00a3a6;
+  --sb-deep: #006d72;
+  --sb-ink: #0b2428;
+  --sb-ink-2: #0f3237;
+  --sb-mist: #e9f7f7;
+  --sb-line: rgb(0 139 143 / 0.14);
+  --sb-line-strong: rgb(0 139 143 / 0.38);
+  --sb-glow: 0 0 0 1px rgb(0 139 143 / 0.18), 0 18px 40px -18px rgb(0 109 114 / 0.35);
+  --sb-radius: 1.25rem;
+
+  position: relative;
+  isolation: isolate;
+  background-color: #f2f6f7 !important;
+}
+
+/* Aurora glow + faint engineering grid behind the whole workspace */
+.role-student::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 28rem at 12% -6%, rgb(0 163 166 / 0.16), transparent 60%),
+    radial-gradient(48rem 26rem at 92% 4%, rgb(16 185 129 / 0.10), transparent 62%),
+    radial-gradient(40rem 30rem at 50% 110%, rgb(0 139 143 / 0.08), transparent 60%);
+}
+.role-student::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgb(0 109 114 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 109 114 / 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 75%);
+}
+
+.role-student ::selection { background: var(--sb-teal); color: #fff; }
+
+/* --------------------------------------------------------------------------
+   1. Floating glass capsule navbar (NeuralBuilder style)
+   -------------------------------------------------------------------------- */
+.role-student .student-capsule-navbar {
+  background: rgb(255 255 255 / 0.94);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgb(0 139 143 / 0.22);
+  box-shadow: 0 16px 40px -16px rgb(0 80 84 / 0.25), 0 0 0 1px rgb(255 255 255 / 0.6) inset;
+  border-radius: 9999px;
+  transition: all 0.25s ease;
+}
+.role-student .student-capsule-navbar:hover {
+  border-color: rgb(0 139 143 / 0.4);
+  box-shadow: 0 20px 48px -16px rgb(0 80 84 / 0.32), 0 0 0 1px rgb(255 255 255 / 0.8) inset;
+}
+
+/* --------------------------------------------------------------------------
+   2. Main surface: bento cards
+   -------------------------------------------------------------------------- */
+.role-student main {
+  position: relative;
+  max-width: 1240px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+}
+.role-student main:not(.student-home-main) {
+  padding-top: 5.25rem !important;
+  padding-bottom: 2.5rem;
+}
+@media (min-width: 1024px) {
+  .role-student main:not(.student-home-main) {
+    padding-top: 7rem !important;
+  }
+}
+.role-student main.student-home-main,
+.role-student main:has(.student-hero-hub) {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+.role-student main.student-home-main > div:first-child,
+.role-student main:has(.student-hero-hub) > div:first-child {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+.role-student .student-hero-hub {
+  margin-top: 0 !important;
+  top: 0 !important;
+}
+
+.role-student main :is(section, div, form, article).bg-white:is(.rounded-2xl, .rounded-3xl) {
+  border-color: var(--sb-line) !important;
+  border-radius: var(--sb-radius);
+  /* No backdrop-filter here: it would become a containing block and trap
+     non-portaled `fixed` modals rendered inside cards. */
+  background: #ffffff !important;
+  box-shadow: 0 1px 2px rgb(0 60 64 / 0.04), 0 12px 32px -22px rgb(0 80 84 / 0.30);
+  transition: border-color .25s ease, box-shadow .25s ease, transform .25s cubic-bezier(.16,1,.3,1);
+}
+.role-student main :is(section, div, article).bg-white:is(.rounded-2xl, .rounded-3xl):hover {
+  border-color: rgb(0 139 143 / 0.24) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Dropdowns, Popovers, Modals & Menus (100% Solid White, tuyệt đối không xuyên thấu)
+   -------------------------------------------------------------------------- */
+.role-student :is([role="menu"], [role="dialog"], [data-dropdown], .notification-hover-card),
+.role-student .student-capsule-navbar [class*="absolute"] > div,
+.role-student main [class*="absolute"] > div:not(.bg-slate-200):not([class*="bg-teal"]):not([class*="bg-rose"]) {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 20px 35px -10px rgb(0 0 0 / 0.15), 0 1px 3px rgb(0 0 0 / 0.08) !important;
+}
+.role-student main .border-dashed.bg-white { background: rgb(255 255 255 / 0.6) !important; border-color: rgb(0 139 143 / 0.28) !important; }
+
+/* Small chips / badges become pills */
+.role-student main span.rounded-md,
+.role-student main span.rounded-lg { border-radius: 999px; }
+
+/* Primary buttons: gradient pills with soft glow */
+.role-student main button:is(.bg-teal-700, .bg-teal-600, .bg-indigo-600, .bg-blue-600, .bg-emerald-600) {
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, var(--sb-teal-600) 0%, var(--sb-teal) 45%, var(--sb-deep) 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 20px -10px rgb(0 139 143 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.22);
+  transition: box-shadow .2s ease, transform .2s ease, filter .2s ease;
+}
+.role-student main button:is(.bg-teal-700, .bg-teal-600, .bg-indigo-600, .bg-blue-600, .bg-emerald-600):hover:not(:disabled) {
+  filter: brightness(1.05);
+  box-shadow: 0 0 0 4px rgb(0 139 143 / 0.12), 0 12px 26px -10px rgb(0 139 143 / 0.8);
+}
+
+/* Secondary / outline buttons */
+.role-student main button:is(.border-slate-300, .border-slate-200, .bg-slate-100):not(.bg-teal-700) {
+  border-radius: 999px;
+}
+.role-student main button:is(.border-slate-300, .border-slate-200, .bg-slate-100):not(.bg-teal-700):hover:not(:disabled) {
+  border-color: var(--sb-line-strong) !important;
+  color: var(--sb-deep) !important;
+  background-color: #f2fbfb !important;
+}
+
+/* Form controls */
+.role-student main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+  border-color: rgb(0 109 114 / 0.18);
+  border-radius: 0.9rem;
+  background-color: #ffffff !important;
+}
+.role-student main select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+.role-student main :is(input, select, textarea):focus {
+  border-color: var(--sb-teal) !important;
+  box-shadow: 0 0 0 4px rgb(0 139 143 / 0.12) !important;
+  outline: none;
+}
+
+/* Tables */
+.role-student main thead tr { background: linear-gradient(90deg, #f1fafa, #f7fbfb); }
+.role-student main thead th { color: #3f6266; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+
+/* --------------------------------------------------------------------------
+   3. Modern SaaS Open Canvas Page Header (Clean borderless typography)
+   -------------------------------------------------------------------------- */
+.role-student main .student-page-header {
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0.25rem 0 0.5rem 0 !important;
+}
+.role-student main .student-page-header::before,
+.role-student main .student-page-header::after {
+  display: none !important;
+}
+
+.role-student main .student-page-header :is(h1, h2) {
+  color: #0f172a !important;
+  letter-spacing: -0.025em;
+  font-weight: 900;
+}
+
+.role-student main .student-page-header p {
+  color: #64748b !important;
+}
+
+/* Eyebrow badge inside header */
+.role-student main .student-page-header .inline-flex.rounded-full {
+  background: rgb(0 139 143 / 0.08) !important;
+  border-color: rgb(0 139 143 / 0.22) !important;
+  color: #006d72 !important;
+  font-weight: 800;
+}
+.role-student main .student-page-header .inline-flex.rounded-full svg {
+  color: #008b8f !important;
+}
+
+/* Metric / counter pills inside header */
+.role-student main .student-page-header span.rounded-xl,
+.role-student main .student-page-header span.rounded-full {
+  background: #ffffff !important;
+  border: 1px solid rgb(0 139 143 / 0.18) !important;
+  color: #006d72 !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+/* Form selects inside header */
+.role-student main .student-page-header select {
+  background: #ffffff !important;
+  border: 1px solid rgb(0 109 114 / 0.20) !important;
+  color: #1e293b !important;
+  border-radius: 999px !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+/* Outline buttons inside header */
+.role-student main .student-page-header button:not(.bg-teal-700):not(.bg-gradient-to-br):not(.bg-gradient-to-r) {
+  background: #ffffff !important;
+  border: 1px solid rgb(0 109 114 / 0.22) !important;
+  color: #006d72 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+.role-student main .student-page-header button:not(.bg-teal-700):not(.bg-gradient-to-br):not(.bg-gradient-to-r):hover {
+  background: #f0fdfa !important;
+  border-color: rgb(0 139 143 / 0.45) !important;
+  color: #004d50 !important;
+}
+
+/* Profile cover strip inside the profile card */
+.role-student main .student-profile-cover {
+  position: relative;
+  background: transparent;
+}
+.role-student main .student-profile-cover h2 {
+  color: #0f172a !important;
+}
+.role-student main .student-profile-cover p {
+  color: #0d9488 !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Internship hub (home page) building blocks
+   -------------------------------------------------------------------------- */
+.sb-hero-overlay {
+  background:
+    linear-gradient(90deg, rgb(6 24 27 / 0.88) 0%, rgb(6 24 27 / 0.52) 36%, transparent 68%),
+    linear-gradient(180deg, rgb(6 24 27 / 0.15) 0%, transparent 28%, transparent 68%, rgb(6 24 27 / 0.96) 100%),
+    radial-gradient(48rem 22rem at 25% 100%, rgb(0 163 166 / 0.25), transparent 60%);
+}
+.sb-glass-dark {
+  background: rgb(10 36 40 / 0.55);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.sb-stat-value {
+  background: linear-gradient(180deg, #ffffff 30%, #99f6e4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.sb-scroll-cue { animation: sb-bounce 1.8s ease-in-out infinite; }
+@keyframes sb-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+/* Live beacon ring */
+@keyframes sb-beacon-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+.sb-beacon {
+  animation: sb-beacon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Ambient breathing aurora orbs */
+@keyframes sb-orb-pulse {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.35; }
+  50% { transform: scale(1.18) translate(20px, -15px); opacity: 0.6; }
+}
+@keyframes sb-orb-pulse-2 {
+  0%, 100% { transform: scale(1.15) translate(0, 0); opacity: 0.22; }
+  50% { transform: scale(0.92) translate(-25px, 15px); opacity: 0.48; }
+}
+.sb-ambient-orb {
+  animation: sb-orb-pulse 8s ease-in-out infinite;
+}
+.sb-ambient-orb-2 {
+  animation: sb-orb-pulse-2 10s ease-in-out infinite;
+}
+
+/* Shimmering CTA button */
+@keyframes sb-shimmer {
+  0% { transform: translateX(-160%) skewX(-20deg); }
+  30%, 100% { transform: translateX(280%) skewX(-20deg); }
+}
+.sb-btn-glow {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 25px -4px rgb(0 163 166 / 0.7), 0 12px 28px -8px rgb(0 109 114 / 0.55);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sb-btn-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 35px 2px rgb(0 196 199 / 0.85), 0 16px 36px -8px rgb(0 109 114 / 0.7);
+}
+.sb-btn-glow::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: 0;
+  width: 45%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
+  animation: sb-shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Secondary CV button with glass shimmer and neon pulse */
+.sb-btn-cv {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgb(10 36 40 / 0.65) 0%, rgb(0 163 166 / 0.15) 100%);
+  border: 1px solid rgb(0 196 199 / 0.32);
+  box-shadow: 0 4px 20px -4px rgb(0 163 166 / 0.25), 0 0 0 1px rgb(255 255 255 / 0.08) inset;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sb-btn-cv:hover {
+  transform: translateY(-2px);
+  border-color: rgb(0 196 199 / 0.75) !important;
+  background: linear-gradient(135deg, rgb(12 44 49 / 0.85) 0%, rgb(0 196 199 / 0.28) 100%) !important;
+  box-shadow: 0 8px 30px -4px rgb(0 196 199 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.25) inset;
+}
+.sb-btn-cv::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: 0;
+  width: 45%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  animation: sb-shimmer 4.5s ease-in-out 1.5s infinite;
+  pointer-events: none;
+}
+
+/* Stat Card Hover Effects */
+.sb-stat-card {
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sb-stat-card:hover {
+  transform: translateY(-4px);
+  border-color: rgb(0 196 199 / 0.48) !important;
+  background: rgb(10 36 40 / 0.78) !important;
+  box-shadow: 0 16px 36px -12px rgb(0 163 166 / 0.45), 0 0 0 1px rgb(0 196 199 / 0.25) inset;
+}
+.sb-stat-card:hover .sb-stat-icon {
+  transform: scale(1.08);
+  border-color: rgb(0 196 199 / 0.6) !important;
+  background: rgb(0 163 166 / 0.2) !important;
+  color: #fff !important;
+}
+
+/* Staggered entrance */
+@keyframes sb-fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.sb-anim-1 { animation: sb-fade-slide-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
+.sb-anim-2 { animation: sb-fade-slide-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both; }
+.sb-anim-3 { animation: sb-fade-slide-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both; }
+.sb-anim-4 { animation: sb-fade-slide-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both; }
+.sb-anim-5 { animation: sb-fade-slide-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both; }
+
+.sb-hero-title {
+  background: linear-gradient(180deg, #ffffff 0%, #e6fffd 55%, #8be9e0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sb-section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  border-radius: 999px;
+  border: 1px solid var(--sb-line-strong, rgb(0 139 143 / .38));
+  background: rgb(255 255 255 / 0.7);
+  padding: .3rem .75rem;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #006d72;
+}
+
+/* Filter hub chips */
+.sb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  border-radius: 999px;
+  border: 1px solid rgb(0 109 114 / 0.18);
+  background: rgb(255 255 255 / 0.85);
+  padding: .45rem .9rem;
+  font-weight: 600;
+  color: #335559;
+  transition: all .18s ease;
+}
+.sb-chip:hover { border-color: rgb(0 139 143 / 0.45); color: #006d72; background: #f2fbfb; }
+.sb-chip[data-active="true"] {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, #00a3a6, #006d72);
+  box-shadow: 0 6px 16px -8px rgb(0 139 143 / 0.8);
+}
+.role-student main select.sb-chip { border-radius: 999px; padding-right: 2rem; }
+.role-student main select.sb-chip[data-active="true"] { border-color: transparent; }
+.role-student main select.sb-chip[data-active="true"] + svg { color: #fff; opacity: 1; }
+.role-student main select.sb-chip option { color: #0f172a; background: #fff; }
+.role-student main input.sb-bare-input,
+.role-student main input.sb-bare-input:focus {
+  border: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+
+/* Job bento card */
+.sb-job-card {
+  position: relative;
+  border-radius: 1.35rem;
+  border: 1px solid rgb(0 139 143 / 0.14);
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 1px 2px rgb(0 60 64 / 0.04), 0 14px 34px -24px rgb(0 80 84 / 0.35);
+  transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s ease, border-color .3s ease;
+}
+.sb-job-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgb(0 196 199 / 0.9), rgb(16 185 129 / 0.0) 40%, rgb(16 185 129 / 0.0) 60%, rgb(0 139 143 / 0.8));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity .3s ease;
+  pointer-events: none;
+}
+.sb-job-card:hover {
+  transform: translateY(-4px);
+  border-color: transparent;
+  box-shadow: 0 24px 48px -26px rgb(0 109 114 / 0.55);
+}
+.sb-job-card:hover::before { opacity: 1; }
+.sb-job-card .sb-card-glow {
+  position: absolute;
+  right: -3rem; top: -3rem;
+  width: 10rem; height: 10rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgb(0 196 199 / 0.22), transparent 70%);
+  opacity: 0;
+  transition: opacity .3s ease;
+  pointer-events: none;
+}
+.sb-job-card:hover .sb-card-glow { opacity: 1; }
+.sb-job-card .sb-arrow { transition: transform .2s ease; }
+.sb-job-card:hover .sb-arrow { transform: translateX(3px); }
+
+.sb-match-ring {
+  --p: 0;
+  background: conic-gradient(#00a3a6 calc(var(--p) * 1%), rgb(0 139 143 / 0.12) 0);
+}
+
+/* Pulse dot for deadlines / live status */
+.sb-live-dot { position: relative; }
+.sb-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .35;
+  animation: sb-ping 1.6s cubic-bezier(0, 0, .2, 1) infinite;
+}
+@keyframes sb-ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-scroll-cue, .sb-live-dot::after { animation: none !important; }
+  .sb-job-card, .sb-job-card:hover { transform: none !important; }
+}

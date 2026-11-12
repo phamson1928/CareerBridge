@@ -45,7 +45,7 @@ export function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <AuthLayout>
+    <AuthLayout hideMobileSwitch>
       <div className="login-form-panel" aria-hidden="true">
         <div className="login-title-wrap">
           <h1>Đăng nhập</h1>

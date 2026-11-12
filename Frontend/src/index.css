@@ -1,12 +1,24 @@
 @import "tailwindcss";
 @import "./pages/auth-visual.css";
+@import "./styles/student-theme.css";
 
 /* CareerBridge design system for the three user workspaces.  These scopes only
    change presentation; the existing component structure and workflows remain intact. */
 :root { --cb-teal: #008b8f; --cb-deep: #006d72; --cb-mist: #e9f7f7; --cb-ink: #12353b; }
 
 .role-student, .role-teacher, .role-company { background: #edf0f4; }
-.role-student main, .role-teacher main, .role-company main { max-width: 1440px; padding-top: 1.5rem; padding-bottom: 3rem; }
+.role-student main:not(.student-home-main) {
+  max-width: 1240px;
+  padding-top: 5.25rem !important;
+  padding-bottom: 2.5rem;
+}
+@media (min-width: 1024px) {
+  .role-student main:not(.student-home-main) {
+    padding-top: 7rem !important;
+  }
+}
+.role-student main.student-home-main { max-width: 1240px; padding-top: 0 !important; padding-bottom: 3rem; }
+.role-teacher main, .role-company main { max-width: 1440px; padding-top: 1.5rem; padding-bottom: 3rem; }
 .role-navbar { border-color: #e2e8f0; background: #ffffff; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04); }
 .role-navbar :is(#btn-chat-toggle, #btn-notifs-toggle) { color: #475569; }
 .role-navbar :is(#btn-chat-toggle, #btn-notifs-toggle):hover { border-color: #cbd5e1; background: #f8fafc; color: #0f172a; }
@@ -467,4 +479,33 @@ tbody tr:hover {
 .heat-tile-card:active {
   transform: scale(0.99) translateZ(0);
   transition-duration: 0.15s;
+}
+
+/* Ẩn thanh cuộn trên mọi trình duyệt nhưng vẫn cho phép cuộn */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* Ẩn hoàn toàn thanh cuộn hệ thống mặc định trong tất cả Modal/Dialog/Popup */
+.modal-scale-in,
+.modal-scale-in *,
+.modal-scale-in [class*="overflow-y-auto"],
+.modal-scale-in [class*="overflow-auto"] {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.modal-scale-in::-webkit-scrollbar,
+.modal-scale-in *::-webkit-scrollbar,
+.modal-scale-in [class*="overflow-y-auto"]::-webkit-scrollbar,
+.modal-scale-in [class*="overflow-auto"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }

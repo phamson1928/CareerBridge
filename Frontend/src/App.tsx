@@ -608,10 +608,14 @@ export default function App() {
       {/* Main Page Body Container with smooth page entrance animation */}
       <main
         key={`${currentRole}-${activeTab}`}
-        className={`flex-1 w-full mx-auto px-4 sm:px-6 py-6 page-fade-in ${
+        className={`flex-1 w-full mx-auto page-fade-in ${
           currentRole === "ADMIN"
-            ? "max-w-none lg:px-7 lg:py-8"
-            : "max-w-[1440px] lg:px-8"
+            ? "max-w-none px-4 sm:px-6 py-6 lg:px-7 lg:py-8"
+            : currentRole === "STUDENT"
+            ? activeTab === "internships" && Boolean(studentProfile)
+              ? "student-home-main max-w-[1240px] px-3.5 sm:px-6 lg:px-8 !pt-0 pb-6 flex flex-col items-center"
+              : "max-w-[1240px] px-3.5 sm:px-6 lg:px-8 pt-18 sm:pt-22 lg:pt-28 pb-8 flex flex-col items-center"
+            : "max-w-[1440px] px-4 sm:px-6 py-6 lg:px-8"
         }`}
       >
         {workflowError && (
@@ -633,6 +637,7 @@ export default function App() {
                   loadInternships={loadInternships}
                   onApply={handleApplyInternship}
                   onOpenProfile={() => setActiveTab("profile")}
+                  onOpenApplications={() => setActiveTab("applications")}
                 />
               ) : (
                 <ProfileRequiredNotice
@@ -654,7 +659,12 @@ export default function App() {
             {activeTab === "reports" && (
               <StudentReports onNavigateTab={handleTabChange} />
             )}
-            {activeTab === "placement" && <PlacementOverview />}
+            {activeTab === "placement" && (
+              <PlacementOverview
+                onNavigateTab={handleTabChange}
+                onOpenChat={() => setIsChatOpen(true)}
+              />
+            )}
             {activeTab === "evaluations" && <StudentEvaluations evaluations={evaluationRecords} />}
             {activeTab === "support" && <StudentSupportRequests />}
             {activeTab === "profile" && <StudentProfileView onProfileChange={handleStudentProfileChange} />}
