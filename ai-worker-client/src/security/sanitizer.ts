@@ -18,7 +18,7 @@ export class CvSanitizer {
   public static readonly MAX_CV_LENGTH = 15000;
 
   /**
-   * Danh sách Regex phát hiện các mẫu Prompt Injection nguy hiểm (Tiếng Anh & Tiếng Việt)
+   * Danh sách Regex phát hiện các mẫu Prompt Injection nguy hiểm (Tiếng Anh & Tiếng Việt có dấu + không dấu)
    */
   private static readonly INJECTION_PATTERNS: Array<{ name: string; regex: RegExp }> = [
     {
@@ -27,11 +27,11 @@ export class CvSanitizer {
     },
     {
       name: 'INSTRUCTION_OVERRIDE_VI',
-      regex: /bỏ\s+qua\s+(mọi|tất\s+cả)?\s*(hướng\s+dẫn|yêu\s+cầu|lệnh|quy\s+tắc)\s*(trước|ở\s+trên|này)?/i,
+      regex: /(bỏ|bo)\s+qua\s+(mọi|moi|tất\s+cả|tat\s+ca)?\s*(hướng\s+dẫn|huong\s+dan|yêu\s+cầu|yeu\s+cau|lệnh|lenh|quy\s+tắc|quy\s+tac)\s*(trước|truoc|ở\s+trên|o\s+tren|này|nay)?/i,
     },
     {
       name: 'SYSTEM_PROMPT_HIJACK',
-      regex: /(system\s*prompt|system\s*instruction|system\s*override|developer\s*mode|dan\s*mode)\s*:/i,
+      regex: /(system\s*(prompt\s*override|prompt|instruction|override)|developer\s*mode|dan\s*mode)\s*:/i,
     },
     {
       name: 'ROLE_HIJACK_EN',
@@ -39,7 +39,7 @@ export class CvSanitizer {
     },
     {
       name: 'ROLE_HIJACK_VI',
-      regex: /(từ\s+bây\s+giờ\s+bạn\s+là|bạn\s+hãy\s+đóng\s+vai|hãy\s+hành\s+xử\s+như)/i,
+      regex: /(từ|tu)\s+(bây|bay)\s+(giờ|gio)\s+(bạn|ban)\s+(là|la)|(bạn|ban)\s+(hãy|hay)\s+(đóng|dong)\s+vai|(hãy|hay)\s+(hành|hanh)\s+(xử|xu)\s+như/i,
     },
     {
       name: 'SCORE_FORCING_EN',
@@ -47,11 +47,23 @@ export class CvSanitizer {
     },
     {
       name: 'SCORE_FORCING_VI',
-      regex: /(đánh\s+giá|chấm|cho)\s*(tôi|ứng\s+viên\s+này)?\s*(là\s*)?(100\s*điểm|điểm\s+tuyệt\s+đối|strong_hire|khuyên\s+nên\s+tuyển)/i,
+      regex: /(đánh\s+giá|danh\s+gia|chấm|cham|cho)\s*(tôi|toi|ứng\s+viên|ung\s+vien)?\s*(là\s*|la\s*)?(100\s*điểm|100\s*diem|điểm\s+tuyệt\s+đối|diem\s+tuyet\s+doi|strong_hire|khuyên\s+nên\s+tuyển|khuyen\s+nen\s+tuyen)/i,
     },
     {
       name: 'JSON_DELIMITER_HIJACK',
       regex: /```\s*json/i,
+    },
+    {
+      name: 'XML_DELIMITER_ESCAPE',
+      regex: /<\/?(candidate_cv_content|system|instruction|prompt|context)[^>]*>/i,
+    },
+    {
+      name: 'XSS_HTML_PAYLOAD',
+      regex: /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>|<(img|iframe|svg|body|input|link|a)\b[^>]*\bon\w+\s*=/i,
+    },
+    {
+      name: 'SOCIAL_ENGINEERING_VIP',
+      regex: /(chủ\s*tịch|chu\s*tich|tổng\s*giám\s*đốc|tong\s*giam\s*doc|ban\s*giám\s*đốc|ban\s*giam\s*doc|lãnh\s*đạo|lanh\s*dao|con\s*trai|con\s*gái|con\s*gai|người\s*nhà|nguoi\s*nha).*(100\s*điểm|100\s*diem|strong_hire|bắt\s*buộc\s*phải|bat\s*buoc\s*phai)/i,
     },
   ];
 
@@ -68,6 +80,13 @@ export class CvSanitizer {
       };
     }
 
+    const detectedPatterns: string[] = [];
+
+    // 0. Phát hiện ký tự ẩn (Zero-width cloaking)
+    if (/[\u200B-\u200D\uFEFF]/.test(rawText)) {
+      detectedPatterns.push('ZERO_WIDTH_CLOAKING');
+    }
+
     // 1. Loại bỏ các ký tự vô hình (Zero-width spaces) và mã điều khiển nhị phân nguy hiểm
     let cleaned = rawText
       .replace(/[\u200B-\u200D\uFEFF]/g, '') // Zero-width spaces
@@ -77,10 +96,15 @@ export class CvSanitizer {
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
-    // 2. Quét phát hiện Prompt Injection
-    const detectedPatterns: string[] = [];
+    // 2. Quét phát hiện Prompt Injection (kiểm tra cả bản gốc và bản chuẩn hóa không dấu)
+    const unaccented = cleaned
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D');
+
     for (const item of this.INJECTION_PATTERNS) {
-      if (item.regex.test(cleaned)) {
+      if (item.regex.test(cleaned) || item.regex.test(unaccented)) {
         detectedPatterns.push(item.name);
       }
     }

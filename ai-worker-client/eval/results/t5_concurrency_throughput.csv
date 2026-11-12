@@ -1,0 +1,4 @@
+BatchConcurrency,TotalJobs,DurationSec,ThroughputJobsPerSec
+1,12,14.47,0.83
+2,12,7.25,1.66
+4,12,3.62,3.31

@@ -37,7 +37,7 @@ export class OllamaAiProvider implements AiProvider {
           options: {
             temperature: 0.2,
             top_p: 0.9,
-            num_predict: 600,
+            num_predict: 1000,
           },
         },
         {
@@ -75,7 +75,7 @@ export class OllamaAiProvider implements AiProvider {
     jobInfo: InternshipJobInfo,
     hasSuspiciousContent = false,
   ): string {
-    const requiredSkillsList = jobInfo.requiredSkills
+    const requiredSkillsList = (jobInfo.requiredSkills || [])
       .map((s) => `- ${s.name} (Bắt buộc: ${s.isRequired ? 'Có' : 'Không'}, Trọng số: ${s.weight})`)
       .join('\n');
 

@@ -1,0 +1,14 @@
+{
+  "id": "job-auto-003",
+  "title": "Kỹ sư Tự động hóa PLC/SCADA Intern",
+  "department": "Automation Engineering",
+  "description": "Lập trình PLC Siemens và thiết kế màn hình giám sát SCADA WinCC",
+  "requirements": "Lập trình PLC Siemens S7-1200/1500, TIA Portal, thiết kế SCADA WinCC.",
+  "workType": "ONSITE",
+  "requiredSkills": [
+    { "name": "PLC Siemens", "isRequired": true, "weight": 30 },
+    { "name": "TIA Portal", "isRequired": true, "weight": 30 },
+    { "name": "SCADA WinCC", "isRequired": true, "weight": 20 },
+    { "name": "EPLAN", "isRequired": false, "weight": 20 }
+  ]
+}

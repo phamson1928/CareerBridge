@@ -1,0 +1,10 @@
+File,Type,TextLength,DurationSec,AiScore,Recommendation,MatchedSkillsCount,MissingSkillsCount,JsonValid
+"CV_LeThiThuHuong_QAQC_FoodTech.pdf","PDF",430,6.95,60,"POTENTIAL",4,2,true
+"CV_NguyenMinhKhang_Backend_HighMatch.pdf","PDF",439,4.53,90,"STRONG_HIRE",5,2,true
+"CV_PhamHoangSon_FullStackDeveloper.pdf","PDF",2793,7.58,95,"STRONG_HIRE",5,2,true
+"CV_VoVanTuan_Automation_PLC.pdf","PDF",421,3.8,45,"NOT_RECOMMENDED",3,2,true
+"Hồ sơ Xin việc Khoa học và Kỹ thuật Trắng Đen Phong cách Đơn giản.pdf","PDF",1415,3.62,85,"STRONG_HIRE",5,0,true
+"Hồ sơ xin việc Khoa học và Kỹ thuật Đỏ tươi Kem Phong cách Nổi bật.pdf","PDF",1652,5.66,55,"POTENTIAL",5,1,true
+"CV_DangQuocBao_Frontend.docx","DOCX",245,4.29,75,"POTENTIAL",5,3,true
+"CV_HoangVanDat_PLC_Automation.docx","DOCX",286,4.19,20,"NOT_RECOMMENDED",3,2,true
+"CV_NguyenThiMai_QAQC_Food.docx","DOCX",287,3.74,40,"NOT_RECOMMENDED",3,2,true

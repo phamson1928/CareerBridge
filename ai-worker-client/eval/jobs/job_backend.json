@@ -1,0 +1,15 @@
+{
+  "id": "job-backend-001",
+  "title": "Backend NodeJS/NestJS Intern",
+  "department": "Engineering",
+  "description": "Phát triển REST API hệ thống backend với NestJS và PostgreSQL",
+  "requirements": "TypeScript, NestJS, PostgreSQL, RESTful API, Docker, Git cơ bản.",
+  "workType": "HYBRID",
+  "requiredSkills": [
+    { "name": "TypeScript", "isRequired": true, "weight": 25 },
+    { "name": "NestJS", "isRequired": true, "weight": 25 },
+    { "name": "PostgreSQL", "isRequired": true, "weight": 20 },
+    { "name": "Docker", "isRequired": false, "weight": 15 },
+    { "name": "Git", "isRequired": false, "weight": 15 }
+  ]
+}

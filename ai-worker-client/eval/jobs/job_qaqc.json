@@ -1,0 +1,14 @@
+{
+  "id": "job-qaqc-002",
+  "title": "QA/QC Kiểm soát chất lượng Thực phẩm Intern",
+  "department": "Quality Assurance",
+  "description": "Kiểm tra chất lượng mẫu thực phẩm, giám sát tuân thủ tiêu chuẩn an toàn",
+  "requirements": "Hiểu biết về ISO 22000, HACCP, GMP, quy trình kiểm nghiệm thực phẩm.",
+  "workType": "ONSITE",
+  "requiredSkills": [
+    { "name": "ISO 22000", "isRequired": true, "weight": 30 },
+    { "name": "HACCP", "isRequired": true, "weight": 30 },
+    { "name": "GMP", "isRequired": true, "weight": 20 },
+    { "name": "Kiểm nghiệm vi sinh", "isRequired": false, "weight": 20 }
+  ]
+}
