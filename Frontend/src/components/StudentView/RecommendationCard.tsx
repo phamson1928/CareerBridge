@@ -63,9 +63,6 @@ export function RecommendationCard({
           <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-0.5 text-[11px] border border-slate-200 text-slate-600">
             <MapPin className="h-3 w-3 text-slate-400" /> {internship.location}
           </span>
-          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200">
-            Kỹ năng {recommendation.skillScore}%
-          </span>
           {recommendation.explanationStatus === 'AI' && (
             <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-0.5 text-[11px] font-bold text-cyan-800 border border-cyan-200">
               <CheckCircle2 className="h-3 w-3 text-cyan-600" /> Đã đối sánh

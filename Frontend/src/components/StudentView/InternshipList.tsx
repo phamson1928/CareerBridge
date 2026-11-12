@@ -268,7 +268,6 @@ export const InternshipList: React.FC<InternshipListProps> = ({
       onClick: onOpenProfile,
     },
   ];
-  const isMyMajorActive = Boolean(studentProfile.majorId) && selectedMajorId === studentProfile.majorId;
 
   return (
     <div className="w-full space-y-8">
@@ -398,9 +397,9 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 
       {/* Filter Hub: Thanh tìm kiếm & bộ lọc trải rộng bằng các thẻ việc làm */}
       <div className="relative z-20 w-full rounded-2xl border border-slate-200/90 bg-white/95 p-3.5 sm:p-4 shadow-sm backdrop-blur-md transition-all">
-        {/* Hàng 1: Tìm kiếm theo vị trí & Lọc theo kỹ năng - Trải rộng full khung */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full">
-          <div className="relative flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2 text-slate-800 transition-all hover:border-slate-300 focus-within:border-teal-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-teal-500/10 min-h-11 w-full">
+        {/* Hàng 1: Thanh tìm kiếm theo vị trí & Nút Làm mới */}
+        <div className="flex flex-col sm:flex-row gap-2.5 w-full items-center">
+          <div className="relative flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2 text-slate-800 transition-all hover:border-slate-300 focus-within:border-teal-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-teal-500/10 min-h-11 w-full sm:flex-1">
             <Search className="h-4.5 w-4.5 shrink-0 text-teal-600" />
             <input
               type="text"
@@ -427,6 +426,23 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               </button>
             )}
           </div>
+
+          {/* Nút Làm mới - Tông màu đỏ nhẹ (soft red / rose) */}
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isLoadingInternships}
+            title="Đặt lại bộ lọc và làm mới danh sách tin tuyển dụng"
+            className="inline-flex w-full sm:w-auto shrink-0 h-11 items-center justify-center gap-1.5 rounded-xl border border-rose-200/90 bg-rose-50/70 px-4 text-xs font-bold text-rose-700 shadow-2xs transition-all hover:bg-rose-100 hover:border-rose-300 hover:text-rose-800 active:scale-95 disabled:opacity-50 whitespace-nowrap"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 shrink-0 text-rose-600 ${isLoadingInternships ? 'animate-spin' : ''}`} />
+            <span>Làm mới</span>
+          </button>
+        </div>
+
+        {/* Hàng 2: Các bộ lọc (Kỹ năng từ bên trái, Khoa, Ngành) */}
+        <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-2.5 w-full items-start">
+          {/* Lọc theo kỹ năng */}
           <div className="w-full">
             <SkillPicker
               variant="teal"
@@ -440,16 +456,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               className="w-full"
             />
           </div>
-        </div>
 
-        {selectedSkillFilter.length > 1 && (
-          <p className="mt-1 px-1 text-[11px] font-medium text-slate-500">
-            Chỉ hiển thị vị trí có đủ {selectedSkillFilter.length} kỹ năng đã chọn.
-          </p>
-        )}
-
-        {/* Hàng 2: Bộ lọc theo Khoa, Ngành, Phù hợp ngành & Nút Làm mới - Trải rộng full khung */}
-        <div className={`mt-3 pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 ${studentProfile.majorId ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-2.5 w-full items-center`}>
           {/* Custom Dropdown: Khoa */}
           <div ref={facultyDropdownRef} className="relative w-full">
             <button
@@ -458,7 +465,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 setIsFacultyDropdownOpen((prev) => !prev);
                 setIsMajorDropdownOpen(false);
               }}
-              className={`h-10 w-full rounded-xl border pl-3.5 pr-3 text-xs font-semibold transition-all outline-none shadow-2xs flex items-center justify-between text-left cursor-pointer ${selectedFacultyId
+              className={`h-11 w-full rounded-xl border pl-3.5 pr-3 text-xs font-semibold transition-all outline-none shadow-2xs flex items-center justify-between text-left cursor-pointer ${selectedFacultyId
                   ? 'border-teal-500 bg-teal-50/90 text-teal-800 font-bold'
                   : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50/30'
                 }`}
@@ -520,13 +527,13 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 setIsMajorDropdownOpen((prev) => !prev);
                 setIsFacultyDropdownOpen(false);
               }}
-              className={`h-10 w-full rounded-xl border pl-3.5 pr-3 text-xs font-semibold transition-all outline-none shadow-2xs flex items-center justify-between text-left cursor-pointer ${selectedMajorId && !isMyMajorActive
+              className={`h-11 w-full rounded-xl border pl-3.5 pr-3 text-xs font-semibold transition-all outline-none shadow-2xs flex items-center justify-between text-left cursor-pointer ${selectedMajorId
                   ? 'border-teal-500 bg-teal-50/90 text-teal-800 font-bold'
                   : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50/30'
                 }`}
             >
               <span className="truncate pr-2">{currentMajor ? currentMajor.name : 'Tất cả các Ngành'}</span>
-              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isMajorDropdownOpen ? 'rotate-180 text-teal-700' : (selectedMajorId && !isMyMajorActive) ? 'text-teal-700' : 'text-slate-400'
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isMajorDropdownOpen ? 'rotate-180 text-teal-700' : selectedMajorId ? 'text-teal-700' : 'text-slate-400'
                 }`} />
             </button>
 
@@ -590,44 +597,13 @@ export const InternshipList: React.FC<InternshipListProps> = ({
               </div>
             )}
           </div>
-
-          {/* Phù hợp với ngành của tôi */}
-          {studentProfile.majorId && (
-            <button
-              type="button"
-              onClick={() => {
-                if (selectedMajorId === studentProfile.majorId) {
-                  setSelectedMajorId('');
-                  setSelectedFacultyId('');
-                } else {
-                  setSelectedFacultyId(studentProfile.facultyId || '');
-                  setSelectedMajorId(studentProfile.majorId || '');
-                }
-                setPage(1);
-              }}
-              title={studentProfile.major ? `Ngành: ${studentProfile.major}` : undefined}
-              className={`inline-flex w-full h-10 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs px-3 truncate ${isMyMajorActive
-                  ? 'bg-teal-700 text-white shadow-xs ring-2 ring-teal-600/30'
-                  : 'border border-teal-200/90 bg-teal-50/70 text-teal-800 hover:bg-teal-100 hover:border-teal-300'
-                }`}
-            >
-              <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${isMyMajorActive ? 'text-teal-200' : 'text-teal-600'}`} />
-              <span className="truncate">Phù hợp với ngành của tôi</span>
-            </button>
-          )}
-
-          {/* Nút Làm mới - Tông màu đỏ nhẹ (soft red / rose) */}
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isLoadingInternships}
-            title="Đặt lại bộ lọc và làm mới danh sách tin tuyển dụng"
-            className="inline-flex w-full h-10 items-center justify-center gap-1.5 rounded-xl border border-rose-200/90 bg-rose-50/70 px-4 text-xs font-bold text-rose-700 shadow-2xs transition-all hover:bg-rose-100 hover:border-rose-300 hover:text-rose-800 active:scale-95 disabled:opacity-50 truncate"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 shrink-0 text-rose-600 ${isLoadingInternships ? 'animate-spin' : ''}`} />
-            <span className="truncate">Làm mới</span>
-          </button>
         </div>
+
+        {selectedSkillFilter.length > 1 && (
+          <p className="mt-2 px-1 text-[11px] font-medium text-slate-500">
+            Chỉ hiển thị vị trí có đủ {selectedSkillFilter.length} kỹ năng đã chọn.
+          </p>
+        )}
       </div>
 
       {internshipsError && (
@@ -685,17 +661,13 @@ export const InternshipList: React.FC<InternshipListProps> = ({
         <div className="bento-stagger grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {filteredInternships.map((job) => {
             const appStatus = getApplicationStatus(job.id);
-            const matchedSkills = job.requiredSkills.filter((sk) => studentProfile.skills.includes(sk));
-            const matchPercent = job.requiredSkills.length
-              ? Math.round((matchedSkills.length / job.requiredSkills.length) * 100)
-              : null;
             const remainingSlots = Math.max(0, (job.slots || 0) - (job.filledSlots || 0));
 
             return (
               <article key={job.id} className="sb-job-card group flex flex-col justify-between overflow-hidden p-5 sm:p-6">
                 <span className="sb-card-glow" />
                 <div className="relative">
-                  {/* Logo, công ty, tiêu đề + vòng % khớp kỹ năng */}
+                  {/* Logo, công ty, tiêu đề */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3.5">
                       <CompanyLogo
@@ -712,18 +684,6 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                         </h3>
                       </div>
                     </div>
-                    {matchPercent !== null && (
-                      <div
-                        className="sb-match-ring grid h-14 w-14 shrink-0 place-items-center rounded-full"
-                        style={{ '--p': matchPercent } as React.CSSProperties}
-                        title={`Bạn có ${matchedSkills.length}/${job.requiredSkills.length} kỹ năng yêu cầu`}
-                      >
-                        <div className="flex h-[46px] w-[46px] flex-col items-center justify-center rounded-full bg-white">
-                          <span className="text-sm font-black leading-none text-[#006d72]">{matchPercent}%</span>
-                          <span className="mt-0.5 text-[8px] font-bold uppercase tracking-wider text-slate-400">khớp</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Badges: đợt, hạn, hình thức */}
