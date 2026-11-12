@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { getApiErrorMessage } from "../../auth/api";
 import { placementsApi } from "../../placements/api";
+import { PlacementSkeleton } from "./skeletons";
 import type {
   AcademicMonitoringStatus,
   PlacementRecord,
@@ -107,13 +108,7 @@ export const PlacementOverview: React.FC<PlacementOverviewProps> = ({
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex min-h-72 items-center justify-center text-sm text-slate-500">
-        <LoaderCircle className="mr-2 h-5 w-5 animate-spin text-teal-600" />
-        Đang tải thông tin thực tập...
-      </div>
-    );
+  if (loading) return <PlacementSkeleton />;
 
   if (error)
     return (

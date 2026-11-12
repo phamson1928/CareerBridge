@@ -271,9 +271,9 @@ export const InternshipList: React.FC<InternshipListProps> = ({
   const isMyMajorActive = Boolean(studentProfile.majorId) && selectedMajorId === studentProfile.majorId;
 
   return (
-    <div className="space-y-8">
+    <div className="w-full space-y-8">
       {/* Hero: ảnh nền tương lai độ nét cao 2.5K + lớp phủ aurora, tiêu đề, CTA và thống kê nhanh */}
-      <section className="student-hero-hub relative left-1/2 m-0 h-[100svh] min-h-[620px] max-h-[960px] w-[100dvw] -translate-x-1/2 overflow-hidden bg-[#06181b]">
+      <section className="student-hero-hub relative left-1/2 m-0 h-[100svh] min-h-[620px] max-h-[960px] w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden bg-[#06181b]">
         <picture className="absolute inset-0 h-full w-full">
           <source srcSet="/homepage-hero.webp" type="image/webp" />
           <img
@@ -367,8 +367,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
       {/* Tiến trình Đợt thực tập / Campaign Timeline Banner */}
       <SemesterCampaignBanner role="STUDENT" onExploreJobs={scrollToJobs} studentName={studentProfile.fullname} />
 
-      {/* Thanh ngang phân tách 1 - Kéo dài ngang toàn màn hình (full viewport width) */}
-      <hr className="relative left-1/2 -translate-x-1/2 w-[100dvw] my-6 sm:my-8 border-0 border-t border-slate-200/90 pointer-events-none" />
+      {/* Thanh ngang phân tách 1 - Kéo dài ngang toàn màn hình */}
+      <hr className="relative left-1/2 -translate-x-1/2 w-screen max-w-[100vw] my-6 sm:my-8 border-0 border-t border-slate-200/90 pointer-events-none" />
 
       {/* Gợi ý việc làm phù hợp */}
       <JobRecommendations
@@ -378,8 +378,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
         onApply={setApplyModalInternship}
       />
 
-      {/* Thanh ngang phân tách 2 - Kéo dài ngang toàn màn hình (full viewport width) */}
-      <hr className="relative left-1/2 -translate-x-1/2 w-[100dvw] my-6 sm:my-8 border-0 border-t border-slate-200/90 pointer-events-none" />
+      {/* Thanh ngang phân tách 2 - Kéo dài ngang toàn màn hình */}
+      <hr className="relative left-1/2 -translate-x-1/2 w-screen max-w-[100vw] my-6 sm:my-8 border-0 border-t border-slate-200/90 pointer-events-none" />
 
       {/* Tiêu đề khu vực tin tuyển dụng - Căn giữa */}
       <div id="tin-tuyen-dung" className="scroll-mt-24 flex flex-col items-center text-center max-w-4xl mx-auto px-4 pt-10 sm:pt-12 pb-2">
@@ -640,28 +640,28 @@ export const InternshipList: React.FC<InternshipListProps> = ({
       {isLoadingInternships && (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((skeletonId) => (
-            <div key={skeletonId} className="sb-job-card animate-pulse space-y-4 p-6">
+            <div key={skeletonId} className="sb-job-card space-y-4 p-6">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-2xl bg-slate-200" />
+                  <div className="h-14 w-14 rounded-2xl skeleton-shimmer" />
                   <div className="space-y-2">
-                    <div className="h-3 w-24 rounded-full bg-slate-100" />
-                    <div className="h-4 w-40 rounded-full bg-slate-200" />
+                    <div className="h-3.5 w-24 rounded-md skeleton-shimmer" />
+                    <div className="h-4 w-40 rounded-md skeleton-shimmer" />
                   </div>
                 </div>
-                <div className="h-14 w-14 rounded-full bg-slate-100" />
+                <div className="h-9 w-9 rounded-xl skeleton-shimmer" />
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div className="h-12 rounded-xl bg-slate-100" />
-                <div className="h-12 rounded-xl bg-slate-100" />
+                <div className="h-12 rounded-xl skeleton-shimmer" />
+                <div className="h-12 rounded-xl skeleton-shimmer" />
               </div>
               <div className="space-y-1.5">
-                <div className="h-3 w-full rounded-full bg-slate-100" />
-                <div className="h-3 w-3/4 rounded-full bg-slate-100" />
+                <div className="h-3 w-full rounded-md skeleton-shimmer" />
+                <div className="h-3 w-3/4 rounded-md skeleton-shimmer" />
               </div>
               <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                <div className="h-3 w-24 rounded-full bg-slate-100" />
-                <div className="h-9 w-32 rounded-full bg-slate-200" />
+                <div className="h-3.5 w-24 rounded-md skeleton-shimmer" />
+                <div className="h-9 w-24 rounded-xl skeleton-shimmer" />
               </div>
             </div>
           ))}

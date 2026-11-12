@@ -281,6 +281,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       internshipCloseTimerRef.current = null;
     }
     setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setIsStudentInternshipOpen(false);
     setIsStudentProfileOpen(false);
     setIsStudentMobileOpen(false);
@@ -1093,7 +1094,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <nav className="hidden lg:flex items-center gap-1.5">
             <button
               id="nav-tab-internships"
-              onClick={() => setActiveTab("internships")}
+              onClick={() => {
+                setActiveTab("internships");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === "internships"
                   ? "bg-teal-700 text-white font-bold shadow-xs"
@@ -1105,7 +1109,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               id="nav-tab-applications"
-              onClick={() => setActiveTab("applications")}
+              onClick={() => {
+                setActiveTab("applications");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === "applications"
                   ? "bg-teal-700 text-white font-bold shadow-xs"

@@ -32,6 +32,7 @@ import {
   ProfileAvatarPreview,
   ProfileAvatarUpload,
 } from "../ProfileAvatarUpload";
+import { StudentProfileSkeleton } from "./skeletons";
 
 const emptyForm: StudentProfileInput = {
   studentCode: "",
@@ -430,12 +431,7 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
   };
 
   if (isLoading) {
-    return (
-      <div className="rounded-2xl bg-white p-10 text-center text-sm text-slate-500">
-        <LoaderCircle className="mx-auto mb-3 h-5 w-5 animate-spin" />
-        Đang tải hồ sơ...
-      </div>
-    );
+    return <StudentProfileSkeleton />;
   }
 
   const facultyDisplay = profile?.majorRef?.faculty

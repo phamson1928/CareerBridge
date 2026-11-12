@@ -32,6 +32,7 @@ import { ReportFileDetails } from "../../reports/ReportFileDetails";
 import { reportsApi } from "../../reports/api";
 import type { ReportRecord } from "../../reports/types";
 import { formatDate, formatDateTime, formatFileSize } from "../../utils/format";
+import { ReportsSkeleton } from "./skeletons";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_INTERNSHIP_WEEKS = 10;
@@ -338,6 +339,10 @@ export const StudentReports: React.FC<{ onNavigateTab?: (tab: string) => void }>
     return { date, time };
   }
 
+  if (loading && placements.length === 0) {
+    return <ReportsSkeleton />;
+  }
+
   return (
     <div className="space-y-6 w-full">
       {/* Centered Open Typography Header */}
@@ -501,9 +506,19 @@ export const StudentReports: React.FC<{ onNavigateTab?: (tab: string) => void }>
 
         {/* Table Content */}
         {loading ? (
-          <div className="p-16 text-center text-sm text-slate-500">
-            <Clock3 className="h-6 w-6 animate-spin mx-auto text-teal-600 mb-2" />
-            Đang tải danh sách báo cáo...
+          <div className="divide-y divide-slate-100 p-2 sm:p-0">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="px-6 py-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl skeleton-shimmer shrink-0" />
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-40 rounded-md skeleton-shimmer" />
+                    <div className="h-3 w-28 rounded-md skeleton-shimmer" />
+                  </div>
+                </div>
+                <div className="h-6 w-24 rounded-full skeleton-shimmer" />
+              </div>
+            ))}
           </div>
         ) : allReportsList.length === 0 ? (
           <div className="p-16 text-center">

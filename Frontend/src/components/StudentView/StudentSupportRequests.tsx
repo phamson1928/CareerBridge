@@ -21,6 +21,7 @@ import type {
   SupportRequestRecord,
   SupportRequestStatus,
 } from "../../support-requests/types";
+import { StudentSupportSkeleton } from "./skeletons";
 
 const statusStyle: Record<SupportRequestStatus, string> = {
   PENDING: "border-amber-200 bg-amber-50 text-amber-700",
@@ -119,6 +120,10 @@ export const StudentSupportRequests: React.FC = () => {
   const endIndex = Math.min(totalItems, startIndex + PAGE_SIZE);
   const currentItems = items.slice(startIndex, endIndex);
 
+  if (loading && items.length === 0) {
+    return <StudentSupportSkeleton />;
+  }
+
   return (
     <div className="space-y-6 w-full">
       {/* Centered Open Typography Header */}
@@ -166,9 +171,19 @@ export const StudentSupportRequests: React.FC = () => {
 
         {/* Table Content */}
         {loading ? (
-          <div className="p-16 text-center text-sm text-slate-500">
-            <LoaderCircle className="h-6 w-6 animate-spin mx-auto text-teal-600 mb-2" />
-            Đang tải danh sách báo cáo...
+          <div className="divide-y divide-slate-100 p-2 sm:p-0">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div key={idx} className="px-6 py-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl skeleton-shimmer shrink-0" />
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-48 rounded-md skeleton-shimmer" />
+                    <div className="h-3 w-32 rounded-md skeleton-shimmer" />
+                  </div>
+                </div>
+                <div className="h-6 w-24 rounded-full skeleton-shimmer" />
+              </div>
+            ))}
           </div>
         ) : items.length === 0 ? (
           <div className="p-16 text-center">

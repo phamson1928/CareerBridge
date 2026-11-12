@@ -2,6 +2,12 @@
 @import "./pages/auth-visual.css";
 @import "./styles/student-theme.css";
 
+/* Prevent horizontal overflow across the entire application */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
 /* CareerBridge design system for the three user workspaces.  These scopes only
    change presentation; the existing component structure and workflows remain intact. */
 :root { --cb-teal: #008b8f; --cb-deep: #006d72; --cb-mist: #e9f7f7; --cb-ink: #12353b; }
@@ -509,3 +515,79 @@ tbody tr:hover {
   width: 0 !important;
   height: 0 !important;
 }
+
+/* ==========================================================================
+   Skeleton Shimmer & Splash Progress Animation
+   Pure CSS, GPU-accelerated, respects prefers-reduced-motion
+   ========================================================================== */
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #e5ecef;
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    transparent 100%
+  );
+  animation: shimmer-sweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes indeterminate-bar {
+  0% {
+    left: -35%;
+    width: 35%;
+  }
+  50% {
+    left: 25%;
+    width: 60%;
+  }
+  100% {
+    left: 100%;
+    width: 30%;
+  }
+}
+
+.splash-loading-bar {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(0, 139, 143, 0.14);
+}
+
+.splash-loading-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #00a3a6, #006d72);
+  border-radius: 9999px;
+  animation: indeterminate-bar 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after,
+  .splash-loading-bar::after {
+    animation: none !important;
+    display: none !important;
+  }
+  .animate-pulse {
+    animation: none !important;
+  }
+}
+

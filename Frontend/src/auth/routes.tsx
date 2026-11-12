@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { GraduationCap } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { AuthRole } from './auth.types';
 
@@ -18,10 +19,37 @@ export function roleHomePath(role: AuthRole): string {
 
 export function LoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-semibold text-slate-600">Đang khởi tạo hệ thống...</span>
+    <div
+      className="min-h-screen flex items-center justify-center bg-[#f2f6f7] relative overflow-hidden select-none"
+      role="status"
+      aria-live="polite"
+    >
+      {/* Aurora glow background */}
+      <div
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(36rem_22rem_at_50%_40%,rgba(0,163,166,0.14),transparent_70%)]"
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 flex flex-col items-center">
+        {/* Brand Icon */}
+        <div className="h-15 w-15 rounded-2xl bg-white/95 border border-teal-900/15 shadow-[0_10px_30px_-10px_rgba(0,80,84,0.2)] flex items-center justify-center text-[#008b8f] mb-3">
+          <GraduationCap className="h-7 w-7" />
+        </div>
+
+        {/* Brand Text */}
+        <span className="text-sm font-black tracking-tight text-slate-800">
+          Career<span className="text-[#008b8f]">Bridge</span>
+        </span>
+
+        {/* Smooth Indeterminate Progress Bar */}
+        <div
+          className="h-1 w-40 rounded-full splash-loading-bar mt-3.5"
+          aria-hidden="true"
+        />
+
+        <span className="text-xs font-medium text-slate-500 mt-2.5">
+          Đang khởi tạo hệ thống...
+        </span>
       </div>
     </div>
   );
