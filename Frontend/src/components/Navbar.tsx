@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { UserRole } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import {
@@ -21,6 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Menu,
+  X,
 } from "lucide-react";
 import { ProfileAvatarPreview } from "./ProfileAvatarUpload";
 import {
@@ -197,6 +199,101 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
 }) => {
   const { user } = useAuth();
+  const [isStudentInternshipOpen, setIsStudentInternshipOpen] = useState(false);
+  const [isStudentProfileOpen, setIsStudentProfileOpen] = useState(false);
+  const [isStudentMobileOpen, setIsStudentMobileOpen] = useState(false);
+  const studentInternshipDropdownRef = useRef<HTMLDivElement>(null);
+  const studentProfileDropdownRef = useRef<HTMLDivElement>(null);
+  const studentMobileDropdownRef = useRef<HTMLDivElement>(null);
+  const studentMobileDrawerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        studentInternshipDropdownRef.current &&
+        !studentInternshipDropdownRef.current.contains(target)
+      ) {
+        setIsStudentInternshipOpen(false);
+      }
+      if (
+        studentProfileDropdownRef.current &&
+        !studentProfileDropdownRef.current.contains(target)
+      ) {
+        setIsStudentProfileOpen(false);
+      }
+      if (
+        studentMobileDropdownRef.current &&
+        !studentMobileDropdownRef.current.contains(target) &&
+        (!studentMobileDrawerRef.current || !studentMobileDrawerRef.current.contains(target))
+      ) {
+        setIsStudentMobileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const profileCloseTimerRef = useRef<number | null>(null);
+  const internshipCloseTimerRef = useRef<number | null>(null);
+
+  const handleProfileMouseEnter = () => {
+    if (profileCloseTimerRef.current) {
+      window.clearTimeout(profileCloseTimerRef.current);
+      profileCloseTimerRef.current = null;
+    }
+    setIsStudentProfileOpen(true);
+  };
+
+  const handleProfileMouseLeave = () => {
+    if (profileCloseTimerRef.current) {
+      window.clearTimeout(profileCloseTimerRef.current);
+    }
+    profileCloseTimerRef.current = window.setTimeout(() => {
+      setIsStudentProfileOpen(false);
+    }, 220);
+  };
+
+  const handleInternshipMouseEnter = () => {
+    if (internshipCloseTimerRef.current) {
+      window.clearTimeout(internshipCloseTimerRef.current);
+      internshipCloseTimerRef.current = null;
+    }
+    setIsStudentInternshipOpen(true);
+  };
+
+  const handleInternshipMouseLeave = () => {
+    if (internshipCloseTimerRef.current) {
+      window.clearTimeout(internshipCloseTimerRef.current);
+    }
+    internshipCloseTimerRef.current = window.setTimeout(() => {
+      setIsStudentInternshipOpen(false);
+    }, 220);
+  };
+
+  const selectStudentTab = (tab: string) => {
+    if (profileCloseTimerRef.current) {
+      window.clearTimeout(profileCloseTimerRef.current);
+      profileCloseTimerRef.current = null;
+    }
+    if (internshipCloseTimerRef.current) {
+      window.clearTimeout(internshipCloseTimerRef.current);
+      internshipCloseTimerRef.current = null;
+    }
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsStudentInternshipOpen(false);
+    setIsStudentProfileOpen(false);
+    setIsStudentMobileOpen(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (profileCloseTimerRef.current) window.clearTimeout(profileCloseTimerRef.current);
+      if (internshipCloseTimerRef.current) window.clearTimeout(internshipCloseTimerRef.current);
+    };
+  }, []);
+
   const [adminSearch, setAdminSearch] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -963,6 +1060,414 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </header>
       </>
+    );
+  }
+
+  if (currentRole === "STUDENT") {
+    const isInternshipDropdownActive = ["placement", "reports", "evaluations"].includes(activeTab);
+
+    return (
+      <div className="fixed top-2.5 sm:top-3.5 inset-x-2.5 sm:inset-x-4 lg:inset-x-6 xl:inset-x-8 z-50 pointer-events-none">
+        <header className="student-capsule-navbar pointer-events-auto w-full max-w-[1240px] mx-auto border border-teal-900/15 bg-white/95 backdrop-blur-xl shadow-[0_10px_35px_-10px_rgb(0_80_84/0.25)] rounded-full px-3.5 sm:px-5 lg:px-6 h-13 sm:h-14 lg:h-16 flex items-center justify-between gap-2 sm:gap-4 transition-all">
+          {/* Left: Brand Identity - Cả cụm Logo + Chữ CareerBridge đều click để về trang chủ */}
+          <button
+            type="button"
+            className="group flex items-center gap-2 sm:gap-2.5 cursor-pointer shrink-0 py-1 pl-0.5 pr-1.5 sm:pr-3 rounded-full hover:opacity-90 transition-all text-left focus:outline-none"
+            onClick={() => {
+              setActiveTab("internships");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            title="CareerBridge - Về trang chủ"
+            aria-label="Về trang chủ CareerBridge"
+          >
+            <img
+              src="/careerbridge-logo.svg"
+              alt="CareerBridge"
+              className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 object-contain transition-transform group-hover:scale-105 pointer-events-none select-none"
+            />
+            <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-slate-900 leading-none group-hover:text-teal-700 transition-colors pointer-events-none select-none">
+              CareerBridge
+            </span>
+          </button>
+
+          {/* Center: Navigation Links (Desktop ONLY, Text ONLY) */}
+          <nav className="hidden lg:flex items-center gap-1.5">
+            <button
+              id="nav-tab-internships"
+              onClick={() => {
+                setActiveTab("internships");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === "internships"
+                  ? "bg-teal-700 text-white font-bold shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+              }`}
+            >
+              Cơ hội việc làm
+            </button>
+
+            <button
+              id="nav-tab-applications"
+              onClick={() => {
+                setActiveTab("applications");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === "applications"
+                  ? "bg-teal-700 text-white font-bold shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+              }`}
+            >
+              Đơn ứng tuyển
+            </button>
+
+            {/* Dropdown cụm: Thực tập ⌵ */}
+            <div
+              ref={studentInternshipDropdownRef}
+              className="relative"
+              onMouseEnter={handleInternshipMouseEnter}
+              onMouseLeave={handleInternshipMouseLeave}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (internshipCloseTimerRef.current) window.clearTimeout(internshipCloseTimerRef.current);
+                  setIsStudentInternshipOpen((prev) => !prev);
+                }}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  isInternshipDropdownActive
+                    ? "bg-teal-700 text-white font-bold shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                }`}
+              >
+                <span>Thực tập</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    isStudentInternshipOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              <div
+                className={`transition-all duration-200 absolute left-1/2 -translate-x-1/2 top-full pt-2 z-50 w-56 ${
+                  isStudentInternshipOpen
+                    ? "visible opacity-100 translate-y-0 pointer-events-auto"
+                    : "invisible opacity-0 translate-y-1 pointer-events-none"
+                }`}
+              >
+                <div className="rounded-2xl border border-slate-200/90 !bg-white p-1.5 shadow-2xl space-y-0.5">
+                  <button
+                    type="button"
+                    id="nav-tab-placement"
+                    onClick={() => selectStudentTab("placement")}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeTab === "placement" ? "bg-teal-50 text-teal-800" : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>Hồ sơ thực tập</span>
+                    {activeTab === "placement" && <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />}
+                  </button>
+                  <button
+                    type="button"
+                    id="nav-tab-reports"
+                    onClick={() => selectStudentTab("reports")}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeTab === "reports" ? "bg-teal-50 text-teal-800" : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>Báo cáo tuần</span>
+                    {activeTab === "reports" && <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />}
+                  </button>
+                  <button
+                    type="button"
+                    id="nav-tab-evaluations"
+                    onClick={() => selectStudentTab("evaluations")}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeTab === "evaluations" ? "bg-teal-50 text-teal-800" : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>Kết quả đánh giá</span>
+                    {activeTab === "evaluations" && <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button
+              id="nav-tab-support"
+              onClick={() => setActiveTab("support")}
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === "support"
+                  ? "bg-teal-700 text-white font-bold shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+              }`}
+            >
+              Hỗ trợ
+            </button>
+          </nav>
+
+          {/* Right: Actions & User Avatar */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Chat button */}
+            {canUseChat && (
+              <button
+                id="btn-chat-toggle"
+                onClick={onOpenChat}
+                className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-teal-900/10 bg-slate-50 text-slate-600 hover:text-teal-700 hover:bg-teal-50 transition cursor-pointer shadow-2xs"
+                title="Tin nhắn & Trao đổi"
+              >
+                <MessageSquare className="h-4 w-4" />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-600 text-[9px] font-bold text-white ring-2 ring-white px-1">
+                    {unreadMessagesCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* Notifications Button */}
+            <div className="group relative notification-trigger">
+              <button
+                id="btn-notifs-toggle"
+                onClick={onOpenNotifs}
+                className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-teal-900/10 bg-slate-50 text-slate-600 hover:text-teal-700 hover:bg-teal-50 transition cursor-pointer shadow-2xs"
+                title="Thông báo"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadNotifsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white animate-pulse px-1">
+                    {unreadNotifsCount}
+                  </span>
+                )}
+              </button>
+              {notificationPreview}
+            </div>
+
+            <div className="h-5 w-px bg-slate-200 mx-0.5 sm:mx-1 hidden sm:block" />
+
+            {/* User Profile Avatar with dropdown (Desktop/Tablet) */}
+            <div
+              ref={studentProfileDropdownRef}
+              className="relative hidden sm:block"
+              onMouseEnter={handleProfileMouseEnter}
+              onMouseLeave={handleProfileMouseLeave}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (profileCloseTimerRef.current) window.clearTimeout(profileCloseTimerRef.current);
+                  setIsStudentProfileOpen((prev) => !prev);
+                }}
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center overflow-hidden rounded-full border-2 border-teal-500/30 bg-slate-100 text-sm font-black text-slate-600 transition hover:border-teal-500 hover:ring-2 hover:ring-teal-100 cursor-pointer shadow-xs"
+                title="Tài khoản của tôi"
+                aria-label="Tài khoản của tôi"
+              >
+                <ProfileAvatarPreview
+                  fileId={avatarFileId}
+                  fallback="S"
+                  className="flex h-full w-full items-center justify-center bg-teal-100 text-teal-800"
+                  imageClassName="h-full w-full object-cover"
+                />
+              </button>
+              <div
+                className={`transition-all duration-150 absolute right-0 top-full pt-2 z-50 w-52 ${
+                  isStudentProfileOpen
+                    ? "visible opacity-100 translate-y-0 pointer-events-auto"
+                    : "invisible opacity-0 translate-y-1 pointer-events-none"
+                }`}
+              >
+                <div className="rounded-2xl border border-slate-200/90 !bg-white p-1.5 shadow-2xl space-y-0.5">
+                  <button
+                    type="button"
+                    id="nav-tab-profile"
+                    onClick={() => selectStudentTab("profile")}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-800 transition cursor-pointer"
+                  >
+                    <User className="h-3.5 w-3.5 text-teal-600" /> Hồ sơ sinh viên
+                  </button>
+                  <button
+                    id="btn-logout"
+                    type="button"
+                    onClick={() => {
+                      if (profileCloseTimerRef.current) window.clearTimeout(profileCloseTimerRef.current);
+                      setIsStudentProfileOpen(false);
+                      onLogout();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  >
+                    <LogOut className="h-3.5 w-3.5" /> Đăng xuất
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile menu trigger */}
+            <div
+              ref={studentMobileDropdownRef}
+              className="lg:hidden relative"
+            >
+              <button
+                type="button"
+                onClick={() => setIsStudentMobileOpen((prev) => !prev)}
+                className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition cursor-pointer shadow-2xs ${
+                  isStudentMobileOpen
+                    ? "border-teal-600 bg-teal-50 text-teal-800"
+                    : "border-teal-900/10 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                }`}
+                title="Menu điều hướng"
+                aria-label="Menu điều hướng"
+                aria-expanded={isStudentMobileOpen}
+              >
+                {isStudentMobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </button>
+            </div>
+
+          </div>
+        </header>
+
+        {/* Mobile Navigation Drawer Overlay */}
+        {isStudentMobileOpen && (
+          <div
+            className="pointer-events-auto fixed inset-0 z-40 bg-slate-900/35 backdrop-blur-xs lg:hidden transition-opacity flex flex-col items-center px-2.5 sm:px-4"
+            onClick={() => setIsStudentMobileOpen(false)}
+          >
+            <div
+              ref={studentMobileDrawerRef}
+              className="mt-17 sm:mt-19 w-full max-w-md bg-white/98 backdrop-blur-xl border border-teal-900/15 shadow-[0_24px_50px_-12px_rgba(0,40,45,0.3)] rounded-3xl p-4 sm:p-5 space-y-3.5 max-h-[calc(100vh-5.5rem)] overflow-y-auto animate-in fade-in slide-in-from-top-3 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* User Identity Card */}
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-teal-50/70 border border-teal-100">
+                <ProfileAvatarPreview
+                  fileId={avatarFileId}
+                  fallback="S"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-100 text-teal-800 font-bold text-sm shadow-xs"
+                  imageClassName="h-full w-full object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-black text-slate-900 truncate">
+                    {user?.email?.split('@')[0] || "Sinh viên"}
+                  </p>
+                  <p className="text-[11px] font-semibold text-teal-700 truncate">{user?.email}</p>
+                </div>
+                <span className="rounded-full bg-white border border-teal-200/80 px-2.5 py-0.5 text-[10px] font-black uppercase text-teal-800 shadow-2xs">
+                  Sinh viên
+                </span>
+              </div>
+
+              {/* Main Navigation Links */}
+              <div className="space-y-1">
+                <p className="px-2 pt-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Phân hệ chức năng
+                </p>
+                <button
+                  type="button"
+                  onClick={() => selectStudentTab("internships")}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "internships"
+                      ? "bg-teal-700 text-white shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                  }`}
+                >
+                  <Briefcase className="h-4 w-4 shrink-0" />
+                  <span>Cơ hội việc làm</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectStudentTab("applications")}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "applications"
+                      ? "bg-teal-700 text-white shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                  }`}
+                >
+                  <FileText className="h-4 w-4 shrink-0" />
+                  <span>Đơn ứng tuyển</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectStudentTab("placement")}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "placement"
+                      ? "bg-teal-700 text-white shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                  }`}
+                >
+                  <Building className="h-4 w-4 shrink-0" />
+                  <span>Hồ sơ thực tập</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectStudentTab("reports")}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "reports"
+                      ? "bg-teal-700 text-white shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                  }`}
+                >
+                  <CalendarDays className="h-4 w-4 shrink-0" />
+                  <span>Báo cáo tuần</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectStudentTab("evaluations")}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "evaluations"
+                      ? "bg-teal-700 text-white shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                  }`}
+                >
+                  <CheckSquare className="h-4 w-4 shrink-0" />
+                  <span>Kết quả đánh giá</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectStudentTab("support")}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "support"
+                      ? "bg-teal-700 text-white shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                  }`}
+                >
+                  <LifeBuoy className="h-4 w-4 shrink-0" />
+                  <span>Hỗ trợ &amp; Phản ánh</span>
+                </button>
+              </div>
+
+              {/* Account Options */}
+              <div className="pt-2 border-t border-slate-100 space-y-1">
+                <p className="px-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Tài khoản
+                </p>
+                <button
+                  type="button"
+                  onClick={() => selectStudentTab("profile")}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "profile"
+                      ? "bg-teal-50 text-teal-800"
+                      : "text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                  }`}
+                >
+                  <User className="h-4 w-4 text-teal-600 shrink-0" />
+                  <span>Hồ sơ sinh viên</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsStudentMobileOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 active:bg-rose-100 transition-all cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 

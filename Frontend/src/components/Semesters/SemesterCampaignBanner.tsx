@@ -13,6 +13,8 @@ import {
   Building2,
   Send,
   FileCheck,
+  ArrowRight,
+  Search,
 } from 'lucide-react';
 import { semestersApi } from '../../semesters/api';
 import type { SemesterRecord, InternshipCampaignPhase } from '../../semesters/types';
@@ -23,6 +25,7 @@ interface SemesterCampaignBannerProps {
   initialCollapsed?: boolean;
   onExploreJobs?: () => void;
   className?: string;
+  studentName?: string;
 }
 
 interface StageStep {
@@ -38,11 +41,24 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
   initialCollapsed = false,
   onExploreJobs,
   className = '',
+  studentName,
 }) => {
   const [semesters, setSemesters] = useState<SemesterRecord[]>([]);
   const [selectedSemesterId, setSelectedSemesterId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+
+  // Tự động đồng bộ thời gian thực khi chuyển ngày hoặc quay lại tab trình duyệt
+  useEffect(() => {
+    const syncTime = () => setCurrentDate(new Date());
+    window.addEventListener('focus', syncTime);
+    const interval = setInterval(syncTime, 60000); // cập nhật mỗi phút
+    return () => {
+      window.removeEventListener('focus', syncTime);
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -83,15 +99,21 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
     return null;
   }
 
-  const now = new Date();
+  const now = currentDate;
   const recStart = new Date(activeSemester.recruitmentStart);
   const semStart = new Date(activeSemester.startDate);
   const semEnd = new Date(activeSemester.endDate);
 
-  // Calculate days difference
-  const diffDays = (target: Date) => {
-    const ms = target.getTime() - now.getTime();
-    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+  // Tính chính xác số ngày theo lịch (chuẩn hóa về 00:00:00 của ngày hôm nay và mốc đích)
+  const diffDays = (targetInput: Date | string) => {
+    const target = new Date(targetInput);
+    if (isNaN(target.getTime())) return 0;
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    const targetDay = new Date(target);
+    targetDay.setHours(0, 0, 0, 0);
+    const ms = targetDay.getTime() - today.getTime();
+    return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
   };
 
   const currentPhase: InternshipCampaignPhase = activeSemester.phase;
@@ -200,6 +222,227 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
       ? 78
       : 100;
 
+  if (role === 'STUDENT') {
+    // 4 Mốc thời gian thực chuẩn theo đợt học kỳ
+    let realTimeIndex = 0;
+    if (activeSemester.phase === 'COMPLETED' || now >= semEnd) {
+      realTimeIndex = 3;
+    } else if (activeSemester.phase === 'MONITORING' || now >= semStart) {
+      realTimeIndex = 2;
+    } else if (activeSemester.phase === 'RECRUITING' || now >= recStart) {
+      realTimeIndex = 1;
+    } else {
+      realTimeIndex = 0;
+    }
+
+    const milestones = [
+      {
+        num: '01',
+        title: 'Lên kế hoạch',
+        subtitle: 'Chuẩn bị đợt & tiếp nhận chỉ tiêu DN',
+        dateLabel: `Trước ${formatDate(activeSemester.recruitmentStart)}`,
+        icon: CalendarClock,
+        iconBgClass: 'bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-100 text-cyan-600',
+        bottomBorderClass: 'border-b-[5px] border-cyan-400',
+        isPast: realTimeIndex > 0,
+        isCurrent: realTimeIndex === 0 && activeSemester.phase !== 'COMPLETED',
+      },
+      {
+        num: '02',
+        title: 'Mở nhận hồ sơ',
+        subtitle: 'DN mở tuyển, SV nộp CV & phỏng vấn',
+        dateLabel: `${formatDate(activeSemester.recruitmentStart)} — ${formatDate(activeSemester.startDate)}`,
+        icon: Briefcase,
+        iconBgClass: 'bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100 text-teal-600',
+        bottomBorderClass: 'border-b-[5px] border-teal-500',
+        isPast: realTimeIndex > 1,
+        isCurrent: realTimeIndex === 1 && activeSemester.phase !== 'COMPLETED',
+      },
+      {
+        num: '03',
+        title: 'Thực tập tại DN',
+        subtitle: 'SV làm việc tại DN & nộp báo cáo định kỳ',
+        dateLabel: `${formatDate(activeSemester.startDate)} — ${formatDate(activeSemester.endDate)}`,
+        icon: GraduationCap,
+        iconBgClass: 'bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 text-amber-600',
+        bottomBorderClass: 'border-b-[5px] border-[#006d72]',
+        isPast: realTimeIndex > 2,
+        isCurrent: realTimeIndex === 2 && activeSemester.phase !== 'COMPLETED',
+      },
+      {
+        num: '04',
+        title: 'Đánh giá kết quả',
+        subtitle: 'GV & DN chấm điểm, nghiệm thu học phần',
+        dateLabel: `Sau ${formatDate(activeSemester.endDate)}`,
+        icon: CheckCircle2,
+        iconBgClass: 'bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 text-emerald-600',
+        bottomBorderClass: 'border-b-[5px] border-emerald-500',
+        isPast: realTimeIndex === 3 && activeSemester.phase === 'COMPLETED',
+        isCurrent: realTimeIndex === 3 && activeSemester.phase !== 'COMPLETED',
+      },
+    ];
+
+    // Badge status text and countdown label for subtext (chuẩn theo ảnh mẫu người dùng)
+    let phaseBadgeText = 'ĐANG MỞ TUYỂN';
+    let phaseBadgeClass = 'border-emerald-300 bg-emerald-50 text-emerald-800';
+    let phaseSubtextCountdown = '';
+
+    if (currentPhase === 'UPCOMING') {
+      const days = diffDays(recStart);
+      phaseBadgeText = 'SẮP MỞ TUYỂN';
+      phaseBadgeClass = 'border-cyan-300 bg-cyan-50 text-cyan-800';
+      phaseSubtextCountdown = days > 0 ? `Mở đơn trong ${days} ngày tới` : 'Sắp mở cổng nhận hồ sơ';
+    } else if (currentPhase === 'RECRUITING') {
+      const days = diffDays(semStart);
+      phaseBadgeText = 'ĐANG MỞ TUYỂN';
+      phaseBadgeClass = 'border-emerald-300 bg-emerald-50 text-emerald-800';
+      phaseSubtextCountdown = days > 0 ? `Đóng đơn trong ${days} ngày tới` : 'Hôm nay là hạn chốt tuyển dụng';
+    } else if (currentPhase === 'MONITORING') {
+      const days = diffDays(semEnd);
+      phaseBadgeText = 'ĐANG THỰC TẬP';
+      phaseBadgeClass = 'border-amber-300 bg-amber-50 text-amber-800';
+      phaseSubtextCountdown = days > 0 ? `Kết thúc kỳ trong ${days} ngày tới` : 'Đang nghiệm thu học phần';
+    } else if (currentPhase === 'COMPLETED') {
+      phaseBadgeText = 'ĐÃ HOÀN THÀNH';
+      phaseBadgeClass = 'border-slate-300 bg-slate-100 text-slate-700';
+      phaseSubtextCountdown = 'Đợt thực tập đã hoàn tất';
+    }
+
+    // Giữ nguyên toàn bộ tên học kỳ từ database theo yêu cầu người dùng
+    const semesterTitle = activeSemester.name.trim();
+
+    return (
+      <section
+        className={`relative pt-14 sm:pt-20 lg:pt-24 pb-10 sm:pb-12 ${className}`}
+        aria-label="Tiến trình học kỳ 4 mốc thời gian thực"
+      >
+        {/* 1. Header căn giữa chuẩn 100% theo layout người dùng yêu cầu */}
+        <div className="flex flex-col items-center text-center max-w-4xl mx-auto px-4">
+          <span className={`inline-flex items-center rounded-full border px-4 py-1 text-xs font-black uppercase tracking-wider ${phaseBadgeClass} shadow-2xs`}>
+            {phaseBadgeText}
+          </span>
+
+          <h2 className="mt-3.5 text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+            {semesterTitle}
+          </h2>
+
+          <p className="mt-3 text-sm sm:text-base font-medium text-slate-600">
+            {formatDate(activeSemester.startDate)} — {formatDate(activeSemester.endDate)}
+            {phaseSubtextCountdown && ` | ${phaseSubtextCountdown}`}
+          </p>
+        </div>
+
+        {/* 2. Timeline 4 Mốc Chuẩn Phong Cách 28Tech (Có thanh ray ngang + Pin định vị + Thẻ treo) */}
+        <div className="relative mt-10 sm:mt-14">
+          {/* Thanh ray ngang xuyên suốt 4 mốc: kéo dài thêm ra 2 đầu và mờ dần (gradient) theo ảnh mẫu */}
+          <div className="hidden lg:block absolute top-[10px] -left-6 -right-6 h-[2px] bg-[linear-gradient(90deg,transparent_0%,#0c2340_10%,#0c2340_90%,transparent_100%)] z-0 pointer-events-none" />
+
+          {/* Grid 4 Thẻ Mốc (items-start để tạo hiệu ứng so le tinh tế theo ảnh mẫu) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10 items-start">
+            {milestones.map((m, idx) => {
+              const isStaggered = idx % 2 === 1; // Card 2 & 4 so le xuống dưới như 28Tech
+
+              return (
+                <div key={m.num} className="group flex flex-col items-center w-full">
+                  {/* Pin định vị trên thanh ray (Desktop) */}
+                  <div className="hidden lg:flex flex-col items-center z-10 pointer-events-none">
+                    <div
+                      className={`h-5 w-5 rounded-full border-2 bg-white flex items-center justify-center transition-all z-20 ${
+                        m.isCurrent
+                          ? 'border-teal-500 bg-teal-500 ring-4 ring-teal-400/30'
+                          : m.isPast
+                          ? 'border-[#0c2340] bg-[#0c2340]'
+                          : 'border-slate-300 bg-white'
+                      }`}
+                    >
+                      {m.isPast ? (
+                        <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                      ) : m.isCurrent ? (
+                        <span className="h-2 w-2 rounded-full bg-white animate-ping" />
+                      ) : (
+                        <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                      )}
+                    </div>
+                    {/* Đường nối dọc: Tự động co ngắn 4px khi hover (duration-500 ease-out) đồng bộ tuyệt đối với thẻ nâng lên, không bao giờ bị đè/dính thanh đen */}
+                    <div
+                      className={`w-[2px] transition-all duration-500 ease-out z-10 ${
+                        isStaggered
+                          ? 'h-12 group-hover:h-11'
+                          : 'h-4 group-hover:h-3'
+                      } ${
+                        m.isPast || m.isCurrent ? 'bg-[#0c2340]' : 'bg-slate-300'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Thẻ Milestone: Nâng nhẹ nhàng 4px với duration-500 ease-out, nằm trên z-20 đè phẳng mép nối, không bị giật */}
+                  <div
+                    className={`w-full relative z-20 bg-white rounded-2xl p-6 sm:p-7 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.07)] border transition-all duration-500 ease-out group-hover:-translate-y-1 group-hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.12)] flex flex-col justify-between items-center text-center overflow-hidden min-h-[320px] sm:min-h-[330px] ${
+                      m.bottomBorderClass
+                    } ${
+                      m.isCurrent
+                        ? 'border-teal-300 ring-2 ring-teal-500/20 shadow-[0_16px_36px_-10px_rgba(0,109,114,0.18)]'
+                        : 'border-slate-100'
+                    }`}
+                  >
+                    {/* Vòng cung lưỡi liềm mờ phía trên (Đặc trưng thiết kế 28Tech) */}
+                    <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 h-24 w-24 rounded-full border-[5px] border-cyan-100/70" />
+
+                    {/* Phần trên: Icon + Số giai đoạn + Tên mốc */}
+                    <div className="flex flex-col items-center w-full">
+                      <div className={`relative mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${m.iconBgClass} shadow-2xs`}>
+                        <m.icon className="h-7 w-7" />
+                      </div>
+
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        Giai đoạn {m.num}
+                      </span>
+
+                      {/* Tên Mốc: làm bớt đậm (font-bold thay vì font-black), chữ màu slate-800 thanh thoát, chiều cao cố định */}
+                      <div className="mt-1 min-h-[2.75rem] flex items-center justify-center w-full">
+                        <h3 className="text-lg sm:text-[21px] font-bold text-slate-800 tracking-tight leading-snug">
+                          {m.title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Phần giữa: Huy hiệu trạng thái thời gian thực */}
+                    <div className="my-2.5 h-7 flex items-center justify-center">
+                      {m.isCurrent ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-600 text-white px-3 py-1 text-xs font-bold shadow-xs">
+                          <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" /> Đang diễn ra
+                        </span>
+                      ) : m.isPast ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-0.5 text-xs font-semibold">
+                          ✓ Đã hoàn tất
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-slate-50 text-slate-500 border border-slate-200 px-3 py-0.5 text-xs font-semibold">
+                          Sắp diễn ra
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Phần dưới: Thời gian thực + Mô tả nội dung (đảm bảo chiều cao đồng đều) */}
+                    <div className="flex flex-col items-center w-full">
+                      <p className="text-xs sm:text-[13px] font-bold text-teal-800">
+                        {m.dateLabel}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-500 font-medium leading-relaxed h-9 flex items-center justify-center text-center line-clamp-2">
+                        {m.subtitle}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <div
       className={`relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm transition-all ${className}`}
@@ -260,18 +503,8 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
           </div>
         </div>
 
-        {/* Right tools: Collapse toggle & quick action */}
+        {/* Right tools: Collapse toggle */}
         <div className="flex items-center gap-2 self-end sm:self-center">
-          {role === 'STUDENT' && currentPhase === 'RECRUITING' && onExploreJobs && (
-            <button
-              type="button"
-              onClick={onExploreJobs}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition"
-            >
-              <Send className="h-3.5 w-3.5" /> Ứng tuyển ngay
-            </button>
-          )}
-
           <button
             type="button"
             onClick={() => setIsCollapsed((v) => !v)}
@@ -424,25 +657,7 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
             </div>
 
             <div className="text-xs text-slate-700 leading-relaxed flex-1">
-              {role === 'STUDENT' ? (
-                currentPhase === 'RECRUITING' ? (
-                  <span>
-                    <strong className="text-teal-950 font-bold">Lưu ý sinh viên:</strong> Cổng ứng tuyển đang mở! Các tin tuyển dụng sẽ tự động đóng khi học kỳ bắt đầu vào ngày{' '}
-                    <strong className="text-slate-900">{formatDate(activeSemester.startDate)}</strong>. Hãy nhanh chóng hoàn thiện CV và ứng tuyển để nhận lời mời thực tập sớm.
-                  </span>
-                ) : currentPhase === 'MONITORING' ? (
-                  <span>
-                    <strong className="text-teal-950 font-bold">Lưu ý sinh viên:</strong> Đợt tuyển dụng đã kết thúc. Bạn đang trong giai đoạn thực tập và theo dõi học vụ. Hãy chú ý lịch nộp báo cáo định kỳ và liên hệ giảng viên hướng dẫn nếu cần hỗ trợ.
-                  </span>
-                ) : currentPhase === 'UPCOMING' ? (
-                  <span>
-                    <strong className="text-teal-950 font-bold">Lưu ý sinh viên:</strong> Đợt thực tập sắp tới đang trong giai đoạn chuẩn bị. Cổng nhận hồ sơ sẽ chính thức mở vào ngày{' '}
-                    <strong className="text-slate-900">{formatDate(activeSemester.recruitmentStart)}</strong>. Hãy chuẩn bị sẵn hồ sơ cá nhân và kỹ năng của bạn.
-                  </span>
-                ) : (
-                  <span>Kỳ thực tập đã kết thúc thành công. Hãy kiểm tra kết quả đánh giá và xác nhận hoàn thành học phần.</span>
-                )
-              ) : role === 'COMPANY' ? (
+              {role === 'COMPANY' ? (
                 currentPhase === 'RECRUITING' ? (
                   <span>
                     <strong className="text-teal-950 font-extrabold">Dành cho Doanh nghiệp tuyển dụng:</strong> Cổng tiếp nhận hồ sơ đang mở. Mọi tin tuyển dụng ở trạng thái <em>Mở (OPEN)</em> sẽ tự động chốt khi kỳ thực tập chính thức bắt đầu vào ngày{' '}

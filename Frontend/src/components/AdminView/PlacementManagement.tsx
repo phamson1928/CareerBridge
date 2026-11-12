@@ -218,7 +218,7 @@ function CustomDropdown({
   }, [options, search]);
 
   return (
-    <div className={`relative ${className}`} ref={containerRef}>
+    <div className={`relative ${isOpen ? "z-30" : ""} ${className}`} ref={containerRef}>
       {label && (
         <label className="mb-1 block text-xs font-semibold text-slate-600">
           {label}
@@ -975,7 +975,7 @@ export const PlacementManagement: React.FC<{
                             {placement.student.faculty?.id &&
                               placement.supervision.lecturer.facultyId &&
                               placement.student.faculty.id !== placement.supervision.lecturer.facultyId && (
-                                <span className="shrink-0 rounded-md border border-[#cbebeb] bg-[#e6f6f6] px-1 py-0.2 text-[9px] font-bold text-[#00878a]">
+                                <span className="shrink-0 rounded-md border border-[#cbebeb] bg-[#e6f6f6] px-1 py-0.5 text-[9px] font-bold text-[#00878a]">
                                   Liên khoa
                                 </span>
                               )}

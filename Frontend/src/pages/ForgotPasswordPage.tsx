@@ -25,7 +25,7 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout hideMobileSwitch>
       <section className="login-form-panel forgot-password-panel" aria-labelledby="forgot-password-title">
         <div className="login-title-wrap"><h1 id="forgot-password-title">Quên mật khẩu</h1></div>
         <p className="login-account-copy">Nhập email để nhận liên kết đặt lại mật khẩu.</p>

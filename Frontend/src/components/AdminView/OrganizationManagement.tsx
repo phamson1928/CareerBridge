@@ -33,18 +33,24 @@ interface DropdownOption {
 }
 
 function CustomDropdown({
+  label,
   value,
   onChange,
   options,
   placeholder = "Chọn...",
   searchable = false,
+  align = "left",
+  dropUp = false,
   className = "",
 }: {
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   options: DropdownOption[];
   placeholder?: string;
   searchable?: boolean;
+  align?: "left" | "right";
+  dropUp?: boolean;
   className?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -86,10 +92,15 @@ function CustomDropdown({
 
   return (
     <div className={`relative ${className} ${isOpen ? "z-40" : ""}`} ref={containerRef}>
+      {label && (
+        <label className="mb-1 block text-xs font-bold text-slate-800">
+          {label}
+        </label>
+      )}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex w-full cursor-pointer items-center justify-between rounded-xl border bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition ${
+        className={`flex w-full cursor-pointer items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-xs font-medium text-slate-800 transition ${
           isOpen
             ? "border-[#00878a] ring-2 ring-[#00878a]/20"
             : "border-slate-300 hover:border-[#00878a]"
@@ -99,14 +110,20 @@ function CustomDropdown({
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
-          className={`ml-1.5 h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 ${
+          className={`ml-1.5 h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
             isOpen ? "rotate-180 text-[#00878a]" : ""
           }`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 max-h-60 min-w-full sm:min-w-[190px] overflow-auto rounded-xl border border-slate-100 bg-white p-1 shadow-2xl ring-1 ring-black/5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          className={`absolute z-50 ${
+            dropUp ? "bottom-full mb-1.5" : "mt-1"
+          } max-h-60 min-w-full w-full overflow-auto rounded-xl border border-slate-100 bg-white p-1 shadow-2xl ring-1 ring-black/5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            align === "right" ? "right-0" : "left-0"
+          }`}
+        >
           {searchable && (
             <div className="sticky top-0 z-10 bg-white p-1 border-b border-slate-100 mb-1">
               <input
@@ -115,7 +132,7 @@ function CustomDropdown({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Tìm kiếm..."
-                className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#00878a]"
+                className="w-full rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#00878a]"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
@@ -507,6 +524,15 @@ export const OrganizationManagement: React.FC = () => {
     }
   };
 
+  const modalFacultyOptions: DropdownOption[] = useMemo(
+    () =>
+      facultyOptions.map((f) => ({
+        value: f.id,
+        label: `[${f.code}] ${f.name}${!f.isActive ? " (Ngừng sử dụng)" : ""}`,
+      })),
+    [facultyOptions],
+  );
+
   return (
     <section className="admin-page admin-page--standard rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -525,15 +551,15 @@ export const OrganizationManagement: React.FC = () => {
           <button
             type="button"
             onClick={openCreateFaculty}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98]"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 text-[#00878a]" />
             Thêm Khoa
           </button>
           <button
             type="button"
             onClick={() => openCreateMajor()}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#00878a] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" />
             Thêm Ngành
@@ -547,9 +573,9 @@ export const OrganizationManagement: React.FC = () => {
           <button
             type="button"
             onClick={() => setSubTab("FACULTIES")}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
+            className={`inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
               subTab === "FACULTIES"
-                ? "bg-white text-indigo-700 shadow-sm"
+                ? "bg-white text-[#00878a] shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -559,9 +585,9 @@ export const OrganizationManagement: React.FC = () => {
           <button
             type="button"
             onClick={() => setSubTab("MAJORS")}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
+            className={`inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
               subTab === "MAJORS"
-                ? "bg-white text-indigo-700 shadow-sm"
+                ? "bg-white text-[#00878a] shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -680,7 +706,7 @@ export const OrganizationManagement: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {faculties.map((faculty) => (
                     <tr key={faculty.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 font-mono text-xs font-bold text-indigo-700 whitespace-nowrap min-w-[100px]">
+                      <td className="px-4 py-3 font-mono text-xs font-bold text-[#00878a] whitespace-nowrap min-w-[100px]">
                         {faculty.code}
                       </td>
                       <td className="px-4 py-3">
@@ -711,7 +737,7 @@ export const OrganizationManagement: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => openCreateMajor(faculty.id)}
-                            className="inline-flex items-center gap-1 rounded-md border border-dashed border-indigo-300 px-2 py-0.5 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-dashed border-[#cbebeb] px-2 py-0.5 text-[11px] font-semibold text-[#00878a] hover:bg-[#e6f6f6]"
                           >
                             + Ngành
                           </button>
@@ -739,7 +765,7 @@ export const OrganizationManagement: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => openEditFaculty(faculty)}
-                            className="rounded-lg p-2 text-indigo-600 hover:bg-indigo-50"
+                            className="rounded-lg p-2 text-[#00878a] hover:bg-[#e6f6f6] transition cursor-pointer"
                             title="Chỉnh sửa khoa"
                           >
                             <Edit3 className="h-4 w-4" />
@@ -834,7 +860,7 @@ export const OrganizationManagement: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {majors.map((major) => (
                     <tr key={major.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 font-mono text-xs font-bold text-indigo-700 whitespace-nowrap min-w-[100px]">
+                      <td className="px-4 py-3 font-mono text-xs font-bold text-[#00878a] whitespace-nowrap min-w-[100px]">
                         {major.code}
                       </td>
                       <td className="px-4 py-3">
@@ -875,7 +901,7 @@ export const OrganizationManagement: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => openEditMajor(major)}
-                            className="rounded-lg p-2 text-indigo-600 hover:bg-indigo-50"
+                            className="rounded-lg p-2 text-[#00878a] hover:bg-[#e6f6f6] transition cursor-pointer"
                             title="Chỉnh sửa ngành"
                           >
                             <Edit3 className="h-4 w-4" />
@@ -953,17 +979,20 @@ export const OrganizationManagement: React.FC = () => {
       {facultyModalOpen && (
         <ModalPortal>
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
             onClick={() => !saving && setFacultyModalOpen(false)}
           >
           <form
             onSubmit={(e) => void submitFaculty(e)}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl"
           >
-            <div className="mb-4 flex items-start justify-between">
+            <div className="flex items-start justify-between rounded-t-2xl border-b border-slate-100 bg-slate-50/70 p-5">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900">
+                <span className="inline-flex items-center gap-1 rounded-full border border-[#cbebeb] bg-[#e6f6f6] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                  {editingFaculty ? "Cập nhật Khoa" : "Khoa mới"}
+                </span>
+                <h3 className="mt-1.5 text-lg font-black text-slate-900">
                   {editingFaculty ? "Chỉnh sửa Khoa" : "Thêm Khoa mới"}
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">
@@ -973,13 +1002,13 @@ export const OrganizationManagement: React.FC = () => {
               <button
                 type="button"
                 onClick={() => !saving && setFacultyModalOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                className="cursor-pointer rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-200/60 hover:text-slate-700"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-5 space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-slate-800">
@@ -993,7 +1022,7 @@ export const OrganizationManagement: React.FC = () => {
                       setFacultyCode(e.target.value.toUpperCase())
                     }
                     placeholder="VD: CNTT"
-                    className="w-full rounded-xl border border-slate-300 p-2.5 font-mono text-sm uppercase outline-none focus:border-indigo-500"
+                    className="w-full rounded-xl border border-slate-300 p-2.5 font-mono text-sm uppercase outline-none focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20"
                   />
                 </div>
                 <div className="col-span-2">
@@ -1006,7 +1035,7 @@ export const OrganizationManagement: React.FC = () => {
                     value={facultyName}
                     onChange={(e) => setFacultyName(e.target.value)}
                     placeholder="VD: Khoa Công nghệ thông tin"
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-indigo-500"
+                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20"
                   />
                 </div>
               </div>
@@ -1021,16 +1050,16 @@ export const OrganizationManagement: React.FC = () => {
                   value={facultyDescription}
                   onChange={(e) => setFacultyDescription(e.target.value)}
                   placeholder="Ghi chú hoặc mô tả ngắn về khoa..."
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-indigo-500"
+                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20"
                 />
               </div>
 
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={facultyIsActive}
                   onChange={(e) => setFacultyIsActive(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                  className="h-4 w-4 rounded border-slate-300 text-[#00878a] focus:ring-[#00878a]"
                 />
                 Đang hoạt động (hiển thị trong danh sách chọn mới)
               </label>
@@ -1042,21 +1071,21 @@ export const OrganizationManagement: React.FC = () => {
               )}
             </div>
 
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="flex items-center justify-end gap-3 rounded-b-2xl border-t border-slate-100 bg-slate-50/60 px-5 py-3">
               <button
                 type="button"
                 disabled={saving}
                 onClick={() => setFacultyModalOpen(false)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700"
+                className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#00878a] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {saving && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                {saving && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
                 {editingFaculty ? "Lưu thay đổi" : "Tạo Khoa"}
               </button>
             </div>
@@ -1069,17 +1098,20 @@ export const OrganizationManagement: React.FC = () => {
       {majorModalOpen && (
         <ModalPortal>
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
             onClick={() => !saving && setMajorModalOpen(false)}
           >
           <form
             onSubmit={(e) => void submitMajor(e)}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white shadow-2xl"
           >
-            <div className="mb-4 flex items-start justify-between">
+            <div className="flex items-start justify-between rounded-t-2xl border-b border-slate-100 bg-slate-50/70 p-5">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900">
+                <span className="inline-flex items-center gap-1 rounded-full border border-[#cbebeb] bg-[#e6f6f6] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#00878a]">
+                  {editingMajor ? "Cập nhật Ngành học" : "Ngành học mới"}
+                </span>
+                <h3 className="mt-1.5 text-lg font-black text-slate-900">
                   {editingMajor ? "Chỉnh sửa Ngành học" : "Thêm Ngành học mới"}
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">
@@ -1089,31 +1121,24 @@ export const OrganizationManagement: React.FC = () => {
               <button
                 type="button"
                 onClick={() => !saving && setMajorModalOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                className="cursor-pointer rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-200/60 hover:text-slate-700"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-5 space-y-4">
               <div>
                 <label className="mb-1 block text-xs font-bold text-slate-800">
                   Thuộc Khoa *
                 </label>
-                <select
-                  required
+                <CustomDropdown
                   value={majorFacultyId}
-                  onChange={(e) => setMajorFacultyId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-indigo-500"
-                >
-                  <option value="">-- Chọn Khoa --</option>
-                  {facultyOptions.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      [{f.code}] {f.name}
-                      {!f.isActive ? " (Ngừng sử dụng)" : ""}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setMajorFacultyId(val)}
+                  options={modalFacultyOptions}
+                  placeholder="-- Chọn Khoa --"
+                  searchable
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-3">
@@ -1127,7 +1152,7 @@ export const OrganizationManagement: React.FC = () => {
                     value={majorCode}
                     onChange={(e) => setMajorCode(e.target.value.toUpperCase())}
                     placeholder="VD: KTPM"
-                    className="w-full rounded-xl border border-slate-300 p-2.5 font-mono text-sm uppercase outline-none focus:border-indigo-500"
+                    className="w-full rounded-xl border border-slate-300 p-2.5 font-mono text-sm uppercase outline-none focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20"
                   />
                 </div>
                 <div className="col-span-2">
@@ -1140,7 +1165,7 @@ export const OrganizationManagement: React.FC = () => {
                     value={majorName}
                     onChange={(e) => setMajorName(e.target.value)}
                     placeholder="VD: Kỹ thuật phần mềm"
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-indigo-500"
+                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20"
                   />
                 </div>
               </div>
@@ -1155,16 +1180,16 @@ export const OrganizationManagement: React.FC = () => {
                   value={majorDescription}
                   onChange={(e) => setMajorDescription(e.target.value)}
                   placeholder="Ghi chú về chuyên ngành..."
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-indigo-500"
+                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-[#00878a] focus:ring-2 focus:ring-[#00878a]/20"
                 />
               </div>
 
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={majorIsActive}
                   onChange={(e) => setMajorIsActive(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                  className="h-4 w-4 rounded border-slate-300 text-[#00878a] focus:ring-[#00878a]"
                 />
                 Đang hoạt động (hiển thị trong danh sách chọn mới)
               </label>
@@ -1176,21 +1201,21 @@ export const OrganizationManagement: React.FC = () => {
               )}
             </div>
 
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="flex items-center justify-end gap-3 rounded-b-2xl border-t border-slate-100 bg-slate-50/60 px-5 py-3">
               <button
                 type="button"
                 disabled={saving}
                 onClick={() => setMajorModalOpen(false)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700"
+                className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#00878a] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {saving && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                {saving && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
                 {editingMajor ? "Lưu thay đổi" : "Tạo Ngành"}
               </button>
             </div>

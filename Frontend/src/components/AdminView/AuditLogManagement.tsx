@@ -451,7 +451,7 @@ function CustomDropdown({
   );
 
   return (
-    <div className={`relative ${className}`} ref={containerRef}>
+    <div className={`relative ${isOpen ? "z-40" : "z-auto"} ${className}`} ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
@@ -659,9 +659,9 @@ export const AuditLogManagement: React.FC = () => {
       </div>
 
       {/* 3. Main Data Card: Filters + Table + Pagination */}
-      <div className="rounded-2xl border border-slate-100 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)] overflow-hidden">
+      <div className="rounded-2xl border border-slate-100 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
         {/* Filters Toolbar */}
-        <div className="border-b border-slate-100 p-4 sm:p-5">
+        <div className="border-b border-slate-100 p-4 sm:p-5 rounded-t-2xl">
           <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
             {/* Search Input */}
             <div className="flex h-10 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-2xs transition focus-within:border-[#00878a] focus-within:ring-2 focus-within:ring-[#00878a]/20">

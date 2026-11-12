@@ -93,20 +93,20 @@ function ApplicationProgressBar({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4">
-      <h4 className="mb-3 text-xs font-bold text-slate-700">
+    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4">
+      <h4 className="mb-3 text-xs font-bold text-slate-700 text-center sm:text-left">
         Tiến trình tuyển dụng & nhận thực tập:
       </h4>
-      <div className="relative flex items-center justify-between px-2 sm:px-6">
+      <div className="relative flex items-center justify-between px-1 sm:px-6">
         {/* Background Connecting Line */}
-        <div className="absolute left-8 right-8 top-3.5 h-0.5 -translate-y-1/2 bg-slate-200" />
+        <div className="absolute left-6 right-6 sm:left-8 sm:right-8 top-3.5 h-0.5 -translate-y-1/2 bg-slate-200" />
         {/* Active Progress Line */}
         <div
-          className={`absolute left-8 top-3.5 h-0.5 -translate-y-1/2 transition-all duration-500 ${
+          className={`absolute left-6 sm:left-8 top-3.5 h-0.5 -translate-y-1/2 transition-all duration-500 ${
             isTerminalNegative ? 'bg-rose-500' : 'bg-[#008b8f]'
           }`}
           style={{
-            width: `calc(${Math.min(currentStep, 3) / 3} * (100% - 4rem))`,
+            width: `calc(${Math.min(currentStep, 3) / 3} * (100% - 3rem))`,
           }}
         />
 
@@ -144,7 +144,7 @@ function ApplicationProgressBar({
                 )}
               </div>
               <p
-                className={`mt-2 text-[11px] font-bold ${
+                className={`mt-2 text-[10px] sm:text-[11px] font-bold ${
                   isStepNegative
                     ? 'text-rose-700'
                     : isDone
@@ -284,26 +284,15 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Modern SaaS Header */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-            Hồ sơ & Đơn ứng tuyển
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Danh Sách Đơn Ứng Tuyển
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Theo dõi tiến trình xét duyệt CV, lịch phỏng vấn và phản hồi lời mời thực tập (Offer) theo thời gian thực.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="text-xs font-bold px-3 py-1.5 bg-teal-50 text-teal-800 rounded-xl border border-teal-200 shadow-2xs">
-            Tổng cộng: {visibleApplications.length} đơn
-          </span>
-        </div>
+    <div className="space-y-6 w-full">
+      {/* Centered Open Typography Header */}
+      <div className="text-center max-w-2xl mx-auto pt-2 pb-5 sm:pt-4 sm:pb-7 space-y-2">
+        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          Danh Sách Đơn Ứng Tuyển
+        </h1>
+        <p className="text-sm sm:text-base text-slate-500 font-normal leading-relaxed">
+          Theo dõi tiến độ xét duyệt hồ sơ, lịch phỏng vấn và phản hồi từ nhà tuyển dụng.
+        </p>
       </div>
 
       {actionError && (
@@ -317,22 +306,22 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
           {[1, 2, 3].map((skeletonId) => (
             <div
               key={skeletonId}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4 animate-pulse"
+              className="bg-white/90 rounded-2xl border border-teal-900/10 p-5 shadow-xs space-y-4"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-                <div>
-                  <div className="h-5 w-48 bg-slate-200 rounded mb-2" />
-                  <div className="h-4 w-32 bg-slate-100 rounded" />
+                <div className="space-y-2">
+                  <div className="h-5 w-48 rounded-md skeleton-shimmer" />
+                  <div className="h-3.5 w-32 rounded-md skeleton-shimmer" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="h-6 w-24 bg-slate-200 rounded-full" />
-                  <div className="h-8 w-8 bg-slate-100 rounded-xl" />
+                  <div className="h-6 w-24 rounded-full skeleton-shimmer" />
+                  <div className="h-8 w-8 rounded-xl skeleton-shimmer" />
                 </div>
               </div>
-              <div className="h-24 w-full bg-slate-50 rounded-2xl border border-slate-100" />
-              <div className="flex items-center justify-between pt-2">
-                <div className="h-4 w-40 bg-slate-100 rounded" />
-                <div className="h-4 w-24 bg-slate-100 rounded" />
+              <div className="h-20 w-full rounded-xl skeleton-shimmer" />
+              <div className="flex items-center justify-between pt-1">
+                <div className="h-3.5 w-36 rounded-md skeleton-shimmer" />
+                <div className="h-4 w-20 rounded-md skeleton-shimmer" />
               </div>
             </div>
           ))}
@@ -370,23 +359,23 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
             return (
               <div
                 key={app.id}
-                className={`rounded-2xl border p-5 shadow-xs transition-all space-y-4 ${
+                className={`sb-job-card rounded-[1.5rem] p-5 sm:p-6 transition-all space-y-4 ${
                   isInactive
-                    ? 'bg-slate-50/50 border-slate-200/90 opacity-90'
-                    : 'bg-white border-slate-200/90 hover:border-teal-300 hover:shadow-md card-interactive'
+                    ? 'bg-slate-50/70 opacity-90'
+                    : 'card-interactive'
                 }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dashed border-teal-900/10">
+                  <div className="text-center sm:text-left">
+                    <h3 className="text-base font-extrabold text-slate-900">
                       {app.internshipTitle}
                     </h3>
-                    <p className="text-xs font-semibold text-teal-700 flex items-center gap-1 mt-0.5">
+                    <p className="text-xs font-semibold text-teal-700 flex items-center justify-center sm:justify-start gap-1 mt-0.5">
                       <Building2 className="w-3.5 h-3.5" /> {app.companyName}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center sm:justify-end gap-2 flex-wrap">
                     <span
                       className={`text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 ${badge.bg}`}
                     >
@@ -396,7 +385,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                     {!isInactive && (
                       <button
                         onClick={onOpenChat}
-                        className="p-2 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 rounded-xl text-slate-600 transition-colors active:scale-95"
+                        className="p-2.5 bg-white border border-teal-200/80 hover:bg-teal-50 hover:text-teal-700 rounded-full text-slate-600 shadow-2xs transition-colors active:scale-95"
                         title="Nhắn tin với Doanh nghiệp"
                       >
                         <MessageSquare className="w-4 h-4" />
@@ -406,7 +395,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                       <button
                         onClick={() => void withdraw(app.id)}
                         disabled={withdrawingId === app.id}
-                        className="px-2.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-xl disabled:opacity-50 active:scale-95 transition-all"
+                        className="px-3 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-full disabled:opacity-50 active:scale-95 transition-all"
                       >
                         {withdrawingId === app.id ? 'Đang rút...' : 'Rút đơn'}
                       </button>
@@ -416,7 +405,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                         type="button"
                         onClick={() => void handleDeleteApplication(app)}
                         disabled={deletingId === app.id}
-                        className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 text-slate-600 font-bold text-xs flex items-center gap-1 transition-colors disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 text-slate-600 font-bold text-xs flex items-center gap-1 transition-colors disabled:opacity-50"
                         title="Xóa đơn đã hoàn tất hoặc hết hiệu lực khỏi danh sách"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -574,15 +563,14 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                     )}
 
                     {app.status === 'INTERVIEWING' && (
-                      <div className="flex flex-wrap items-center gap-2.5">
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                         <a
                           href={`mailto:${app.interview.contactEmail}?subject=${encodeURIComponent(
                             `[CareerBridge] Xác nhận / Trao đổi lịch phỏng vấn - ${app.internshipTitle}`,
                           )}`}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-[#008b8f] hover:bg-[#006d72] px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[#00a3a6] to-[#006d72] px-5 py-2.5 text-xs font-bold text-white shadow-[0_6px_16px_-6px_rgb(0_139_143/0.75)] transition hover:brightness-105 active:scale-95"
                         >
-                          <Mail className="w-4 h-4" /> Phản hồi / Đề xuất lịch
-                          qua Email
+                          <Mail className="w-4 h-4" /> Phản hồi / Đề xuất lịch qua Email
                         </a>
                       </div>
                     )}
@@ -638,12 +626,12 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                       </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-2.5">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                       <button
                         type="button"
                         onClick={() => void handleAcceptOffer(app)}
                         disabled={respondingOfferId === app.id}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#008b8f] hover:bg-[#006d72] px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 px-5 py-2.5 text-xs font-bold text-white shadow-[0_6px_18px_-6px_rgb(16_185_129/0.75)] hover:brightness-105 active:scale-95 transition-all disabled:opacity-50"
                       >
                         <CheckCircle2 className="w-4 h-4" />
                         {respondingOfferId === app.id
@@ -654,7 +642,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                         type="button"
                         onClick={() => void handleDeclineOffer(app)}
                         disabled={respondingOfferId === app.id}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 px-4 py-2 text-xs font-bold text-rose-800 transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 px-4 py-2.5 text-xs font-bold text-rose-800 transition-colors active:scale-95 disabled:opacity-50"
                       >
                         <XCircle className="w-4 h-4" />
                         Từ chối lời mời
@@ -684,7 +672,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 pt-2 text-center sm:text-left">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" /> Ngày ứng tuyển:{' '}
                     {formatDate(app.appliedAt)}

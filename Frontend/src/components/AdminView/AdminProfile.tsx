@@ -317,7 +317,7 @@ export const AdminProfile: React.FC = () => {
             <div className="flex items-center gap-2 pt-2 md:col-span-2">
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#00878a] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#00878a]/20 transition hover:bg-[#007477] active:scale-[0.98]"
               >
                 <Save className="h-4 w-4" />
                 Lưu thay đổi

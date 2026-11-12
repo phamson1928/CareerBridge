@@ -34,7 +34,7 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout hideMobileSwitch>
       <section className="forgot-password-card" aria-labelledby="reset-password-title">
         <div className="forgot-password-icon" aria-hidden="true"><LockKeyhole /></div>
         <p className="forgot-password-kicker">Bảo mật tài khoản</p>

@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ModalPortal } from "../ModalPortal";
 import {
   AlertTriangle,
   Ban,
   Briefcase,
   Building2,
+  Check,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -65,6 +67,107 @@ const statusClass: Record<CompanyProfileStatus, string> = {
   REJECTED: "border-rose-200 bg-rose-50 text-rose-800",
   SUSPENDED: "border-slate-300 bg-slate-200 text-slate-800",
 };
+
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+function CustomDropdown({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Chọn...",
+  className = "",
+}: {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  const selectedOption = useMemo(
+    () => options.find((opt) => opt.value === value),
+    [options, value],
+  );
+
+  return (
+    <div className={`relative ${className} ${isOpen ? "z-40" : ""}`} ref={containerRef}>
+      {label && (
+        <label className="mb-1 block text-xs font-bold text-slate-800">
+          {label}
+        </label>
+      )}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`flex w-full cursor-pointer items-center justify-between rounded-xl border bg-white px-3 py-2 text-xs font-medium text-slate-800 transition ${
+          isOpen
+            ? "border-[#00878a] ring-2 ring-[#00878a]/20"
+            : "border-slate-300 hover:border-[#00878a]"
+        }`}
+      >
+        <span className="truncate">
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`ml-1.5 h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-[#00878a]" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 max-h-56 w-full overflow-auto rounded-xl border border-slate-100 bg-white p-1 shadow-2xl ring-1 ring-black/5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="py-0.5">
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition ${
+                    isSelected
+                      ? "bg-[#e6f6f6] font-bold text-[#00878a]"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="truncate pr-2">{opt.label}</span>
+                  {isSelected && (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-[#00878a]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const CompanyModeration: React.FC = () => {
   const [companies, setCompanies] = useState<CompanyProfileRecord[]>([]);
@@ -1001,26 +1104,21 @@ export const CompanyModeration: React.FC = () => {
             </p>
 
             <div className="mt-4 space-y-3 text-xs">
-              <label className="block">
-                <span className="font-bold text-slate-800">Nhóm lý do</span>
-                <select
+              <div>
+                <CustomDropdown
+                  label="Nhóm lý do"
                   value={rejectionReasonCode}
-                  onChange={(e) =>
-                    setRejectionReasonCode(
-                      e.target.value as CompanyRejectionReasonCode,
-                    )
+                  onChange={(val) =>
+                    setRejectionReasonCode(val as CompanyRejectionReasonCode)
                   }
-                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-indigo-500"
-                >
-                  {Object.entries(REJECTION_REASON_LABELS).map(
-                    ([code, label]) => (
-                      <option key={code} value={code}>
-                        {label}
-                      </option>
-                    ),
+                  options={Object.entries(REJECTION_REASON_LABELS).map(
+                    ([code, label]) => ({
+                      value: code,
+                      label,
+                    }),
                   )}
-                </select>
-              </label>
+                />
+              </div>
 
               <label className="block">
                 <div className="flex items-center justify-between">
@@ -1103,28 +1201,21 @@ export const CompanyModeration: React.FC = () => {
             </div>
 
             <div className="mt-4 space-y-3 text-xs">
-              <label className="block">
-                <span className="font-bold text-slate-800">
-                  Nhóm lý do tạm dừng
-                </span>
-                <select
+              <div>
+                <CustomDropdown
+                  label="Nhóm lý do tạm dừng"
                   value={suspensionReasonCode}
-                  onChange={(e) =>
-                    setSuspensionReasonCode(
-                      e.target.value as CompanySuspensionReasonCode,
-                    )
+                  onChange={(val) =>
+                    setSuspensionReasonCode(val as CompanySuspensionReasonCode)
                   }
-                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-[#00878a]"
-                >
-                  {Object.entries(SUSPENSION_REASON_LABELS).map(
-                    ([code, label]) => (
-                      <option key={code} value={code}>
-                        {label}
-                      </option>
-                    ),
+                  options={Object.entries(SUSPENSION_REASON_LABELS).map(
+                    ([code, label]) => ({
+                      value: code,
+                      label,
+                    }),
                   )}
-                </select>
-              </label>
+                />
+              </div>
 
               <label className="block">
                 <div className="flex items-center justify-between">

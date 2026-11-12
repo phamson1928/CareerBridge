@@ -1,4 +1,4 @@
-import { AlertCircle, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertCircle, ArrowRight, Building2, ClipboardList, Compass, Loader2, MapPin, RefreshCw, Settings, Target, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { Application, Internship } from '../../types';
 import { toLegacyInternship } from '../../internships/mappers';
@@ -8,7 +8,6 @@ import type { JobPreferences, RecommendationResponse } from '../../recommendatio
 import { studentsApi } from '../../students/api';
 import { getApiErrorMessage } from '../../auth/api';
 import { JobPreferenceForm } from './JobPreferenceForm';
-import { ProfileReadinessBanner } from './ProfileReadinessBanner';
 import { RecommendationCard } from './RecommendationCard';
 
 interface JobRecommendationsProps {
@@ -147,79 +146,162 @@ export function JobRecommendations({
     (item) => item.explanationStatus === 'FALLBACK',
   );
 
+  const isHighReadiness = response.profileReadiness.level === 'HIGH';
+
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-indigo-700">
-            <Sparkles className="h-3.5 w-3.5" /> AI hỗ trợ
-          </div>
-          <h2 className="mt-2 flex items-center gap-2 text-xl font-extrabold text-slate-900">
-            <Sparkles className="h-5 w-5 text-indigo-600" /> Gợi ý AI cho vị trí thực tập
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">Điểm phù hợp được tính từ hồ sơ, kỹ năng và mong muốn công việc của bạn.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void generate()}
-          disabled={isGenerating || isRefreshCoolingDown}
-          title={isRefreshCoolingDown ? `Có thể làm mới sau ${formatCooldown(remainingRefreshSeconds)}` : undefined}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : response.hasRecommendation ? <RefreshCw className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-          {isGenerating
-            ? 'Đang tạo gợi ý...'
-            : isRefreshCoolingDown
-              ? `Làm mới sau ${formatCooldown(remainingRefreshSeconds)}`
-              : response.hasRecommendation
-                ? 'Làm mới gợi ý'
-                : 'Tạo gợi ý'}
-        </button>
+    <section className="relative pt-10 sm:pt-12 pb-10 sm:pb-12 space-y-6" aria-label="Gợi ý việc làm phù hợp">
+      {/* 1. Header căn giữa hoàn hảo, đồng bộ với Timeline ở trên */}
+      <div className="flex flex-col items-center text-center max-w-4xl mx-auto px-4">
+        <span className="inline-flex items-center rounded-full border border-teal-200/90 bg-teal-50/90 px-4 py-1 text-xs font-black uppercase tracking-wider text-teal-800 shadow-2xs">
+          GỢI Ý PHÙ HỢP
+        </span>
+
+        <h2 className="mt-3.5 text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+          Vị trí thực tập đề xuất cho bạn
+        </h2>
+
+        <p className="mt-2.5 text-sm sm:text-base font-medium text-slate-600 max-w-2xl leading-relaxed">
+          Điểm phù hợp được tính toán theo thời gian thực từ hồ sơ năng lực, kỹ năng và nguyện vọng của bạn.
+        </p>
       </div>
 
-      <ProfileReadinessBanner
-        readiness={response.profileReadiness}
-        onOpenProfile={onOpenProfile}
-        onOpenPreferences={() => setIsPreferenceFormOpen(true)}
-      />
+      {/* 2. Thanh điều khiển hợp nhất: Gộp Mức độ sẵn sàng hồ sơ + Các nút tác vụ vào 1 thanh tinh gọn duy nhất */}
+      <div className="max-w-4xl mx-auto w-full rounded-2xl border border-slate-200/90 bg-white/95 p-3.5 sm:px-5 sm:py-3.5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
+        {/* Bên trái: Trạng thái hồ sơ */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-2xs ${
+              isHighReadiness
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                : 'bg-amber-50 text-amber-700 border border-amber-200/80'
+            }`}
+          >
+            <ClipboardList className="h-4.5 w-4.5" />
+          </div>
 
-      <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">
-        Khi bạn bấm tạo gợi ý, phần hồ sơ cần thiết như ngành học, giới thiệu, kỹ năng, dự án và mong muốn công việc có thể được tối giản để tạo phần giải thích chi tiết. Điểm và thứ hạng luôn do hệ thống tính toán.
-      </p>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs sm:text-sm font-bold text-slate-800">
+                Mức độ sẵn sàng hồ sơ
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-black border ${
+                  isHighReadiness
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}
+              >
+                {response.profileReadiness.score}/100
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 truncate mt-0.5">
+              {isHighReadiness
+                ? 'Hồ sơ đã đủ dữ liệu tối ưu cho các gợi ý việc làm.'
+                : 'Bổ sung thêm kỹ năng để tăng độ chuẩn xác của gợi ý.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Bên phải: Cụm nút hành động hợp nhất (Hồ sơ | Mong muốn | Làm mới) */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0 sm:self-center">
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition active:scale-95 cursor-pointer"
+          >
+            <UserRound className="h-3.5 w-3.5 text-slate-500" /> Hồ sơ
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsPreferenceFormOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition active:scale-95 cursor-pointer"
+          >
+            <Settings className="h-3.5 w-3.5 text-slate-500" /> Mong muốn
+          </button>
+
+          {response.hasRecommendation && (
+            <button
+              type="button"
+              onClick={() => void generate()}
+              disabled={isGenerating || isRefreshCoolingDown}
+              title={isRefreshCoolingDown ? `Có thể làm mới sau ${formatCooldown(remainingRefreshSeconds)}` : undefined}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-teal-800 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 transition cursor-pointer"
+            >
+              {isGenerating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              {isGenerating
+                ? 'Đang tải...'
+                : isRefreshCoolingDown
+                ? `Làm mới sau ${formatCooldown(remainingRefreshSeconds)}`
+                : 'Làm mới'}
+            </button>
+          )}
+        </div>
+      </div>
 
       {error && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50/90 p-3.5 text-sm text-rose-800 shadow-2xs">
           <span>{error}</span>
-          <button type="button" onClick={() => void load()} className="shrink-0 font-bold underline">Tải lại</button>
+          <button type="button" onClick={() => void load()} className="shrink-0 font-bold underline cursor-pointer">
+            Tải lại
+          </button>
         </div>
       )}
 
       {hasFallback && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-          Phần phân tích chi tiết đang tạm thời không khả dụng; kết quả hiện tại vẫn được tính từ dữ liệu hồ sơ và kỹ năng.
+        <div className="max-w-4xl mx-auto rounded-xl border border-amber-200/90 bg-amber-50/80 p-3 text-xs text-amber-900 shadow-2xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+          <span>Kết quả gợi ý hiện tại được tổng hợp trực tiếp từ hồ sơ năng lực và kỹ năng của bạn.</span>
         </div>
       )}
 
-      {response.hasRecommendation && response.generatedAt && (
-        <p className="text-xs text-slate-500">
-          Cập nhật {formatRecommendationDate(response.generatedAt)}
-          {response.cacheHit ? ' · Đang dùng kết quả đã lưu' : ''}
-          {isRefreshCoolingDown
-            ? ` · Có thể làm mới sau ${formatCooldown(remainingRefreshSeconds)}`
-            : ''}
-        </p>
-      )}
-
+      {/* 4. Trạng thái chưa có gợi ý: Khối chào đón căn giữa, bỏ hoàn toàn các icon AI */}
       {!response.hasRecommendation ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-7 text-center">
-          <h3 className="font-extrabold text-slate-800">Chưa có gợi ý nào</h3>
-          <p className="mt-1 text-sm text-slate-500">Hoàn thiện hồ sơ hoặc bấm “Tạo gợi ý” để bắt đầu.</p>
+        <div className="relative overflow-hidden rounded-3xl border border-teal-100/90 bg-gradient-to-b from-white via-white to-teal-50/20 p-8 sm:p-10 text-center shadow-[0_10px_30px_-10px_rgba(0,109,114,0.06)] max-w-4xl mx-auto w-full">
+          {/* Icon định hướng nghề nghiệp (Compass) thay cho icon Sparkles AI */}
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100 text-teal-700 shadow-2xs">
+            <Compass className="h-7 w-7" />
+          </div>
+
+          <h3 className="mt-4 text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            Khám phá các vị trí thực tập phù hợp nhất với bạn
+          </h3>
+
+          <p className="mt-2 text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
+            Hệ thống sẽ quét toàn bộ kỹ năng trong hồ sơ, định hướng chuyên ngành và nguyện vọng để tìm ra các cơ hội tuyển dụng tương thích cao nhất.
+          </p>
+
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-200/80 bg-teal-50/70 px-3 py-1 text-xs font-bold text-teal-800">
+              <Target className="h-3 w-3 text-teal-600" /> Đối sánh kỹ năng chuẩn hóa
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-200/80 bg-teal-50/70 px-3 py-1 text-xs font-bold text-teal-800">
+              <MapPin className="h-3 w-3 text-teal-600" /> Ưu tiên địa điểm & chế độ làm việc
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-200/80 bg-teal-50/70 px-3 py-1 text-xs font-bold text-teal-800">
+              <Building2 className="h-3 w-3 text-teal-600" /> Đợt thực tập đang mở tuyển
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void generate()}
+            disabled={isGenerating}
+            className="sb-btn-glow mt-6 inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-[#00b4b8] via-[#009da0] to-[#006d72] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-700/25 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
+          >
+            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+            {isGenerating ? 'Đang phân tích...' : 'Khám phá vị trí phù hợp ngay'}
+          </button>
         </div>
       ) : response.recommendations.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-7 text-center">
+        <div className="max-w-4xl mx-auto rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
           <h3 className="font-extrabold text-slate-800">Chưa có vị trí đủ điều kiện để gợi ý</h3>
-          <p className="mt-1 text-sm text-slate-500">
-            Hiện chưa có vị trí đang mở, còn hạn và còn chỗ thuộc công ty/học kỳ hợp lệ mà bạn chưa ứng tuyển.
+          <p className="mt-1 text-sm text-slate-500 max-w-lg mx-auto">
+            Hiện chưa có vị trí đang mở, còn hạn và còn chỗ thuộc học kỳ hợp lệ mà bạn chưa ứng tuyển.
             Hãy xem danh sách tất cả vị trí bên dưới hoặc quay lại sau.
           </p>
         </div>

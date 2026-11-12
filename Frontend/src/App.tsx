@@ -45,6 +45,15 @@ import type { PlacementRecord } from "./placements/types";
 import { getApiErrorMessage } from "./auth/api";
 import { useChat } from "./chat/use-chat";
 import { useAppFeedback } from "./components/Feedback/AppFeedbackProvider";
+import {
+  InternshipListSkeleton,
+  ApplicationsSkeleton,
+  PlacementSkeleton,
+  ReportsSkeleton,
+  StudentProfileSkeleton,
+  StudentSupportSkeleton,
+  StudentEvaluationsSkeleton,
+} from "./components/StudentView/skeletons";
 
 const InternshipList = lazy(() => import("./components/StudentView/InternshipList").then(({ InternshipList }) => ({ default: InternshipList })));
 const StudentApplications = lazy(() => import("./components/StudentView/StudentApplications").then(({ StudentApplications }) => ({ default: StudentApplications })));
@@ -233,14 +242,27 @@ export default function App() {
       const path = adminPathByTab[tab];
       if (path) {
         navigate(`/admin/${path}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
     }
     setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
 
   const [studentProfile, setStudentProfile] =
     useState<StudentProfile | null>(null);
+  // Student Profile Load Status: 'idle' | 'loading' | 'ready' | 'empty' | 'error'
+  const [studentProfileStatus, setStudentProfileStatus] = useState<
+    "idle" | "loading" | "ready" | "empty" | "error"
+  >("idle");
+  const [studentProfileError, setStudentProfileError] = useState<string | null>(null);
   const [avatarFileId, setAvatarFileId] = useState<string | null>(null);
   const [companyProfile, setCompanyProfile] =
     useState<CompanyProfile | null>(null);
@@ -281,6 +303,8 @@ export default function App() {
 
     if (isNewUser) {
       setStudentProfile(null);
+      setStudentProfileStatus("idle");
+      setStudentProfileError(null);
       setAvatarFileId(null);
       setCompanyProfile(null);
       setCompanyVerificationStatus(null);
@@ -297,6 +321,10 @@ export default function App() {
 
     const loadWorkflowData = async () => {
       setIsWorkflowLoading(true);
+      if (user.role === "STUDENT") {
+        setStudentProfileStatus("loading");
+        setStudentProfileError(null);
+      }
       try {
         if (user.role === "STUDENT") {
           const [internshipsPage, applicationsPage, evaluationPage] =
@@ -323,9 +351,22 @@ export default function App() {
                 ),
               );
               setAvatarFileId(profile.avatarFileId);
+              setStudentProfileStatus("ready");
             }
-          } catch (profileError) {
-            console.warn("Student profile is not available yet", profileError);
+          } catch (profileError: unknown) {
+            if (!active) return;
+            const statusCode = (profileError as { response?: { status?: number } })?.response?.status;
+            if (statusCode === 404) {
+              // Hoàn tất tải: sinh viên chưa tạo hồ sơ
+              setStudentProfile(null);
+              setStudentProfileStatus("empty");
+            } else {
+              // Lỗi API (mạng, server 500, timeout, v.v.)
+              console.error("Student profile API error:", profileError);
+              setStudentProfile(null);
+              setStudentProfileStatus("error");
+              setStudentProfileError(getApiErrorMessage(profileError));
+            }
           }
         }
 
@@ -385,6 +426,7 @@ export default function App() {
     setStudentProfile(
       profile ? toLegacyStudentProfile(profile, skills.map((skill) => skill.name)) : null,
     );
+    setStudentProfileStatus(profile ? "ready" : "empty");
   };
 
   const handleCompanyProfileChange = (profile: CompanyProfileRecord) => {
@@ -608,10 +650,14 @@ export default function App() {
       {/* Main Page Body Container with smooth page entrance animation */}
       <main
         key={`${currentRole}-${activeTab}`}
-        className={`flex-1 w-full mx-auto px-4 sm:px-6 py-6 page-fade-in ${
+        className={`flex-1 w-full mx-auto page-fade-in ${
           currentRole === "ADMIN"
-            ? "max-w-none lg:px-7 lg:py-8"
-            : "max-w-[1440px] lg:px-8"
+            ? "max-w-none px-4 sm:px-6 py-6 lg:px-7 lg:py-8"
+            : currentRole === "STUDENT"
+            ? activeTab === "internships" && Boolean(studentProfile)
+              ? "student-home-main max-w-[1240px] px-3.5 sm:px-6 lg:px-8 !pt-0 pb-6 flex flex-col items-center"
+              : "max-w-[1240px] px-3.5 sm:px-6 lg:px-8 pt-18 sm:pt-22 lg:pt-28 pb-8 flex flex-col items-center"
+            : "max-w-[1440px] px-4 sm:px-6 py-6 lg:px-8"
         }`}
       >
         {workflowError && (
@@ -620,12 +666,34 @@ export default function App() {
             <button type="button" onClick={() => setWorkflowReloadKey((value) => value + 1)} className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700">Thử lại</button>
           </div>
         )}
-        <Suspense fallback={<PageLoading />}>
+        <Suspense fallback={<PageLoading role={currentRole} activeTab={activeTab} />}>
         {/* STUDENT VIEWS */}
         {currentRole === "STUDENT" && (
           <>
             {activeTab === "internships" && (
-              studentProfile ? (
+              isWorkflowLoading || studentProfileStatus === "loading" ? (
+                <InternshipListSkeleton />
+              ) : studentProfileStatus === "error" ? (
+                <section className="w-full max-w-xl rounded-3xl border border-rose-200 bg-rose-50/90 p-6 text-center text-rose-900 shadow-xs backdrop-blur-xs">
+                  <h2 className="text-base font-bold">Không thể tải thông tin hồ sơ sinh viên</h2>
+                  <p className="mt-2 text-xs sm:text-sm text-rose-700">
+                    {studentProfileError || "Đã xảy ra lỗi khi kết nối tới máy chủ. Vui lòng thử lại."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setWorkflowReloadKey((value) => value + 1)}
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer"
+                  >
+                    Thử lại
+                  </button>
+                </section>
+              ) : studentProfileStatus === "empty" || !studentProfile ? (
+                <ProfileRequiredNotice
+                  title="Hoàn thiện hồ sơ trước khi ứng tuyển"
+                  description="Hệ thống không dùng dữ liệu mẫu. Hãy tạo hồ sơ sinh viên và tải CV để xem cơ hội phù hợp."
+                  onOpenProfile={() => setActiveTab("profile")}
+                />
+              ) : (
                 <InternshipList
                   internships={internships}
                   studentProfile={studentProfile}
@@ -633,12 +701,7 @@ export default function App() {
                   loadInternships={loadInternships}
                   onApply={handleApplyInternship}
                   onOpenProfile={() => setActiveTab("profile")}
-                />
-              ) : (
-                <ProfileRequiredNotice
-                  title="Hoàn thiện hồ sơ trước khi ứng tuyển"
-                  description="Hệ thống không dùng dữ liệu mẫu. Hãy tạo hồ sơ sinh viên và tải CV để xem cơ hội phù hợp."
-                  onOpenProfile={() => setActiveTab("profile")}
+                  onOpenApplications={() => setActiveTab("applications")}
                 />
               )
             )}
@@ -654,7 +717,12 @@ export default function App() {
             {activeTab === "reports" && (
               <StudentReports onNavigateTab={handleTabChange} />
             )}
-            {activeTab === "placement" && <PlacementOverview />}
+            {activeTab === "placement" && (
+              <PlacementOverview
+                onNavigateTab={handleTabChange}
+                onOpenChat={() => setIsChatOpen(true)}
+              />
+            )}
             {activeTab === "evaluations" && <StudentEvaluations evaluations={evaluationRecords} />}
             {activeTab === "support" && <StudentSupportRequests />}
             {activeTab === "profile" && <StudentProfileView onProfileChange={handleStudentProfileChange} />}
@@ -786,9 +854,37 @@ export default function App() {
 }
 
 
-function PageLoading() {
-  return null;
-}function getDefaultTab(role: UserRole): string {
+function PageLoading({ role, activeTab }: { role?: UserRole; activeTab?: string }) {
+  if (role === "STUDENT") {
+    switch (activeTab) {
+      case "internships":
+        return <InternshipListSkeleton />;
+      case "applications":
+        return <ApplicationsSkeleton />;
+      case "reports":
+        return <ReportsSkeleton />;
+      case "placement":
+        return <PlacementSkeleton />;
+      case "evaluations":
+        return <StudentEvaluationsSkeleton />;
+      case "support":
+        return <StudentSupportSkeleton />;
+      case "profile":
+        return <StudentProfileSkeleton />;
+      default:
+        return <InternshipListSkeleton />;
+    }
+  }
+
+  return (
+    <div className="w-full py-16 flex flex-col items-center justify-center select-none" role="status">
+      <div className="h-1.5 w-36 rounded-full splash-loading-bar" aria-hidden="true" />
+      <span className="text-xs font-medium text-slate-400 mt-3">Đang tải dữ liệu...</span>
+    </div>
+  );
+}
+
+function getDefaultTab(role: UserRole): string {
   switch (role) {
     case "STUDENT":
       return "internships";
