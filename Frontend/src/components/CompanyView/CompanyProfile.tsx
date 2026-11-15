@@ -185,26 +185,10 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
   if (loading) return <LoadingState />;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      {/* Page Header (Modern Clean SaaS Style) */}
-      <div>
-        <div className="inline-flex items-center gap-2 rounded-full bg-teal-50 border border-teal-200/60 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-800 mb-2">
-          <Building2 className="h-3.5 w-3.5 text-teal-600" />
-          <span>HỒ SƠ DOANH NGHIỆP</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          {identityLocked ? "Hồ sơ & Định danh doanh nghiệp" : "Đăng ký hồ sơ doanh nghiệp"}
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
-          {identityLocked
-            ? "Cập nhật thông tin liên hệ, giới thiệu văn hóa và quản lý pháp lý của doanh nghiệp."
-            : "Hoàn thiện thông tin pháp lý và đăng tải giấy phép kinh doanh để gửi hồ sơ xác minh tới Nhà trường."}
-        </p>
-      </div>
-
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+    <div className="admin-page admin-page--standard space-y-6">
+      <section className="rounded-2xl border border-slate-200/80 bg-[#f8fafd] p-6 shadow-xs">
         <div className="flex items-start gap-4">
-          <div className="rounded-2xl bg-teal-50 border border-teal-200 p-3 text-teal-700 shrink-0">
+          <div className="rounded-2xl bg-[#e0f4f6] border border-[#b8e6ea] p-3 text-[#02636a] shrink-0">
             <Building2 className="h-6 w-6" />
           </div>
           <div>
@@ -325,7 +309,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
               className="w-full rounded-xl border border-slate-300 p-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
             />
           </div>
-          <div className="md:col-span-2 rounded-2xl border border-teal-100 bg-teal-50/50 p-4">
+          <div className="md:col-span-2 rounded-2xl border border-[#b8e6ea] bg-[#e0f4f6]/50 p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-bold text-teal-950">
@@ -339,7 +323,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
                 <button
                   type="button"
                   onClick={() => void downloadPrivateFile(profile.registrationDocumentFileId!)}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-teal-800 shadow-2xs border border-teal-200 hover:bg-teal-50 transition"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-teal-800 shadow-2xs border border-[#b8e6ea] hover:bg-[#e0f4f6] transition"
                 >
                   <Download className="h-3.5 w-3.5" /> Xem tài liệu
                 </button>
@@ -364,7 +348,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
             <button
               type="submit"
               disabled={saving || submitting || isLocked}
-              className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-800 disabled:opacity-50 transition cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#038b95] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#026f77] disabled:opacity-50 transition cursor-pointer shadow-xs"
             >
               {saving || uploadingDocument ? (
                 <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -378,7 +362,7 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
                 type="button"
                 onClick={() => void submitForVerification()}
                 disabled={saving || submitting || uploadingDocument}
-                className="inline-flex items-center gap-2 rounded-xl bg-teal-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-900 disabled:opacity-50 transition cursor-pointer shadow-xs"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#026f77] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#025c63] disabled:opacity-50 transition cursor-pointer shadow-xs"
               >
                 {submitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Gửi hồ sơ xác minh

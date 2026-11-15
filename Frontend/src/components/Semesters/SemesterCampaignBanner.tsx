@@ -680,12 +680,12 @@ export const SemesterCampaignBanner: React.FC<SemesterCampaignBannerProps> = ({
                   Đợt thực tập <strong className="text-slate-900">{activeSemester.name}</strong> đang ở giai đoạn{' '}
                   <strong className="text-teal-800">
                     {currentPhase === 'RECRUITING'
-                      ? 'Tuyển dụng & Ứng tuyển'
+                      ? 'Đang tuyển dụng'
                       : currentPhase === 'MONITORING'
-                      ? 'Theo dõi & Báo cáo học vụ'
+                      ? 'Đang thực tập'
                       : currentPhase === 'UPCOMING'
-                      ? 'Chuẩn bị'
-                      : 'Đã hoàn thành'}
+                      ? 'Mở đợt'
+                      : 'Đã kết thúc'}
                   </strong>.
                 </span>
               )}

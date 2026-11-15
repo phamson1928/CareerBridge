@@ -278,37 +278,38 @@ HEARTBEAT_INTERVAL_SEC=25`;
     <>
       <ModalPortal>
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-indigo-950/30">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/80 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header (CareerBridge Clean Light SaaS Theme) */}
+        <div className="px-6 py-4 sm:py-5 bg-[#f8fafd] border-b border-slate-200/80 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shadow-inner">
-              <Bot className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-2xl bg-[#e0f4f6] border border-[#a5dfe4] flex items-center justify-center text-[#038b95] shadow-2xs shrink-0">
+              <Bot className="w-5 h-5 text-[#038b95]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white tracking-tight">
-                  Quản Lý AI Worker & Quét CV Nội Bộ
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-extrabold text-[#006f72] tracking-tight">
+                  Quản lý AI Worker & Quét CV nội bộ
                 </h3>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300">
-                  On-Premise Privacy
+                <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+                  Bảo mật nội bộ
                 </span>
               </div>
-              <p className="text-xs text-indigo-200/80 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Kết nối các máy trạm AI nội bộ (Ollama) để phân tích CV tự động mà không lo rò rỉ dữ liệu.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition cursor-pointer shadow-2xs shrink-0"
+            title="Đóng cửa sổ"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body content */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-800">
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 text-slate-800">
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
@@ -317,15 +318,15 @@ HEARTBEAT_INTERVAL_SEC=25`;
           )}
 
           {/* Toggle Setting & Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             {/* Auto Scan Toggle Card */}
-            <div className="md:col-span-4 p-4 rounded-2xl border border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="sm:col-span-2 md:col-span-4 p-4 rounded-2xl border border-slate-200/80 bg-[#f8fafd] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
                     data?.autoAiScanEnabled
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-slate-200 text-slate-500'
+                      ? 'bg-teal-50 border-[#a5dfe4] text-[#006f72]'
+                      : 'bg-slate-100 border-slate-200 text-slate-400'
                   }`}
                 >
                   <Power className="w-5 h-5" />
@@ -334,7 +335,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
                   <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     Tự động quét CV khi có đơn mới
                     {data?.autoAiScanEnabled && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                         Đang kích hoạt
                       </span>
                     )}
@@ -349,62 +350,62 @@ HEARTBEAT_INTERVAL_SEC=25`;
                 type="button"
                 onClick={handleToggleAutoScan}
                 disabled={isUpdatingSettings || isLoading}
-                className={`relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden disabled:opacity-50 ${
-                  data?.autoAiScanEnabled ? 'bg-emerald-600' : 'bg-slate-300'
+                className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden disabled:opacity-50 ${
+                  data?.autoAiScanEnabled ? 'bg-[#038b95]' : 'bg-slate-300'
                 }`}
               >
                 <span
                   className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                    data?.autoAiScanEnabled ? 'translate-x-6' : 'translate-x-0'
+                    data?.autoAiScanEnabled ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
             </div>
 
-            {/* Quick Stats */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 font-bold">
+            {/* Quick Stats - 4 Pastel Cards */}
+            <div className="p-3.5 rounded-2xl bg-[#f2fafb] border border-[#a5dfe4]/80 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#e0f4f6] text-[#038b95] flex items-center justify-center shrink-0 font-bold">
                 <Server className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-slate-500">Worker kết nối</p>
-                <p className="text-base font-extrabold text-slate-900">
-                  {onlineWorkersCount} <span className="text-xs font-normal text-slate-500">/ {data?.workers.length || 0} online</span>
+                <p className="text-[10px] font-bold text-[#02636a] uppercase tracking-wider">Worker kết nối</p>
+                <p className="text-base font-black text-[#006f72]">
+                  {onlineWorkersCount} <span className="text-xs font-semibold text-slate-500">/ {data?.workers.length || 0} online</span>
                 </p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/60 flex items-center gap-3">
+            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 font-bold">
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-amber-800">Đang chờ quét</p>
-                <p className="text-base font-extrabold text-amber-900">
+                <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Đang chờ quét</p>
+                <p className="text-base font-black text-amber-900">
                   {data?.stats.pendingJobs || 0}
                 </p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/60 flex items-center gap-3">
+            <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 font-bold">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-emerald-800">Đã hoàn thành</p>
-                <p className="text-base font-extrabold text-emerald-900">
+                <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Đã hoàn thành</p>
+                <p className="text-base font-black text-emerald-900">
                   {data?.stats.completedJobs || 0}
                 </p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200/60 flex items-center gap-3">
+            <div className="p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200/80 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 font-bold">
                 <AlertTriangle className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-rose-800">Lỗi / Hết hạn</p>
-                <p className="text-base font-extrabold text-rose-900">
+                <p className="text-[10px] font-bold text-rose-800 uppercase tracking-wider">Lỗi / Hết hạn</p>
+                <p className="text-base font-black text-rose-900">
                   {data?.stats.failedJobs || 0}
                 </p>
               </div>
@@ -413,10 +414,10 @@ HEARTBEAT_INTERVAL_SEC=25`;
 
           {/* Worker Management List */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div>
                 <h4 className="text-sm font-bold text-slate-900">
-                  Danh Sách AI Worker ({data?.workers.length || 0}/5)
+                  Danh sách AI Worker ({data?.workers.length || 0}/5)
                 </h4>
                 <p className="text-xs text-slate-500">
                   Mỗi doanh nghiệp có thể kết nối tối đa 5 Worker chạy song song để tăng tốc độ quét CV.
@@ -428,10 +429,10 @@ HEARTBEAT_INTERVAL_SEC=25`;
                   type="button"
                   onClick={() => handleDownloadWorkerZip()}
                   disabled={isDownloading}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-[#038b95] bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
                   title="Tải bộ mã nguồn Worker Client (.ZIP) để cài đặt trên máy trạm nội bộ"
                 >
-                  <Download className={`w-3.5 h-3.5 text-indigo-600 ${isDownloading ? 'animate-bounce' : ''}`} />
+                  <Download className={`w-3.5 h-3.5 text-[#038b95] ${isDownloading ? 'animate-bounce' : ''}`} />
                   Tải Gói AI Worker (.ZIP)
                 </button>
 
@@ -439,7 +440,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
                   <button
                     onClick={() => setShowCreateForm(true)}
                     disabled={(data?.workers.length || 0) >= 5}
-                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                    className="px-3.5 py-1.5 rounded-xl bg-[#038b95] hover:bg-[#026f77] disabled:bg-slate-300 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                   >
                     <Plus className="w-4 h-4" /> Kết Nối Worker Mới
                   </button>
@@ -451,16 +452,16 @@ HEARTBEAT_INTERVAL_SEC=25`;
             {showCreateForm && (
               <form
                 onSubmit={handleCreateWorker}
-                className="p-4 rounded-2xl bg-slate-50 border border-indigo-200 space-y-3 animate-in fade-in duration-200"
+                className="p-4 rounded-2xl bg-[#f8fafd] border border-[#a5dfe4] space-y-3 animate-in fade-in duration-200"
               >
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                   <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <Plus className="w-4 h-4 text-indigo-600" /> Cấu hình Worker Mới
+                    <Plus className="w-4 h-4 text-[#038b95]" /> Cấu hình Worker Mới
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(false)}
-                    className="text-slate-400 hover:text-slate-600 text-xs"
+                    className="text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
                   >
                     Hủy
                   </button>
@@ -475,17 +476,17 @@ HEARTBEAT_INTERVAL_SEC=25`;
                     <label
                       className={`relative flex flex-col justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                         selectedEngine === 'OLLAMA'
-                          ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600/30'
+                          ? 'border-[#038b95] bg-[#e0f4f6]/60 ring-1 ring-[#038b95]/30'
                           : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                            <Cpu className="w-3.5 h-3.5 text-indigo-600" />
+                            <Cpu className="w-3.5 h-3.5 text-[#038b95]" />
                             Ollama Local
                           </span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#e0f4f6] text-[#006f72]">
                             Cá nhân
                           </span>
                         </div>
@@ -500,7 +501,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
                           value="OLLAMA"
                           checked={selectedEngine === 'OLLAMA'}
                           onChange={() => setSelectedEngine('OLLAMA')}
-                          className="text-indigo-600 focus:ring-indigo-500"
+                          className="accent-[#038b95]"
                         />
                         <span className="text-[10px] text-slate-600 font-medium">Chọn Ollama</span>
                       </div>
@@ -509,17 +510,17 @@ HEARTBEAT_INTERVAL_SEC=25`;
                     <label
                       className={`relative flex flex-col justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                         selectedEngine === 'UNIVERSAL'
-                          ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600/30'
+                          ? 'border-[#038b95] bg-[#e0f4f6]/60 ring-1 ring-[#038b95]/30'
                           : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                            <Server className="w-3.5 h-3.5 text-purple-600" />
+                            <Server className="w-3.5 h-3.5 text-[#038b95]" />
                             Universal Server
                           </span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#e0f4f6] text-[#006f72]">
                             vLLM / LAN
                           </span>
                         </div>
@@ -534,7 +535,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
                           value="UNIVERSAL"
                           checked={selectedEngine === 'UNIVERSAL'}
                           onChange={() => setSelectedEngine('UNIVERSAL')}
-                          className="text-purple-600 focus:ring-purple-500"
+                          className="accent-[#038b95]"
                         />
                         <span className="text-[10px] text-slate-600 font-medium">Chọn Universal LAN</span>
                       </div>
@@ -543,7 +544,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
                     <label
                       className={`relative flex flex-col justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                         selectedEngine === 'MOCK'
-                          ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600/30'
+                          ? 'border-[#038b95] bg-[#e0f4f6]/60 ring-1 ring-[#038b95]/30'
                           : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
@@ -568,7 +569,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
                           value="MOCK"
                           checked={selectedEngine === 'MOCK'}
                           onChange={() => setSelectedEngine('MOCK')}
-                          className="text-amber-600 focus:ring-amber-500"
+                          className="accent-amber-500"
                         />
                         <span className="text-[10px] text-slate-600 font-medium">Chọn Heuristic</span>
                       </div>
@@ -691,14 +692,14 @@ HEARTBEAT_INTERVAL_SEC=25`;
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(false)}
-                    className="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-semibold"
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold cursor-pointer shadow-2xs"
                   >
                     Đóng
                   </button>
                   <button
                     type="submit"
                     disabled={isCreating || !newWorkerName.trim()}
-                    className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
+                    className="px-4 py-1.5 rounded-xl bg-[#038b95] hover:bg-[#026f77] disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                   >
                     {isCreating ? (
                       <>
@@ -715,14 +716,16 @@ HEARTBEAT_INTERVAL_SEC=25`;
             {/* Workers Table / List */}
             {isLoading ? (
               <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
-                <RefreshCw className="w-6 h-6 animate-spin text-indigo-500" />
+                <RefreshCw className="w-6 h-6 animate-spin text-[#038b95]" />
                 <span className="text-xs">Đang tải danh sách Worker...</span>
               </div>
             ) : !data || data.workers.length === 0 ? (
-              <div className="py-10 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 space-y-2">
-                <Bot className="w-10 h-10 mx-auto text-slate-400 opacity-60" />
+              <div className="py-10 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-[#f8fafd] p-6 space-y-2.5">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-[#e0f4f6] border border-[#a5dfe4] flex items-center justify-center text-[#038b95] shadow-2xs">
+                  <Bot className="w-6 h-6" />
+                </div>
                 <p className="text-xs font-bold text-slate-700">Chưa có AI Worker nào được kết nối</p>
-                <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                <p className="text-[11px] text-slate-500 max-w-sm mx-auto leading-relaxed">
                   Hãy nhấn <strong>"Kết Nối Worker Mới"</strong> để nhận mã Token bí mật và khởi chạy worker trên máy chủ doanh nghiệp.
                 </p>
               </div>
@@ -772,7 +775,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
                     <button
                       onClick={() => handleDeleteWorker(worker)}
                       disabled={deletingId === worker.id}
-                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors disabled:opacity-50"
+                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
                       title="Thu hồi token & xóa worker"
                     >
                       {deletingId === worker.id ? (
@@ -789,14 +792,14 @@ HEARTBEAT_INTERVAL_SEC=25`;
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-          <div className="flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-slate-400" />
-            <span>Worker chạy trên mã nguồn mở độc lập (TypeScript / Docker)</span>
+        <div className="px-6 py-3.5 bg-[#f8fafd] border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+          <div className="flex items-center gap-1.5 font-medium">
+            <Cpu className="w-4 h-4 text-[#038b95]" />
+            <span>Worker vận hành cục bộ độc lập trên hạ tầng doanh nghiệp</span>
           </div>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition-colors"
+            className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs"
           >
             Đóng
           </button>
@@ -815,11 +818,11 @@ HEARTBEAT_INTERVAL_SEC=25`;
               if (e.target === e.currentTarget) setCreatedTokenData(null);
             }}
           >
-            <div className="bg-white rounded-3xl shadow-2xl border-2 border-indigo-300 w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 text-slate-800">
+            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 text-slate-800">
               {/* Sticky Header - Always visible with Close Button */}
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-                <div className="flex items-center gap-2.5 text-indigo-900 font-bold text-base">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-2.5 text-[#006f72] font-bold text-base">
+                  <div className="w-9 h-9 rounded-xl bg-[#e0f4f6] text-[#038b95] flex items-center justify-center shrink-0 border border-[#a5dfe4]">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
@@ -830,17 +833,17 @@ HEARTBEAT_INTERVAL_SEC=25`;
                 <button
                   type="button"
                   onClick={() => setCreatedTokenData(null)}
-                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm font-bold cursor-pointer transition-colors"
+                  className="w-8 h-8 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs font-bold cursor-pointer transition-colors shadow-2xs"
                   title="Đóng cửa sổ"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Scrollable Body Content */}
               <div className="p-6 overflow-y-auto space-y-4 flex-1">
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-[#006f72] text-xs flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#038b95] shrink-0 mt-0.5" />
                   <span>
                     <strong>Cài đặt tự động:</strong> Bạn chỉ cần nhấn nút <strong>"Tải Gói Cài Đặt AI Worker (.ZIP)"</strong> bên dưới. Mã token và chế độ AI bạn vừa chọn ({createdTokenData.engine === 'OLLAMA' ? 'Ollama Local' : createdTokenData.engine === 'UNIVERSAL' ? 'Universal AI Server' : 'Bộ lọc Mock'}) đã được tích hợp sẵn 100%!
                   </span>
@@ -888,7 +891,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
                     type="button"
                     onClick={() => handleDownloadWorkerZip(createdTokenData.token, createdTokenData.workerName)}
                     disabled={isDownloading}
-                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-60"
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#038b95] hover:bg-[#026f77] active:scale-[0.99] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-60"
                   >
                     <Download className={`w-4 h-4 ${isDownloading ? 'animate-bounce' : ''}`} />
                     {isDownloading ? 'Đang đóng gói file ZIP...' : 'Tải Gói Cài Đặt AI Worker (.ZIP) (Đã Kèm Token)'}
@@ -922,7 +925,7 @@ HEARTBEAT_INTERVAL_SEC=25`;
                 <button
                   type="button"
                   onClick={() => setCreatedTokenData(null)}
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#038b95] hover:bg-[#026f77] text-white text-xs font-bold transition-colors shadow-sm cursor-pointer"
                 >
                   Tôi đã sao chép xong &bull; Đóng
                 </button>
