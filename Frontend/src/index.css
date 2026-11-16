@@ -605,6 +605,26 @@ div[class*="max-h-"][class*="overflow-y-auto"]::-webkit-scrollbar,
   animation: shimmer-sweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
+.skeleton-shimmer-dark {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.skeleton-shimmer-dark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 100%
+  );
+  animation: shimmer-sweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 @keyframes indeterminate-bar {
   0% {
     left: -35%;
@@ -638,6 +658,7 @@ div[class*="max-h-"][class*="overflow-y-auto"]::-webkit-scrollbar,
 
 @media (prefers-reduced-motion: reduce) {
   .skeleton-shimmer::after,
+  .skeleton-shimmer-dark::after,
   .splash-loading-bar::after {
     animation: none !important;
     display: none !important;

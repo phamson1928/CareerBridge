@@ -760,7 +760,7 @@ export default function App() {
           currentRole === "ADMIN" || currentRole === "COMPANY" || currentRole === "TEACHER"
             ? "max-w-none px-4 sm:px-6 py-6 lg:px-7 lg:py-8"
             : currentRole === "STUDENT"
-            ? activeTab === "internships" && Boolean(studentProfile)
+            ? activeTab === "internships" && (isWorkflowLoading || studentProfileStatus === "loading" || Boolean(studentProfile))
               ? "student-home-main max-w-[1240px] px-3.5 sm:px-6 lg:px-8 !pt-0 pb-6 flex flex-col items-center"
               : "max-w-[1240px] px-3.5 sm:px-6 lg:px-8 pt-18 sm:pt-22 lg:pt-28 pb-8 flex flex-col items-center"
             : "max-w-[1440px] px-4 sm:px-6 py-6 lg:px-8"
