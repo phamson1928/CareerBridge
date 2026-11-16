@@ -396,7 +396,9 @@ export const StudentReports: React.FC<{ onNavigateTab?: (tab: string) => void }>
               </div>
             </div>
             <p className="mt-3 text-xs text-slate-500 border-t border-slate-100 pt-2">
-              Hồ sơ bắt buộc để GVHD chấm điểm học phần
+              {submittedWeeklyCount >= 10
+                ? "Đã đủ 10 tuần báo cáo • Sẵn sàng nộp báo cáo tổng kết"
+                : `Cần nộp đủ 10 tuần nhật ký trước khi nộp (${submittedWeeklyCount}/10 tuần)`}
             </p>
           </div>
 
@@ -479,8 +481,14 @@ export const StudentReports: React.FC<{ onNavigateTab?: (tab: string) => void }>
             {!finalReport && currentPlacement && canModifyPlacementReports(currentPlacement) && (
               <button
                 type="button"
+                disabled={submittedWeeklyCount < 10}
+                title={
+                  submittedWeeklyCount < 10
+                    ? `Cần nộp đủ 10 tuần báo cáo trước khi nộp Báo cáo tổng kết (đã nộp ${submittedWeeklyCount}/10 tuần)`
+                    : "Nộp Báo cáo tổng kết cuối kỳ"
+                }
                 onClick={() => openCreateFinalReport(currentPlacement)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50/60 px-4 py-2.5 text-xs font-bold text-teal-800 hover:bg-teal-100/70 transition-all cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50/60 px-4 py-2.5 text-xs font-bold text-teal-800 hover:bg-teal-100/70 transition-all cursor-pointer shadow-2xs disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-teal-50/60"
               >
                 <Award className="h-4 w-4 text-teal-700" />
                 Nộp Báo cáo tổng kết

@@ -31,7 +31,7 @@ import { companiesApi, type CompanyProfileRecord } from "./companies/api";
 import { internshipsApi } from "./internships/api";
 import { toLegacyInternship } from "./internships/mappers";
 import { studentsApi, type StudentProfileRecord } from "./students/api";
-import { lecturersApi } from "./lecturers/api";
+import { lecturersApi, type LecturerProfileRecord } from "./lecturers/api";
 import { skillsApi } from "./skills/api";
 import type { StudentSkillRecord } from "./skills/types";
 import {
@@ -133,6 +133,18 @@ const companyTabByPath = Object.fromEntries(
   Object.entries(companyPathByTab).map(([tab, path]) => [path, tab]),
 ) as Record<string, string>;
 
+const teacherPathByTab: Record<string, string> = {
+  "students-list": "dashboard",
+  "supervised-placements": "placements",
+  "review-reports": "reports",
+  "evaluation-list": "evaluations",
+  "lecturer-profile": "profile",
+};
+
+const teacherTabByPath = Object.fromEntries(
+  Object.entries(teacherPathByTab).map(([tab, path]) => [path, tab]),
+) as Record<string, string>;
+
 
 
 function toLegacyStudentProfile(
@@ -211,6 +223,8 @@ export default function App() {
     useState<CompanyProfile | null>(null);
   const [companyVerificationStatus, setCompanyVerificationStatus] =
     useState<CompanyProfileRecord["status"] | null>(null);
+  const [lecturerProfile, setLecturerProfile] =
+    useState<LecturerProfileRecord | null>(null);
   const [internships, setInternships] = useState<Internship[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [evaluationRecords, setEvaluationRecords] = useState<EvaluationRecord[]>([]);
@@ -231,6 +245,21 @@ export default function App() {
         return;
       }
       const targetTab = companyTabByPath[path];
+      setActiveTab(targetTab);
+      return;
+    }
+
+    if (currentRole === "TEACHER") {
+      const path = location.pathname.replace(/^\/lecturer\/?/, "").split("/")[0];
+      if (!path) {
+        navigate(`/lecturer/dashboard`, { replace: true });
+        return;
+      }
+      if (!teacherTabByPath[path]) {
+        navigate("/404", { replace: true });
+        return;
+      }
+      const targetTab = teacherTabByPath[path];
       setActiveTab(targetTab);
       return;
     }
@@ -287,6 +316,15 @@ export default function App() {
       const path = companyPathByTab[tab];
       if (path) {
         navigate(`/company/${path}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
+    if (currentRole === "TEACHER") {
+      const path = teacherPathByTab[tab];
+      if (path) {
+        navigate(`/lecturer/${path}`);
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -350,6 +388,7 @@ export default function App() {
       setAvatarFileId(null);
       setCompanyProfile(null);
       setCompanyVerificationStatus(null);
+      setLecturerProfile(null);
       setInternships([]);
       setApplications([]);
       setEvaluationRecords([]);
@@ -443,7 +482,7 @@ export default function App() {
         }
 
         if (user.role === "LECTURER") {
-          const [placements, evaluationPage, lecturerProfile] = await Promise.all([
+          const [placements, evaluationPage, loadedLecturerProfile] = await Promise.all([
             placementsApi.listMine(),
             evaluationsApi.listMine({ page: 1, limit: 100 }),
             lecturersApi.getMine().catch(() => null),
@@ -451,7 +490,8 @@ export default function App() {
           if (!active) return;
           setMyPlacements(placements.items);
           setEvaluationRecords(evaluationPage.items);
-          setAvatarFileId(lecturerProfile?.avatarFileId ?? null);
+          setLecturerProfile(loadedLecturerProfile);
+          setAvatarFileId(loadedLecturerProfile?.avatarFileId ?? null);
         }
       } catch (error) {
         console.error("Unable to load application workflow data", error);
@@ -481,6 +521,11 @@ export default function App() {
   const handleCompanyProfileChange = (profile: CompanyProfileRecord) => {
     setCompanyProfile(toLegacyCompanyProfile(profile));
     setCompanyVerificationStatus(profile.status);
+  };
+
+  const handleLecturerProfileChange = (profile: LecturerProfileRecord | null) => {
+    setLecturerProfile(profile);
+    setAvatarFileId(profile?.avatarFileId ?? null);
   };
 
   useEffect(() => {
@@ -666,13 +711,13 @@ export default function App() {
   return (
     <div
       className={`min-h-screen overflow-x-clip ${
-        currentRole === "COMPANY"
+        currentRole === "COMPANY" || currentRole === "TEACHER"
           ? "bg-[#f8fafd]"
           : currentRole === "ADMIN"
           ? "bg-slate-100/70"
           : "bg-[#edf0f4]"
       } text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${
-        currentRole === "ADMIN" || currentRole === "COMPANY"
+        currentRole === "ADMIN" || currentRole === "COMPANY" || currentRole === "TEACHER"
           ? `admin-theme pl-20 transition-[padding-left] duration-200 ease-in-out ${
               isAdminSidebarCollapsed ? "lg:pl-20" : "lg:pl-[240px]"
             }`
@@ -698,17 +743,21 @@ export default function App() {
         companyLogo={companyProfile?.logo}
         companyName={companyProfile?.companyName}
         companyVerificationStatus={companyVerificationStatus}
+        lecturerName={lecturerProfile?.fullName}
+        lecturerTitle={lecturerProfile?.title}
+        lecturerDepartment={lecturerProfile?.faculty?.name || lecturerProfile?.department}
         isSidebarCollapsed={isAdminSidebarCollapsed}
         onToggleSidebar={toggleAdminSidebar}
         internships={internships}
         applications={applications}
+        placements={myPlacements}
       />
 
       {/* Main Page Body Container with smooth page entrance animation */}
       <main
         key={`${currentRole}-${activeTab}`}
         className={`flex-1 w-full mx-auto page-fade-in ${
-          currentRole === "ADMIN" || currentRole === "COMPANY"
+          currentRole === "ADMIN" || currentRole === "COMPANY" || currentRole === "TEACHER"
             ? "max-w-none px-4 sm:px-6 py-6 lg:px-7 lg:py-8"
             : currentRole === "STUDENT"
             ? activeTab === "internships" && Boolean(studentProfile)
@@ -835,14 +884,22 @@ export default function App() {
           <>
             {activeTab === "students-list" && (
               <TeacherDashboard
-                onNavigateTab={setActiveTab}
+                onNavigateTab={handleTabChange}
                 onOpenChat={(placementId) => {
                   setChatPlacementId(placementId);
                   setIsChatOpen(true);
                 }}
               />
             )}
-            {activeTab === "supervised-placements" && <SupervisedPlacements />}
+            {activeTab === "supervised-placements" && (
+              <SupervisedPlacements
+                onNavigateTab={handleTabChange}
+                onOpenChat={(placementId) => {
+                  setChatPlacementId(placementId);
+                  setIsChatOpen(true);
+                }}
+              />
+            )}
             {activeTab === "review-reports" && (
               <ReviewReports />
             )}
@@ -854,7 +911,9 @@ export default function App() {
                 onUpdate={handleUpdateEvaluation}
               />
             )}
-            {activeTab === "lecturer-profile" && <LecturerProfileView />}
+            {activeTab === "lecturer-profile" && (
+              <LecturerProfileView onProfileChange={handleLecturerProfileChange} />
+            )}
           </>
         )}
 
@@ -863,9 +922,9 @@ export default function App() {
         </Suspense>
       </main>
 
-      {currentRole !== "ADMIN" && currentRole !== "COMPANY" && (
-        <footer className="mt-12 border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
-          <p className="px-4 font-semibold text-slate-700">© 2026 CareerBridge — Hệ thống hỗ trợ tìm kiếm &amp; quản lý thực tập cho sinh viên</p>
+      {currentRole !== "ADMIN" && (
+        <footer className="mt-auto border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
+          <p className="px-4 font-semibold text-slate-700">© 2026 CareerBridge. All rights reserved.</p>
         </footer>
       )}
 

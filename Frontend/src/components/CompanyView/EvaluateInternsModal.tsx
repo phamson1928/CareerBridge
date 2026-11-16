@@ -412,7 +412,7 @@ export function EvaluateInternsModal({
       {/* 1. HEADER CARD (Đồng bộ chuẩn thiết kế CareerBridge) */}
       <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-[#f8fafd] p-4 sm:p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="!text-xl sm:!text-2xl font-extrabold text-[#006f72] tracking-tight">
               Đánh giá Thực tập sinh
             </h1>
@@ -421,7 +421,7 @@ export function EvaluateInternsModal({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex shrink-0 flex-wrap sm:flex-nowrap items-center gap-2.5">
             {/* Custom Popover Dropdown Chọn Học Kỳ */}
             <div className="relative" ref={semesterDropdownRef}>
               <button
@@ -531,7 +531,7 @@ export function EvaluateInternsModal({
                 title="Xuất bảng điểm Excel danh sách thực tập sinh"
               >
                 <Download className="h-3.5 w-3.5 text-[#02636a]" />
-                <span className="hidden sm:inline">Xuất bảng điểm Excel</span>
+                <span className="hidden sm:inline">Xuất bảng điểm</span>
               </button>
             )}
           </div>
@@ -822,6 +822,13 @@ export function EvaluateInternsModal({
                   const isLocked = placement.status === "COMPLETED";
                   const avatarColor = getAvatarColor(placement.student.fullName);
                   const initials = getInitials(placement.student.fullName);
+                  const cachedReports = reportsCache[placement.id] ?? [];
+                  const weeklyReports = cachedReports.filter((r) => r.week > 0);
+                  const hasAll10WeeklyReports = weeklyReports.length >= 10;
+                  const isEvaluationDisabled =
+                    isLocked ||
+                    loadingReportsId === placement.id ||
+                    !hasAll10WeeklyReports;
 
                   return (
                     <React.Fragment key={placement.id}>
@@ -1009,7 +1016,7 @@ export function EvaluateInternsModal({
 
                                   <div className="mt-2 flex items-center gap-3">
                                     <input
-                                      disabled={isLocked}
+                                      disabled={isEvaluationDisabled}
                                       required
                                       type="number"
                                       min="0"
@@ -1019,10 +1026,10 @@ export function EvaluateInternsModal({
                                       onChange={(e) =>
                                         setEditScore(Number(e.target.value))
                                       }
-                                      className="w-28 rounded-xl border border-slate-300 p-2.5 text-base font-black text-slate-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 text-center"
+                                      className="w-28 rounded-xl border border-slate-300 p-2.5 text-base font-black text-slate-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 text-center disabled:bg-slate-100 disabled:text-slate-400"
                                     />
                                     {/* Nút chọn điểm nhanh */}
-                                    {!isLocked && (
+                                    {!isEvaluationDisabled && (
                                       <div className="flex flex-wrap items-center gap-1.5">
                                         {QUICK_SCORES.map((s) => (
                                           <button
@@ -1050,13 +1057,13 @@ export function EvaluateInternsModal({
                                     <span className="text-rose-500">*</span>
                                   </label>
                                   <textarea
-                                    disabled={isLocked}
+                                    disabled={isEvaluationDisabled}
                                     required
                                     rows={4}
                                     value={editComment}
                                     onChange={(e) => setEditComment(e.target.value)}
                                     placeholder="Nhận xét về thái độ làm việc, kỹ năng chuyên môn, tinh thần học hỏi và kết quả thực tập của sinh viên..."
-                                    className="mt-2 w-full rounded-xl border border-slate-300 p-3 text-xs leading-relaxed outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20"
+                                    className="mt-2 w-full rounded-xl border border-slate-300 p-3 text-xs leading-relaxed outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 disabled:bg-slate-100 disabled:text-slate-400"
                                   />
                                 </div>
 
@@ -1077,7 +1084,7 @@ export function EvaluateInternsModal({
                                   />
 
                                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                                    {!isLocked && (
+                                    {!isEvaluationDisabled && (
                                       <button
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
@@ -1120,6 +1127,16 @@ export function EvaluateInternsModal({
                                   </div>
                                 </div>
 
+                                {!isLocked &&
+                                  loadingReportsId !== placement.id &&
+                                  !hasAll10WeeklyReports && (
+                                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                                      Chỉ có thể đánh giá khi sinh viên đã nộp đủ{" "}
+                                      <b>10 tuần báo cáo thực tập</b> (hiện đã nộp{" "}
+                                      <b>{weeklyReports.length}/10 tuần</b>).
+                                    </div>
+                                  )}
+
                                 {evaluation && (
                                   <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-2.5 text-[11px] text-slate-500">
                                     <UserRound className="h-3.5 w-3.5 text-emerald-600" />
@@ -1140,9 +1157,17 @@ export function EvaluateInternsModal({
                                   <div className="flex items-center gap-3 pt-1">
                                     <button
                                       type="button"
-                                      disabled={savingId === placement.id}
+                                      disabled={
+                                        savingId === placement.id ||
+                                        isEvaluationDisabled
+                                      }
+                                      title={
+                                        !hasAll10WeeklyReports
+                                          ? `Sinh viên cần nộp đủ 10 tuần báo cáo trước khi đánh giá (${weeklyReports.length}/10 tuần)`
+                                          : undefined
+                                      }
                                       onClick={() => void handleSaveEvaluation(placement)}
-                                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#038b95] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#026f77] disabled:bg-slate-400 cursor-pointer"
+                                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#038b95] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#026f77] disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed cursor-pointer"
                                     >
                                       <Save className="h-4 w-4" />
                                       {savingId === placement.id

@@ -32,6 +32,7 @@ import {
   loadAdminProfile,
 } from "./AdminView/AdminProfile";
 import type { AppNotification } from "../notifications/types";
+import type { PlacementRecord } from "../placements/types";
 
 interface NavbarProps {
   currentRole: UserRole;
@@ -48,10 +49,14 @@ interface NavbarProps {
   companyLogo?: string | null;
   companyName?: string | null;
   companyVerificationStatus?: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED" | null;
+  lecturerName?: string | null;
+  lecturerTitle?: string | null;
+  lecturerDepartment?: string | null;
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
   internships?: Internship[];
   applications?: Application[];
+  placements?: PlacementRecord[];
 }
 
 interface AdminItemDef {
@@ -121,7 +126,7 @@ const adminNavStructure: AdminNavEntry[] = [
     type: "group",
     data: {
       id: "business",
-      label: "Doanh nghiệp & Tuyển dụng",
+      label: "Doanh nghiệp",
       icon: <Building className="w-4 h-4" />,
       items: [
         {
@@ -227,6 +232,49 @@ const companyNavStructure: AdminNavEntry[] = [
   },
 ];
 
+const teacherNavStructure: AdminNavEntry[] = [
+  {
+    type: "item",
+    data: {
+      id: "students-list",
+      label: "Tổng quan",
+      icon: <Home className="w-4 h-4" />,
+    },
+  },
+  {
+    type: "item",
+    data: {
+      id: "supervised-placements",
+      label: "Sinh viên hướng dẫn",
+      icon: <Users className="w-4 h-4" />,
+    },
+  },
+  {
+    type: "item",
+    data: {
+      id: "review-reports",
+      label: "Duyệt báo cáo tuần",
+      icon: <CheckSquare className="w-4 h-4" />,
+    },
+  },
+  {
+    type: "item",
+    data: {
+      id: "evaluation-list",
+      label: "Đánh giá & Chấm điểm",
+      icon: <Star className="w-4 h-4" />,
+    },
+  },
+  {
+    type: "item",
+    data: {
+      id: "lecturer-profile",
+      label: "Hồ sơ giảng viên",
+      icon: <GraduationCap className="w-4 h-4" />,
+    },
+  },
+];
+
 export const Navbar: React.FC<NavbarProps> = ({
   currentRole,
   activeTab,
@@ -242,10 +290,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   companyLogo,
   companyName,
   companyVerificationStatus,
+  lecturerName,
+  lecturerDepartment,
   isSidebarCollapsed = false,
   onToggleSidebar,
   internships = [],
   applications = [],
+  placements = [],
 }) => {
   const { user } = useAuth();
   const [isStudentInternshipOpen, setIsStudentInternshipOpen] = useState(false);
@@ -377,9 +428,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   useEffect(() => {
-    if (currentRole === "ADMIN" || currentRole === "COMPANY") {
+    if (currentRole === "ADMIN" || currentRole === "COMPANY" || currentRole === "TEACHER") {
       const sourceStructure =
-        currentRole === "COMPANY" ? companyNavStructure : adminNavStructure;
+        currentRole === "COMPANY"
+          ? companyNavStructure
+          : currentRole === "TEACHER"
+            ? teacherNavStructure
+            : adminNavStructure;
       for (const entry of sourceStructure) {
         if (entry.type === "group" && entry.data.items.some((i) => i.id === activeTab)) {
           setOpenGroups((prev) =>
@@ -593,8 +648,10 @@ export const Navbar: React.FC<NavbarProps> = ({
     </div>
   ) : null;
 
-  if (currentRole === "ADMIN" || currentRole === "COMPANY") {
+  if (currentRole === "ADMIN" || currentRole === "COMPANY" || currentRole === "TEACHER") {
     const isCompany = currentRole === "COMPANY";
+    const isTeacher = currentRole === "TEACHER";
+    const isWorkspaceSidebar = isCompany || isTeacher;
     const labelTransitionClass = `whitespace-nowrap overflow-hidden transition-all duration-200 ease-in-out ${isSidebarCollapsed
       ? "max-w-0 opacity-0 pointer-events-none -translate-x-1"
       : "max-w-[170px] opacity-100 translate-x-0"
@@ -623,22 +680,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             },
           },
         ]
-      : (adminNavStructure
-        .map((entry) => {
-          if (entry.type === "item") {
-            return filterAdminItem(entry.data) ? entry : null;
-          }
-          const visibleSub = entry.data.items.filter(filterAdminItem);
-          if (visibleSub.length === 0) return null;
-          return {
-            type: "group" as const,
-            data: {
-              ...entry.data,
-              items: visibleSub,
-            },
-          };
-        })
-        .filter(Boolean) as AdminNavEntry[]);
+      : isTeacher
+        ? teacherNavStructure
+        : (adminNavStructure
+          .map((entry) => {
+            if (entry.type === "item") {
+              return filterAdminItem(entry.data) ? entry : null;
+            }
+            const visibleSub = entry.data.items.filter(filterAdminItem);
+            if (visibleSub.length === 0) return null;
+            return {
+              type: "group" as const,
+              data: {
+                ...entry.data,
+                items: visibleSub,
+              },
+            };
+          })
+          .filter(Boolean) as AdminNavEntry[]);
 
     const searchableItems: { id: string; label: string; groupLabel: string; icon: React.ReactNode }[] = [];
     for (const entry of visibleEntries) {
@@ -650,7 +709,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             ? entry.data.id === "company-profile"
               ? "Thông tin & Pháp lý"
               : "Tổng quan & Vận hành"
-            : "Tổng quan & Vận hành",
+            : isTeacher
+              ? entry.data.id === "lecturer-profile"
+                ? "Hồ sơ học thuật"
+                : "Hướng dẫn thực tập"
+              : "Tổng quan & Vận hành",
           icon: entry.data.icon,
         });
       } else {
@@ -664,7 +727,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         }
       }
     }
-    if (!isCompany) {
+    if (!isCompany && !isTeacher) {
       searchableItems.push({
         id: "admin-profile",
         label: "Hồ sơ cá nhân",
@@ -676,9 +739,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     const activeModule =
       searchableItems.find((item) => item.id === activeTab) ||
       searchableItems[0] || {
-        id: isCompany ? "dashboard" : "stats-dashboard",
-        label: isCompany ? "Thống kê tuyển dụng" : "Thống kê hệ thống",
-        groupLabel: "Tổng quan & Vận hành",
+        id: isCompany ? "dashboard" : isTeacher ? "students-list" : "stats-dashboard",
+        label: isCompany
+          ? "Thống kê tuyển dụng"
+          : isTeacher
+            ? "Tổng quan hướng dẫn"
+            : "Thống kê hệ thống",
+        groupLabel: isTeacher ? "Hướng dẫn thực tập" : "Tổng quan & Vận hành",
         icon: <LayoutDashboard className="w-4 h-4" />,
       };
 
@@ -692,7 +759,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       : searchableItems;
     const filteredSearchItems = matchingPages;
 
-    const matchingJobs = q && internships
+    const matchingJobs = q && isCompany && internships
       ? internships.filter((j) => {
         const title = (j.title || "").toLowerCase();
         const dept = (j.department || "").toLowerCase();
@@ -709,7 +776,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       })
       : [];
 
-    const matchingApplicants = q && applications
+    const matchingApplicants = q && isCompany && applications
       ? applications.filter((app) => {
         const name = (app.studentName || "").toLowerCase();
         const title = (app.internshipTitle || "").toLowerCase();
@@ -724,15 +791,44 @@ export const Navbar: React.FC<NavbarProps> = ({
       })
       : [];
 
-    const totalSearchResultsCount = matchingPages.length + matchingJobs.length + matchingApplicants.length;
+    const matchingStudents = q && isTeacher && placements
+      ? placements.filter((pl) => {
+        const name = (pl.student?.fullName || "").toLowerCase();
+        const code = (pl.student?.studentCode || "").toLowerCase();
+        const major = (pl.student?.major || "").toLowerCase();
+        const comp = (pl.company?.companyName || "").toLowerCase();
+        const job = (pl.internship?.title || "").toLowerCase();
+        return (
+          name.includes(q) ||
+          code.includes(q) ||
+          major.includes(q) ||
+          comp.includes(q) ||
+          job.includes(q)
+        );
+      })
+      : [];
 
-    const profileTabId = isCompany ? "company-profile" : "admin-profile";
+    const totalSearchResultsCount =
+      matchingPages.length +
+      matchingJobs.length +
+      matchingApplicants.length +
+      matchingStudents.length;
+
+    const profileTabId = isCompany
+      ? "company-profile"
+      : isTeacher
+        ? "lecturer-profile"
+        : "admin-profile";
     const displayFullName = isCompany
       ? companyName || user?.email?.split("@")[0] || "Doanh nghiệp đối tác"
-      : adminProfile.fullName;
+      : isTeacher
+        ? lecturerName || user?.email?.split("@")[0] || "Giảng viên hướng dẫn"
+        : adminProfile.fullName;
     const displaySubtitle = isCompany
       ? user?.email || "Tài khoản doanh nghiệp"
-      : adminProfile.title || user?.email;
+      : isTeacher
+        ? lecturerDepartment || user?.email || "Giảng viên hướng dẫn"
+        : adminProfile.title || user?.email;
     const avatarInitial = isCompany
       ? displayFullName
         .split(/\s+/)
@@ -740,17 +836,24 @@ export const Navbar: React.FC<NavbarProps> = ({
         .slice(0, 2)
         .map((w) => w.charAt(0).toUpperCase())
         .join("") || "DN"
-      : (
-        displayFullName?.charAt(0) ||
-        user?.email?.charAt(0) ||
-        "A"
-      ).toUpperCase();
-    const resolvedAvatarId = isCompany ? avatarFileId : adminProfile.avatarFileId || avatarFileId;
+      : isTeacher
+        ? (lecturerName || user?.email || "GV")
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(-2)
+          .map((w) => w.charAt(0).toUpperCase())
+          .join("") || "GV"
+        : (
+          displayFullName?.charAt(0) ||
+          user?.email?.charAt(0) ||
+          "A"
+        ).toUpperCase();
+    const resolvedAvatarId = isCompany || isTeacher ? avatarFileId : adminProfile.avatarFileId || avatarFileId;
 
     return (
       <>
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-slate-200/80 ${isCompany ? "bg-[#f8fafd]" : "bg-white"
+          className={`fixed inset-y-0 left-0 z-50 flex w-20 flex-col border-r border-slate-200/80 ${isWorkspaceSidebar ? "bg-[#f8fafd]" : "bg-white"
             } text-slate-700 shadow-[2px_0_12px_rgba(0,0,0,0.03)] transition-[width] duration-200 ease-in-out ${isSidebarCollapsed ? "lg:w-20" : "lg:w-[240px]"
             }`}
         >
@@ -799,9 +902,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ? companyVerificationStatus === "APPROVED"
                       ? "Đối tác Doanh nghiệp"
                       : "Cổng Doanh nghiệp"
-                    : user?.isSuperAdmin
-                      ? "Quản trị tối cao"
-                      : "Ban quản trị phân hệ"}
+                    : isTeacher
+                      ? "Giảng viên hướng dẫn"
+                      : user?.isSuperAdmin
+                        ? "Quản trị tối cao"
+                        : "Ban quản trị phân hệ"}
                 </span>
               </span>
             </button>
@@ -908,25 +1013,34 @@ export const Navbar: React.FC<NavbarProps> = ({
               })}
             </nav>
 
-            {/* Bottom Company Identity Card (Matches Reference Design) */}
-            {isCompany && (
+            {/* Bottom Identity Card (Company & Lecturer) */}
+            {(isCompany || isTeacher) && (
               <div className="shrink-0 border-t border-slate-100 p-2.5">
                 <button
                   type="button"
-                  onClick={() => setActiveTab("company-profile")}
-                  title={`${displayFullName} — Nhấp để xem Hồ sơ doanh nghiệp`}
+                  onClick={() => setActiveTab(isCompany ? "company-profile" : "lecturer-profile")}
+                  title={`${displayFullName} — Nhấp để xem ${isCompany ? "Hồ sơ doanh nghiệp" : "Hồ sơ giảng viên"}`}
                   className={`flex w-full items-center gap-2.5 overflow-hidden rounded-xl border border-[#b8e6ea] bg-[#e0f4f6]/85 p-2 text-left transition hover:bg-[#cdeff2] cursor-pointer ${isSidebarCollapsed ? "justify-center px-1.5" : ""
                     }`}
                 >
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#038b95] text-white shadow-2xs">
-                    {companyLogo ? (
-                      <img
-                        src={companyLogo}
-                        alt={displayFullName}
-                        className="h-full w-full object-cover bg-white"
-                      />
+                    {isCompany ? (
+                      companyLogo ? (
+                        <img
+                          src={companyLogo}
+                          alt={displayFullName}
+                          className="h-full w-full object-cover bg-white"
+                        />
+                      ) : (
+                        <Building className="h-4 w-4" />
+                      )
                     ) : (
-                      <Building className="h-4 w-4" />
+                      <ProfileAvatarPreview
+                        fileId={resolvedAvatarId}
+                        fallback={avatarInitial}
+                        className="flex h-full w-full items-center justify-center overflow-hidden rounded-lg bg-[#038b95] text-xs font-extrabold text-white"
+                        imageClassName="h-full w-full object-cover"
+                      />
                     )}
                   </div>
                   <div className={`min-w-0 flex-1 ${labelTransitionClass}`}>
@@ -935,15 +1049,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </p>
                     <p className="mt-0.5 flex items-center gap-1.5 truncate text-[10px] font-semibold text-[#038b95]">
                       <span
-                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${companyVerificationStatus === "APPROVED"
-                          ? "bg-emerald-500"
-                          : "bg-amber-500"
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${isCompany
+                          ? companyVerificationStatus === "APPROVED"
+                            ? "bg-emerald-500"
+                            : "bg-amber-500"
+                          : "bg-emerald-500"
                           }`}
                       />
-                      <span>
-                        {companyVerificationStatus === "APPROVED"
-                          ? "Doanh nghiệp"
-                          : "Chờ xác minh"}
+                      <span className="truncate">
+                        {isCompany
+                          ? companyVerificationStatus === "APPROVED"
+                            ? "Doanh nghiệp"
+                            : "Chờ xác minh"
+                          : lecturerDepartment || "Giảng viên hướng dẫn"}
                       </span>
                     </p>
                   </div>
@@ -954,10 +1072,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </aside>
 
         {/* Cohesive Modern Dashboard Top Header Bar */}
-        <header className={`sticky top-0 z-40 flex h-[64px] w-full items-center justify-between gap-4 border-b border-slate-200/80 ${isCompany ? "bg-[#f8fafd]" : "bg-white"
+        <header className={`sticky top-0 z-40 flex h-[64px] w-full items-center justify-between gap-4 border-b border-slate-200/80 ${isWorkspaceSidebar ? "bg-[#f8fafd]" : "bg-white"
           } px-4 shadow-[0_2px_12px_rgba(15,23,42,0.03)] sm:px-6 lg:px-7`}>
-          {/* Left Section: For Company -> Clean Search Bar on the left (matching reference mockup); For Admin -> Active Module Badge */}
-          {isCompany ? (
+          {/* Left Section: For Company & Lecturer -> Clean Search Bar on the left; For Admin -> Active Module Badge */}
+          {isWorkspaceSidebar ? (
             <div className="group relative flex-1 max-w-md">
               <div className="relative flex items-center">
                 <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400" />
@@ -979,6 +1097,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setActiveTab("applicants");
                         setAdminSearch("");
                         setIsSearchFocused(false);
+                      } else if (matchingStudents.length > 0) {
+                        setActiveTab("supervised-placements");
+                        setAdminSearch("");
+                        setIsSearchFocused(false);
                       } else if (matchingPages.length > 0) {
                         setActiveTab(matchingPages[0].id);
                         setAdminSearch("");
@@ -988,7 +1110,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setIsSearchFocused(false);
                     }
                   }}
-                  placeholder="Tìm kiếm chức năng, tin tuyển dụng, ứng viên..."
+                  placeholder={
+                    isCompany
+                      ? "Tìm kiếm chức năng, tin tuyển dụng, ứng viên..."
+                      : "Tìm kiếm chức năng, sinh viên hướng dẫn, doanh nghiệp..."
+                  }
                   className="h-10 w-full rounded-full border border-slate-200/90 bg-slate-100/80 pl-10 pr-9 text-xs font-medium text-slate-700 placeholder:text-slate-400 transition-all hover:border-slate-300 hover:bg-slate-100 focus:border-[#038b95] focus:bg-white focus:ring-3 focus:ring-[#038b95]/12 focus:outline-none"
                 />
                 {adminSearch && (
@@ -1017,10 +1143,55 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                   {totalSearchResultsCount === 0 ? (
                     <div className="px-3 py-8 text-center text-xs text-slate-400">
-                      Không tìm thấy chức năng, tin tuyển dụng hoặc ứng viên phù hợp
+                      {isCompany
+                        ? "Không tìm thấy chức năng, tin tuyển dụng hoặc ứng viên phù hợp"
+                        : "Không tìm thấy chức năng hoặc sinh viên hướng dẫn phù hợp"}
                     </div>
                   ) : (
                     <div className="space-y-3 pt-1">
+                      {/* Section: Sinh viên hướng dẫn (Lecturer) */}
+                      {matchingStudents.length > 0 && (
+                        <div>
+                          <div className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#038b95] flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <Users className="h-3.5 w-3.5" />
+                              <span>Sinh viên hướng dẫn ({matchingStudents.length})</span>
+                            </span>
+                          </div>
+                          <div className="space-y-1 mt-1">
+                            {matchingStudents.slice(0, 5).map((pl) => (
+                              <button
+                                key={pl.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  setActiveTab("supervised-placements");
+                                  setAdminSearch("");
+                                  setIsSearchFocused(false);
+                                }}
+                                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs transition cursor-pointer hover:bg-slate-50 group"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#e0f4f6] text-[#038b95]">
+                                    <GraduationCap className="w-3.5 h-3.5" />
+                                  </span>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-slate-800 truncate group-hover:text-[#038b95]">
+                                      {pl.student?.fullName} ({pl.student?.studentCode})
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 truncate">
+                                      {pl.company?.companyName} • {pl.internship?.title}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className="ml-2 shrink-0 rounded-full bg-[#e0f4f6] text-[#038b95] px-2 py-0.5 text-[10px] font-semibold">
+                                  Theo dõi
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Section 1: Tin tuyển dụng */}
                       {matchingJobs.length > 0 && (
                         <div>
@@ -1174,7 +1345,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Right Cluster: Search Pill (Admin only) + Chat + Notifications + Account Capsule */}
           <div className="flex items-center gap-3">
             {/* Sleek Search Pill for Admin */}
-            {!isCompany && (
+            {!isWorkspaceSidebar && (
               <div className="group relative hidden md:block w-64 lg:w-80">
                 <div className="relative flex items-center">
                   <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-[#038b95]" />
@@ -1328,7 +1499,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setIsProfileOpen(false);
                   }}
                   className="flex items-center gap-2.5 text-left cursor-pointer focus:outline-none"
-                  title={isCompany ? "Nhấp để xem Hồ sơ doanh nghiệp" : "Nhấp để xem Hồ sơ cá nhân"}
+                  title={
+                    isCompany
+                      ? "Nhấp để xem Hồ sơ doanh nghiệp"
+                      : isTeacher
+                        ? "Nhấp để xem Hồ sơ giảng viên"
+                        : "Nhấp để xem Hồ sơ cá nhân"
+                  }
                 >
                   <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#038b95] to-[#025c63] text-xs font-black text-white shadow-xs transition-transform hover:scale-105">
                     {isCompany && companyLogo ? (
@@ -1398,9 +1575,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                           : companyVerificationStatus === "PENDING"
                             ? "Đang chờ xác minh"
                             : "Tài khoản Doanh nghiệp"
-                        : user?.isSuperAdmin
-                          ? "Quản trị viên hệ thống"
-                          : "Quản trị viên phân hệ"}
+                        : isTeacher
+                          ? "Giảng viên hướng dẫn"
+                          : user?.isSuperAdmin
+                            ? "Quản trị viên hệ thống"
+                            : "Quản trị viên phân hệ"}
                     </span>
                   </div>
 
@@ -1415,10 +1594,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                     >
                       {isCompany ? (
                         <Building className="h-4 w-4 text-[#038b95]" />
+                      ) : isTeacher ? (
+                        <GraduationCap className="h-4 w-4 text-[#038b95]" />
                       ) : (
                         <User className="h-4 w-4 text-[#038b95]" />
                       )}
-                      {isCompany ? "Hồ sơ doanh nghiệp" : "Hồ sơ cá nhân"}
+                      {isCompany
+                        ? "Hồ sơ doanh nghiệp"
+                        : isTeacher
+                          ? "Hồ sơ giảng viên"
+                          : "Hồ sơ cá nhân"}
                     </button>
                     {isCompany && companyVerificationStatus === "APPROVED" && (
                       <>
@@ -1446,7 +1631,44 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </button>
                       </>
                     )}
-                    {!isCompany && user?.isSuperAdmin && (
+                    {isTeacher && (
+                      <>
+                        <button
+                          type="button"
+                          onMouseDown={() => {
+                            setActiveTab("supervised-placements");
+                            setIsProfileOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-[#f0fbfb] hover:text-[#038b95] cursor-pointer"
+                        >
+                          <Users className="h-4 w-4 text-[#038b95]" />
+                          Sinh viên hướng dẫn
+                        </button>
+                        <button
+                          type="button"
+                          onMouseDown={() => {
+                            setActiveTab("review-reports");
+                            setIsProfileOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-[#f0fbfb] hover:text-[#038b95] cursor-pointer"
+                        >
+                          <CheckSquare className="h-4 w-4 text-[#038b95]" />
+                          Duyệt báo cáo tuần
+                        </button>
+                        <button
+                          type="button"
+                          onMouseDown={() => {
+                            setActiveTab("evaluation-list");
+                            setIsProfileOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-[#f0fbfb] hover:text-[#038b95] cursor-pointer"
+                        >
+                          <Star className="h-4 w-4 text-[#038b95]" />
+                          Đánh giá &amp; Chấm điểm
+                        </button>
+                      </>
+                    )}
+                    {!isCompany && !isTeacher && user?.isSuperAdmin && (
                       <>
                         <button
                           type="button"

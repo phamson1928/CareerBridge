@@ -12,7 +12,7 @@ html, body {
    change presentation; the existing component structure and workflows remain intact. */
 :root { --cb-teal: #008b8f; --cb-deep: #006d72; --cb-mist: #e9f7f7; --cb-ink: #12353b; }
 
-.role-student, .role-teacher { background: #edf0f4; }
+.role-student { background: #edf0f4; }
 .role-student main:not(.student-home-main) {
   max-width: 1240px;
   padding-top: 5.25rem !important;
@@ -24,7 +24,6 @@ html, body {
   }
 }
 .role-student main.student-home-main { max-width: 1240px; padding-top: 0 !important; padding-bottom: 3rem; }
-.role-teacher main { max-width: 1440px; padding-top: 1.5rem; padding-bottom: 3rem; }
 .role-navbar { border-color: #e2e8f0; background: #ffffff; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04); }
 .role-navbar :is(#btn-chat-toggle, #btn-notifs-toggle) { color: #475569; }
 .role-navbar :is(#btn-chat-toggle, #btn-notifs-toggle):hover { border-color: #cbd5e1; background: #f8fafc; color: #0f172a; }
