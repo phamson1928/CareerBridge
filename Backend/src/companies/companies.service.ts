@@ -92,6 +92,15 @@ export class CompaniesService {
     return this.enrichProfile(profile);
   }
 
+  async findOptionalByUserId(userId: string) {
+    const profile = await this.prisma.companyProfile.findUnique({
+      where: { userId },
+      select: profileSelect,
+    });
+    if (!profile) return null;
+    return this.enrichProfile(profile);
+  }
+
   async create(userId: string, dto: CreateCompanyProfileDto) {
     if (dto.registrationDocumentFileId) {
       await this.assertRegistrationDocument(

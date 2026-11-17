@@ -253,18 +253,25 @@ export class PlacementsService {
 
   async listMine(user: AuthUser) {
     await this.lifecycle.reconcile();
-    const where = await this.scopeForUser(user);
-    const items = await this.prisma.internshipPlacement.findMany({
-      where,
-      select: placementSelect,
-      orderBy: [{ createdAt: 'desc' }],
-    });
-    const progress = await this.progressByPlacementIds(
-      items.map((item) => item.id),
-    );
-    return {
-      items: items.map((item) => this.toRecord(item, progress.get(item.id))),
-    };
+    try {
+      const where = await this.scopeForUser(user);
+      const items = await this.prisma.internshipPlacement.findMany({
+        where,
+        select: placementSelect,
+        orderBy: [{ createdAt: 'desc' }],
+      });
+      const progress = await this.progressByPlacementIds(
+        items.map((item) => item.id),
+      );
+      return {
+        items: items.map((item) => this.toRecord(item, progress.get(item.id))),
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return { items: [] };
+      }
+      throw error;
+    }
   }
 
   async findById(id: string, user: AuthUser) {

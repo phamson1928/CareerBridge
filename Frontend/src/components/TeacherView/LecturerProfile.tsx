@@ -23,6 +23,7 @@ import {
   ProfileAvatarPreview,
   ProfileAvatarUpload,
 } from "../ProfileAvatarUpload";
+import { CustomSelect } from "../Common/CustomSelect";
 
 const emptyForm: LecturerProfileInput = {
   fullName: "",
@@ -297,33 +298,30 @@ export const LecturerProfileView: React.FC<LecturerProfileViewProps> = ({
             />
 
             <div className="md:col-span-2">
-              <label className="mb-1 block text-xs font-bold text-slate-800">
-                Khoa cơ hữu *
-              </label>
-              <select
+              <CustomSelect
+                label="Khoa cơ hữu"
                 required
                 value={form.facultyId ?? ""}
-                onChange={(event) => {
+                placeholder="-- Chọn Khoa cơ hữu --"
+                options={[
+                  { value: "", label: "-- Chọn Khoa cơ hữu --" },
+                  ...selectableFaculties.map((fac) => ({
+                    value: fac.id,
+                    label: fac.name,
+                    code: fac.code,
+                    badge: !fac.isActive ? "(Khoa cũ)" : undefined,
+                  })),
+                ]}
+                onChange={(value) => {
                   setSuccessMessage(null);
-                  const fac = facultyOptions.find(
-                    (f) => f.id === event.target.value,
-                  );
+                  const fac = facultyOptions.find((f) => f.id === value);
                   setForm({
                     ...form,
-                    facultyId: event.target.value,
+                    facultyId: value,
                     department: fac?.name ?? form.department,
                   });
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 transition"
-              >
-                <option value="">-- Chọn Khoa cơ hữu --</option>
-                {selectableFaculties.map((fac) => (
-                  <option key={fac.id} value={fac.id}>
-                    [{fac.code}] {fac.name}
-                    {!fac.isActive ? " (Khoa cũ)" : ""}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div className="md:col-span-2 rounded-2xl border border-[#b8e6ea] bg-[#e0f4f6]/50 p-4">

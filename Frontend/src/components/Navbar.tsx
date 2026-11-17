@@ -489,6 +489,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         if (companyVerificationStatus !== "APPROVED") {
           return [
             {
+              id: "dashboard",
+              label: "Tổng quan",
+              icon: <LayoutDashboard className="w-4 h-4" />,
+            },
+            {
               id: "company-profile",
               label: "Đăng ký doanh nghiệp",
               icon: <Building className="w-4 h-4" />,
