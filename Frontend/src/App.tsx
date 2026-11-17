@@ -31,7 +31,7 @@ import { companiesApi, type CompanyProfileRecord } from "./companies/api";
 import { internshipsApi } from "./internships/api";
 import { toLegacyInternship } from "./internships/mappers";
 import { studentsApi, type StudentProfileRecord } from "./students/api";
-import { lecturersApi } from "./lecturers/api";
+import { lecturersApi, type LecturerProfileRecord } from "./lecturers/api";
 import { skillsApi } from "./skills/api";
 import type { StudentSkillRecord } from "./skills/types";
 import {
@@ -121,6 +121,30 @@ const adminTabByPath = Object.fromEntries(
   Object.entries(adminPathByTab).map(([tab, path]) => [path, tab]),
 ) as Record<string, string>;
 
+const companyPathByTab: Record<string, string> = {
+  dashboard: "dashboard",
+  postings: "postings",
+  applicants: "applicants",
+  "interns-evaluation": "evaluations",
+  "company-profile": "profile",
+};
+
+const companyTabByPath = Object.fromEntries(
+  Object.entries(companyPathByTab).map(([tab, path]) => [path, tab]),
+) as Record<string, string>;
+
+const teacherPathByTab: Record<string, string> = {
+  "students-list": "dashboard",
+  "supervised-placements": "placements",
+  "review-reports": "reports",
+  "evaluation-list": "evaluations",
+  "lecturer-profile": "profile",
+};
+
+const teacherTabByPath = Object.fromEntries(
+  Object.entries(teacherPathByTab).map(([tab, path]) => [path, tab]),
+) as Record<string, string>;
+
 
 
 function toLegacyStudentProfile(
@@ -187,8 +211,59 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>(() =>
     getDefaultTab(currentRole),
   );
+  const [studentProfile, setStudentProfile] =
+    useState<StudentProfile | null>(null);
+  // Student Profile Load Status: 'idle' | 'loading' | 'ready' | 'empty' | 'error'
+  const [studentProfileStatus, setStudentProfileStatus] = useState<
+    "idle" | "loading" | "ready" | "empty" | "error"
+  >("idle");
+  const [studentProfileError, setStudentProfileError] = useState<string | null>(null);
+  const [avatarFileId, setAvatarFileId] = useState<string | null>(null);
+  const [companyProfile, setCompanyProfile] =
+    useState<CompanyProfile | null>(null);
+  const [companyVerificationStatus, setCompanyVerificationStatus] =
+    useState<CompanyProfileRecord["status"] | null>(null);
+  const [lecturerProfile, setLecturerProfile] =
+    useState<LecturerProfileRecord | null>(null);
+  const [internships, setInternships] = useState<Internship[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [evaluationRecords, setEvaluationRecords] = useState<EvaluationRecord[]>([]);
+  const [myPlacements, setMyPlacements] = useState<PlacementRecord[]>([]);
+  const [workflowError, setWorkflowError] = useState<string | null>(null);
+  const [isWorkflowLoading, setIsWorkflowLoading] = useState(true);
+  const [workflowReloadKey, setWorkflowReloadKey] = useState(0);
 
   useEffect(() => {
+    if (currentRole === "COMPANY") {
+      const path = location.pathname.replace(/^\/company\/?/, "").split("/")[0];
+      if (!path) {
+        navigate(`/company/dashboard`, { replace: true });
+        return;
+      }
+      if (!companyTabByPath[path]) {
+        navigate("/404", { replace: true });
+        return;
+      }
+      const targetTab = companyTabByPath[path];
+      setActiveTab(targetTab);
+      return;
+    }
+
+    if (currentRole === "TEACHER") {
+      const path = location.pathname.replace(/^\/lecturer\/?/, "").split("/")[0];
+      if (!path) {
+        navigate(`/lecturer/dashboard`, { replace: true });
+        return;
+      }
+      if (!teacherTabByPath[path]) {
+        navigate("/404", { replace: true });
+        return;
+      }
+      const targetTab = teacherTabByPath[path];
+      setActiveTab(targetTab);
+      return;
+    }
+
     if (currentRole !== "ADMIN") {
       setActiveTab(getDefaultTab(currentRole));
       return;
@@ -227,9 +302,34 @@ export default function App() {
     }
 
     setActiveTab(targetTab);
-  }, [currentRole, location.pathname, navigate, user?.isSuperAdmin, user?.permissions]);
+  }, [
+    companyVerificationStatus,
+    currentRole,
+    location.pathname,
+    navigate,
+    user?.isSuperAdmin,
+    user?.permissions,
+  ]);
 
   const handleTabChange = (tab: string) => {
+    if (currentRole === "COMPANY") {
+      const path = companyPathByTab[tab];
+      if (path) {
+        navigate(`/company/${path}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
+    if (currentRole === "TEACHER") {
+      const path = teacherPathByTab[tab];
+      if (path) {
+        navigate(`/lecturer/${path}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
     if (currentRole === "ADMIN") {
       const userPerms = user?.permissions || [];
       const required = TAB_PERMISSION_MAP[tab];
@@ -256,26 +356,6 @@ export default function App() {
     }
   }, []);
 
-  const [studentProfile, setStudentProfile] =
-    useState<StudentProfile | null>(null);
-  // Student Profile Load Status: 'idle' | 'loading' | 'ready' | 'empty' | 'error'
-  const [studentProfileStatus, setStudentProfileStatus] = useState<
-    "idle" | "loading" | "ready" | "empty" | "error"
-  >("idle");
-  const [studentProfileError, setStudentProfileError] = useState<string | null>(null);
-  const [avatarFileId, setAvatarFileId] = useState<string | null>(null);
-  const [companyProfile, setCompanyProfile] =
-    useState<CompanyProfile | null>(null);
-  const [companyVerificationStatus, setCompanyVerificationStatus] =
-    useState<CompanyProfileRecord["status"] | null>(null);
-  const [internships, setInternships] = useState<Internship[]>([]);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [evaluationRecords, setEvaluationRecords] = useState<EvaluationRecord[]>([]);
-  const [myPlacements, setMyPlacements] = useState<PlacementRecord[]>([]);
-  const [workflowError, setWorkflowError] = useState<string | null>(null);
-  const [isWorkflowLoading, setIsWorkflowLoading] = useState(true);
-  const [workflowReloadKey, setWorkflowReloadKey] = useState(0);
-
   // Modals state
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -284,13 +364,13 @@ export default function App() {
     () => localStorage.getItem("cb.adminSidebarCollapsed") === "true",
   );
 
-  const toggleAdminSidebar = () => {
+  const toggleAdminSidebar = useCallback(() => {
     setIsAdminSidebarCollapsed((prev) => {
       const next = !prev;
       localStorage.setItem("cb.adminSidebarCollapsed", String(next));
       return next;
     });
-  };
+  }, []);
 
   const prevUserRef = React.useRef<string | null>(null);
 
@@ -308,6 +388,7 @@ export default function App() {
       setAvatarFileId(null);
       setCompanyProfile(null);
       setCompanyVerificationStatus(null);
+      setLecturerProfile(null);
       setInternships([]);
       setApplications([]);
       setEvaluationRecords([]);
@@ -371,16 +452,20 @@ export default function App() {
         }
 
         if (user.role === "COMPANY") {
-          const [applicationsPage, placements, evaluationPage] =
+          const [applicationsPage, placements, evaluationPage, internshipsPage] =
             await Promise.all([
               applicationsApi.listMine({ page: 1, limit: 100 }),
               placementsApi.listMine(),
               evaluationsApi.listMine({ page: 1, limit: 100 }),
+              internshipsApi.listMine({ page: 1, limit: 100 }).catch(() => ({ items: [] })),
             ]);
           if (!active) return;
           applyApplications(applicationsPage.items);
           setMyPlacements(placements.items);
           setEvaluationRecords(evaluationPage.items);
+          if (internshipsPage?.items) {
+            setInternships(internshipsPage.items.map(toLegacyInternship));
+          }
 
           try {
             const profile = await companiesApi.getMine();
@@ -390,11 +475,14 @@ export default function App() {
             }
           } catch (profileError) {
             console.warn("Company profile is not available yet", profileError);
+            if (active) {
+              setCompanyVerificationStatus("DRAFT");
+            }
           }
         }
 
         if (user.role === "LECTURER") {
-          const [placements, evaluationPage, lecturerProfile] = await Promise.all([
+          const [placements, evaluationPage, loadedLecturerProfile] = await Promise.all([
             placementsApi.listMine(),
             evaluationsApi.listMine({ page: 1, limit: 100 }),
             lecturersApi.getMine().catch(() => null),
@@ -402,7 +490,8 @@ export default function App() {
           if (!active) return;
           setMyPlacements(placements.items);
           setEvaluationRecords(evaluationPage.items);
-          setAvatarFileId(lecturerProfile?.avatarFileId ?? null);
+          setLecturerProfile(loadedLecturerProfile);
+          setAvatarFileId(loadedLecturerProfile?.avatarFileId ?? null);
         }
       } catch (error) {
         console.error("Unable to load application workflow data", error);
@@ -434,15 +523,22 @@ export default function App() {
     setCompanyVerificationStatus(profile.status);
   };
 
+  const handleLecturerProfileChange = (profile: LecturerProfileRecord | null) => {
+    setLecturerProfile(profile);
+    setAvatarFileId(profile?.avatarFileId ?? null);
+  };
+
   useEffect(() => {
     if (
       currentRole === "COMPANY" &&
+      companyVerificationStatus !== null &&
       companyVerificationStatus !== "APPROVED" &&
       activeTab !== "company-profile"
     ) {
       setActiveTab("company-profile");
+      navigate("/company/profile", { replace: true });
     }
-  }, [activeTab, companyVerificationStatus, currentRole]);
+  }, [activeTab, companyVerificationStatus, currentRole, navigate]);
 
   const handleLogout = async () => {
     await logout();
@@ -615,11 +711,15 @@ export default function App() {
   return (
     <div
       className={`min-h-screen overflow-x-clip ${
-        currentRole === "ADMIN" ? "bg-slate-100/70" : "bg-[#edf0f4]"
+        currentRole === "COMPANY" || currentRole === "TEACHER"
+          ? "bg-[#f8fafd]"
+          : currentRole === "ADMIN"
+          ? "bg-slate-100/70"
+          : "bg-[#edf0f4]"
       } text-slate-800 font-sans flex flex-col antialiased role-${currentRole.toLowerCase()} ${
-        currentRole === "ADMIN"
-          ? `admin-theme pl-20 transition-[padding-left] duration-200 ease-out ${
-              isAdminSidebarCollapsed ? "lg:pl-20" : "lg:pl-[300px]"
+        currentRole === "ADMIN" || currentRole === "COMPANY" || currentRole === "TEACHER"
+          ? `admin-theme pl-20 transition-[padding-left] duration-200 ease-in-out ${
+              isAdminSidebarCollapsed ? "lg:pl-20" : "lg:pl-[240px]"
             }`
           : ""
       }`}
@@ -643,18 +743,24 @@ export default function App() {
         companyLogo={companyProfile?.logo}
         companyName={companyProfile?.companyName}
         companyVerificationStatus={companyVerificationStatus}
+        lecturerName={lecturerProfile?.fullName}
+        lecturerTitle={lecturerProfile?.title}
+        lecturerDepartment={lecturerProfile?.faculty?.name || lecturerProfile?.department}
         isSidebarCollapsed={isAdminSidebarCollapsed}
         onToggleSidebar={toggleAdminSidebar}
+        internships={internships}
+        applications={applications}
+        placements={myPlacements}
       />
 
       {/* Main Page Body Container with smooth page entrance animation */}
       <main
         key={`${currentRole}-${activeTab}`}
         className={`flex-1 w-full mx-auto page-fade-in ${
-          currentRole === "ADMIN"
+          currentRole === "ADMIN" || currentRole === "COMPANY" || currentRole === "TEACHER"
             ? "max-w-none px-4 sm:px-6 py-6 lg:px-7 lg:py-8"
             : currentRole === "STUDENT"
-            ? activeTab === "internships" && Boolean(studentProfile)
+            ? activeTab === "internships" && (isWorkflowLoading || studentProfileStatus === "loading" || Boolean(studentProfile))
               ? "student-home-main max-w-[1240px] px-3.5 sm:px-6 lg:px-8 !pt-0 pb-6 flex flex-col items-center"
               : "max-w-[1240px] px-3.5 sm:px-6 lg:px-8 pt-18 sm:pt-22 lg:pt-28 pb-8 flex flex-col items-center"
             : "max-w-[1440px] px-4 sm:px-6 py-6 lg:px-8"
@@ -735,8 +841,11 @@ export default function App() {
             {activeTab === "company-profile" && <CompanyProfileView onProfileChange={handleCompanyProfileChange} />}
             {activeTab === "dashboard" && (
               <CompanyDashboard
-                onNavigateTab={setActiveTab}
-                onOpenCreatePosting={() => setActiveTab("postings")}
+                onNavigateTab={handleTabChange}
+                onOpenCreatePosting={() => handleTabChange("postings")}
+                applications={applications}
+                placements={myPlacements}
+                evaluations={evaluationRecords}
               />
             )}
             {activeTab === "postings" && (
@@ -755,7 +864,7 @@ export default function App() {
                 <ProfileRequiredNotice
                   title="Hoàn thiện hồ sơ doanh nghiệp"
                   description="Tạo hồ sơ doanh nghiệp trước khi quản lý các hồ sơ ứng tuyển."
-                  onOpenProfile={() => setActiveTab("company-profile")}
+                  onOpenProfile={() => handleTabChange("company-profile")}
                 />
               )
             )}
@@ -775,14 +884,22 @@ export default function App() {
           <>
             {activeTab === "students-list" && (
               <TeacherDashboard
-                onNavigateTab={setActiveTab}
+                onNavigateTab={handleTabChange}
                 onOpenChat={(placementId) => {
                   setChatPlacementId(placementId);
                   setIsChatOpen(true);
                 }}
               />
             )}
-            {activeTab === "supervised-placements" && <SupervisedPlacements />}
+            {activeTab === "supervised-placements" && (
+              <SupervisedPlacements
+                onNavigateTab={handleTabChange}
+                onOpenChat={(placementId) => {
+                  setChatPlacementId(placementId);
+                  setIsChatOpen(true);
+                }}
+              />
+            )}
             {activeTab === "review-reports" && (
               <ReviewReports />
             )}
@@ -794,7 +911,9 @@ export default function App() {
                 onUpdate={handleUpdateEvaluation}
               />
             )}
-            {activeTab === "lecturer-profile" && <LecturerProfileView />}
+            {activeTab === "lecturer-profile" && (
+              <LecturerProfileView onProfileChange={handleLecturerProfileChange} />
+            )}
           </>
         )}
 
@@ -804,8 +923,8 @@ export default function App() {
       </main>
 
       {currentRole !== "ADMIN" && (
-        <footer className="mt-12 border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
-          <p className="px-4 font-semibold text-slate-700">© 2026 CareerBridge — Hệ thống hỗ trợ tìm kiếm &amp; quản lý thực tập cho sinh viên</p>
+        <footer className="mt-auto border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
+          <p className="px-4 font-semibold text-slate-700">© 2026 CareerBridge. All rights reserved.</p>
         </footer>
       )}
 
@@ -889,7 +1008,7 @@ function getDefaultTab(role: UserRole): string {
     case "STUDENT":
       return "internships";
     case "COMPANY":
-      return "company-profile";
+      return "dashboard";
     case "TEACHER":
       return "students-list";
     case "ADMIN":

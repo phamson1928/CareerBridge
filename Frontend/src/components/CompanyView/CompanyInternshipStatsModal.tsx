@@ -88,35 +88,35 @@ export function CompanyInternshipStatsModal({
     <ModalPortal>
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
       <div className="modal-scale-in relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden my-auto">
-        {/* Header */}
-        <div className="flex items-start justify-between border-b border-slate-100 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 px-6 py-5 text-white">
-          <div className="space-y-1">
+        {/* Header (CareerBridge Clean SaaS Theme) */}
+        <div className="flex items-start justify-between border-b border-slate-200/80 bg-[#f8fafd] px-6 py-5 text-slate-900">
+          <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-2.5 py-0.5 text-xs font-bold text-emerald-300 border border-emerald-500/30">
-                <BarChart3 className="h-3.5 w-3.5" /> Thống kê tuyển dụng chi tiết
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e6f6f6] border border-[#00878a]/25 px-2.5 py-0.5 text-[11px] font-bold text-[#006f72]">
+                <BarChart3 className="h-3 w-3 text-[#00878a]" /> Thống kê tuyển dụng chi tiết
               </span>
               {data && statusBadge(data.internship.status)}
             </div>
-            <h2 className="text-xl font-black text-white sm:text-2xl leading-tight">
+            <h2 className="text-lg sm:text-xl font-extrabold text-[#006f72] tracking-tight leading-snug">
               {data ? data.internship.title : 'Chi tiết thống kê tuyển dụng'}
             </h2>
             {data && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300 pt-0.5">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 pt-0.5">
                 {data.internship.semesterName && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="flex items-center gap-1 font-medium">
+                    <Calendar className="h-3.5 w-3.5 text-[#038b95]" />
                     {data.internship.semesterName}
                   </span>
                 )}
                 {data.internship.department && (
-                  <span className="flex items-center gap-1">
-                    <Briefcase className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="flex items-center gap-1 font-medium">
+                    <Briefcase className="h-3.5 w-3.5 text-[#038b95]" />
                     {data.internship.department}
                   </span>
                 )}
                 {data.internship.location && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="flex items-center gap-1 font-medium">
+                    <MapPin className="h-3.5 w-3.5 text-[#038b95]" />
                     {data.internship.location}
                   </span>
                 )}
@@ -125,7 +125,7 @@ export function CompanyInternshipStatsModal({
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-slate-400 hover:bg-white/10 hover:text-white transition"
+            className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
             aria-label="Đóng"
           >
             <X className="h-5 w-5" />
@@ -219,7 +219,7 @@ export function CompanyInternshipStatsModal({
                   <div>
                     <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-emerald-600" />
-                      Phễu tuyển dụng vị trí này (Recruitment Funnel)
+                      Phễu tuyển dụng vị trí này
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
                       Tỷ lệ chuyển đổi qua các vòng từ lúc nộp đơn tới khi tiếp nhận
@@ -275,7 +275,7 @@ export function CompanyInternshipStatsModal({
                 {data.funnel.everReviewing > 0 && (
                   <div className="mt-3 rounded-xl bg-emerald-50/50 border border-emerald-100 px-3 py-2 text-xs text-emerald-800 flex items-center justify-between">
                     <span>
-                      Tỷ lệ tuyển sau khi vào vòng xem xét hồ sơ (Accept given Reviewing):
+                      Tỷ lệ tuyển sau khi vào vòng xem xét hồ sơ:
                     </span>
                     <strong className="text-emerald-900 font-extrabold text-sm">
                       {formatPercent(data.funnel.acceptGivenReview)}
@@ -312,7 +312,7 @@ export function CompanyInternshipStatsModal({
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
                   <div>
                     <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <CheckCircle2 className="h-4 w-4 text-[#038b95]" />
                       Độ phủ kỹ năng của bài đăng
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -334,11 +334,11 @@ export function CompanyInternshipStatsModal({
                                 <div className="flex items-center gap-2">
                                   <span className="font-bold text-slate-800">{skill.name}</span>
                                   {skill.isRequired ? (
-                                    <span className="rounded-sm bg-rose-50 px-1.5 py-0.5 text-[9px] font-extrabold text-rose-700 border border-rose-200">
+                                    <span className="rounded-md bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-[#006f72] border border-[#00878a]/20">
                                       Bắt buộc
                                     </span>
                                   ) : (
-                                    <span className="rounded-sm bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-600">
+                                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
                                       Tùy chọn
                                     </span>
                                   )}
@@ -350,13 +350,11 @@ export function CompanyInternshipStatsModal({
                               <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                                 <div
                                   className={`h-full rounded-full transition-all duration-300 ${
-                                    skill.isRequired
-                                      ? rate >= 0.7
-                                        ? 'bg-emerald-500'
-                                        : rate >= 0.4
-                                          ? 'bg-amber-500'
-                                          : 'bg-rose-500'
-                                      : 'bg-indigo-500'
+                                    rate >= 0.7
+                                      ? 'bg-emerald-500'
+                                      : rate >= 0.4
+                                        ? 'bg-[#038b95]'
+                                        : 'bg-amber-500'
                                   }`}
                                   style={{ width: `${Math.min(100, Math.max(0, rate * 100))}%` }}
                                 />
@@ -369,15 +367,15 @@ export function CompanyInternshipStatsModal({
                   </div>
                 </div>
 
-                {/* Top Applicant Skills */}
+                {/* Top Applicant Skills (Giới hạn tối đa 5 kỹ năng) */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
                   <div>
                     <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-indigo-600" />
-                      Top kỹ năng nổi bật của ứng viên
+                      <Sparkles className="h-4 w-4 text-[#038b95]" />
+                      Top 5 kỹ năng nổi bật của ứng viên
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Các kỹ năng phổ biến nhất mà các ứng viên nộp tin này sở hữu (Không PII)
+                      5 kỹ năng phổ biến nhất mà các ứng viên nộp tin này sở hữu
                     </p>
 
                     <div className="mt-4 space-y-2.5">
@@ -386,19 +384,29 @@ export function CompanyInternshipStatsModal({
                           Chưa có ứng viên nộp đơn hoặc ứng viên chưa khai báo kỹ năng.
                         </p>
                       ) : (
-                        data.topApplicantSkills.map((item, idx) => (
+                        data.topApplicantSkills.slice(0, 5).map((item, idx) => (
                           <div
                             key={item.skillId}
-                            className="flex items-center justify-between rounded-xl bg-slate-50/80 px-3 py-2 text-xs border border-slate-100"
+                            className="flex items-center justify-between rounded-xl bg-slate-50/70 hover:bg-[#f0fbfb] px-3.5 py-2.5 text-xs border border-slate-100 transition"
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-black text-indigo-700">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                                  idx === 0
+                                    ? "bg-amber-100 text-amber-800 border border-amber-300"
+                                    : idx === 1
+                                    ? "bg-slate-200 text-slate-700"
+                                    : idx === 2
+                                    ? "bg-teal-100 text-[#006f72]"
+                                    : "bg-slate-100 text-slate-500"
+                                }`}
+                              >
                                 {idx + 1}
                               </span>
-                              <span className="font-bold text-slate-800">{item.name}</span>
+                              <span className="font-bold text-slate-800 truncate">{item.name}</span>
                             </div>
-                            <div className="text-right">
-                              <span className="font-extrabold text-indigo-700">{item.applicantCount} ứng viên</span>
+                            <div className="text-right shrink-0">
+                              <span className="font-bold text-[#006f72]">{item.applicantCount} ứng viên</span>
                               <span className="ml-1 text-slate-400 text-[11px]">({formatPercent(item.share)})</span>
                             </div>
                           </div>
@@ -409,40 +417,40 @@ export function CompanyInternshipStatsModal({
                 </div>
               </div>
 
-              {/* 4. Match Score Statistics */}
-              <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-5 text-white shadow-lg">
+              {/* 4. Match Score Statistics (CareerBridge Pastel Card Theme) */}
+              <div className="rounded-2xl border border-[#bce8ec] bg-gradient-to-br from-[#eaf7f8] via-[#f5fbfa] to-white p-5 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e6f6f6] border border-[#00878a]/25 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#006f72]">
+                      <Sparkles className="h-3 w-3 text-[#038b95]" />
                       Độ tương thích hồ sơ
                     </span>
-                    <h3 className="text-lg font-black text-white flex items-center gap-2 mt-0.5">
-                      <Sparkles className="h-5 w-5 text-amber-400" />
+                    <h3 className="text-base font-extrabold text-[#006f72] flex items-center gap-2 mt-1">
                       Thống kê Điểm Match Score Hệ thống
                     </h3>
-                    <p className="text-xs text-slate-300 mt-1">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Đo lường mức độ phù hợp giữa kỹ năng ứng viên và yêu cầu bài đăng ({data.matchScore.counted} hồ sơ đã chấm điểm)
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-6 bg-white/10 rounded-2xl px-6 py-3 border border-white/10 backdrop-blur-xs">
+                  <div className="flex items-center gap-5 bg-white rounded-2xl px-5 py-2.5 border border-[#a5dfe4]/50 shadow-2xs">
                     <div className="text-center">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Trung bình</span>
-                      <div className="text-2xl font-black text-emerald-400">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Trung bình</span>
+                      <div className="text-2xl font-black text-[#006f72]">
                         {data.matchScore.avg !== null ? data.matchScore.avg.toFixed(1) : '-'}
                       </div>
                     </div>
-                    <div className="h-8 w-px bg-white/20" />
+                    <div className="h-8 w-px bg-slate-200" />
                     <div className="text-center">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Thấp nhất</span>
-                      <div className="text-lg font-bold text-rose-300">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Thấp nhất</span>
+                      <div className="text-base font-bold text-rose-600">
                         {data.matchScore.min !== null ? data.matchScore.min : '-'}
                       </div>
                     </div>
-                    <div className="h-8 w-px bg-white/20" />
+                    <div className="h-8 w-px bg-slate-200" />
                     <div className="text-center">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Cao nhất</span>
-                      <div className="text-lg font-bold text-amber-300">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cao nhất</span>
+                      <div className="text-base font-bold text-amber-600">
                         {data.matchScore.max !== null ? data.matchScore.max : '-'}
                       </div>
                     </div>
@@ -454,10 +462,10 @@ export function CompanyInternshipStatsModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-6 py-3">
+        <div className="flex justify-end border-t border-slate-100 bg-white px-6 py-3.5">
           <button
             onClick={onClose}
-            className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-xs font-extrabold text-slate-700 hover:bg-slate-100 transition shadow-2xs"
+            className="rounded-xl bg-[#038b95] px-6 py-2 text-xs font-bold text-white hover:bg-[#026f77] transition shadow-xs cursor-pointer"
           >
             Đóng
           </button>

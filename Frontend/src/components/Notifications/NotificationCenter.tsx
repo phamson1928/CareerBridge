@@ -218,7 +218,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = (
             </button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar px-4 py-4">
           {props.error && (
             <div className="mb-3 flex items-start gap-2 rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs text-rose-700">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />

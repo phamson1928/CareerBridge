@@ -35,6 +35,7 @@ import { ReportJobModal } from '../Internships/ReportJobModal';
 import { SemesterCampaignBanner } from '../Semesters/SemesterCampaignBanner';
 import { facultiesApi } from '../../organization/api';
 import type { FacultyOption } from '../../organization/types';
+import { JobCardsGridSkeleton } from './skeletons';
 
 type InternshipPage = {
   items: Internship[];
@@ -614,34 +615,7 @@ export const InternshipList: React.FC<InternshipListProps> = ({
 
       {/* Loading Skeleton */}
       {isLoadingInternships && (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((skeletonId) => (
-            <div key={skeletonId} className="sb-job-card space-y-4 p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-2xl skeleton-shimmer" />
-                  <div className="space-y-2">
-                    <div className="h-3.5 w-24 rounded-md skeleton-shimmer" />
-                    <div className="h-4 w-40 rounded-md skeleton-shimmer" />
-                  </div>
-                </div>
-                <div className="h-9 w-9 rounded-xl skeleton-shimmer" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="h-12 rounded-xl skeleton-shimmer" />
-                <div className="h-12 rounded-xl skeleton-shimmer" />
-              </div>
-              <div className="space-y-1.5">
-                <div className="h-3 w-full rounded-md skeleton-shimmer" />
-                <div className="h-3 w-3/4 rounded-md skeleton-shimmer" />
-              </div>
-              <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                <div className="h-3.5 w-24 rounded-md skeleton-shimmer" />
-                <div className="h-9 w-24 rounded-xl skeleton-shimmer" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <JobCardsGridSkeleton count={6} />
       )}
 
       {!isLoadingInternships && !internshipsError && filteredInternships.length === 0 && (

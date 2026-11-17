@@ -3,18 +3,19 @@ import React from "react";
 interface SkeletonBlockProps {
   className?: string;
   style?: React.CSSProperties;
+  dark?: boolean;
 }
 
 /**
  * Atomic skeleton building block with GPU-accelerated shimmer effect.
- * Uses neutral slate/teal tint that matches the Student Aurora Bento design.
+ * Supports light mode and dark mode/hero aurora tint.
  */
-export function SkeletonBlock({ className = "", style }: SkeletonBlockProps) {
+export function SkeletonBlock({ className = "", style, dark = false }: SkeletonBlockProps) {
   return (
     <div
       aria-hidden="true"
       style={style}
-      className={`skeleton-shimmer rounded-xl select-none pointer-events-none ${className}`}
+      className={`${dark ? "skeleton-shimmer-dark" : "skeleton-shimmer"} rounded-xl select-none pointer-events-none ${className}`}
     />
   );
 }
@@ -41,14 +42,15 @@ export function SkeletonCard({ children, className = "" }: SkeletonCardProps) {
 interface SkeletonTextProps {
   className?: string;
   lines?: number;
+  dark?: boolean;
 }
 
 /**
  * Text line skeleton placeholder.
  */
-export function SkeletonText({ className = "h-4 w-full", lines = 1 }: SkeletonTextProps) {
+export function SkeletonText({ className = "h-4 w-full", lines = 1, dark = false }: SkeletonTextProps) {
   if (lines <= 1) {
-    return <SkeletonBlock className={`h-4 rounded-md ${className}`} />;
+    return <SkeletonBlock dark={dark} className={`h-4 rounded-md ${className}`} />;
   }
 
   return (
@@ -56,6 +58,7 @@ export function SkeletonText({ className = "h-4 w-full", lines = 1 }: SkeletonTe
       {Array.from({ length: lines }).map((_, index) => (
         <SkeletonBlock
           key={index}
+          dark={dark}
           className={`h-4 rounded-md ${
             index === lines - 1 ? "w-2/3" : "w-full"
           } ${className}`}
@@ -67,11 +70,12 @@ export function SkeletonText({ className = "h-4 w-full", lines = 1 }: SkeletonTe
 
 interface SkeletonBadgeProps {
   className?: string;
+  dark?: boolean;
 }
 
 /**
  * Pill badge skeleton placeholder.
  */
-export function SkeletonBadge({ className = "h-6 w-16" }: SkeletonBadgeProps) {
-  return <SkeletonBlock className={`rounded-full ${className}`} />;
+export function SkeletonBadge({ className = "h-6 w-16", dark = false }: SkeletonBadgeProps) {
+  return <SkeletonBlock dark={dark} className={`rounded-full ${className}`} />;
 }
