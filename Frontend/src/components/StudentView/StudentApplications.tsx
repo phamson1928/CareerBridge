@@ -382,7 +382,7 @@ export const StudentApplications: React.FC<StudentApplicationsProps> = ({
                       <span className={`w-2 h-2 rounded-full ${badge.dot}`} />
                       {badge.label}
                     </span>
-                    {!isInactive && (
+                    {app.status === 'ACCEPTED' && (
                       <button
                         onClick={onOpenChat}
                         className="p-2.5 bg-white border border-teal-200/80 hover:bg-teal-50 hover:text-teal-700 rounded-full text-slate-600 shadow-2xs transition-colors active:scale-95"

@@ -1560,14 +1560,16 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                                       <span>Đánh giá AI ({score}đ)</span>
                                     </button>
                                   )}
-                                  <button
-                                    type="button"
-                                    onClick={onOpenChat}
-                                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-xs text-slate-600 shadow-2xs flex items-center gap-1.5 cursor-pointer"
-                                  >
-                                    <MessageSquare className="w-3.5 h-3.5 text-slate-500" />
-                                    <span>Nhắn tin</span>
-                                  </button>
+                                  {app.status === 'ACCEPTED' && (
+                                    <button
+                                      type="button"
+                                      onClick={onOpenChat}
+                                      className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-xs text-slate-600 shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      <MessageSquare className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>Nhắn tin</span>
+                                    </button>
+                                  )}
                                 </div>
 
                                 <div className="flex items-center gap-2">
