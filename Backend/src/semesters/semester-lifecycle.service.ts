@@ -122,7 +122,7 @@ export class SemesterLifecycleService implements OnModuleInit, OnModuleDestroy {
       throw new ConflictException({
         code: 'RECRUITMENT_CLOSED',
         message:
-          'Internships can only be posted, applied for, or accepted during the recruitment window.',
+          'Tin tuyển dụng chỉ có thể đăng, công khai hoặc ứng tuyển trong giai đoạn tuyển dụng của đợt thực tập.',
       });
     }
   }

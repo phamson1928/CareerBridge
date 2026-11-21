@@ -125,6 +125,37 @@ export function CompanyInternships() {
     });
   };
 
+  const setErrorMessage = (msg: string) => {
+    setError(msg);
+    showToast({ message: msg, tone: "error" });
+  };
+
+  const formatApiError = (err: unknown): string => {
+    const rawMsg = getApiErrorMessage(err);
+    if (rawMsg.includes("INVALID_DEADLINE") || rawMsg.includes("Deadline must be before") || rawMsg.includes("Hạn nộp hồ sơ")) {
+      return "Hạn nộp hồ sơ ứng tuyển phải trước ngày bắt đầu thực tập.";
+    }
+    if (rawMsg.includes("INVALID_DATE_RANGE") || rawMsg.includes("Start date must be before") || rawMsg.includes("bắt đầu thực tập phải trước")) {
+      return "Ngày bắt đầu thực tập phải trước ngày kết thúc.";
+    }
+    if (rawMsg.includes("INTERNSHIP_DATES_OUTSIDE_CAMPAIGN") || rawMsg.includes("monitoring window") || rawMsg.includes("khung theo dõi")) {
+      return "Thời gian thực tập dự kiến phải nằm trong khung theo dõi của đợt thực tập.";
+    }
+    if (rawMsg.includes("INTERNSHIP_DEADLINE_PASSED") || rawMsg.includes("future deadline") || rawMsg.includes("ở tương lai")) {
+      return "Hạn ứng tuyển của tin công khai phải ở tương lai, không thể chọn ngày đã qua.";
+    }
+    if (rawMsg.includes("INTERNSHIP_DATES_REQUIRED") || rawMsg.includes("Both startDate and endDate are required")) {
+      return "Khi công khai tin tuyển dụng (OPEN), bắt buộc phải nhập ngày bắt đầu và kết thúc.";
+    }
+    if (rawMsg.includes("INTERNSHIP_DATES_INCOMPLETE")) {
+      return "Vui lòng nhập cả ngày bắt đầu và kết thúc, hoặc để trống cả hai (nếu lưu nháp).";
+    }
+    if (rawMsg.includes("RECRUITMENT_CLOSED") || rawMsg.includes("recruitment window")) {
+      return "Đợt thực tập này hiện không trong giai đoạn nhận tin tuyển dụng.";
+    }
+    return rawMsg;
+  };
+
   // Active view tab
   const [activeTab, setActiveTab] = useState<"INTERNSHIPS" | "TEMPLATES">("INTERNSHIPS");
   const [selectedDetailJob, setSelectedDetailJob] = useState<InternshipRecord | null>(null);
@@ -415,34 +446,41 @@ export function CompanyInternships() {
     const hasStartDate = Boolean(form.startDate);
     const hasEndDate = Boolean(form.endDate);
     if (form.status === "OPEN" && (!hasStartDate || !hasEndDate)) {
-      setError(
+      setErrorMessage(
         "Khi đăng tin công khai (OPEN), bắt buộc phải nhập đầy đủ ngày bắt đầu và ngày kết thúc thực tập.",
       );
       return;
     }
     if (hasStartDate !== hasEndDate) {
-      setError(
+      setErrorMessage(
         "Hãy nhập đủ cả ngày bắt đầu và ngày kết thúc thực tập, hoặc để trống cả hai (nếu lưu nháp).",
       );
       return;
     }
     if (form.startDate && form.endDate && form.startDate >= form.endDate) {
-      setError("Ngày bắt đầu thực tập phải trước ngày kết thúc.");
+      setErrorMessage("Ngày bắt đầu thực tập phải trước ngày kết thúc.");
       return;
     }
     if (form.startDate && form.endDate && selectedPostingSemester) {
       const minimum = selectedPostingSemester.startDate.slice(0, 10);
       const maximum = selectedPostingSemester.endDate.slice(0, 10);
       if (form.startDate < minimum || form.endDate > maximum) {
-        setError(
-          `Thời gian thực tập phải nằm trong khung theo dõi ${minimum} – ${maximum}.`,
+        setErrorMessage(
+          `Thời gian thực tập (${form.startDate} – ${form.endDate}) phải nằm trong khung theo dõi của đợt: ${minimum} – ${maximum}.`,
         );
         return;
       }
     }
     if (form.deadline && form.startDate && form.deadline >= form.startDate) {
-      setError("Hạn ứng tuyển phải trước ngày bắt đầu thực tập.");
+      setErrorMessage("Hạn ứng tuyển phải trước ngày bắt đầu thực tập.");
       return;
+    }
+    if (form.status === "OPEN" && form.deadline) {
+      const deadlineDate = new Date(`${form.deadline}T23:59:59.999Z`);
+      if (deadlineDate <= new Date()) {
+        setErrorMessage("Hạn nộp hồ sơ ứng tuyển của tin công khai phải ở tương lai, không thể chọn ngày đã qua.");
+        return;
+      }
     }
     setSaving(true);
     try {
@@ -493,7 +531,7 @@ export function CompanyInternships() {
       setSelectedMajorIds([]);
       await loadInternships();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
+      setErrorMessage(formatApiError(requestError));
     } finally {
       setSaving(false);
     }
@@ -529,7 +567,7 @@ export function CompanyInternships() {
     if (!saveAsTemplateJob) return;
     const trimmed = templateNameInput.trim();
     if (!trimmed) {
-      setError("Tên mẫu tin không được để trống.");
+      setErrorMessage("Tên mẫu tin không được để trống.");
       return;
     }
     setSaving(true);
@@ -541,7 +579,7 @@ export function CompanyInternships() {
       showToast?.({ message: "Đã lưu vị trí vào danh sách mẫu tin thành công!", tone: "positive" });
       await loadTemplates();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
+      setErrorMessage(formatApiError(requestError));
     } finally {
       setSaving(false);
     }
@@ -572,26 +610,47 @@ export function CompanyInternships() {
 
   const handleRepostSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!repostJob) return;
     const targetSemester = recruitingSemesters.find((s) => s.id === repostForm.semesterId);
     if (!targetSemester) {
-      setError("Vui lòng chọn đợt thực tập hợp lệ.");
+      setErrorMessage("Vui lòng chọn đợt thực tập hợp lệ.");
+      return;
+    }
+    const hasStartDate = Boolean(repostForm.startDate);
+    const hasEndDate = Boolean(repostForm.endDate);
+    if (repostForm.status === "OPEN" && (!hasStartDate || !hasEndDate)) {
+      setErrorMessage("Khi đăng tin công khai (OPEN), bắt buộc phải nhập đầy đủ ngày bắt đầu và ngày kết thúc thực tập.");
+      return;
+    }
+    if (hasStartDate !== hasEndDate) {
+      setErrorMessage("Vui lòng nhập cả ngày bắt đầu và kết thúc, hoặc để trống cả hai (nếu lưu nháp).");
       return;
     }
     if (repostForm.startDate && repostForm.endDate && repostForm.startDate >= repostForm.endDate) {
-      setError("Ngày bắt đầu dự kiến phải trước ngày kết thúc.");
+      setErrorMessage("Ngày bắt đầu thực tập phải trước ngày kết thúc.");
       return;
     }
     if (repostForm.startDate && repostForm.endDate) {
       const minDate = targetSemester.startDate.slice(0, 10);
       const maxDate = targetSemester.endDate.slice(0, 10);
       if (repostForm.startDate < minDate || repostForm.endDate > maxDate) {
-        setError(`Lịch theo dõi dự kiến phải nằm trong khung đợt: ${minDate} – ${maxDate}.`);
+        setErrorMessage(`Thời gian thực tập (${repostForm.startDate} – ${repostForm.endDate}) phải nằm trong khung đợt: ${minDate} – ${maxDate}.`);
+        return;
+      }
+    }
+    if (repostForm.deadline && repostForm.startDate && repostForm.deadline >= repostForm.startDate) {
+      setErrorMessage("Hạn ứng tuyển phải trước ngày bắt đầu thực tập.");
+      return;
+    }
+    if (repostForm.status === "OPEN" && repostForm.deadline) {
+      const deadlineDate = new Date(`${repostForm.deadline}T23:59:59.999Z`);
+      if (deadlineDate <= new Date()) {
+        setErrorMessage("Hạn nộp hồ sơ ứng tuyển của tin công khai phải ở tương lai, không thể chọn ngày đã qua.");
         return;
       }
     }
     setSaving(true);
-    setError(null);
     try {
       const payload: RepostInternshipInput = {
         semesterId: repostForm.semesterId,
@@ -615,7 +674,7 @@ export function CompanyInternships() {
       showToast?.({ message: "Đăng lại tin tuyển dụng thành công!", tone: "positive" });
       await loadInternships();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
+      setErrorMessage(formatApiError(requestError));
     } finally {
       setSaving(false);
     }
@@ -661,7 +720,7 @@ export function CompanyInternships() {
     const trimmedTitle = templateForm.title.trim();
     const trimmedDesc = templateForm.description.trim();
     if (!trimmedName || !trimmedTitle || !trimmedDesc) {
-      setError("Vui lòng nhập đầy đủ Tên mẫu tin, Tiêu đề vị trí và Mô tả.");
+      setErrorMessage("Vui lòng nhập đầy đủ Tên mẫu tin, Tiêu đề vị trí và Mô tả.");
       return;
     }
     setSaving(true);
@@ -693,7 +752,7 @@ export function CompanyInternships() {
       setIsTemplateModalOpen(false);
       await loadTemplates();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
+      setErrorMessage(formatApiError(requestError));
     } finally {
       setSaving(false);
     }
@@ -713,7 +772,7 @@ export function CompanyInternships() {
       setTemplates((current) => current.filter((t) => t.id !== id));
       showToast?.({ message: "Đã xóa mẫu tin tuyển dụng.", tone: "positive" });
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
+      setErrorMessage(formatApiError(requestError));
     }
   };
 
@@ -733,26 +792,47 @@ export function CompanyInternships() {
 
   const handleFromTemplateSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!instantiatingTemplate) return;
     const targetSemester = recruitingSemesters.find((s) => s.id === fromTemplateSemesterId);
     if (!targetSemester) {
-      setError("Vui lòng chọn đợt thực tập hợp lệ.");
+      setErrorMessage("Vui lòng chọn đợt thực tập hợp lệ.");
+      return;
+    }
+    const hasStartDate = Boolean(fromTemplateStartDate);
+    const hasEndDate = Boolean(fromTemplateEndDate);
+    if (fromTemplateStatus === "OPEN" && (!hasStartDate || !hasEndDate)) {
+      setErrorMessage("Khi đăng tin công khai (OPEN), bắt buộc phải nhập đầy đủ ngày bắt đầu và ngày kết thúc thực tập.");
+      return;
+    }
+    if (hasStartDate !== hasEndDate) {
+      setErrorMessage("Vui lòng nhập cả ngày bắt đầu và kết thúc, hoặc để trống cả hai (nếu lưu nháp).");
       return;
     }
     if (fromTemplateStartDate && fromTemplateEndDate && fromTemplateStartDate >= fromTemplateEndDate) {
-      setError("Ngày bắt đầu dự kiến phải trước ngày kết thúc.");
+      setErrorMessage("Ngày bắt đầu thực tập phải trước ngày kết thúc.");
       return;
     }
     if (fromTemplateStartDate && fromTemplateEndDate) {
       const minDate = targetSemester.startDate.slice(0, 10);
       const maxDate = targetSemester.endDate.slice(0, 10);
       if (fromTemplateStartDate < minDate || fromTemplateEndDate > maxDate) {
-        setError(`Lịch theo dõi dự kiến phải nằm trong khung đợt: ${minDate} – ${maxDate}.`);
+        setErrorMessage(`Thời gian thực tập (${fromTemplateStartDate} – ${fromTemplateEndDate}) phải nằm trong khung đợt: ${minDate} – ${maxDate}.`);
+        return;
+      }
+    }
+    if (fromTemplateDeadline && fromTemplateStartDate && fromTemplateDeadline >= fromTemplateStartDate) {
+      setErrorMessage("Hạn ứng tuyển phải trước ngày bắt đầu thực tập.");
+      return;
+    }
+    if (fromTemplateStatus === "OPEN" && fromTemplateDeadline) {
+      const deadlineDate = new Date(`${fromTemplateDeadline}T23:59:59.999Z`);
+      if (deadlineDate <= new Date()) {
+        setErrorMessage("Hạn nộp hồ sơ ứng tuyển của tin công khai phải ở tương lai, không thể chọn ngày đã qua.");
         return;
       }
     }
     setSaving(true);
-    setError(null);
     try {
       const res = await internshipTemplatesApi.createInternship(instantiatingTemplate.id, {
         semesterId: fromTemplateSemesterId,
@@ -772,7 +852,7 @@ export function CompanyInternships() {
       await Promise.all([loadInternships(), loadTemplates()]);
       setActiveTab("INTERNSHIPS");
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
+      setErrorMessage(formatApiError(requestError));
     } finally {
       setSaving(false);
     }
@@ -1856,6 +1936,20 @@ export function CompanyInternships() {
               </button>
             </div>
 
+            {error && (
+              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-800 flex items-start gap-2.5 shadow-xs">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium leading-relaxed">{error}</div>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="text-rose-400 hover:text-rose-600 cursor-pointer p-0.5"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
             <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
               {recruitingSemesters.length === 1 ? (
                 <>
@@ -1925,12 +2019,17 @@ export function CompanyInternships() {
                 onChange={(value) => update("slots", Number(value))}
                 required
               />
-              <Field
-                label="Hạn ứng tuyển"
-                type="date"
-                value={form.deadline ?? ""}
-                onChange={(value) => update("deadline", value)}
-              />
+              <div>
+                <Field
+                  label="Hạn ứng tuyển"
+                  type="date"
+                  value={form.deadline ?? ""}
+                  onChange={(value) => update("deadline", value)}
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Phải trước ngày bắt đầu thực tập và ở tương lai (khi công khai).
+                </p>
+              </div>
               <Field
                 label={
                   form.status === "OPEN"
@@ -2010,6 +2109,14 @@ export function CompanyInternships() {
                 />
               </fieldset>
             </div>
+
+            {error && (
+              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                <span className="flex-1 font-medium">{error}</span>
+              </div>
+            )}
+
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
@@ -2135,6 +2242,20 @@ export function CompanyInternships() {
               </button>
             </div>
 
+            {error && (
+              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-800 flex items-start gap-2.5 shadow-xs">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium leading-relaxed">{error}</div>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="text-rose-400 hover:text-rose-600 cursor-pointer p-0.5"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
             <div className="mt-4 grid grid-cols-1 gap-4 text-xs md:grid-cols-2">
               <label className="font-bold md:col-span-2">
                 Chọn đợt thực tập tiếp theo *
@@ -2171,12 +2292,17 @@ export function CompanyInternships() {
                 required
               />
 
-              <Field
-                label="Hạn nộp hồ sơ"
-                type="date"
-                value={repostForm.deadline ?? ""}
-                onChange={(val) => setRepostForm((c) => ({ ...c, deadline: val }))}
-              />
+              <div>
+                <Field
+                  label="Hạn nộp hồ sơ"
+                  type="date"
+                  value={repostForm.deadline ?? ""}
+                  onChange={(val) => setRepostForm((c) => ({ ...c, deadline: val }))}
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Phải trước ngày bắt đầu và ở tương lai (khi công khai).
+                </p>
+              </div>
 
               <label className="font-bold">
                 Trạng thái đăng
@@ -2231,6 +2357,13 @@ export function CompanyInternships() {
               </fieldset>
             </div>
 
+            {error && (
+              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                <span className="flex-1 font-medium">{error}</span>
+              </div>
+            )}
+
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
@@ -2279,6 +2412,20 @@ export function CompanyInternships() {
                 <X className="h-5 w-5" />
               </button>
             </div>
+
+            {error && (
+              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-800 flex items-start gap-2.5 shadow-xs">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium leading-relaxed">{error}</div>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="text-rose-400 hover:text-rose-600 cursor-pointer p-0.5"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
 
             <div className="mt-5 grid grid-cols-1 gap-4 text-xs md:grid-cols-2">
               <Field
@@ -2366,6 +2513,13 @@ export function CompanyInternships() {
               </fieldset>
             </div>
 
+            {error && (
+              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                <span className="flex-1 font-medium">{error}</span>
+              </div>
+            )}
+
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
@@ -2412,6 +2566,20 @@ export function CompanyInternships() {
               </button>
             </div>
 
+            {error && (
+              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-800 flex items-start gap-2.5 shadow-xs">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium leading-relaxed">{error}</div>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="text-rose-400 hover:text-rose-600 cursor-pointer p-0.5"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
             <div className="mt-4 grid grid-cols-1 gap-4 text-xs md:grid-cols-2">
               <label className="font-bold md:col-span-2">
                 Đợt tuyển dụng áp dụng *
@@ -2455,12 +2623,17 @@ export function CompanyInternships() {
                 </select>
               </label>
 
-              <Field
-                label="Hạn nộp hồ sơ"
-                type="date"
-                value={fromTemplateDeadline}
-                onChange={setFromTemplateDeadline}
-              />
+              <div>
+                <Field
+                  label="Hạn nộp hồ sơ"
+                  type="date"
+                  value={fromTemplateDeadline}
+                  onChange={setFromTemplateDeadline}
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Phải trước ngày bắt đầu và ở tương lai (khi công khai).
+                </p>
+              </div>
 
               <Field
                 label="Bắt đầu theo dõi dự kiến"
@@ -2498,6 +2671,13 @@ export function CompanyInternships() {
                 />
               </fieldset>
             </div>
+
+            {error && (
+              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                <span className="flex-1 font-medium">{error}</span>
+              </div>
+            )}
 
             <div className="mt-6 flex justify-end gap-2">
               <button

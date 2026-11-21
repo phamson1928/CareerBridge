@@ -1129,13 +1129,14 @@ export class InternshipsService {
     if (hasStartDate !== hasEndDate) {
       throw new BadRequestException({
         code: 'INTERNSHIP_DATES_INCOMPLETE',
-        message: 'Provide both startDate and endDate, or leave both empty',
+        message:
+          'Vui lòng cung cấp cả ngày bắt đầu và kết thúc, hoặc để trống cả hai (khi lưu nháp)',
       });
     }
     if (dates.startDate && dates.endDate && dates.startDate >= dates.endDate)
       throw new BadRequestException({
         code: 'INVALID_DATE_RANGE',
-        message: 'Start date must be before end date',
+        message: 'Ngày bắt đầu thực tập phải trước ngày kết thúc',
       });
     if (
       dates.startDate &&
@@ -1145,13 +1146,13 @@ export class InternshipsService {
       throw new BadRequestException({
         code: 'INTERNSHIP_DATES_OUTSIDE_CAMPAIGN',
         message:
-          'Proposed academic dates must stay within the campaign monitoring window',
+          'Thời gian thực tập dự kiến phải nằm trong khung theo dõi của đợt thực tập',
       });
     }
     if (dates.deadline && dates.startDate && dates.deadline >= dates.startDate)
       throw new BadRequestException({
         code: 'INVALID_DEADLINE',
-        message: 'Deadline must be before the internship start date',
+        message: 'Hạn nộp hồ sơ ứng tuyển phải trước ngày bắt đầu thực tập',
       });
   }
 
@@ -1171,7 +1172,7 @@ export class InternshipsService {
       throw new BadRequestException({
         code: 'INTERNSHIP_DATES_REQUIRED',
         message:
-          'Both startDate and endDate are required when opening an internship',
+          'Bắt buộc phải nhập ngày bắt đầu và kết thúc khi công khai tin tuyển dụng',
       });
     }
     if (
@@ -1181,7 +1182,8 @@ export class InternshipsService {
     ) {
       throw new BadRequestException({
         code: 'INTERNSHIP_DEADLINE_PASSED',
-        message: 'An open internship must have a future deadline',
+        message:
+          'Hạn ứng tuyển của tin công khai phải ở tương lai, không thể chọn ngày đã qua',
       });
     }
     if (status === InternshipStatus.OPEN) {
