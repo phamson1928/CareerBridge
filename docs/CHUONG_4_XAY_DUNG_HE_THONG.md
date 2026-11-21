@@ -37,18 +37,18 @@ Hệ thống CareerBridge áp dụng phương pháp phát triển **Type-Safe En
 | :--- | :--- | :---: | :--- |
 | **Nền tảng thực thi** | Node.js | v20 LTS / v22 | Môi trường thực thi JavaScript/TypeScript phía máy chủ hiệu năng cao |
 | **Ngôn ngữ chủ đạo** | TypeScript | v5.8+ | Cung cấp hệ thống Static Typing mạnh mẽ, kiểm soát lỗi lúc biên dịch |
-| **Khung ứng dụng Backend** | NestJS | v11.0.1 | Kiến trúc doanh nghiệp dạng Module, tích hợp IoC/DI, Pipes, Guards, Interceptors |
-| **Tầng ORM & Truy vấn** | Prisma ORM | v7.9.1 | Quản trị lược đồ CSDL, ánh xạ quan hệ đối tượng, tự sinh Client an toàn kiểu |
-| **Cơ sở dữ liệu chính** | PostgreSQL Server | v15 / v16 | Hệ quản trị CSDL quan hệ chuẩn ACID, lưu trữ toàn bộ dữ liệu nghiệp vụ |
+| **Khung ứng dụng Backend** | NestJS [7] | v11.0.1 | Kiến trúc doanh nghiệp dạng Module, tích hợp IoC/DI, Pipes, Guards, Interceptors |
+| **Tầng ORM & Truy vấn** | Prisma ORM [9] | v7.9.1 | Quản trị lược đồ CSDL, ánh xạ quan hệ đối tượng, tự sinh Client an toàn kiểu |
+| **Cơ sở dữ liệu chính** | PostgreSQL Server [10] | v15 / v16 | Hệ quản trị CSDL quan hệ chuẩn ACID, lưu trữ toàn bộ dữ liệu nghiệp vụ |
 | **Driver kết nối CSDL** | `pg` + `@prisma/adapter-pg` | v8.16.3 | Connection Pooling tối ưu hóa kết nối CSDL với cơ chế tự phục hồi lỗi |
-| **Khung giao diện Frontend** | React | v19.0.1 | Thư viện xây dựng giao diện người dùng dựa trên Component hiện đại |
+| **Khung giao diện Frontend** | React [8] | v19.0.1 | Thư viện xây dựng giao diện người dùng dựa trên Component hiện đại |
 | **Công cụ đóng gói Frontend** | Vite | v6.2.3 | Công cụ phát triển siêu tốc (Next-generation Frontend Tooling) với Hot Module Replacement (HMR) |
 | **Khung thiết kế giao diện** | Tailwind CSS | v4.1.14 | Hệ thống CSS tiện ích (Utility-first) hiện đại, tối ưu dung lượng CSS đầu ra |
 | **Điều hướng Frontend** | React Router | v7.18.2 | Định tuyến SPA linh hoạt, hỗ trợ bảo vệ tuyến theo vai trò (Role-based Guards) |
-| **Giao tiếp Thời gian thực** | Socket.IO (Client/Server) | v4.8.3 | Kênh truyền thông tin nhắn hai chiều (WebSockets) cho Chat và Notifications |
-| **Xác thực & Bảo mật** | Passport JWT & Helmet | v11 / v8 | Xác thực mã thông báo không trạng thái (Stateless Token) và bảo vệ tiêu đề HTTP |
+| **Giao tiếp Thời gian thực** | Socket.IO (Client/Server) [12] | v4.8.3 | Kênh truyền thông tin nhắn hai chiều (WebSockets) cho Chat và Notifications |
+| **Xác thực & Bảo mật** | Passport JWT [11] & Helmet | v11 / v8 | Xác thực mã thông báo không trạng thái (Stateless Token) và bảo vệ tiêu đề HTTP |
 | **Kiểm soát đầu vào DTO** | class-validator & transformer | v0.15 / v0.5 | Xác thực và ánh xạ tự động payload dữ liệu REST API |
-| **Động cơ phân tích AI** | Google Gemini API SDK | v2.21.0 | Tích hợp mô hình Gemini AI phục vụ đề xuất việc làm và giải thích độ phù hợp |
+| **Động cơ phân tích AI** | Google Gemini API SDK [14] | v2.21.0 | Tích hợp mô hình Gemini AI phục vụ đề xuất việc làm và giải thích độ phù hợp |
 | **Động cơ quét CV On-premise**| pdf-parse, mammoth, Tesseract | v1.1 / v1.13 | Trích xuất văn bản từ CV PDF, DOCX và OCR quét tài liệu dạng ảnh scan |
 | **Lưu trữ tệp đám mây** | Supabase Storage / S3 Bucket | v2.x | Lưu trữ bảo mật các tệp tải lên (CV, Giấy ĐKKD, Báo cáo tuần, Chứng nhận) |
 | **Dịch vụ gửi thư điện tử** | Nodemailer (SMTP Service) | v10.0.0 | Gửi email kích hoạt tài khoản, cấp lại mật khẩu và thông báo tiến độ |

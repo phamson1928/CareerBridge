@@ -13,11 +13,11 @@ Trong công tác đào tạo tại các trường đại học, học phần **T
 
 Hệ thống **CareerBridge** (Nền tảng Quản lý và Kết nối Thực tập Thông minh) được xây dựng nhằm giải quyết triệt để các bài toán trên bằng cách tin học hóa toàn diện toàn bộ **vòng đời thực tập (End-to-End Internship Lifecycle)**. Hệ thống tạo lập một môi trường làm việc số thống nhất kết nối 4 bên liên quan: **Sinh viên**, **Doanh nghiệp**, **Giảng viên hướng dẫn** và **Nhà trường/Quản trị viên**.
 
-Phương pháp phân tích yêu cầu được tiếp cận theo hướng **Công nghệ phần mềm hiện đại (Modern Software Engineering)** kết hợp **Thiết kế hướng nghiệp vụ (Domain-Driven Design - DDD)**:
+Phương pháp phân tích yêu cầu được tiếp cận theo hướng **Công nghệ phần mềm hiện đại (Modern Software Engineering)** kết hợp **Thiết kế hướng nghiệp vụ (Domain-Driven Design - DDD)** [1]:
 1. **Khảo sát và chuẩn hóa quy trình:** Rà soát và mô hình hóa chặt chẽ quy định thực tập tốt nghiệp của nhà trường và quy trình tuyển dụng thực tế của doanh nghiệp thành các trạng thái dữ liệu (State Machine) rõ ràng.
 2. **Phân rã yêu cầu chức năng:** Phân định ranh giới giữa các phân hệ nghiệp vụ, thiết lập danh mục yêu cầu chức năng (FR) được đánh chỉ mục và xếp hạng ưu tiên theo kỹ thuật **MoSCoW** (*Must-have*, *Should-have*, *Could-have*, *Won't-have*).
-3. **Đặc tả yêu cầu phi chức năng:** Phân tích theo tiêu chuẩn chất lượng phần mềm quốc tế **ISO/IEC 25010** và mô hình **FURPS+** nhằm bảo đảm hệ thống vận hành ổn định, hiệu năng cao, bảo mật dữ liệu và sẵn sàng mở rộng.
-4. **Mô hình hóa tác nhân:** Xác định tường minh trách nhiệm, thẩm quyền và tương tác của từng tác nhân con người cũng như các tác nhân dịch vụ tự động trong hệ thống.
+3. **Đặc tả yêu cầu phi chức năng:** Phân tích theo tiêu chuẩn chất lượng phần mềm quốc tế **ISO/IEC 25010** [2] và mô hình **FURPS+** nhằm bảo đảm hệ thống vận hành ổn định, hiệu năng cao, bảo mật dữ liệu và sẵn sàng mở rộng.
+4. **Mô hình hóa tác nhân:** Xác định tường minh trách nhiệm, thẩm quyền và tương tác của từng tác nhân con người cũng như các tác nhân dịch vụ tự động trong hệ thống theo chuẩn **UML 2.5** [3].
 
 ---
 
