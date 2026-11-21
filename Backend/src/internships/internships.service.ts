@@ -145,7 +145,21 @@ export class InternshipsService {
 
   async listMine(query: ListInternshipsQueryDto, userId: string) {
     await this.lifecycle.reconcile();
-    const company = await this.getCompanyForUser(userId);
+    const company = await this.prisma.companyProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!company) {
+      return {
+        items: [],
+        pagination: {
+          page: query.page,
+          limit: query.limit,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
     return this.paginate(this.buildWhere(query, undefined, company.id), query);
   }
 

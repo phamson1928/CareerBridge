@@ -452,31 +452,56 @@ export default function App() {
         }
 
         if (user.role === "COMPANY") {
-          const [applicationsPage, placements, evaluationPage, internshipsPage] =
-            await Promise.all([
-              applicationsApi.listMine({ page: 1, limit: 100 }),
-              placementsApi.listMine(),
-              evaluationsApi.listMine({ page: 1, limit: 100 }),
-              internshipsApi.listMine({ page: 1, limit: 100 }).catch(() => ({ items: [] })),
-            ]);
-          if (!active) return;
-          applyApplications(applicationsPage.items);
-          setMyPlacements(placements.items);
-          setEvaluationRecords(evaluationPage.items);
-          if (internshipsPage?.items) {
-            setInternships(internshipsPage.items.map(toLegacyInternship));
-          }
-
           try {
             const profile = await companiesApi.getMine();
-            if (active) {
+            if (!active) return;
+            if (profile) {
               setCompanyProfile(toLegacyCompanyProfile(profile));
               setCompanyVerificationStatus(profile.status);
-            }
-          } catch (profileError) {
-            console.warn("Company profile is not available yet", profileError);
-            if (active) {
+
+              if (profile.status === "APPROVED") {
+                const [applicationsPage, placements, evaluationPage, internshipsPage] =
+                  await Promise.all([
+                    applicationsApi.listMine({ page: 1, limit: 100 }).catch(() => ({ items: [] })),
+                    placementsApi.listMine().catch(() => ({ items: [] })),
+                    evaluationsApi.listMine({ page: 1, limit: 100 }).catch(() => ({ items: [] })),
+                    internshipsApi.listMine({ page: 1, limit: 100 }).catch(() => ({ items: [] })),
+                  ]);
+                if (!active) return;
+                applyApplications(applicationsPage.items);
+                setMyPlacements(placements.items);
+                setEvaluationRecords(evaluationPage.items);
+                if (internshipsPage?.items) {
+                  setInternships(internshipsPage.items.map(toLegacyInternship));
+                }
+              } else {
+                setApplications([]);
+                setMyPlacements([]);
+                setEvaluationRecords([]);
+                setInternships([]);
+              }
+            } else {
+              setCompanyProfile(null);
               setCompanyVerificationStatus("DRAFT");
+              setApplications([]);
+              setMyPlacements([]);
+              setEvaluationRecords([]);
+              setInternships([]);
+            }
+          } catch (profileError: unknown) {
+            if (!active) return;
+            const statusCode = (profileError as { response?: { status?: number } })?.response?.status;
+            if (statusCode === 404) {
+              // Doanh nghiệp mới tạo tài khoản, chưa tạo hồ sơ -> trạng thái DRAFT hợp lệ
+              setCompanyProfile(null);
+              setCompanyVerificationStatus("DRAFT");
+              setApplications([]);
+              setMyPlacements([]);
+              setEvaluationRecords([]);
+              setInternships([]);
+            } else {
+              console.error("Company profile error:", profileError);
+              setWorkflowError(getApiErrorMessage(profileError));
             }
           }
         }
@@ -527,18 +552,6 @@ export default function App() {
     setLecturerProfile(profile);
     setAvatarFileId(profile?.avatarFileId ?? null);
   };
-
-  useEffect(() => {
-    if (
-      currentRole === "COMPANY" &&
-      companyVerificationStatus !== null &&
-      companyVerificationStatus !== "APPROVED" &&
-      activeTab !== "company-profile"
-    ) {
-      setActiveTab("company-profile");
-      navigate("/company/profile", { replace: true });
-    }
-  }, [activeTab, companyVerificationStatus, currentRole, navigate]);
 
   const handleLogout = async () => {
     await logout();

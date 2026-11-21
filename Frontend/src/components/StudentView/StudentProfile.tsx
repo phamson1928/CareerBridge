@@ -33,6 +33,7 @@ import {
   ProfileAvatarUpload,
 } from "../ProfileAvatarUpload";
 import { StudentProfileSkeleton } from "./skeletons";
+import { CustomSelect } from "../Common/CustomSelect";
 
 const emptyForm: StudentProfileInput = {
   studentCode: "",
@@ -519,44 +520,44 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
               onChange={(value) => setForm({ ...form, phone: value })}
             />
 
-            <div>
-              <label className="mb-1 block text-xs font-bold text-slate-800">
-                Khoa *
-              </label>
-              <select
-                value={selectedFacultyId}
-                onChange={(event) => handleFacultyChange(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm"
-              >
-                <option value="">-- Tất cả các Khoa --</option>
-                {selectableFaculties.map((fac) => (
-                  <option key={fac.id} value={fac.id}>
-                    [{fac.code}] {fac.name}
-                    {!fac.isActive ? " (Ngừng sử dụng)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <CustomSelect
+              label="Khoa"
+              required
+              value={selectedFacultyId}
+              placeholder="-- Tất cả các Khoa --"
+              options={[
+                { value: "", label: "-- Tất cả các Khoa --" },
+                ...selectableFaculties.map((fac) => ({
+                  value: fac.id,
+                  label: fac.name,
+                  code: fac.code,
+                  badge: !fac.isActive ? "(Ngừng sử dụng)" : undefined,
+                })),
+              ]}
+              onChange={(value) => handleFacultyChange(value)}
+            />
 
-            <div>
-              <label className="mb-1 block text-xs font-bold text-slate-800">
-                Ngành học *
-              </label>
-              <select
-                required
-                value={form.majorId ?? ""}
-                onChange={(event) => handleMajorChange(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm"
-              >
-                <option value="">-- Chọn ngành học --</option>
-                {selectableMajors.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    [{m.code}] {m.name}
-                    {!m.isActive ? " (Ngành cũ)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <CustomSelect
+              label="Ngành học"
+              required
+              value={form.majorId ?? ""}
+              placeholder="-- Chọn ngành học --"
+              emptyText={
+                selectedFacultyId
+                  ? "Khoa này hiện chưa có ngành học nào"
+                  : "Vui lòng chọn Khoa trước"
+              }
+              options={[
+                { value: "", label: "-- Chọn ngành học --" },
+                ...selectableMajors.map((m) => ({
+                  value: m.id,
+                  label: m.name,
+                  code: m.code,
+                  badge: !m.isActive ? "(Ngành cũ)" : undefined,
+                })),
+              ]}
+              onChange={(value) => handleMajorChange(value)}
+            />
 
             <div>
               <label className="mb-1 block text-xs font-bold text-slate-800">

@@ -141,7 +141,7 @@ export interface CompanyProfilesPage {
 export const companiesApi = {
   getMine: async () => {
     const response =
-      await api.get<ApiSuccess<CompanyProfileRecord>>("/companies/me");
+      await api.get<ApiSuccess<CompanyProfileRecord | null>>("/companies/me");
     return response.data.data;
   },
   createMine: async (input: CompanyProfileInput) => {

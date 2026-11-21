@@ -77,8 +77,13 @@ export const CompanyProfileView: React.FC<CompanyProfileViewProps> = ({
       try {
         const result = await companiesApi.getMine();
         if (active) {
-          setProfile(result);
-          setForm(toForm(result));
+          if (result) {
+            setProfile(result);
+            setForm(toForm(result));
+          } else {
+            setProfile(null);
+            setForm(emptyForm);
+          }
         }
       } catch (requestError) {
         if (!(

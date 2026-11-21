@@ -36,7 +36,7 @@ export class CompaniesController {
   @Get('me')
   @Roles(Role.COMPANY)
   findMyProfile(@CurrentUser() user: AuthUser) {
-    return this.companiesService.findByUserId(user.id);
+    return this.companiesService.findOptionalByUserId(user.id);
   }
 
   @Post('me')

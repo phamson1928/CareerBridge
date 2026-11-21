@@ -208,16 +208,18 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
     let active = true;
     const init = async () => {
       try {
-        const [profileRes, semPage, jobsPage] = await Promise.all([
+        const [profileRes, semPage] = await Promise.all([
           companiesApi.getMine().catch(() => null),
           semestersApi.list({ page: 1, limit: 100 }),
-          internshipsApi.listMine({ page: 1, limit: 50 }).catch(() => null),
         ]);
         if (!active) return;
         setCompanyProfile(profileRes);
         setSemesters(semPage.items);
-        if (jobsPage?.items) {
-          setMyInternships(jobsPage.items);
+        if (profileRes && (profileRes.status === "APPROVED" || profileRes.status === "SUSPENDED")) {
+          const jobsPage = await internshipsApi.listMine({ page: 1, limit: 50 }).catch(() => null);
+          if (active && jobsPage?.items) {
+            setMyInternships(jobsPage.items);
+          }
         }
         const def = findDefaultSemester(semPage.items, "COMPANY");
         if (def) {
@@ -230,7 +232,8 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
       } catch (err) {
         if (!active) return;
         setError(getApiErrorMessage(err));
-        setLoading(false);
+      } finally {
+        if (active) setLoading(false);
       }
     };
     void init();
@@ -249,6 +252,12 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
       }
       setError(null);
       try {
+        // Doanh nghiệp chưa tạo hồ sơ hoặc chưa được duyệt thì không gọi API thống kê
+        if (!companyProfile || (companyProfile.status !== "APPROVED" && companyProfile.status !== "SUSPENDED")) {
+          setData(null);
+          return;
+        }
+
         const targetSem = semId === "ALL" ? undefined : semId;
         const [res, jobsPage] = await Promise.all([
           dashboardApi.getCompany({
@@ -268,14 +277,25 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
         if (jobsPage?.items) {
           setMyInternships(jobsPage.items);
         }
-      } catch (err) {
-        setError(getApiErrorMessage(err));
+      } catch (err: unknown) {
+        const statusCode = (err as { response?: { status?: number; data?: { code?: string } } })?.response?.status;
+        const errorCode = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+        if (
+          statusCode === 404 ||
+          statusCode === 403 ||
+          errorCode === "COMPANY_PROFILE_NOT_FOUND" ||
+          errorCode === "COMPANY_STATS_FORBIDDEN"
+        ) {
+          setData(null);
+        } else {
+          setError(getApiErrorMessage(err));
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [],
+    [companyProfile],
   );
 
   useEffect(() => {
@@ -774,10 +794,10 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
     );
   }
 
-  return (
-    <div className="space-y-6 pb-8">
-      {/* Box yêu cầu đến trang hồ sơ nếu chưa đăng ký hoặc chưa duyệt hồ sơ */}
-      {(!companyProfile || companyProfile.status !== "APPROVED") && (
+  // Nếu doanh nghiệp chưa đăng ký hoặc chưa được duyệt, chỉ hiển thị duy nhất box vàng để click đăng ký
+  if (!companyProfile || companyProfile.status !== "APPROVED") {
+    return (
+      <div className="space-y-6 pb-8">
         <div className="relative overflow-hidden rounded-3xl border-2 border-amber-300/80 bg-gradient-to-r from-amber-50 via-white to-orange-50/40 p-5 sm:p-6 shadow-[0_10px_30px_rgba(245,158,11,0.12)]">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
@@ -818,7 +838,12 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
             </button>
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 pb-8">
       {error && (
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-3.5 text-rose-800">
           <div className="flex items-center gap-2.5 text-xs font-semibold">
