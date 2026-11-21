@@ -835,7 +835,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                               className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9.5px] font-bold ${
                                 s.phase === 'RECRUITING'
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : s.phase === 'ONGOING' || s.phase === 'MONITORING'
+                                  : s.phase === 'MONITORING'
                                   ? 'bg-sky-50 text-sky-700 border border-sky-200'
                                   : s.phase === 'UPCOMING'
                                   ? 'bg-amber-50 text-amber-700 border border-amber-200'
@@ -844,7 +844,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                             >
                               {s.phase === 'RECRUITING'
                                 ? 'Đang tuyển dụng'
-                                : s.phase === 'ONGOING' || s.phase === 'MONITORING'
+                                : s.phase === 'MONITORING'
                                 ? 'Hiện tại'
                                 : s.phase === 'UPCOMING'
                                 ? 'Sắp diễn ra'
@@ -1392,7 +1392,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                         {/* 4. Trạng thái */}
                         <td className="py-3 px-4 text-center">
                           <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${badge.bg} ${badge.color}`}
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border ${badge.bg}`}
                           >
                             {badge.label}
                           </span>
@@ -1528,7 +1528,7 @@ export const ManageApplicants: React.FC<ManageApplicantsProps> = ({
                                   {canResendEmail && (
                                     <button
                                       type="button"
-                                      onClick={() => void handleResendEmail(latestEmail.id)}
+                                      onClick={() => void handleResendEmail(app.id, latestEmail.id)}
                                       disabled={resendingLogId === latestEmail.id}
                                       className="text-teal-700 font-bold hover:underline"
                                     >

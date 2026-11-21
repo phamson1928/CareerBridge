@@ -129,6 +129,8 @@ export interface CompanyDashboardKpis {
   applicationsByStatus: Record<ApplicationStatus, number>;
   avgHoursToAccept: number | null;
   avgHoursToDecision: number | null;
+  activePlacements?: number;
+  evaluationsSubmitted?: number;
 }
 
 export interface CompanyDashboardFunnel {

@@ -161,6 +161,7 @@ export interface Application {
   interview?: {
     id: string;
     scheduledAt: string;
+    durationMinutes?: number | null;
     mode: "ONLINE" | "OFFLINE";
     meetingLink?: string | null;
     location?: string | null;

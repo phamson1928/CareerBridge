@@ -952,7 +952,7 @@ export function CompanyInternships() {
                               className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9.5px] font-bold ${
                                 phase === "RECRUITING"
                                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                  : phase === "ONGOING" || phase === "MONITORING"
+                                  : phase === "MONITORING"
                                   ? "bg-sky-50 text-sky-700 border border-sky-200"
                                   : phase === "UPCOMING"
                                   ? "bg-amber-50 text-amber-700 border border-amber-200"
@@ -961,7 +961,7 @@ export function CompanyInternships() {
                             >
                               {phase === "RECRUITING"
                                 ? "Đang tuyển dụng"
-                                : phase === "ONGOING" || phase === "MONITORING"
+                                : phase === "MONITORING"
                                 ? "Hiện tại"
                                 : phase === "UPCOMING"
                                 ? "Sắp diễn ra"
@@ -1305,7 +1305,7 @@ export function CompanyInternships() {
                                         className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9.5px] font-bold ${
                                           phase === "RECRUITING"
                                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                            : phase === "ONGOING" || phase === "MONITORING"
+                                            : phase === "MONITORING"
                                             ? "bg-sky-50 text-sky-700 border border-sky-200"
                                             : phase === "UPCOMING"
                                             ? "bg-amber-50 text-amber-700 border border-amber-200"
@@ -1314,7 +1314,7 @@ export function CompanyInternships() {
                                       >
                                         {phase === "RECRUITING"
                                           ? "Đang tuyển dụng"
-                                          : phase === "ONGOING" || phase === "MONITORING"
+                                          : phase === "MONITORING"
                                           ? "Hiện tại"
                                           : phase === "UPCOMING"
                                           ? "Sắp diễn ra"
@@ -1601,10 +1601,10 @@ export function CompanyInternships() {
                               <p className="mt-0.5 text-[11px] text-slate-500 truncate">
                                 {job.department || "Chưa phân phòng"} ·{" "}
                                 <span className="font-semibold text-emerald-700">
-                                  {job.isUnpaid
-                                    ? "Không phụ cấp"
-                                    : job.stipend
-                                    ? `${job.stipend.toLocaleString("vi-VN")} đ`
+                                  {job.stipend
+                                    ? !isNaN(Number(job.stipend)) && Number(job.stipend) > 0
+                                      ? `${Number(job.stipend).toLocaleString("vi-VN")} đ`
+                                      : job.stipend
                                     : "Thỏa thuận"}
                                 </span>
                               </p>
@@ -2774,7 +2774,11 @@ export function CompanyInternships() {
                   <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 space-y-0.5">
                     <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Phụ cấp</span>
                     <span className="text-xs sm:text-sm font-bold text-emerald-700 truncate block">
-                      {selectedDetailJob.isUnpaid ? "Không phụ cấp" : selectedDetailJob.stipend ? `${selectedDetailJob.stipend.toLocaleString("vi-VN")} đ` : "Thỏa thuận"}
+                      {selectedDetailJob.stipend
+                        ? !isNaN(Number(selectedDetailJob.stipend)) && Number(selectedDetailJob.stipend) > 0
+                          ? `${Number(selectedDetailJob.stipend).toLocaleString("vi-VN")} đ`
+                          : selectedDetailJob.stipend
+                        : "Thỏa thuận"}
                     </span>
                   </div>
 

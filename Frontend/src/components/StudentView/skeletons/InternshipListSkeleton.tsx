@@ -33,10 +33,10 @@ export function InternshipHeroSkeleton() {
       aria-hidden="true"
     >
       <picture className="absolute inset-0 h-full w-full">
-        <source srcSet="/homepage-hero.webp" type="image/webp" />
+        <source srcSet={encodeURI("/Banner Ngày Nhà Giáo Việt Nam Minh Họa Xanh Dương Và Trắng.png")} type="image/png" />
         <img
-          className="h-full w-full object-cover object-right sm:object-center select-none pointer-events-none opacity-40"
-          src="/homepage-hero.jpg"
+          className="h-full w-full object-cover object-right sm:object-center select-none pointer-events-none"
+          src={encodeURI("/Banner Ngày Nhà Giáo Việt Nam Minh Họa Xanh Dương Và Trắng.png")}
           alt=""
           loading="eager"
         />
@@ -154,9 +154,8 @@ export function SemesterTimelineSkeleton() {
                     <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
                   </div>
                   <div
-                    className={`w-[2px] bg-slate-300 ${
-                      isStaggered ? "h-12" : "h-4"
-                    }`}
+                    className={`w-[2px] bg-slate-300 ${isStaggered ? "h-12" : "h-4"
+                      }`}
                   />
                 </div>
 

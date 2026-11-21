@@ -495,7 +495,7 @@ export function EvaluateInternsModal({
                               className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9.5px] font-bold ${
                                 s.phase === "RECRUITING"
                                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                  : s.phase === "ONGOING" || s.phase === "MONITORING"
+                                  : s.phase === "MONITORING"
                                   ? "bg-sky-50 text-sky-700 border border-sky-200"
                                   : s.phase === "UPCOMING"
                                   ? "bg-amber-50 text-amber-700 border border-amber-200"
@@ -504,7 +504,7 @@ export function EvaluateInternsModal({
                             >
                               {s.phase === "RECRUITING"
                                 ? "Đang tuyển dụng"
-                                : s.phase === "ONGOING" || s.phase === "MONITORING"
+                                : s.phase === "MONITORING"
                                 ? "Hiện tại"
                                 : s.phase === "UPCOMING"
                                 ? "Sắp tới"

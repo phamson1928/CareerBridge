@@ -55,7 +55,8 @@ import { semestersApi } from "../../semesters/api";
 import { findDefaultSemester, toSemesterSlug } from "../../semesters/utils";
 import type { SemesterRecord } from "../../semesters/types";
 import type { Application } from "../../types";
-import type { EvaluationRecord, PlacementRecord } from "../../workflow/api";
+import type { EvaluationRecord } from "../../evaluations/api";
+import type { PlacementRecord } from "../../placements/types";
 import { downloadExcelWorkbook } from "../../utils/excelExport";
 import { CompanyInternshipStatsModal } from "./CompanyInternshipStatsModal";
 
@@ -947,7 +948,7 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
                               <span
                                 className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9.5px] font-bold ${s.phase === "RECRUITING"
                                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                  : s.phase === "ONGOING" || s.phase === "MONITORING"
+                                  : s.phase === "MONITORING"
                                     ? "bg-sky-50 text-sky-700 border border-sky-200"
                                     : s.phase === "UPCOMING"
                                       ? "bg-amber-50 text-amber-700 border border-amber-200"
@@ -956,7 +957,7 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
                               >
                                 {s.phase === "RECRUITING"
                                   ? "Đang tuyển dụng"
-                                  : s.phase === "ONGOING" || s.phase === "MONITORING"
+                                  : s.phase === "MONITORING"
                                     ? "Hiện tại"
                                     : s.phase === "UPCOMING"
                                       ? "Sắp diễn ra"

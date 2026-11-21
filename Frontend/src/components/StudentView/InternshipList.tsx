@@ -275,11 +275,11 @@ export const InternshipList: React.FC<InternshipListProps> = ({
       {/* Hero: ảnh nền tương lai độ nét cao 2.5K + lớp phủ aurora, tiêu đề, CTA và thống kê nhanh */}
       <section className="student-hero-hub relative left-1/2 m-0 h-[100svh] min-h-[620px] max-h-[960px] w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden bg-[#06181b]">
         <picture className="absolute inset-0 h-full w-full">
-          <source srcSet="/homepage-hero.webp" type="image/webp" />
+          <source srcSet={encodeURI("/Banner Ngày Nhà Giáo Việt Nam Minh Họa Xanh Dương Và Trắng.png")} type="image/png" />
           <img
             className="h-full w-full object-cover object-right sm:object-center select-none pointer-events-none"
-            src="/homepage-hero.jpg"
-            alt="CareerBridge Hero"
+            src={encodeURI("/Banner Ngày Nhà Giáo Việt Nam Minh Họa Xanh Dương Và Trắng.png")}
+            alt="CareerBridge Hero - Banner Ngày Nhà Giáo Việt Nam"
             loading="eager"
             decoding="async"
           />
@@ -467,8 +467,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 setIsMajorDropdownOpen(false);
               }}
               className={`h-11 w-full rounded-xl border pl-3.5 pr-3 text-xs font-semibold transition-all outline-none shadow-2xs flex items-center justify-between text-left cursor-pointer ${selectedFacultyId
-                  ? 'border-teal-500 bg-teal-50/90 text-teal-800 font-bold'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50/30'
+                ? 'border-teal-500 bg-teal-50/90 text-teal-800 font-bold'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50/30'
                 }`}
             >
               <span className="truncate pr-2">{currentFaculty ? currentFaculty.name : 'Tất cả các Khoa'}</span>
@@ -529,8 +529,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                 setIsFacultyDropdownOpen(false);
               }}
               className={`h-11 w-full rounded-xl border pl-3.5 pr-3 text-xs font-semibold transition-all outline-none shadow-2xs flex items-center justify-between text-left cursor-pointer ${selectedMajorId
-                  ? 'border-teal-500 bg-teal-50/90 text-teal-800 font-bold'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50/30'
+                ? 'border-teal-500 bg-teal-50/90 text-teal-800 font-bold'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50/30'
                 }`}
             >
               <span className="truncate pr-2">{currentMajor ? currentMajor.name : 'Tất cả các Ngành'}</span>
@@ -583,8 +583,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                               setIsMajorDropdownOpen(false);
                             }}
                             className={`w-full text-left pl-4 pr-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${isSelected
-                                ? 'bg-teal-50 text-teal-900 font-bold'
-                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                              ? 'bg-teal-50 text-teal-900 font-bold'
+                              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                               }`}
                           >
                             <span className="truncate">{m.name}</span>
@@ -860,8 +860,8 @@ export const InternshipList: React.FC<InternshipListProps> = ({
                         document.getElementById('tin-tuyen-dung')?.scrollIntoView({ behavior: 'smooth' });
                       }}
                       className={`h-9 min-w-[36px] px-3 rounded-xl text-xs font-bold transition-all ${isActive
-                          ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-xs scale-105'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:scale-95'
+                        ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-xs scale-105'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:scale-95'
                         }`}
                       aria-label={`Trang ${pageNum}`}
                       aria-current={isActive ? 'page' : undefined}
